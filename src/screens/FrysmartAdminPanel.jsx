@@ -1,4 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import {
+  mapCompetitor, unMapCompetitor,
+  mapOilType, unMapOilType,
+  mapProfile, unMapProfile,
+  mapGroup, unMapGroup,
+  mapVenue, unMapVenue,
+  mapReading, unMapReading,
+  mapTrialReason, mapVolumeBracket,
+  mapSystemSettings, unMapSystemSettings,
+} from '../lib/mappers';
 import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Shield, Droplets, Archive, Filter, Copy, Layers, UserPlus, CheckCircle, BarChart3, Globe, Lock, RefreshCw, Zap, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, Repeat2 } from 'lucide-react';
 
 const hideScrollbarCSS = `
@@ -3985,37 +3996,201 @@ export default function FrysmartAdminPanel() {
   const [users, setUsers] = useState([]);
   const [trialReasons, setTrialReasons] = useState([]);
   const [volumeBrackets, setVolumeBrackets] = useState([]);
-  const [demoLoaded, setDemoLoaded] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [tpmReadings, setTpmReadings] = useState([]);
-
-  const loadDemoData = () => {
-    setOilTypes(seedOilTypes());
-    setCompetitors(seedCompetitors());
-    setVenues(seedVenues());
-    setGroups(seedGroups());
-    setUsers(seedUsers());
-    setTrialReasons([...TRIAL_REASONS]);
-    setVolumeBrackets([...VOLUME_BRACKETS]);
-    setTpmReadings(seedTpmReadings());
-    setDemoLoaded(true);
-  };
-
-  const clearDemoData = () => {
-    setOilTypes([]);
-    setCompetitors([]);
-    setVenues([]);
-    setGroups([]);
-    setUsers([]);
-    setTrialReasons([]);
-    setVolumeBrackets([]);
-    setTpmReadings([]);
-    setDemoLoaded(false);
-  };
-  const [oilTypeOptions, setOilTypeOptions] = useState(['canola', 'palm', 'sunflower', 'soybean', 'cottonseed', 'tallow', 'blend', 'unknown']);
+  const [oilTypeOptions, setOilTypeOptions] = useState([]);
   const [systemSettings, setSystemSettings] = useState({
     warningThreshold: 18, criticalThreshold: 24, defaultFryerCount: 4,
     reportFrequency: 'weekly', reminderDays: 7, trialDuration: 7
   });
+
+  // ── Supabase: fetch all data on mount ──
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAll = async () => {
+      const [
+        { data: compRows },
+        { data: oilRows },
+        { data: profileRows },
+        { data: groupRows },
+        { data: venueRows },
+        { data: readingRows },
+        { data: reasonRows },
+        { data: bracketRows },
+        { data: settingsRows },
+      ] = await Promise.all([
+        supabase.from('competitors').select('*'),
+        supabase.from('oil_types').select('*'),
+        supabase.from('profiles').select('*'),
+        supabase.from('groups').select('*'),
+        supabase.from('venues').select('*'),
+        supabase.from('tpm_readings').select('*'),
+        supabase.from('trial_reasons').select('*'),
+        supabase.from('volume_brackets').select('*'),
+        supabase.from('system_settings').select('*'),
+      ]);
+      if (cancelled) return;
+      setCompetitors((compRows || []).map(mapCompetitor));
+      setOilTypes((oilRows || []).map(mapOilType));
+      setUsers((profileRows || []).map(mapProfile));
+      setGroups((groupRows || []).map(mapGroup));
+      setVenues((venueRows || []).map(mapVenue));
+      setTpmReadings((readingRows || []).map(mapReading));
+      setTrialReasons((reasonRows || []).map(mapTrialReason));
+      setVolumeBrackets((bracketRows || []).map(mapVolumeBracket));
+      if (settingsRows && settingsRows.length > 0) {
+        const s = mapSystemSettings(settingsRows[0]);
+        setSystemSettings(s);
+        setOilTypeOptions(s.oilTypeOptions || []);
+      }
+      setDataLoaded(true);
+    };
+    fetchAll();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Keep demoLoaded alias so the rest of the file compiles without changes
+  const demoLoaded = dataLoaded;
+  const loadDemoData = () => {};
+  const clearDemoData = () => {};
+
+  // ── Supabase-aware state wrappers ──
+  // These intercept prev => ... updater calls, detect create/update/delete,
+  // persist to Supabase, then update local state with real DB data.
+
+  const makeDbSetter = useCallback((rawSet, table, mapper, unMapper) => {
+    return (updaterOrValue) => {
+      if (typeof updaterOrValue === 'function') {
+        // Wrap the updater: run it, diff against prev, and persist changes
+        rawSet(prev => {
+          const next = updaterOrValue(prev);
+
+          // DETECT CREATE — new items (present in next, not in prev)
+          const prevIds = new Set(prev.map(i => i.id));
+          const added = next.filter(i => !prevIds.has(i.id));
+          added.forEach(item => {
+            const row = unMapper(item);
+            supabase.from(table).insert(row).select().then(({ data, error }) => {
+              if (!error && data && data.length > 0) {
+                const mapped = mapper(data[0]);
+                // Replace the temp-id item with the real DB item
+                rawSet(p => p.map(i => i.id === item.id ? mapped : i));
+              }
+            });
+          });
+
+          // DETECT UPDATE — items with same id but changed content
+          const prevMap = Object.fromEntries(prev.map(i => [i.id, i]));
+          const updated = next.filter(i => prevIds.has(i.id) && i !== prevMap[i.id]);
+          updated.forEach(item => {
+            // Skip temp-id items (they're handled by create above)
+            if (String(item.id).match(/^(comp|oil|v|g|u|r)-/)) return;
+            const row = unMapper(item);
+            supabase.from(table).update(row).eq('id', item.id).then(({ error }) => {
+              if (error) console.error(`Update ${table} failed:`, error);
+            });
+          });
+
+          // DETECT DELETE — items in prev not in next
+          const nextIds = new Set(next.map(i => i.id));
+          const removed = prev.filter(i => !nextIds.has(i.id));
+          removed.forEach(item => {
+            if (String(item.id).match(/^(comp|oil|v|g|u|r)-/)) return;
+            supabase.from(table).delete().eq('id', item.id).then(({ error }) => {
+              if (error) console.error(`Delete ${table} failed:`, error);
+            });
+          });
+
+          return next;
+        });
+      } else {
+        rawSet(updaterOrValue);
+      }
+    };
+  }, []);
+
+  const dbSetCompetitors = useCallback(
+    makeDbSetter(setCompetitors, 'competitors', mapCompetitor, unMapCompetitor),
+    [makeDbSetter]
+  );
+  const dbSetOilTypes = useCallback(
+    makeDbSetter(setOilTypes, 'oil_types', mapOilType, unMapOilType),
+    [makeDbSetter]
+  );
+  const dbSetVenues = useCallback(
+    makeDbSetter(setVenues, 'venues', mapVenue, unMapVenue),
+    [makeDbSetter]
+  );
+  const dbSetGroups = useCallback(
+    makeDbSetter(setGroups, 'groups', mapGroup, unMapGroup),
+    [makeDbSetter]
+  );
+  const dbSetUsers = useCallback(
+    makeDbSetter(setUsers, 'profiles', mapProfile, unMapProfile),
+    [makeDbSetter]
+  );
+  const dbSetTpmReadings = useCallback(
+    makeDbSetter(setTpmReadings, 'tpm_readings', mapReading, unMapReading),
+    [makeDbSetter]
+  );
+
+  // Config tables — simpler wrappers
+  const dbSetTrialReasons = useCallback((updater) => {
+    if (typeof updater === 'function') {
+      setTrialReasons(prev => {
+        const next = updater(prev);
+        const prevKeys = new Set(prev.map(r => r.key));
+        const added = next.filter(r => !prevKeys.has(r.key));
+        added.forEach(r => { supabase.from('trial_reasons').insert(r); });
+        const nextKeys = new Set(next.map(r => r.key));
+        const removed = prev.filter(r => !nextKeys.has(r.key));
+        removed.forEach(r => { supabase.from('trial_reasons').delete().eq('key', r.key); });
+        return next;
+      });
+    } else { setTrialReasons(updater); }
+  }, []);
+
+  const dbSetVolumeBrackets = useCallback((updater) => {
+    if (typeof updater === 'function') {
+      setVolumeBrackets(prev => {
+        const next = updater(prev);
+        const prevKeys = new Set(prev.map(b => b.key));
+        const added = next.filter(b => !prevKeys.has(b.key));
+        added.forEach(b => { supabase.from('volume_brackets').insert(b); });
+        const nextKeys = new Set(next.map(b => b.key));
+        const removed = prev.filter(b => !nextKeys.has(b.key));
+        removed.forEach(b => { supabase.from('volume_brackets').delete().eq('key', b.key); });
+        return next;
+      });
+    } else { setVolumeBrackets(updater); }
+  }, []);
+
+  const dbSetSystemSettings = useCallback((updater) => {
+    if (typeof updater === 'function') {
+      setSystemSettings(prev => {
+        const next = updater(prev);
+        supabase.from('system_settings').update(unMapSystemSettings(next)).eq('id', 1);
+        return next;
+      });
+    } else {
+      setSystemSettings(updater);
+      supabase.from('system_settings').update(unMapSystemSettings(updater)).eq('id', 1);
+    }
+  }, []);
+
+  const dbSetOilTypeOptions = useCallback((updater) => {
+    if (typeof updater === 'function') {
+      setOilTypeOptions(prev => {
+        const next = updater(prev);
+        supabase.from('system_settings').update({ oil_type_options: next }).eq('id', 1);
+        return next;
+      });
+    } else {
+      setOilTypeOptions(updater);
+      supabase.from('system_settings').update({ oil_type_options: updater }).eq('id', 1);
+    }
+  }, []);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
   // currentView controls which role interface is shown in the role switcher.
@@ -4055,9 +4230,9 @@ export default function FrysmartAdminPanel() {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={setOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} />;
-      case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={setCompetitors} oilTypes={oilTypes} setOilTypes={setOilTypes} oilTypeOptions={oilTypeOptions} />;
-      case 'trials': return <TrialManagement venues={venues} setVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={setTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} />;
+      case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} />;
+      case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} />;
+      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} />;
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [
@@ -4798,12 +4973,12 @@ export default function FrysmartAdminPanel() {
           </div>
         );
       })();
-      case 'venues': return <VenueManagement venues={venues} setVenues={setVenues} oilTypes={oilTypes} groups={groups} competitors={competitors} users={users} setActiveSection={setActiveSection} isDesktop={isDesktop} autoOpenForm={quickActionForm === 'venues'} clearAutoOpen={() => setQuickActionForm(null)} />;
-      case 'groups': return <GroupManagement groups={groups} setGroups={setGroups} venues={venues} setVenues={setVenues} users={users} oilTypes={oilTypes} competitors={competitors} autoOpenForm={quickActionForm === 'groups'} clearAutoOpen={() => setQuickActionForm(null)} />;
-      case 'users': return <UserManagement users={users} setUsers={setUsers} venues={venues} groups={groups} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} />;
+      case 'venues': return <VenueManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} groups={groups} competitors={competitors} users={users} setActiveSection={setActiveSection} isDesktop={isDesktop} autoOpenForm={quickActionForm === 'venues'} clearAutoOpen={() => setQuickActionForm(null)} />;
+      case 'groups': return <GroupManagement groups={groups} setGroups={dbSetGroups} venues={venues} setVenues={dbSetVenues} users={users} oilTypes={oilTypes} competitors={competitors} autoOpenForm={quickActionForm === 'groups'} clearAutoOpen={() => setQuickActionForm(null)} />;
+      case 'users': return <UserManagement users={users} setUsers={dbSetUsers} venues={venues} groups={groups} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} />;
       case 'permissions': return <PermissionsAccess users={users} />;
-      case 'onboarding': return <OnboardingFlow oilTypes={oilTypes} venues={venues} groups={groups} users={users} setVenues={setVenues} setGroups={setGroups} setUsers={setUsers} defaultFryerCount={systemSettings.defaultFryerCount} />;
-      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={setTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={setVolumeBrackets} systemSettings={systemSettings} setSystemSettings={setSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={setOilTypeOptions} demoLoaded={demoLoaded} loadDemoData={loadDemoData} clearDemoData={clearDemoData} />;
+      case 'onboarding': return <OnboardingFlow oilTypes={oilTypes} venues={venues} groups={groups} users={users} setVenues={dbSetVenues} setGroups={dbSetGroups} setUsers={dbSetUsers} defaultFryerCount={systemSettings.defaultFryerCount} />;
+      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} demoLoaded={demoLoaded} loadDemoData={loadDemoData} clearDemoData={clearDemoData} />;
       default: return (
         <div>
           <SectionHeader icon={BarChart3} title="Admin Overview" />
