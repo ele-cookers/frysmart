@@ -2165,7 +2165,7 @@ const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTi
   );
 };
 
-const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime }) => {
+const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [search, setSearch] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
@@ -3042,7 +3042,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                       const freshOil = parseInt(fdata.oilAge) === 1;
                       return {
                         id: `r-${Date.now()}-${n}`,
-                        venueId: t.id, fryerNumber: n, readingDate: readingForm.date, takenBy: null,
+                        venueId: t.id, fryerNumber: n, readingDate: readingForm.date, takenBy: currentUser?.id || null,
                         notInUse: fdata.notInUse || false,
                         oilAge: fdata.notInUse ? null : parseInt(fdata.oilAge),
                         litresFilled: (!fdata.notInUse && freshOil) ? parseFloat(fdata.litresFilled) : null,
@@ -3973,7 +3973,7 @@ const TRIAL_REASONS = [
 ];
 
 // ==================== MAIN ADMIN PANEL ====================
-export default function FrysmartAdminPanel() {
+export default function FrysmartAdminPanel({ currentUser }) {
   const [activeSection, setActiveSection] = useState('overview');
   const [overviewBdmState, setOverviewBdmState] = useState('all');
   const [matrixSort, setMatrixSort] = useState({ col: null, asc: false });
@@ -4232,7 +4232,7 @@ export default function FrysmartAdminPanel() {
     switch (activeSection) {
       case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} />;
       case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} />;
-      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} />;
+      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} />;
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [
@@ -5552,7 +5552,7 @@ export default function FrysmartAdminPanel() {
 
             {/* Logout */}
             <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
-              <button onClick={() => { if (window.confirm('Are you sure you want to log out?')) { window.location.href = '/login'; } }} style={{
+              <button onClick={() => { if (window.confirm('Are you sure you want to log out?')) { supabase.auth.signOut(); } }} style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 padding: '9px', borderRadius: '8px', border: '1px solid #fca5a5',
                 background: '#fff5f5', fontSize: '12px', fontWeight: '600', color: '#dc2626',
@@ -5754,7 +5754,7 @@ export default function FrysmartAdminPanel() {
               </div>
               {/* Logout (mobile) */}
               <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
-                <button onClick={() => { if (window.confirm('Are you sure you want to log out?')) { window.location.href = '/login'; } }} style={{
+                <button onClick={() => { if (window.confirm('Are you sure you want to log out?')) { supabase.auth.signOut(); } }} style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5',
                   background: '#fff5f5', fontSize: '13px', fontWeight: '600', color: '#dc2626', cursor: 'pointer'

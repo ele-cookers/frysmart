@@ -1,35 +1,66 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
+import { mapProfile } from './lib/mappers';
+import Login from './screens/Login';
+import FrysmartAdminPanel from './screens/FrysmartAdminPanel';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [session, setSession] = useState(undefined); // undefined = loading, null = no session
+  const [currentUser, setCurrentUser] = useState(null);
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      if (s?.user) loadProfile(s.user.id);
+    });
+
+    // Listen for auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      if (s?.user) {
+        loadProfile(s.user.id);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (!error && data) {
+      setCurrentUser(mapProfile(data));
+      // Update last_active
+      supabase.from('profiles').update({ last_active: new Date().toISOString().split('T')[0] }).eq('id', userId);
+    }
+  };
+
+  // Loading state
+  if (session === undefined) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#0f172a', color: '#94a3b8', fontSize: '14px',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}>
+        Loading...
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    );
+  }
+
+  // No session → login
+  if (!session) {
+    return <Login />;
+  }
+
+  // Authenticated → admin panel
+  return <FrysmartAdminPanel currentUser={currentUser} />;
 }
 
-export default App
+export default App;
