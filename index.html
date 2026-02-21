@@ -11,14 +11,50 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <style>html,body{background:#1a428a}#root{background:#1a428a;min-height:100vh}</style>
+    <style>
+      html, body { background: #1a428a; margin: 0; }
+      #root { background: #1a428a; min-height: 100vh; }
+      /* ── Splash screen (outside React) ── */
+      #splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 24px; padding-bottom: 20vh;
+        background: #1a428a;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        transition: opacity 0.3s ease;
+      }
+      #splash.hidden { opacity: 0; pointer-events: none; }
+      #splash img {
+        width: 100px; height: 100px; object-fit: contain;
+        animation: cookersPulse 1.6s ease-in-out infinite;
+      }
+      #splash .dots { color: #cbd5e1; font-size: 16px; font-weight: 500; letter-spacing: 0.5px; }
+      #splash .dots span { opacity: 0; animation: dotFlash 1.4s infinite; }
+      #splash .dots span:nth-child(1) { animation-delay: 0s; }
+      #splash .dots span:nth-child(2) { animation-delay: 0.3s; }
+      #splash .dots span:nth-child(3) { animation-delay: 0.6s; }
+      @keyframes cookersPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+      @keyframes dotFlash {
+        0%, 20% { opacity: 0; }
+        40%, 100% { opacity: 1; }
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
   </head>
   <body style="background:#1a428a;">
-    <div id="root" style="background:#1a428a;min-height:100vh;"></div>
+    <!-- Splash screen: lives outside #root, React never touches it -->
+    <div id="splash">
+      <img src="/images/Cookers drop icon.png" alt="Loading" />
+      <div class="dots">Loading<span>.</span><span>.</span><span>.</span></div>
+    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
