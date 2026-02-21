@@ -21,13 +21,6 @@ const LoadingScreen = () => (
         0%, 100% { transform: scale(1); opacity: 0.9; }
         50% { transform: scale(1.08); opacity: 1; }
       }
-      @keyframes cookersSpin {
-        0% { transform: scale(1) rotate(0deg); opacity: 0.9; }
-        4% { transform: scale(1.08) rotate(0deg); opacity: 1; }
-        16% { transform: scale(1.08) rotate(360deg); opacity: 1; }
-        20% { transform: scale(1) rotate(360deg); opacity: 0.9; }
-        100% { transform: scale(1) rotate(360deg); opacity: 0.9; }
-      }
       @keyframes dotFlash {
         0%, 20% { opacity: 0; }
         40%, 100% { opacity: 1; }
@@ -38,7 +31,7 @@ const LoadingScreen = () => (
       alt="Loading"
       style={{
         width: '90px', height: '90px', objectFit: 'contain',
-        animation: 'cookersPulse 1.6s ease-in-out infinite, cookersSpin 15s ease-in-out infinite',
+        animation: 'cookersPulse 1.6s ease-in-out infinite',
       }}
     />
     <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
