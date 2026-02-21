@@ -574,7 +574,7 @@ const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
               trialStatus: outcome === 'won' ? 'accepted' : outcome,
               trialReason: form.reason,
               outcomeDate: form.outcomeDate,
-              trialNotes: form.notes,
+              trialNotes: [venue.trialNotes, form.notes ? `[${outcome === 'won' ? 'Won' : 'Lost'} ${form.outcomeDate}] ${form.notes}` : ''].filter(Boolean).join('\n'),
               ...(isWon ? { soldPricePerLitre: parseFloat(form.soldPrice) } : {}),
             })} style={{ flex: 1, padding: '10px', background: canSubmit ? (isWon ? '#10b981' : '#ef4444') : '#94a3b8', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
               {isWon ? 'Mark as Won' : 'Mark as Lost'}
@@ -771,7 +771,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
       <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '95vw' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
-      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 480px', overflowY: 'auto', maxHeight: '94vh' } : {}}>
+      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 400px', overflowY: 'auto', maxHeight: '94vh' } : {}}>
 
         {/* Header */}
         <div style={{
@@ -1094,18 +1094,18 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         );
 
         return (
-          <div style={{ flex: '1 1 auto', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', overflowX: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+          <div style={{ flex: '0 0 530px', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', overflowX: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days • {fryerCount} fryer{fryerCount > 1 ? 's' : ''}</div>
             </div>
             {/* Stats summary */}
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
                 {trialStats.map(st => (
-                  <div key={st.label} style={{ background: '#f8fafc', borderRadius: '8px', padding: '6px 8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '800', color: st.color || '#1f2937', lineHeight: 1.2 }}>{st.value}{st.suffix && st.value !== '—' ? st.suffix : ''}</div>
-                    <div style={{ fontSize: '8px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: '2px' }}>{st.label}</div>
+                  <div key={st.label} style={{ background: '#f8fafc', borderRadius: '6px', padding: '4px 6px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: st.color || '#1f2937', lineHeight: 1.2 }}>{st.value}{st.suffix && st.value !== '—' ? st.suffix : ''}</div>
+                    <div style={{ fontSize: '7px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.2px', marginTop: '1px' }}>{st.label}</div>
                   </div>
                 ))}
               </div>
@@ -1127,6 +1127,78 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Right column — Notes Timeline */}
+      {isDesktop && calendarData.hasData && (() => {
+        // Build notes timeline from all sources
+        const notes = [];
+        // 1. Creation notes from trialNotes (first line is ID/city, rest are notes)
+        if (venue.trialNotes) {
+          const lines = venue.trialNotes.split('\n');
+          lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+            // Check if it's a tagged note like "[Won 2026-01-20] ..."
+            const tagMatch = trimmed.match(/^\[(Won|Lost)\s+(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
+            if (tagMatch) {
+              notes.push({ date: tagMatch[2], type: tagMatch[1] === 'Won' ? 'outcome-won' : 'outcome-lost', text: tagMatch[3] || `Marked as ${tagMatch[1]}` });
+            } else if (trimmed.startsWith('TRL-')) {
+              // Creation note — extract any text after the ID line
+              const afterId = trimmed.replace(/^TRL-\d+(\s*\|[^|]*)?/, '').trim();
+              if (afterId) notes.push({ date: venue.trialStartDate || venue.createdAt?.slice(0, 10) || '', type: 'creation', text: afterId });
+            } else {
+              notes.push({ date: venue.trialStartDate || '', type: 'creation', text: trimmed });
+            }
+          });
+        }
+        // 2. Reading notes
+        venueReadings.filter(r => r.notes && r.notes.trim()).forEach(r => {
+          notes.push({ date: r.readingDate, type: 'reading', text: r.notes.trim(), fryer: r.fryerNumber });
+        });
+        // Sort by date
+        notes.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+        const typeConfig = {
+          creation: { label: 'Trial Created', color: '#1a428a', bg: 'rgba(26,66,138,0.06)' },
+          reading: { label: 'Reading Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
+          'outcome-won': { label: 'Won', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
+          'outcome-lost': { label: 'Lost', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
+        };
+
+        return (
+          <div style={{ flex: '0 0 260px', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: 'white' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Notes</div>
+              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{notes.length} note{notes.length !== 1 ? 's' : ''}</div>
+            </div>
+            <div style={{ padding: '8px 12px' }}>
+              {notes.length > 0 ? notes.map((n, i) => {
+                const cfg = typeConfig[n.type] || typeConfig.creation;
+                return (
+                  <div key={i} style={{ marginBottom: '10px', position: 'relative', paddingLeft: '14px' }}>
+                    {/* Timeline dot + line */}
+                    <div style={{ position: 'absolute', left: 0, top: '4px', width: '8px', height: '8px', borderRadius: '50%', background: cfg.color, border: '2px solid white', boxShadow: '0 0 0 1px ' + cfg.color }} />
+                    {i < notes.length - 1 && <div style={{ position: 'absolute', left: '3px', top: '14px', bottom: '-6px', width: '2px', background: '#e2e8f0' }} />}
+                    <div style={{ background: cfg.bg, borderRadius: '8px', padding: '8px 10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{cfg.label}</span>
+                        {n.date && <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '500' }}>{displayDate(n.date)}</span>}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#1f2937', lineHeight: '1.4' }}>{n.text}</div>
+                      {n.fryer && <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>Fryer {n.fryer}</div>}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <MessageSquare size={20} color="#cbd5e1" style={{ marginBottom: '6px' }} />
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>No notes yet</div>
+                </div>
+              )}
             </div>
           </div>
         );
