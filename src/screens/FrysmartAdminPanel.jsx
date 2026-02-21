@@ -10,7 +10,13 @@ import {
   mapTrialReason, mapVolumeBracket,
   mapSystemSettings, unMapSystemSettings,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Shield, Droplets, Archive, Filter, Copy, Layers, UserPlus, CheckCircle, BarChart3, Globe, Lock, RefreshCw, Zap, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, Repeat2 } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Shield, Droplets, Archive, Filter, Copy, Layers, UserPlus, CheckCircle, BarChart3, Globe, RefreshCw, Zap, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, Palette, RotateCcw } from 'lucide-react';
+import {
+  HEADER_BADGE_COLORS, ROLE_COLORS, STATE_BADGE_COLORS, STATE_COLOURS,
+  STATUS_COLORS, OIL_TIER_COLORS, COMPETITOR_TIER_COLORS, CODE_BADGE_COLORS,
+  TRIAL_STATUS_COLORS, VOLUME_BRACKET_COLORS,
+  getThemeColors, THEME_CATEGORIES, getEntryLabel,
+} from '../lib/badgeConfig';
 
 const hideScrollbarCSS = `
   .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -86,15 +92,6 @@ const ROLE_LABELS = {
   admin: 'ADMIN',
 };
 
-const ROLE_COLORS = {
-  mgt: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },             // red
-  admin: { bg: '#fce7f3', text: '#9d174d', border: '#f9a8d4' },           // pink
-  state_manager: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },   // yellow
-  nam: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },             // blue
-  bdm: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' },             // green
-  staff: { bg: '#ffedd5', text: '#9a3412', border: '#fdba74' },           // orange
-};
-
 const ROLE_PERMISSIONS = {
   bdm: 'Own assigned venues & trials',
   nam: 'BDM & venue data for their groups',
@@ -103,40 +100,7 @@ const ROLE_PERMISSIONS = {
   admin: 'Everything — full system access',
 };
 
-const OIL_TIER_COLORS = {
-  elite: { bg: '#e6f9ff', text: '#0a8a9e', border: '#33ccff' },
-  premium: { bg: '#fff0eb', text: '#cc4400', border: '#ff6633' },
-  standard: { bg: '#f0f9e8', text: '#5a7a1a', border: '#99cc33' },
-};
-
-const STATE_BADGE_COLORS = {
-  VIC: { color: '#0369a1', bg: '#e0f2fe' },
-  NSW: { color: '#dc2626', bg: '#fee2e2' },
-  QLD: { color: '#7c3aed', bg: '#ede9fe' },
-  SA: { color: '#a16207', bg: '#fef9c3' },
-  WA: { color: '#ea580c', bg: '#fff7ed' },
-  TAS: { color: '#15803d', bg: '#dcfce7' },
-  NT: { color: '#64748b', bg: '#f1f5f9' },
-  ACT: { color: '#64748b', bg: '#f1f5f9' },
-};
-
-const STATE_COLOURS = {
-  VIC: '#0ea5e9',
-  NSW: '#ef4444',
-  QLD: '#8b5cf6',
-  SA: '#eab308',
-  WA: '#f97316',
-  TAS: '#22c55e',
-  NT: '#64748b',
-  ACT: '#64748b',
-};
-
 // ==================== SHARED COMPONENTS ====================
-const COMPETITOR_TIER_COLORS = {
-  standard: { bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1' },
-  premium: { bg: '#e2e8f0', text: '#64748b', border: '#94a3b8' },
-  elite: { bg: '#cbd5e1', text: '#1f2937', border: '#64748b' },
-};
 
 const PACK_SIZES = [
   { key: 'bulk', label: 'BULK' },
@@ -151,19 +115,15 @@ const FOOD_TYPES = [
   'Plain Proteins', 'Pastries/Donuts', 'High Starch', 'Mixed Service',
 ];
 
-const VOLUME_BRACKETS = [
-  { key: 'under-60', label: 'UNDER 60L', color: '#10b981' },
-  { key: '60-100', label: '60 - 100L', color: '#eab308' },
-  { key: '100-150', label: '100 - 150L', color: '#f97316' },
-  { key: '150-plus', label: '150L+', color: '#ef4444' },
-];
+const VOLUME_BRACKETS = VOLUME_BRACKET_COLORS;
 
-const OilBadge = ({ oil, competitors, compact }) => {
+const OilBadge = ({ oil, competitors, compact, theme }) => {
   if (!oil) return <span style={{ fontSize: '11px', color: '#cbd5e1' }}>—</span>;
   const isCompetitor = oil.category === 'competitor';
+  const tierSrc = theme || {};
   const s = isCompetitor
-    ? (COMPETITOR_TIER_COLORS[oil.tier] || COMPETITOR_TIER_COLORS.standard)
-    : (OIL_TIER_COLORS[oil.tier] || OIL_TIER_COLORS.standard);
+    ? (tierSrc.COMPETITOR_TIER_COLORS?.[oil.tier] || COMPETITOR_TIER_COLORS[oil.tier] || COMPETITOR_TIER_COLORS.standard)
+    : (tierSrc.OIL_TIER_COLORS?.[oil.tier] || OIL_TIER_COLORS[oil.tier] || OIL_TIER_COLORS.standard);
   const comp = isCompetitor && competitors ? competitors.find(c => c.id === oil.competitorId) : null;
   if (compact) {
     // Table cell — single pill, oil name only
@@ -188,35 +148,26 @@ const OilBadge = ({ oil, competitors, compact }) => {
   );
 };
 
-const StatusBadge = ({ status }) => {
-  const configs = {
-    active: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7', label: 'ACTIVE' },
-    inactive: { bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1', label: 'INACTIVE' },
-  };
-  const c = configs[status] || configs.active;
+const StatusBadge = ({ status, theme }) => {
+  const c = (theme?.STATUS_COLORS?.[status]) || STATUS_COLORS[status] || STATUS_COLORS.active;
   return (
     <span style={{
       padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
       background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: '0.3px',
       whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center'
-    }}>{c.label}</span>
+    }}>{getEntryLabel(null, 'STATUS_COLORS', status)}</span>
   );
 };
 
-const RoleBadge = ({ role }) => {
-  const c = ROLE_COLORS[role] || ROLE_COLORS.staff;
+const RoleBadge = ({ role, theme }) => {
+  const c = (theme?.ROLE_COLORS?.[role]) || ROLE_COLORS[role] || ROLE_COLORS.staff;
   return (
     <span style={{
       padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
       background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: '0.3px',
       whiteSpace: 'nowrap', display: 'inline-block', minWidth: '90px', textAlign: 'center'
-    }}>{ROLE_LABELS[role] || role}</span>
+    }}>{getEntryLabel(null, 'ROLE_COLORS', role)}</span>
   );
-};
-
-const CODE_BADGE_COLORS = {
-  default: { color: '#1a428a', background: '#e8eef6' },
-  charcoal: { color: '#64748b', background: '#f1f5f9' },
 };
 
 const CodeBadge = ({ code, minWidth = '42px', variant = 'default' }) => {
@@ -231,9 +182,9 @@ const CodeBadge = ({ code, minWidth = '42px', variant = 'default' }) => {
   );
 };
 
-const StateBadge = ({ state }) => {
+const StateBadge = ({ state, theme }) => {
   if (!state) return <span style={{ color: '#cbd5e1' }}>—</span>;
-  const c = STATE_BADGE_COLORS[state] || { color: '#64748b', bg: '#f1f5f9' };
+  const c = (theme?.STATE_BADGE_COLORS?.[state]) || STATE_BADGE_COLORS[state] || { color: '#64748b', bg: '#f1f5f9' };
   return (
     <span style={{
       fontSize: '10px', fontWeight: '700', color: c.color, background: c.bg,
@@ -583,10 +534,11 @@ const CompetitorPill = ({ comp, table }) => {
   );
 };
 
-const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions }) => {
+const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions, theme }) => {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', category: 'cookers', tier: 'standard', oilType: '', packSize: 'bulk', status: 'active' });
   const colFilters = useColumnFilters();
 
@@ -606,13 +558,19 @@ const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions }) =
     return data;
   })();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.code) return;
     const cleaned = { ...form, name: form.name.trim().toUpperCase(), code: form.code.trim().toUpperCase() };
     if (editing) {
+      const row = unMapOilType(cleaned);
+      const { error: updateErr } = await supabase.from('oil_types').update(row).eq('id', editing);
+      if (updateErr) { alert('Failed to update oil type: ' + updateErr.message); return; }
       setOilTypes(prev => prev.map(o => o.id === editing ? { ...o, ...cleaned } : o));
     } else {
-      setOilTypes(prev => [...prev, { ...cleaned, id: `oil-${Date.now()}`, category: 'cookers' }]);
+      const row = unMapOilType({ ...cleaned, category: 'cookers' });
+      const { data: inserted, error: insertErr } = await supabase.from('oil_types').insert(row).select().single();
+      if (insertErr) { alert('Failed to create oil type: ' + insertErr.message); return; }
+      setOilTypes(prev => [...prev, mapOilType(inserted)]);
     }
     setShowForm(false);
     setEditing(null);
@@ -667,13 +625,18 @@ const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions }) =
                     </td>
                     <td style={{ textAlign: 'center', color: '#64748b', textTransform: 'uppercase' }}>{oil.oilType || <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                     <td style={{ textAlign: 'center', color: '#64748b' }}>{oil.packSize ? (PACK_SIZES.find(p => p.key === oil.packSize)?.label || oil.packSize) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                    <td style={{ textAlign: 'center' }}><StatusBadge status={oil.status} /></td>
+                    <td style={{ textAlign: 'center' }}><StatusBadge theme={theme} status={oil.status} /></td>
                     <td>
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                         <button onClick={() => handleEdit(oil)} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
                         <button onClick={() => toggleStatus(oil.id)} style={{ padding: '6px', background: oil.status === 'active' ? '#fee2e2' : '#d1fae5', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {oil.status === 'active' ? <Archive size={13} color="#ef4444" /> : <RefreshCw size={13} color="#10b981" />}
                         </button>
+                        {oil.status === 'inactive' && (
+                          <button onClick={() => setDeleteConfirm(oil.id)} style={{ padding: '6px', background: '#fee2e2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete permanently">
+                            <Trash2 size={13} color="#ef4444" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -752,12 +715,35 @@ const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions }) =
           </div>
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (() => {
+        const oil = oilTypes.find(o => o.id === deleteConfirm);
+        if (!oil) return null;
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', maxWidth: '400px', width: '100%', padding: '24px', textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <AlertTriangle size={24} color="#ef4444" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px' }}>Delete "{oil.name}"?</h3>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px', lineHeight: '1.5' }}>
+                This will permanently remove this oil type. Venues currently using it will have their oil reference cleared. This cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, padding: '10px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => { setOilTypes(prev => prev.filter(o => o.id !== deleteConfirm)); setDeleteConfirm(null); }} style={{ flex: 1, padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Delete Permanently</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
 
 // ==================== COMPETITOR MANAGEMENT ====================
-const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTypes, oilTypeOptions }) => {
+const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTypes, oilTypeOptions, theme }) => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', status: 'active', type: 'direct', states: [], color: '' });
@@ -784,22 +770,41 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
   const toggleState = (st) => setForm(f => ({ ...f, states: f.states.includes(st) ? f.states.filter(s => s !== st) : [...f.states, st] }));
 
   const startEdit = (comp) => { setForm({ name: comp.name, code: comp.code || '', status: comp.status, type: comp.type || 'direct', states: comp.states || [], color: comp.color || '' }); setEditing(comp.id); setShowForm(true); };
-  const save = () => {
+  const save = async () => {
     if (!form.name.trim()) return;
     const now = new Date().toISOString().split('T')[0];
     const cleaned = { ...form, name: form.name.trim().toUpperCase(), code: form.code ? form.code.trim().toUpperCase() : '' };
-    if (editing) { setCompetitors(prev => prev.map(c => c.id === editing ? { ...c, ...cleaned, updatedAt: now } : c)); }
-    else { setCompetitors(prev => [...prev, { id: `comp-${Date.now()}`, ...cleaned, createdAt: now, updatedAt: now }]); }
+    if (editing) {
+      const row = unMapCompetitor(cleaned);
+      const { error: updateErr } = await supabase.from('competitors').update(row).eq('id', editing);
+      if (updateErr) { alert('Failed to update competitor: ' + updateErr.message); return; }
+      setCompetitors(prev => prev.map(c => c.id === editing ? { ...c, ...cleaned, updatedAt: now } : c));
+    } else {
+      const row = unMapCompetitor({ ...cleaned });
+      const { data: inserted, error: insertErr } = await supabase.from('competitors').insert(row).select().single();
+      if (insertErr) { alert('Failed to create competitor: ' + insertErr.message); return; }
+      setCompetitors(prev => [...prev, mapCompetitor(inserted)]);
+    }
     setShowForm(false); setEditing(null); setForm({ name: '', code: '', status: 'active', type: 'direct', states: [], color: '' });
   };
 
   const startOilEdit = (oil) => { setOilForm({ name: oil.name, code: oil.code || '', tier: oil.tier || 'standard', oilType: oil.oilType || '', packSize: oil.packSize || '', status: oil.status }); setEditingOil(oil.id); setShowOilForm(true); };
-  const saveOil = (compId) => {
+  const saveOil = async (compId) => {
     if (!oilForm.name.trim()) return;
     const cleanedName = oilForm.name.trim().toUpperCase();
     const cleanedCode = oilForm.code ? oilForm.code.trim().toUpperCase() : '';
-    if (editingOil) { setOilTypes(prev => prev.map(o => o.id === editingOil ? { ...o, name: cleanedName, code: cleanedCode, tier: oilForm.tier, oilType: oilForm.oilType, packSize: oilForm.packSize, status: oilForm.status } : o)); }
-    else { setOilTypes(prev => [...prev, { id: `oil-${Date.now()}`, name: cleanedName, code: cleanedCode, category: 'competitor', competitorId: compId, tier: oilForm.tier, oilType: oilForm.oilType, packSize: oilForm.packSize, status: oilForm.status }]); }
+    const cleaned = { name: cleanedName, code: cleanedCode, tier: oilForm.tier, oilType: oilForm.oilType, packSize: oilForm.packSize, status: oilForm.status };
+    if (editingOil) {
+      const row = unMapOilType(cleaned);
+      const { error: updateErr } = await supabase.from('oil_types').update(row).eq('id', editingOil);
+      if (updateErr) { alert('Failed to update oil type: ' + updateErr.message); return; }
+      setOilTypes(prev => prev.map(o => o.id === editingOil ? { ...o, ...cleaned } : o));
+    } else {
+      const row = unMapOilType({ ...cleaned, category: 'competitor', competitorId: compId });
+      const { data: inserted, error: insertErr } = await supabase.from('oil_types').insert(row).select().single();
+      if (insertErr) { alert('Failed to create oil type: ' + insertErr.message); return; }
+      setOilTypes(prev => [...prev, mapOilType(inserted)]);
+    }
     setShowOilForm(false); setEditingOil(null); setOilForm({ name: '', code: '', tier: 'standard', oilType: '', packSize: '', status: 'active' });
   };
 
@@ -897,7 +902,7 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
                   </div>
                 </td>}
                 {colVis('oils') && <td style={{ textAlign: 'center', fontWeight: '600', color: '#1f2937' }}>{compOils.length}</td>}
-                {colVis('status') && <td style={{ textAlign: 'center' }}><StatusBadge status={comp.status} /></td>}
+                {colVis('status') && <td style={{ textAlign: 'center' }}><StatusBadge theme={theme} status={comp.status} /></td>}
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <button onClick={(e) => { e.stopPropagation(); startEdit(comp); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
@@ -937,7 +942,7 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
                                 </td>
                                 <td style={{ padding: '7px 10px', textAlign: 'center', color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' }}>{oil.oilType || <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                                 <td style={{ padding: '7px 10px', textAlign: 'center', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>{oil.packSize ? (PACK_SIZES.find(p => p.key === oil.packSize)?.label || oil.packSize) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                                <td style={{ padding: '7px 10px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><StatusBadge status={oil.status} /></td>
+                                <td style={{ padding: '7px 10px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><StatusBadge theme={theme} status={oil.status} /></td>
                                 <td style={{ padding: '7px 6px', borderBottom: '1px solid #f1f5f9' }}>
                                   <button onClick={() => startOilEdit(oil)} style={{ background: '#f1f5f9', border: 'none', cursor: 'pointer', padding: '5px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={12} color="#94a3b8" /></button>
                                 </td>
@@ -1015,7 +1020,7 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
               <div style={{ display: 'flex', gap: '6px' }}>
                 {ALL_STATES.map(st => {
                   const selected = form.states.includes(st);
-                  const sc = STATE_BADGE_COLORS[st] || { color: '#64748b', bg: '#f1f5f9' };
+                  const sc = theme?.STATE_BADGE_COLORS?.[st] || STATE_BADGE_COLORS[st] || { color: '#64748b', bg: '#f1f5f9' };
                   return (
                     <button key={st} onClick={() => toggleState(st)} style={{
                       flex: 1, padding: '6px 0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', textAlign: 'center',
@@ -1140,32 +1145,41 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
 };
 
 // ==================== VENUE MANAGEMENT ====================
-const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, users, setActiveSection, isDesktop, autoOpenForm, clearAutoOpen }) => {
+const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, competitors, users, setUsers, rawSetUsers, setActiveSection, isDesktop, autoOpenForm, clearAutoOpen, onPreviewVenue, theme }) => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');
   const [sortByTpm, setSortByTpm] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState(null);
-  const [form, setForm] = useState({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '' });
+  const [form, setForm] = useState({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '' });
 
   useEffect(() => {
-    if (autoOpenForm) { setForm({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '' }); setEditing(null); setShowForm(true); clearAutoOpen(); }
+    if (autoOpenForm) { setForm({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '' }); setEditing(null); setShowForm(true); clearAutoOpen(); }
   }, [autoOpenForm]);
   const colFilters = useColumnFilters();
+
+  const getUserName = makeGetUserName(users, true);
+  const getGroupNam = (venueGroupId) => {
+    if (!venueGroupId) return '';
+    const grp = groups.find(g => g.id === venueGroupId);
+    return grp?.namId ? getUserName(grp.namId) : '';
+  };
 
   const VENUE_COLS = [
     { key: 'name', label: 'Venue Name', locked: true },
     { key: 'code', label: 'Cust Code' },
     { key: 'group', label: 'Group Name' },
     { key: 'groupCode', label: 'Group Code' },
+    { key: 'bdm', label: 'BDM' },
+    { key: 'nam', label: 'NAM' },
     { key: 'state', label: 'State' },
     { key: 'oil', label: 'Main Oil' },
     { key: 'volume', label: 'Vol Bracket' },
     { key: 'fryers', label: 'Fryers' },
     { key: 'tpm', label: 'Last TPM' },
   ];
-  const [visibleCols, setVisibleCols] = useState(VENUE_COLS.filter(c => c.key !== 'groupCode').map(c => c.key));
+  const [visibleCols, setVisibleCols] = useState(VENUE_COLS.filter(c => c.key !== 'groupCode' && c.key !== 'volume').map(c => c.key));
   const colVis = (key) => visibleCols.includes(key);
 
   const filtered = (() => {
@@ -1179,6 +1193,8 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
       code: v => v.customerCode || '',
       group: v => v.groupId ? (groups.find(g => g.id === v.groupId)?.name || '') : '',
       groupCode: v => v.groupId ? (groups.find(g => g.id === v.groupId)?.groupCode || '') : '',
+      bdm: v => v.bdmId ? getUserName(v.bdmId) : '',
+      nam: v => getGroupNam(v.groupId),
       state: v => v.state || '',
       oil: v => oilTypes.find(o => o.id === v.defaultOil)?.name || '',
       volume: v => VOLUME_BRACKETS.find(b => b.key === v.volumeBracket)?.label || '',
@@ -1193,7 +1209,21 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
 
   const isFormValid = form.name.trim() && form.defaultOil && form.state;
 
-  const handleSave = () => {
+  const [saving, setSaving] = useState(false);
+
+  const adminApi = async (body) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/.netlify/functions/admin-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Server error');
+    return json;
+  };
+
+  const handleSave = async () => {
     if (!isFormValid) return;
     const cleaned = { ...form, name: form.name.trim().toUpperCase(), customerCode: form.customerCode ? form.customerCode.trim().toUpperCase() : '' };
     // Duplicate customer code check
@@ -1204,19 +1234,45 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
     // Duplicate name check
     const dupName = venues.find(v => v.name === cleaned.name && v.id !== editing);
     if (dupName) { alert(`A venue named "${cleaned.name}" already exists`); return; }
-    if (editing) {
-      setVenues(prev => prev.map(v => v.id === editing ? { ...v, ...cleaned, groupId: cleaned.groupId || null } : v));
-    } else {
-      setVenues(prev => [...prev, { ...cleaned, id: `v-${Date.now()}`, groupId: cleaned.groupId || null }]);
+
+    setSaving(true);
+    try {
+      if (editing) {
+        const venueRow = unMapVenue({ ...cleaned, groupId: cleaned.groupId || null });
+        const { error: updateErr } = await supabase.from('venues').update(venueRow).eq('id', editing);
+        if (updateErr) throw new Error('Failed to update venue: ' + updateErr.message);
+        setVenues(prev => prev.map(v => v.id === editing ? { ...v, ...cleaned, groupId: cleaned.groupId || null } : v));
+      } else {
+        const venueRow = unMapVenue({ ...cleaned, groupId: cleaned.groupId || null });
+        const { data: inserted, error: insertErr } = await supabase.from('venues').insert(venueRow).select().single();
+        if (insertErr) throw new Error('Failed to create venue: ' + insertErr.message);
+        rawSetVenues(prev => [...prev, mapVenue(inserted)]);
+      }
+
+      // Auto-create/update auth account if customerCode and password are set
+      if (cleaned.customerCode && cleaned.password) {
+        const authEmail = `${cleaned.customerCode}@frysmart.app`;
+        await adminApi({ action: 'fix-user', email: authEmail, password: cleaned.password });
+      }
+    } catch (err) {
+      console.error('Venue save error:', err);
+      alert('Error: ' + err.message);
     }
+
+    setSaving(false);
     setShowForm(false);
     setEditing(null);
   };
 
   const handleEdit = (venue) => {
-    setForm({ name: venue.name, fryerCount: venue.fryerCount, defaultOil: venue.defaultOil, groupId: venue.groupId || '', status: venue.status, customerCode: venue.customerCode || '', volumeBracket: venue.volumeBracket || '', state: venue.state || '', bdmId: venue.bdmId || '' });
+    setForm({ name: venue.name, fryerCount: venue.fryerCount, defaultOil: venue.defaultOil, groupId: venue.groupId || '', status: venue.status, customerCode: venue.customerCode || '', volumeBracket: venue.volumeBracket || '', state: venue.state || '', bdmId: venue.bdmId || '', password: venue.password || '' });
     setEditing(venue.id);
     setShowForm(true);
+  };
+
+  const handleDeleteVenue = (venue) => {
+    if (!window.confirm(`Permanently delete venue "${venue.name}"? This cannot be undone.`)) return;
+    setVenues(prev => prev.filter(v => v.id !== venue.id));
   };
 
   const getOilName = (id) => oilTypes.find(o => o.id === id)?.name || '—';
@@ -1262,6 +1318,8 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
                   {colVis('code') && <FilterableTh colKey="code" label="Cust Code" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
                   {colVis('group') && <FilterableTh colKey="group" label="Group Name" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.groupId ? (groups.find(g => g.id === v.groupId)?.name || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('groupCode') && <FilterableTh colKey="groupCode" label="Group Code" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.groupId ? (groups.find(g => g.id === v.groupId)?.groupCode || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                  {colVis('bdm') && <FilterableTh colKey="bdm" label="BDM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.bdmId ? getUserName(v.bdmId) : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                  {colVis('nam') && <FilterableTh colKey="nam" label="NAM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => getGroupNam(v.groupId))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('state') && <FilterableTh colKey="state" label="State" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.state)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('oil') && <FilterableTh colKey="oil" label="Main Oil" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => oilTypes.find(o => o.id === v.defaultOil)?.name || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
                   {colVis('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({value:b.label,label:b.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
@@ -1277,7 +1335,7 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
                       <div>
                         <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏪</div>
                         <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No venues yet</div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>Click "Add Venue" to add your first venue, or load demo data to explore.</div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>Click "Add Venue" to add your first venue.</div>
                       </div>
                     ) : (
                       <span style={{ color: '#64748b', fontSize: '13px' }}>No venues match your filters</span>
@@ -1287,18 +1345,22 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
                   const grp = venue.groupId ? groups.find(g => g.id === venue.groupId) : null;
                   return (
                   <tr key={venue.id} className={venue.status === 'inactive' ? 'inactive-row' : ''} onClick={() => setSelectedVenue(venue)} style={{ cursor: 'pointer', height: '36px' }}>
-                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.name}>{venue.name}</td>
-                    {colVis('code') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={venue.customerCode} minWidth="76px" />}</td>}
-                    {colVis('group') && <td style={{ color: '#1f2937', fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={grp ? grp.name : 'STREET'}>{grp ? grp.name : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '400' }}>STREET</span>}</td>}
+                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.name}>{venue.name}</td>
+                    {colVis('code') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={venue.customerCode} minWidth="70px" />}</td>}
+                    {colVis('group') && <td style={{ color: '#1f2937', fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={grp ? grp.name : 'STREET'}>{grp ? grp.name : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '400' }}>STREET</span>}</td>}
                     {colVis('groupCode') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={grp?.groupCode} variant="charcoal" />}</td>}
-                    {colVis('state') && <td><StateBadge state={venue.state} /></td>}
-                    {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge oil={oilTypes.find(o => o.id === venue.defaultOil)} competitors={competitors} compact /></td>}
+                    {colVis('bdm') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.bdmId ? getUserName(venue.bdmId) : ''}>{venue.bdmId ? getUserName(venue.bdmId) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                    {colVis('nam') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={getGroupNam(venue.groupId)}>{getGroupNam(venue.groupId) || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                    {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
+                    {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={oilTypes.find(o => o.id === venue.defaultOil)} competitors={competitors} compact /></td>}
                     {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} /></td>}
                     {colVis('fryers') && <td style={{ textAlign: 'center', fontWeight: '600' }}>{venue.fryerCount}</td>}
                     {colVis('tpm') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(venue.lastTpmDate) || '—'}</td>}
                     <td>
                       <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <button onClick={(e) => { e.stopPropagation(); handleEdit(venue); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleEdit(venue); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Edit venue"><Edit3 size={13} color="#64748b" /></button>
+                        {onPreviewVenue && <button onClick={(e) => { e.stopPropagation(); onPreviewVenue(venue.id); }} style={{ padding: '6px', background: '#eff6ff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Preview as venue staff"><Eye size={13} color="#3b82f6" /></button>}
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteVenue(venue); }} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete venue"><Trash2 size={13} color="#ef4444" /></button>
                         <ChevronDown size={14} color="#94a3b8" style={{ transform: 'rotate(-90deg)' }} />
                       </div>
                     </td>
@@ -1350,7 +1412,7 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
               <span style={{ fontSize: '13px', color: '#64748b' }}>Oil</span>
-              <OilBadge oil={oilTypes.find(o => o.id === selectedVenue.defaultOil)} competitors={competitors} />
+              <OilBadge theme={theme} oil={oilTypes.find(o => o.id === selectedVenue.defaultOil)} competitors={competitors} />
             </div>
 
             <div style={{ marginTop: '16px' }}>
@@ -1366,7 +1428,7 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
                 if (people.length === 0) return <div style={{ fontSize: '13px', color: '#64748b', padding: '8px 0' }}>No assigned personnel</div>;
                 return people.map((p, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <RoleBadge role={p.role} />
+                    <RoleBadge theme={theme} role={p.role} />
                     <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{p.name}</span>
                   </div>
                 ));
@@ -1378,6 +1440,11 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
                 flex: 1, padding: '14px', background: '#1a428a', color: 'white',
                 border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
               }}>Edit Venue</button>
+              {onPreviewVenue && <button onClick={() => { onPreviewVenue(selectedVenue.id); setSelectedVenue(null); }} style={{
+                flex: 1, padding: '14px', background: '#eff6ff', color: '#3b82f6',
+                border: '1.5px solid #bfdbfe', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+              }}><Eye size={15} /> Staff View</button>}
               <button onClick={() => setSelectedVenue(null)} style={{
                 flex: 1, padding: '14px', background: 'white', color: '#64748b',
                 border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
@@ -1463,6 +1530,9 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
                     ))}
                   </select>
                 </FormField>
+                <FormField label="Password">
+                  <input style={inputStyle} type="text" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Venue login password" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </FormField>
                 {editing && (
                   <FormField label="Status">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '33px' }}>
@@ -1477,10 +1547,10 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
                   </FormField>
                 )}
               </div>
-              <button onClick={handleSave} disabled={!isFormValid} style={{
-                width: '100%', padding: '10px', background: isFormValid ? '#1a428a' : '#94a3b8', color: 'white',
-                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: isFormValid ? 'pointer' : 'not-allowed', marginTop: '4px'
-              }}>{editing ? 'Save Changes' : 'Create Venue'}</button>
+              <button onClick={handleSave} disabled={!isFormValid || saving} style={{
+                width: '100%', padding: '10px', background: (isFormValid && !saving) ? '#1a428a' : '#94a3b8', color: 'white',
+                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: (isFormValid && !saving) ? 'pointer' : 'not-allowed', marginTop: '4px'
+              }}>{saving ? 'Saving...' : (editing ? 'Save Changes' : 'Create Venue')}</button>
             </div>
           </div>
         </div>
@@ -1490,14 +1560,14 @@ const VenueManagement = ({ venues, setVenues, oilTypes, groups, competitors, use
 };
 
 // ==================== GROUP MANAGEMENT ====================
-const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes, competitors, autoOpenForm, clearAutoOpen }) => {
+const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, users, setUsers, rawSetUsers, oilTypes, competitors, autoOpenForm, clearAutoOpen, theme }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [sortByActive, setSortByActive] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [form, setForm] = useState({ name: '', groupCode: '', username: '', namId: '', status: 'active' });
+  const [form, setForm] = useState({ name: '', groupCode: '', username: '', namId: '', status: 'active', password: '' });
   const colFilters = useColumnFilters();
 
   const GROUP_COLS = [
@@ -1514,7 +1584,7 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
   const colVis = (key) => visibleCols.includes(key);
 
   useEffect(() => {
-    if (autoOpenForm) { setForm({ name: '', groupCode: '', username: '', namId: '', status: 'active' }); setEditing(null); setShowForm(true); clearAutoOpen(); }
+    if (autoOpenForm) { setForm({ name: '', groupCode: '', username: '', namId: '', status: 'active', password: '' }); setEditing(null); setShowForm(true); clearAutoOpen(); }
   }, [autoOpenForm]);
 
   const filtered = (() => {
@@ -1536,7 +1606,21 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
   })();
   const nams = users.filter(u => u.role === 'nam' && u.status === 'active');
 
-  const handleSave = () => {
+  const [saving, setSaving] = useState(false);
+
+  const adminApi = async (body) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/.netlify/functions/admin-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Server error');
+    return json;
+  };
+
+  const handleSave = async () => {
     if (!form.name) return;
     const cleaned = { ...form, name: form.name.trim().toUpperCase(), groupCode: form.groupCode ? form.groupCode.trim().toUpperCase() : '', username: form.username ? form.username.trim().toUpperCase() : '' };
     // Duplicate checks
@@ -1550,20 +1634,51 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
     }
     const dupName = groups.find(g => g.name === cleaned.name && g.id !== editing);
     if (dupName) { alert(`A group named "${cleaned.name}" already exists`); return; }
-    if (editing) {
-      setGroups(prev => prev.map(g => g.id === editing ? { ...g, ...cleaned } : g));
-    } else {
-      const newId = `g-${Date.now()}`;
-      setGroups(prev => [...prev, { ...cleaned, id: newId, status: 'active' }]);
+
+    setSaving(true);
+    try {
+      if (editing) {
+        const groupRow = unMapGroup(cleaned);
+        const { error: updateErr } = await supabase.from('groups').update(groupRow).eq('id', editing);
+        if (updateErr) throw new Error('Failed to update group: ' + updateErr.message);
+        setGroups(prev => prev.map(g => g.id === editing ? { ...g, ...cleaned } : g));
+      } else {
+        const groupRow = unMapGroup({ ...cleaned, status: 'active' });
+        const { data: inserted, error: insertErr } = await supabase.from('groups').insert(groupRow).select().single();
+        if (insertErr) throw new Error('Failed to create group: ' + insertErr.message);
+        rawSetGroups(prev => [...prev, mapGroup(inserted)]);
+      }
+
+      // Auto-create/update auth account if username and password are set
+      if (cleaned.username && cleaned.password) {
+        const authEmail = `${cleaned.username}@frysmart.app`;
+        await adminApi({ action: 'fix-user', email: authEmail, password: cleaned.password });
+      }
+    } catch (err) {
+      console.error('Group save error:', err);
+      alert('Error: ' + err.message);
     }
+
+    setSaving(false);
     setShowForm(false);
     setEditing(null);
   };
 
   const handleEdit = (group) => {
-    setForm({ name: group.name, groupCode: group.groupCode || '', username: group.username || '', namId: group.namId || '', status: group.status || 'active' });
+    setForm({ name: group.name, groupCode: group.groupCode || '', username: group.username || '', namId: group.namId || '', status: group.status || 'active', password: group.password || '' });
     setEditing(group.id);
     setShowForm(true);
+  };
+
+  const handleDeleteGroup = (group) => {
+    const groupVenues = venues.filter(v => v.groupId === group.id);
+    if (groupVenues.length > 0) {
+      if (!window.confirm(`Group "${group.name}" has ${groupVenues.length} venue(s) linked. Deleting will unlink them. Continue?`)) return;
+      groupVenues.forEach(v => setVenues(prev => prev.map(vn => vn.id === v.id ? { ...vn, groupId: null } : vn)));
+    } else {
+      if (!window.confirm(`Permanently delete group "${group.name}"? This cannot be undone.`)) return;
+    }
+    setGroups(prev => prev.filter(g => g.id !== group.id));
   };
 
   const getGroupVenues = (groupId) => venues.filter(v => v.groupId === groupId);
@@ -1653,11 +1768,12 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
                       </td>}
                       {colVis('venues') && <td style={{ textAlign: 'center', fontWeight: '600' }}>{activeVenues.length}</td>}
                       {colVis('nam') && <td style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>{getUserName(group.namId)}</td>}
-                      {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge oil={getPrimaryOil(group.id)} competitors={competitors} compact /></td>}
+                      {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={getPrimaryOil(group.id)} competitors={competitors} compact /></td>}
                       {colVis('tpm') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(group.lastTpmDate) || '—'}</td>}
                       <td>
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                           <button onClick={(e) => { e.stopPropagation(); handleEdit(group); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Edit3 size={13} color="#64748b" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group); }} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={13} color="#ef4444" /></button>
                           <ChevronDown size={14} color="#94a3b8" style={{ transform: 'rotate(-90deg)' }} />
                         </div>
                       </td>
@@ -1697,7 +1813,7 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
                 {group.username && <span>Login: <strong style={{ color: '#64748b' }}>{group.username}</strong></span>}
                 <span>NAM: <strong style={{ color: '#1f2937' }}>{getUserName(group.namId)}</strong></span>
                 <span>Venues: <strong style={{ color: '#1f2937' }}>{gVenues.filter(v => v.status !== 'trial-only').length}</strong></span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>Main Oil: <OilBadge oil={getPrimaryOil(group.id)} competitors={competitors} /></span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>Main Oil: <OilBadge theme={theme} oil={getPrimaryOil(group.id)} competitors={competitors} /></span>
               </div>
 
               {/* Linked Venues */}
@@ -1711,7 +1827,7 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>{v.name}</span>
-                          <StateBadge state={v.state} />
+                          <StateBadge theme={theme} state={v.state} />
                         </div>
                         {v.customerCode && <CodeBadge code={v.customerCode} minWidth="76px" />}
                       </div>
@@ -1745,15 +1861,15 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
             </div>
             <div style={{ padding: '16px' }}>
               <FormField label="Group Name" required>
-                <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value.toUpperCase() }))} placeholder="JBS HOSPITALITY GROUP" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value.toUpperCase() }))} placeholder="e.g. MY GROUP NAME" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
               </FormField>
               <FormField label="Group Code">
-                <input style={inputStyle} value={form.groupCode} onChange={e => setForm(f => ({ ...f, groupCode: e.target.value.toUpperCase() }))} placeholder="JBS" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                <input style={inputStyle} value={form.groupCode} onChange={e => setForm(f => ({ ...f, groupCode: e.target.value.toUpperCase() }))} placeholder="e.g. GRP" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
               </FormField>
               <FormField label="Login Username">
                 <div style={{ display: 'flex' }}>
                   <span style={{ padding: '8px 0 8px 10px', background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRight: 'none', borderRadius: '8px 0 0 8px', fontSize: '13px', fontWeight: '600', color: '#64748b', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>FRYSMRT-</span>
-                  <input style={{ ...inputStyle, borderRadius: '0 8px 8px 0', fontFamily: 'monospace', flex: 1 }} value={form.username.startsWith('FRYSMRT-') ? form.username.slice(8) : form.username} onChange={e => setForm(f => ({ ...f, username: 'FRYSMRT-' + e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))} placeholder="JBS" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                  <input style={{ ...inputStyle, borderRadius: '0 8px 8px 0', fontFamily: 'monospace', flex: 1 }} value={form.username.startsWith('FRYSMRT-') ? form.username.slice(8) : form.username} onChange={e => setForm(f => ({ ...f, username: 'FRYSMRT-' + e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))} placeholder="GRP" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                 </div>
               </FormField>
               <div style={{ display: 'grid', gridTemplateColumns: editing ? '1fr 1fr' : '1fr', gap: '10px' }}>
@@ -1762,6 +1878,9 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
                     <option value="">UNASSIGNED</option>
                     {nams.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
+                </FormField>
+                <FormField label="Password">
+                  <input style={inputStyle} type="text" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Group login password" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                 </FormField>
                 {editing && (
                   <FormField label="Status">
@@ -1777,10 +1896,10 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
                   </FormField>
                 )}
               </div>
-              <button onClick={handleSave} disabled={!form.name.trim()} style={{
-                width: '100%', padding: '10px', background: form.name.trim() ? '#1a428a' : '#94a3b8', color: 'white',
-                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: form.name.trim() ? 'pointer' : 'not-allowed', marginTop: '4px'
-              }}>{editing ? 'Save Changes' : 'Create Group'}</button>
+              <button onClick={handleSave} disabled={!form.name.trim() || saving} style={{
+                width: '100%', padding: '10px', background: (form.name.trim() && !saving) ? '#1a428a' : '#94a3b8', color: 'white',
+                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: (form.name.trim() && !saving) ? 'pointer' : 'not-allowed', marginTop: '4px'
+              }}>{saving ? 'Saving...' : (editing ? 'Save Changes' : 'Create Group')}</button>
             </div>
           </div>
         </div>
@@ -1790,14 +1909,16 @@ const GroupManagement = ({ groups, setGroups, venues, setVenues, users, oilTypes
 };
 
 // ==================== USER MANAGEMENT ====================
-const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAutoOpen }) => {
+const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentUser, autoOpenForm, clearAutoOpen, theme }) => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const [statusFilter, setStatusFilter] = useState('active');
   const [sortByActive, setSortByActive] = useState(false);
-  const [form, setForm] = useState({ name: '', role: 'bdm', venueId: '', groupId: '', region: '', status: 'active', crmCode: '', repCode: '', username: '' });
+  const [form, setForm] = useState({ name: '', role: 'bdm', venueId: '', groupId: '', region: '', status: 'active', crmCode: '', repCode: '', username: '', newPassword: '' });
   const colFilters = useColumnFilters();
 
   const USER_COLS = [
@@ -1805,19 +1926,21 @@ const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAu
     { key: 'role', label: 'Role' },
     { key: 'username', label: 'Username' },
     { key: 'region', label: 'State' },
+    { key: 'repCode', label: 'Rep Code' },
     { key: 'permissions', label: 'Permissions' },
     { key: 'lastActive', label: 'Last Active' },
-    { key: 'repCode', label: 'Rep Code' },
   ];
-  const [visibleCols, setVisibleCols] = useState(USER_COLS.filter(c => c.key !== 'repCode').map(c => c.key));
+  const [visibleCols, setVisibleCols] = useState(USER_COLS.map(c => c.key));
   const colVis = (key) => visibleCols.includes(key);
 
   useEffect(() => {
-    if (autoOpenForm) { setForm({ name: '', role: 'bdm', venueId: '', groupId: '', region: '', status: 'active', crmCode: '', repCode: '', username: '' }); setEditing(null); setShowForm(true); clearAutoOpen(); }
+    if (autoOpenForm) { setForm({ name: '', role: 'bdm', venueId: '', groupId: '', region: '', status: 'active', crmCode: '', repCode: '', username: '', newPassword: '' }); setEditing(null); setShowForm(true); clearAutoOpen(); }
   }, [autoOpenForm]);
 
   const filtered = (() => {
     let data = users.filter(u => {
+      // Hide venue_staff and group_viewer profiles (venue/group logins don't use profiles)
+      if (u.role === 'venue_staff' || u.role === 'group_viewer') return false;
       const matchStatus = statusFilter === 'all' || u.status === statusFilter;
       return matchStatus;
     });
@@ -1826,9 +1949,9 @@ const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAu
       role: u => ROLE_LABELS[u.role] || u.role,
       username: u => u.username || '',
       region: u => u.region || '',
+      repCode: u => u.repCode || '',
       permissions: u => ROLE_PERMISSIONS[u.role] || '',
       lastActive: u => relativeDate(u.lastActive),
-      repCode: u => u.repCode || '',
     });
     return data.sort((a, b) => {
       if (sortByActive) return (b.lastActive || '').localeCompare(a.lastActive || '');
@@ -1836,42 +1959,117 @@ const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAu
     });
   })();
 
-  const handleSave = () => {
+  const adminApi = async (body) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/.netlify/functions/admin-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Server error');
+    return json;
+  };
+
+  const handleSave = async () => {
     if (!form.name) return;
-    const cleaned = { ...form, name: form.name.trim().toUpperCase(), repCode: form.repCode ? form.repCode.trim().toUpperCase() : '', username: form.username ? form.username.trim() : '' };
+    setFormError('');
+    const cleaned = { ...form, name: form.name.trim().toUpperCase(), repCode: form.repCode ? form.repCode.trim().toUpperCase() : '', username: form.username ? form.username.trim().toLowerCase() : '' };
     // Duplicate checks
     if (cleaned.username) {
       const dupUser = users.find(u => u.username && u.username.toLowerCase() === cleaned.username.toLowerCase() && u.id !== editing);
-      if (dupUser) { alert(`Username "${cleaned.username}" is already taken by ${dupUser.name}`); return; }
+      if (dupUser) { setFormError(`Username "${cleaned.username}" is already taken by ${dupUser.name}`); return; }
     }
     if (cleaned.repCode) {
       const dupRep = users.find(u => u.repCode && u.repCode === cleaned.repCode && u.id !== editing);
-      if (dupRep) { alert(`Rep code "${cleaned.repCode}" is already used by ${dupRep.name}`); return; }
+      if (dupRep) { setFormError(`Rep code "${cleaned.repCode}" is already used by ${dupRep.name}`); return; }
     }
     if (editing) {
-      setUsers(prev => prev.map(u => u.id === editing ? { ...u, ...cleaned, venueId: cleaned.venueId || null, groupId: cleaned.groupId || null } : u));
+      setSaving(true);
+      try {
+        // If admin set a new password, update via serverless function
+        let newAuthId = null;
+        if (cleaned.newPassword && cleaned.newPassword.trim()) {
+          if (cleaned.newPassword.trim().length < 6) { setFormError('Password must be at least 6 characters.'); setSaving(false); return; }
+          const uname = cleaned.username || users.find(u => u.id === editing)?.username;
+          if (uname) {
+            const result = await adminApi({ action: 'fix-user', email: `${uname.toLowerCase()}@frysmart.app`, password: cleaned.newPassword.trim(), profileId: editing });
+            if (result.created && result.userId) newAuthId = result.userId;
+          } else {
+            await adminApi({ action: 'update-password', userId: editing, password: cleaned.newPassword.trim() });
+          }
+        }
+        const { newPassword, ...profileFields } = cleaned;
+        if (newPassword && newPassword.trim()) profileFields.password = newPassword.trim();
+        const updatedId = newAuthId || editing;
+        setUsers(prev => prev.map(u => u.id === editing ? { ...u, ...profileFields, id: updatedId, venueId: profileFields.venueId || null, groupId: profileFields.groupId || null } : u));
+        // If admin changed their own password, re-authenticate to keep session alive
+        if (newPassword && newPassword.trim() && currentUser && editing === currentUser.id) {
+          const uname = cleaned.username || currentUser.username;
+          if (uname) {
+            await supabase.auth.signInWithPassword({ email: `${uname.toLowerCase()}@frysmart.app`, password: newPassword.trim() });
+          }
+        }
+        setShowForm(false);
+        setEditing(null);
+      } catch (err) {
+        setFormError(err.message);
+      } finally {
+        setSaving(false);
+      }
     } else {
-      setUsers(prev => [...prev, { ...cleaned, id: `u-${Date.now()}`, venueId: cleaned.venueId || null, groupId: cleaned.groupId || null }]);
+      // Create: require username + password
+      if (!cleaned.username) { setFormError('Username is required.'); return; }
+      if (!cleaned.newPassword || cleaned.newPassword.trim().length < 6) { setFormError('Password is required (min 6 characters).'); return; }
+      setSaving(true);
+      try {
+        // 1. Create auth user via serverless function
+        const { userId: newId } = await adminApi({ action: 'create-user', username: cleaned.username.toLowerCase(), password: cleaned.newPassword.trim() });
+        // 2. Insert profile row
+        const profileRow = { id: newId, name: cleaned.name, role: cleaned.role, region: cleaned.region || null, status: cleaned.status, username: cleaned.username.toLowerCase(), password: cleaned.newPassword.trim(), rep_code: cleaned.repCode || null, crm_code: cleaned.crmCode || null, venue_id: cleaned.venueId || null, group_id: cleaned.groupId || null };
+        const { error: profileError } = await supabase.from('profiles').insert(profileRow);
+        if (profileError) throw new Error(profileError.message);
+        // 3. Add to local state via rawSetUsers (bypasses db wrapper to avoid double-insert)
+        const { newPassword, ...userFields } = cleaned;
+        const newUser = { ...userFields, id: newId, password: cleaned.newPassword.trim(), username: cleaned.username.toLowerCase(), venueId: cleaned.venueId || null, groupId: cleaned.groupId || null };
+        rawSetUsers(prev => [...prev, newUser]);
+        setShowForm(false);
+        setEditing(null);
+      } catch (err) {
+        setFormError(err.message);
+      } finally {
+        setSaving(false);
+      }
     }
-    setShowForm(false);
-    setEditing(null);
   };
 
   const handleEdit = (user) => {
-    setForm({ name: user.name, role: user.role, venueId: user.venueId || '', groupId: user.groupId || '', region: user.region || '', status: user.status, crmCode: user.crmCode || '', repCode: user.repCode || '', username: user.username || '' });
+    setForm({ name: user.name, role: user.role, venueId: user.venueId || '', groupId: user.groupId || '', region: user.region || '', status: user.status, crmCode: user.crmCode || '', repCode: user.repCode || '', username: user.username || '', newPassword: user.password || '' });
     setEditing(user.id);
+    setFormError('');
     setShowForm(true);
+  };
+
+  const handleDelete = async (user) => {
+    if (!window.confirm(`Permanently delete ${user.name}? This removes their profile and login account and cannot be undone.`)) return;
+    try {
+      const email = user.username ? `${user.username.toLowerCase()}@frysmart.app` : null;
+      await adminApi({ action: 'delete-user', userId: user.id, email });
+      rawSetUsers(prev => prev.filter(u => u.id !== user.id));
+    } catch (err) {
+      alert('Failed to delete user: ' + err.message);
+    }
   };
 
   const getGroupName = makeGetGroupName(groups);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', minHeight: '500px' }}>
-      <SectionHeader icon={Users} title="User Management" count={users.length} onAdd={() => { setForm({ name: '', role: 'bdm', venueId: '', groupId: '', region: '', status: 'active', crmCode: '', repCode: '', username: '' }); setEditing(null); setShowForm(true); }} addLabel="Add User" />
+      <SectionHeader icon={Users} title="User Management" count={users.length} onAdd={() => { setForm({ name: '', role: 'bdm', venueId: '', groupId: '', region: '', status: 'active', crmCode: '', repCode: '', username: '', newPassword: '' }); setEditing(null); setFormError(''); setShowForm(true); }} addLabel="Add User" />
 
       {/* Status filter + sort + column toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-        {[{ key: 'all', label: 'All', count: users.length }, { key: 'active', label: 'Active', count: users.filter(u => u.status === 'active').length }, { key: 'inactive', label: 'Inactive', count: users.filter(u => u.status === 'inactive').length }].map(f => {
+        {[{ key: 'all', label: 'All', count: users.filter(u => u.role !== 'venue_staff' && u.role !== 'group_viewer').length }, { key: 'active', label: 'Active', count: users.filter(u => u.status === 'active' && u.role !== 'venue_staff' && u.role !== 'group_viewer').length }, { key: 'inactive', label: 'Inactive', count: users.filter(u => u.status === 'inactive' && u.role !== 'venue_staff' && u.role !== 'group_viewer').length }].map(f => {
           const selectedColor = f.key === 'active' ? { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' } : f.key === 'inactive' ? { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' } : { bg: '#e8eef6', text: '#1a428a', border: '#1a428a' };
           const isActive = statusFilter === f.key;
           return (
@@ -1906,10 +2104,10 @@ const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAu
                   {colVis('role') && <FilterableTh colKey="role" label="Role" options={getUniqueValues(users, u => ROLE_LABELS[u.role] || u.role)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
                   {colVis('username') && <FilterableTh colKey="username" label="Username" options={getUniqueValues(users, u => u.username)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('region') && <FilterableTh colKey="region" label="State" options={getUniqueValues(users, u => u.region)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                  {colVis('repCode') && <FilterableTh colKey="repCode" label="Rep Code" options={getUniqueValues(users, u => u.repCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('permissions') && <FilterableTh colKey="permissions" label="Permissions" options={getUniqueValues(users, u => ROLE_PERMISSIONS[u.role] || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('lastActive') && <FilterableTh colKey="lastActive" label="Last Active" options={getUniqueValues(users, u => relativeDate(u.lastActive))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('repCode') && <FilterableTh colKey="repCode" label="Rep Code" options={getUniqueValues(users, u => u.repCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  <th style={{ width: '40px' }}></th>
+                  <th style={{ width: '70px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -1928,13 +2126,16 @@ const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAu
                 ) : filtered.map(user => (
                   <tr key={user.id} className={user.status === 'inactive' ? 'inactive-row' : ''} style={{ height: '36px' }}>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={user.name}>{user.name}</td>
-                    {colVis('role') && <td style={{ textAlign: "center" }}><RoleBadge role={user.role} /></td>}
+                    {colVis('role') && <td style={{ textAlign: "center" }}><RoleBadge theme={theme} role={user.role} /></td>}
                     {colVis('username') && <td style={{ fontSize: '12px', color: '#64748b' }}>{user.username ? user.username.toLowerCase() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {colVis('region') && <td><StateBadge state={user.region} /></td>}
+                    {colVis('region') && <td><StateBadge theme={theme} state={user.region} /></td>}
+                    {colVis('repCode') && <td style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{user.repCode || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {colVis('permissions') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'normal', maxWidth: '220px', lineHeight: '1.4' }}>{ROLE_PERMISSIONS[user.role] || '—'}</td>}
                     {colVis('lastActive') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(user.lastActive) || '—'}</td>}
-                    {colVis('repCode') && <td style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{user.repCode || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    <td><button onClick={() => handleEdit(user)} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button></td>
+                    <td style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => handleEdit(user)} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
+                      <button onClick={() => handleDelete(user)} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={13} color="#ef4444" /></button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1952,62 +2153,64 @@ const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAu
           <div style={{ background: 'white', borderRadius: '16px', maxWidth: '520px', width: '100%' }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: '16px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', margin: 0 }}>{editing ? 'Edit User' : 'New User'}</h3>
-              <button onClick={() => { setShowForm(false); setEditing(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><X size={20} color="#64748b" /></button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {editing && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button type="button" onClick={() => setForm(f => ({ ...f, status: f.status === 'active' ? 'inactive' : 'active' }))} style={{
+                      width: '36px', height: '20px', borderRadius: '10px', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
+                      background: form.status === 'active' ? '#10b981' : '#cbd5e1'
+                    }}>
+                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', transition: 'left 0.2s', left: form.status === 'active' ? '18px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }} />
+                    </button>
+                    <span style={{ fontSize: '11px', fontWeight: '600', color: form.status === 'active' ? '#059669' : '#94a3b8' }}>{form.status === 'active' ? 'ACTIVE' : 'INACTIVE'}</span>
+                  </div>
+                )}
+                <button onClick={() => { setShowForm(false); setEditing(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><X size={20} color="#64748b" /></button>
+              </div>
             </div>
             <div style={{ padding: '16px' }}>
               <FormField label="Full Name" required>
                 <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value.toUpperCase() }))} placeholder="DAVID ANGELKOVSKI" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
               </FormField>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <FormField label="Username" required>
+                  <input style={inputStyle} value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '') }))} placeholder="dangelkovski" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </FormField>
+                <FormField label={editing ? 'Change Password' : 'Password'} required={!editing}>
+                  <input type="text" style={inputStyle} value={form.newPassword || ''} onChange={e => setForm(f => ({ ...f, newPassword: e.target.value }))} placeholder={editing ? 'Leave blank to keep' : 'Min 6 characters'} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </FormField>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <FormField label="Role" required>
                   <select style={selectStyle} value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
                     {Object.entries(ROLE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </FormField>
-                {editing && (
-                  <FormField label="Status">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '33px' }}>
-                      <button type="button" onClick={() => setForm(f => ({ ...f, status: f.status === 'active' ? 'inactive' : 'active' }))} style={{
-                        width: '36px', height: '20px', borderRadius: '10px', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
-                        background: form.status === 'active' ? '#10b981' : '#cbd5e1'
-                      }}>
-                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', transition: 'left 0.2s', left: form.status === 'active' ? '18px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }} />
-                      </button>
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: form.status === 'active' ? '#059669' : '#94a3b8' }}>{form.status === 'active' ? 'ACTIVE' : 'INACTIVE'}</span>
-                    </div>
-                  </FormField>
-                )}
-              </div>
-              {(form.role === 'bdm' || form.role === 'state_manager') && (
                 <FormField label="State">
                   <select style={selectStyle} value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))}>
                     <option value="">SELECT STATE...</option>
-                    {['VIC', 'NSW', 'QLD', 'WA', 'SA', 'TAS'].map(r => <option key={r} value={r}>{r}</option>)}
+                    {['VIC', 'NSW', 'QLD', 'WA', 'SA', 'TAS', 'H/O'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </FormField>
-              )}
+              </div>
+              <FormField label="Supabase Auth Email">
+                <input type="text" style={{ ...inputStyle, background: '#f8fafc', color: '#94a3b8', cursor: 'default' }} value={form.username ? `${form.username.toLowerCase()}@frysmart.app` : ''} readOnly tabIndex={-1} />
+              </FormField>
               {form.role === 'bdm' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <FormField label="Rep Code">
-                    <input style={inputStyle} value={form.repCode} onChange={e => setForm(f => ({ ...f, repCode: e.target.value.toUpperCase() }))} placeholder="V16" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-                    {form.repCode && users.some(u => u.repCode === form.repCode && u.id !== editing) && (
-                      <div style={{ fontSize: '10px', color: '#dc2626', marginTop: '4px' }}>⚠ Rep code "{form.repCode}" already assigned</div>
-                    )}
-                  </FormField>
-                  <FormField label="Username">
-                    <input style={inputStyle} value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase() }))} placeholder="dangelkovski" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-                  </FormField>
-                </div>
-              )}
-              {form.role !== 'bdm' && (
-                <FormField label="Username">
-                  <input style={inputStyle} value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase() }))} placeholder="dangelkovski" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                <FormField label="Rep Code">
+                  <input style={inputStyle} value={form.repCode} onChange={e => setForm(f => ({ ...f, repCode: e.target.value.toUpperCase() }))} placeholder="V16" onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                  {form.repCode && users.some(u => u.repCode === form.repCode && u.id !== editing) && (
+                    <div style={{ fontSize: '10px', color: '#dc2626', marginTop: '4px' }}>⚠ Rep code "{form.repCode}" already assigned</div>
+                  )}
                 </FormField>
               )}
-              <button onClick={handleSave} disabled={!form.name.trim()} style={{
-                width: '100%', padding: '10px', background: form.name.trim() ? '#1a428a' : '#94a3b8', color: 'white',
-                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: form.name.trim() ? 'pointer' : 'not-allowed', marginTop: '4px'
-              }}>{editing ? 'Save Changes' : 'Create User'}</button>
+              {formError && (
+                <div style={{ padding: '10px 14px', marginBottom: '8px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca', fontSize: '13px', color: '#991b1b' }}>{formError}</div>
+              )}
+              <button onClick={handleSave} disabled={!form.name.trim() || saving} style={{
+                width: '100%', padding: '10px', background: (!form.name.trim() || saving) ? '#94a3b8' : '#1a428a', color: 'white',
+                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: (!form.name.trim() || saving) ? 'not-allowed' : 'pointer', marginTop: '4px'
+              }}>{saving ? 'Saving...' : editing ? 'Save Changes' : 'Create User'}</button>
             </div>
           </div>
         </div>
@@ -2020,13 +2223,7 @@ const UserManagement = ({ users, setUsers, venues, groups, autoOpenForm, clearAu
 
 // ==================== PERMISSIONS & ACCESS ====================
 
-const TRIAL_STATUS_CONFIGS = {
-  'pending': { bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1', label: 'Pipeline', accent: '#94a3b8' },
-  'in-progress': { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd', label: 'Active', accent: '#3b82f6' },
-  'completed': { bg: '#fef3c7', text: '#a16207', border: '#fde047', label: 'Pending', accent: '#fbbf24' },
-  'won': { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7', label: 'Successful', accent: '#10b981' },
-  'lost': { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5', label: 'Unsuccessful', accent: '#ef4444' },
-};
+const TRIAL_STATUS_CONFIGS = TRIAL_STATUS_COLORS; // from badgeConfig
 
 const TrialStatusBadge = ({ status }) => {
   const c = TRIAL_STATUS_CONFIGS[status] || TRIAL_STATUS_CONFIGS['pending'];
@@ -2165,7 +2362,7 @@ const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTi
   );
 };
 
-const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser }) => {
+const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, theme }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [search, setSearch] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
@@ -2175,7 +2372,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
   const [closeForm, setCloseForm] = useState({ reason: '', soldPrice: '', outcomeDate: new Date().toISOString().split('T')[0], notes: '' });
   const [addReadingModal, setAddReadingModal] = useState(null);
   // readingForm: { date, fryers: { [fryerNum]: { oilAge, litresFilled, tpmValue, setTemperature, actualTemperature, filtered, foodType, notes, notInUse } } }
-  const [readingForm, setReadingForm] = useState({ date: new Date().toISOString().split('T')[0], fryers: { 1: { oilAge: '', litresFilled: '', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false } } });
+  const [readingForm, setReadingForm] = useState({ date: new Date().toISOString().split('T')[0], fryers: { 1: { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' } } });
   const [activeFryerTab, setActiveFryerTab] = useState(1);
   const colFilters = useColumnFilters();
 
@@ -2244,7 +2441,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
     pending: baseFiltered.filter(v => v.trialStatus === 'pending').length,
     'in-progress': baseFiltered.filter(v => v.trialStatus === 'in-progress').length,
     completed: baseFiltered.filter(v => v.trialStatus === 'completed').length,
-    won: baseFiltered.filter(v => v.trialStatus === 'won').length,
+    won: baseFiltered.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted').length,
     lost: baseFiltered.filter(v => v.trialStatus === 'lost').length,
   };
 
@@ -2415,7 +2612,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                       <div>
                         <div style={{ fontSize: '32px', marginBottom: '8px' }}>🧪</div>
                         <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No trials yet</div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>Trials are created from the Venues section when a prospect is added with a trial oil. Load demo data to see examples.</div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>Trials are created from the Venues section when a prospect is added with a trial oil.</div>
                       </div>
                     ) : (
                       <span style={{ color: '#64748b', fontSize: '13px' }}>No trials match your filters</span>
@@ -2433,12 +2630,12 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                       <td style={{ width: '4px', padding: '0', background: statusConf.accent }}></td>
                       <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                       {colVis('group') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.groupId ? getGroupName(venue.groupId) : 'STREET'}>{venue.groupId ? getGroupName(venue.groupId) : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>STREET</span>}</td>}
-                      {colVis('state') && <td><StateBadge state={venue.state} /></td>}
+                      {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
                       {colVis('bdm') && <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>{getUserName(venue.bdmId)}</td>}
                       {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} brackets={volumeBrackets} /></td>}
                       {colVis('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                       {colVis('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                      {colVis('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge oil={cookersOil} competitors={competitors} compact /></td>}
+                      {colVis('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact /></td>}
                       {colVis('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${venue.currentPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
                       {colVis('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${venue.offeredPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
                       {colVis('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${venue.soldPricePerLitre.toFixed(2)}` : '—'}</td>}
@@ -2489,7 +2686,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                   <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>{t.name}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      <StateBadge state={t.state} /> · {group ? group.name : 'Street venue'}{t.volumeBracket && <> · <VolumePill bracket={t.volumeBracket} brackets={VOLUME_BRACKETS} /></>}
+                      <StateBadge theme={theme} state={t.state} /> · {group ? group.name : 'Street venue'}{t.volumeBracket && <> · <VolumePill bracket={t.volumeBracket} brackets={VOLUME_BRACKETS} /></>}
                     </div>
                     <TrialStatusBadge status={t.trialStatus} />
                   </div>
@@ -2524,9 +2721,9 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                     return <>
                       {comp && <CompetitorPill comp={comp} />}
                       {comp && <span style={{ color: '#e2e8f0', margin: '0 2px' }}>·</span>}
-                      <OilBadge oil={compOil} competitors={competitors} compact />
+                      <OilBadge theme={theme} oil={compOil} competitors={competitors} compact />
                       <span style={{ fontSize: '12px', color: '#94a3b8', margin: '0 4px' }}>vs</span>
-                      <OilBadge oil={cookersOil} competitors={competitors} compact />
+                      <OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact />
                     </>;
                   })()}
                 </div>
@@ -2729,7 +2926,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                     </div>
                     {t.trialStatus === 'won' && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                        {cookersOil && <OilBadge oil={cookersOil} competitors={competitors} />}
+                        {cookersOil && <OilBadge theme={theme} oil={cookersOil} competitors={competitors} />}
                         {t.soldPricePerLitre && <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '400' }}>@ ${t.soldPricePerLitre.toFixed(2)}/L</span>}
                       </div>
                     )}
@@ -2752,7 +2949,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                         setAddReadingModal({ ...t, trialStatus: 'in-progress', trialStartDate: t.trialStartDate || today });
                         const fc2 = (t.fryerCount || 1);
                         const initFryers2 = {};
-                        for (let i = 1; i <= fc2; i++) initFryers2[i] = { oilAge: '', litresFilled: '', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false };
+                        for (let i = 1; i <= fc2; i++) initFryers2[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
                         setReadingForm({ date: today, fryers: initFryers2 });
                         setActiveFryerTab(1);
                         setSelectedTrial(null);
@@ -2767,7 +2964,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                         setAddReadingModal(t);
                         const fcLR = (t.fryerCount || 1);
                         const initFryersLR = {};
-                        for (let i = 1; i <= fcLR; i++) initFryersLR[i] = { oilAge: '', litresFilled: '', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false };
+                        for (let i = 1; i <= fcLR; i++) initFryersLR[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
                         setReadingForm({ date: new Date().toISOString().split('T')[0], fryers: initFryersLR });
                         setActiveFryerTab(1);
                         setSelectedTrial(null);
@@ -2869,9 +3066,8 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
 
         const fryerComplete = (fd) => {
           if (fd.notInUse) return true;
-          const freshOk = parseInt(fd.oilAge) !== 1 || fd.litresFilled;
           return fd.oilAge && fd.tpmValue && fd.setTemperature && fd.actualTemperature
-            && fd.filtered !== null && fd.foodType && freshOk;
+            && fd.filtered !== null && fd.foodType;
         };
         const canSubmit = readingForm.date && fryerNums.every(n => fryerComplete(readingForm.fryers[n] || {}));
         const doneCount = fryerNums.filter(n => fryerComplete(readingForm.fryers[n] || {})).length;
@@ -2925,23 +3121,21 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                 <div style={field}>
                   <label style={lbl}>Oil Age (days){isFreshOil && <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: '600', color: '#10b981' }}>— fresh oil</span>}</label>
                   <input type="number" min="1" max="30" placeholder="e.g., 1 for fresh oil" value={fd.oilAge || ''}
-                    onChange={e => setFryer(activeFryerTab, { oilAge: e.target.value, litresFilled: parseInt(e.target.value) === 1 ? fd.litresFilled : '' })}
+                    onChange={e => { const val = e.target.value; const fresh = parseInt(val) === 1; setFryer(activeFryerTab, { oilAge: val, ...(fresh ? { filtered: true } : {}) }); }}
                     style={{ ...inputStyle, fontSize: '14px', width: '100%', boxSizing: 'border-box', borderColor: isFreshOil ? '#6ee7b7' : '#e2e8f0',
                       WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                     onFocus={e => e.target.style.borderColor = isFreshOil ? '#10b981' : '#1a428a'}
                     onBlur={e => e.target.style.borderColor = isFreshOil ? '#6ee7b7' : '#e2e8f0'} />
                 </div>
 
-                {/* Litres filled — only when fresh */}
-                {isFreshOil && (
-                  <div style={field}>
-                    <label style={lbl}>Litres Filled</label>
-                    <input type="number" step="0.5" min="1" placeholder="e.g., 20" value={fd.litresFilled || ''}
-                      onChange={e => setFryer(activeFryerTab, { litresFilled: e.target.value })}
-                      style={{ ...inputStyle, fontSize: '14px', width: '100%', boxSizing: 'border-box', borderColor: '#6ee7b7' }}
-                      onFocus={e => e.target.style.borderColor = '#10b981'} onBlur={e => e.target.style.borderColor = '#6ee7b7'} />
-                  </div>
-                )}
+                {/* Litres topped up — always shown */}
+                <div style={field}>
+                  <label style={lbl}>Litres Topped Up</label>
+                  <input type="number" step="0.5" min="0" placeholder="0" value={fd.litresFilled ?? '0'}
+                    onChange={e => setFryer(activeFryerTab, { litresFilled: e.target.value })}
+                    style={{ ...inputStyle, fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+                    onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </div>
 
                 {/* TPM */}
                 <div style={field}>
@@ -3005,6 +3199,15 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                   </select>
                 </div>
 
+                {/* Staff Name */}
+                <div style={field}>
+                  <label style={lbl}>Staff Name (optional)</label>
+                  <input type="text" placeholder="Name of person recording" value={fd.staffName || ''}
+                    onChange={e => setFryer(activeFryerTab, { staffName: e.target.value })}
+                    style={{ ...inputStyle, fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+                    onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </div>
+
                 {/* Comments */}
                 <div style={{ marginBottom: '4px' }}>
                   <label style={lbl}>Comments (optional)</label>
@@ -3039,19 +3242,19 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                   <button disabled={!canSubmit} onClick={() => {
                     const newReadings = fryerNums.map(n => {
                       const fdata = readingForm.fryers[n] || {};
-                      const freshOil = parseInt(fdata.oilAge) === 1;
                       return {
                         id: `r-${Date.now()}-${n}`,
                         venueId: t.id, fryerNumber: n, readingDate: readingForm.date, takenBy: currentUser?.id || null,
                         notInUse: fdata.notInUse || false,
                         oilAge: fdata.notInUse ? null : parseInt(fdata.oilAge),
-                        litresFilled: (!fdata.notInUse && freshOil) ? parseFloat(fdata.litresFilled) : null,
+                        litresFilled: fdata.notInUse ? 0 : (parseFloat(fdata.litresFilled) || 0),
                         tpmValue: fdata.notInUse ? null : parseFloat(fdata.tpmValue),
                         setTemperature: (!fdata.notInUse && fdata.setTemperature) ? parseFloat(fdata.setTemperature) : null,
                         actualTemperature: (!fdata.notInUse && fdata.actualTemperature) ? parseFloat(fdata.actualTemperature) : null,
                         filtered: fdata.notInUse ? null : fdata.filtered,
                         foodType: fdata.notInUse ? null : fdata.foodType,
                         notes: fdata.notes || '',
+                        staffName: fdata.staffName || '',
                       };
                     });
                     setTpmReadings(prev => [...prev, ...newReadings]);
@@ -3073,50 +3276,136 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
   );
 };
 
-const PermissionsAccess = ({ users }) => {
-  const permissions = [
-    { role: 'bdm', sees: 'Own assigned venues and trial prospects', canDo: 'Create trials, log TPM readings, end trials, set outcomes' },
-    { role: 'nam', sees: 'BDM and venue data linked to their assigned groups', canDo: 'Create trials, log readings, end trials, view trial pipeline, add venues and groups, export data' },
-    { role: 'state_manager', sees: 'All BDMs, venues, and trials in their state', canDo: 'Create trials, log readings, end trials, view trial pipeline, export data' },
-    { role: 'mgt', sees: 'All data nationally across every state', canDo: 'Full operational access — venues, groups, trials, competitors, reporting' },
-    { role: 'admin', sees: 'Everything — full system access', canDo: 'All of the above plus user management, permissions, system settings' },
-  ];
+const PERMISSION_CAPABILITIES = [
+  { group: 'Data Access', items: [
+    { key: 'view_own_venues',     label: 'View own assigned venues' },
+    { key: 'view_group_venues',   label: 'View group / linked venues' },
+    { key: 'view_state_venues',   label: 'View all venues in state' },
+    { key: 'view_national',       label: 'View all data nationally' },
+    { key: 'view_system_settings',label: 'View system settings' },
+  ]},
+  { group: 'Trials', items: [
+    { key: 'create_trials',   label: 'Create trials' },
+    { key: 'log_readings',    label: 'Log TPM readings' },
+    { key: 'end_trials',      label: 'End trials / set outcomes' },
+    { key: 'view_pipeline',   label: 'View trial pipeline' },
+  ]},
+  { group: 'Management', items: [
+    { key: 'add_venues',      label: 'Add venues & groups' },
+    { key: 'manage_users',    label: 'Manage users' },
+    { key: 'manage_competitors', label: 'Manage competitors' },
+    { key: 'export_data',     label: 'Export data' },
+  ]},
+  { group: 'Administration', items: [
+    { key: 'edit_permissions', label: 'Edit permissions' },
+    { key: 'edit_settings',    label: 'Edit system settings' },
+    { key: 'bulk_onboarding',  label: 'Bulk venue onboarding' },
+  ]},
+];
+
+const ALL_CAPABILITY_KEYS = PERMISSION_CAPABILITIES.flatMap(g => g.items.map(i => i.key));
+const ROLES_ORDER = ['bdm', 'nam', 'state_manager', 'mgt', 'admin'];
+
+const DEFAULT_ROLE_CAPABILITIES = {
+  bdm:           ['view_own_venues', 'create_trials', 'log_readings', 'end_trials'],
+  nam:           ['view_own_venues', 'view_group_venues', 'create_trials', 'log_readings', 'end_trials', 'view_pipeline', 'add_venues', 'export_data'],
+  state_manager: ['view_own_venues', 'view_group_venues', 'view_state_venues', 'create_trials', 'log_readings', 'end_trials', 'view_pipeline', 'export_data'],
+  mgt:           ['view_own_venues', 'view_group_venues', 'view_state_venues', 'view_national', 'create_trials', 'log_readings', 'end_trials', 'view_pipeline', 'add_venues', 'manage_competitors', 'export_data'],
+  admin:         ALL_CAPABILITY_KEYS,
+};
+
+const PermissionsAccess = ({ users, systemSettings, setSystemSettings, theme }) => {
+  const saved = systemSettings?.permissionsConfig || {};
+
+  const getCapabilities = (role) => saved[role] || DEFAULT_ROLE_CAPABILITIES[role] || [];
+
+  const toggleCapability = (role, capKey) => {
+    const current = [...getCapabilities(role)];
+    const idx = current.indexOf(capKey);
+    if (idx >= 0) current.splice(idx, 1); else current.push(capKey);
+    const next = { ...saved, [role]: current };
+    setSystemSettings(prev => ({ ...prev, permissionsConfig: next }));
+    supabase.from('system_settings').update({ permissions_config: next }).eq('id', 1);
+  };
+
+  const resetRole = (role) => {
+    const next = { ...saved };
+    delete next[role];
+    setSystemSettings(prev => ({ ...prev, permissionsConfig: next }));
+    supabase.from('system_settings').update({ permissions_config: next }).eq('id', 1);
+  };
 
   const roleCounts = {};
   users.forEach(u => { roleCounts[u.role] = (roleCounts[u.role] || 0) + 1; });
 
+  const thStyle = { padding: '8px 6px', textAlign: 'center', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', background: '#f8fafc', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 2 };
+  const tdStyle = { padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
+  const groupRowStyle = { padding: '10px 12px', fontSize: '11px', fontWeight: '700', color: '#1a428a', letterSpacing: '0.3px', textTransform: 'uppercase', background: '#f0f4fa', borderBottom: '1px solid #e2e8f0' };
+  const labelTdStyle = { padding: '8px 12px', fontSize: '13px', color: '#1f2937', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' };
+
   return (
     <div>
       <SectionHeader icon={Shield} title="Permissions & Access Levels" />
-      
+
       <div style={{
         background: '#eff6ff', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px',
         border: '1px solid #bfdbfe', display: 'flex', alignItems: 'flex-start', gap: '10px'
       }}>
         <AlertCircle size={16} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
         <div style={{ fontSize: '13px', color: '#1e40af', lineHeight: '1.5' }}>
-          Permissions are role-based. Each role defines what data a user can see and what actions they can perform. Visibility is hierarchical — each level sees everything below it.
+          Tick or untick capabilities for each role. Changes save automatically. Click a role header to reset it to defaults.
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {permissions.map(p => (
-          <div key={p.role} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <RoleBadge role={p.role} />
-                <span style={{ fontSize: '12px', color: '#64748b' }}>{roleCounts[p.role] || 0} user{(roleCounts[p.role] || 0) !== 1 ? 's' : ''}</span>
-              </div>
-            </div>
-            <div style={{ marginBottom: '6px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px' }}>SEES: </span>
-              <span style={{ fontSize: '13px', color: '#1f2937' }}>{p.sees}</span>
-            </div>
-            <div>
-              <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px' }}>CAN DO: </span>
-              <span style={{ fontSize: '13px', color: '#1f2937' }}>{p.canDo}</span>
-            </div>
-          </div>
+      <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ ...thStyle, textAlign: 'left', paddingLeft: '12px', minWidth: '200px' }}>Capability</th>
+                {ROLES_ORDER.map(role => (
+                  <th key={role} style={{ ...thStyle, minWidth: '80px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <RoleBadge theme={theme} role={role} />
+                      <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>{roleCounts[role] || 0}</span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {PERMISSION_CAPABILITIES.map(group => (
+                <React.Fragment key={group.group}>
+                  <tr>
+                    <td colSpan={ROLES_ORDER.length + 1} style={groupRowStyle}>{group.group}</td>
+                  </tr>
+                  {group.items.map(item => (
+                    <tr key={item.key} style={{ transition: 'background 0.1s' }} onMouseOver={e => e.currentTarget.style.background = '#f8fafc'} onMouseOut={e => e.currentTarget.style.background = 'white'}>
+                      <td style={labelTdStyle}>{item.label}</td>
+                      {ROLES_ORDER.map(role => {
+                        const caps = getCapabilities(role);
+                        const checked = caps.includes(item.key);
+                        return (
+                          <td key={role} style={tdStyle}>
+                            <input type="checkbox" checked={checked} onChange={() => toggleCapability(role, item.key)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#1a428a' }} />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Reset buttons */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+        {ROLES_ORDER.filter(role => !!saved[role]).map(role => (
+          <button key={role} onClick={() => resetRole(role)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <RotateCcw size={10} /> Reset <RoleBadge theme={theme} role={role} /> to default
+          </button>
         ))}
       </div>
     </div>
@@ -3143,9 +3432,9 @@ const OnboardingFlow = ({ oilTypes, venues, groups, users, setVenues, setGroups,
   ];
 
   const sampleCsv = `Cust Code,Name,Group Code,Rep Code,State,Fryers,Volume
-TRUSOUV0,True South,JBS,BA01,VIC,4,100-150
-GARMELV0,Garden State Hotel,JBS,BA01,VIC,6,150-plus
-TONPORV0,Tony's Fish & Chips,,BC01,VIC,2,under-60`;
+CUST001,Sample Venue 1,GRP,REP01,VIC,4,100-150
+CUST002,Sample Venue 2,GRP,REP01,VIC,6,150-plus
+CUST003,Sample Venue 3,,REP02,VIC,2,under-60`;
 
   const parseCsv = () => {
     setBulkError('');
@@ -3251,9 +3540,9 @@ TONPORV0,Tony's Fish & Chips,,BC01,VIC,2,under-60`;
                     </thead>
                     <tbody>
                       {[
-                        ['TRUSOUV0', 'True South', 'JBS', 'BA01', 'VIC', '4', '100-150'],
-                        ['GARMELV0', 'Garden State Hotel', 'JBS', 'BA01', 'VIC', '6', '150-plus'],
-                        ['TONPORV0', "Tony's Fish & Chips", '', 'BC01', 'VIC', '2', 'under-60'],
+                        ['CUST001', 'Sample Venue 1', 'GRP', 'REP01', 'VIC', '4', '100-150'],
+                        ['CUST002', 'Sample Venue 2', 'GRP', 'REP01', 'VIC', '6', '150-plus'],
+                        ['CUST003', 'Sample Venue 3', '', 'REP02', 'VIC', '2', 'under-60'],
                       ].map((row, i) => (
                         <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
                           {row.map((cell, j) => (
@@ -3396,12 +3685,26 @@ const CollapsibleCard = ({ title, defaultOpen = false, children }) => {
   );
 };
 
-const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, setVolumeBrackets, systemSettings, setSystemSettings, oilTypeOptions, setOilTypeOptions, demoLoaded, loadDemoData, clearDemoData }) => {
+const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, setVolumeBrackets, systemSettings, setSystemSettings, oilTypeOptions, setOilTypeOptions }) => {
   const [activeTab, setActiveTab] = useState('reasons');
   const [newReason, setNewReason] = useState('');
   const [newReasonType, setNewReasonType] = useState('successful');
   const [newBracket, setNewBracket] = useState({ label: '', color: '#64748b' });
   const [newOilType, setNewOilType] = useState('');
+
+  // ── Theme config — derived from systemSettings, persisted directly ──
+  const themeConfig = systemSettings.themeConfig || {};
+  const [themeSaved, setThemeSaved] = useState(false);
+  const dbSetThemeConfig = useCallback((next) => {
+    setSystemSettings(prev => ({ ...prev, themeConfig: next }));
+    supabase.from('system_settings').update({ theme_config: next }).eq('id', 1);
+    setThemeSaved(true);
+    setTimeout(() => setThemeSaved(false), 2000);
+  }, [setSystemSettings]);
+
+  // Theme accordion — all categories expanded by default
+  const [openCats, setOpenCats] = useState(() => THEME_CATEGORIES.map(c => c.key));
+  const toggleCat = (key) => setOpenCats(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
 
   const addReason = () => {
     if (!newReason.trim()) return;
@@ -3436,7 +3739,7 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
     { key: 'tpm',      label: 'TPM Thresholds',    icon: AlertCircle, group: 'System' },
     { key: 'fryers',   label: 'Default Fryers',    icon: Settings,    group: 'System' },
     { key: 'reporting',label: 'Reporting',         icon: RefreshCw,   group: 'System' },
-    { key: 'demo',     label: 'Demo Data',         icon: Archive,     group: 'System' },
+    { key: 'theme',    label: 'Theme & Colors',    icon: Palette,     group: 'System' },
   ];
 
   return (
@@ -3472,35 +3775,51 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
         {/* Tab content */}
         <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
 
-          {activeTab === 'reasons' && (
-            <div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>When a trial outcome is recorded, the BDM selects a reason. Helps track why trials succeed or fail.</div>
-              <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '12px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 40px', background: '#f8fafc', padding: '6px 12px', borderBottom: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b' }}>REASON</span>
-                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textAlign: 'center' }}>TYPE</span>
-                  <span />
-                </div>
-                {[...trialReasons].sort((a, b) => a.label.localeCompare(b.label)).map((r, i, arr) => (
-                  <div key={r.key} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 40px', alignItems: 'center', padding: '8px 12px', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{r.label}</span>
-                    <div style={{ textAlign: 'center' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '700', padding: '3px 0', borderRadius: '4px', display: 'inline-block', width: '88px', textAlign: 'center', background: r.type === 'successful' ? '#dcfce7' : '#fee2e2', color: r.type === 'successful' ? '#065f46' : '#991b1b' }}>{r.type === 'successful' ? 'SUCCESSFUL' : 'UNSUCCESSFUL'}</span>
-                    </div>
-                    <button onClick={() => removeReason(r.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', justifyContent: 'center' }}>
-                      <X size={14} color="#cbd5e1" />
-                    </button>
+          {activeTab === 'reasons' && (() => {
+            const ReasonTable = ({ title, titleColor, titleBg, type }) => {
+              const [newLabel, setNewLabel] = useState('');
+              const filtered = [...trialReasons].filter(r => r.type === type).sort((a, b) => a.label.localeCompare(b.label));
+              const handleAdd = () => {
+                if (!newLabel.trim()) return;
+                const key = newLabel.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                setTrialReasons(prev => [...prev, { key, label: newLabel.trim(), type }]);
+                setNewLabel('');
+              };
+              return (
+                <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ padding: '8px 12px', background: titleBg, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: titleColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>{filtered.length}</span>
                   </div>
-                ))}
+                  {filtered.map((r, i) => (
+                    <div key={r.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{r.label}</span>
+                      <button onClick={() => removeReason(r.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                        <X size={14} color="#cbd5e1" />
+                      </button>
+                    </div>
+                  ))}
+                  <div style={{ padding: '8px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
+                    <input style={{ ...inputStyle, flex: 1 }} placeholder="ADD REASON" value={newLabel}
+                      onChange={e => setNewLabel(e.target.value.toUpperCase())}
+                      onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                      onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
+                    />
+                    <button onClick={handleAdd} style={{ padding: '0 14px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+                  </div>
+                </div>
+              );
+            };
+            return (
+              <div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>When a trial outcome is recorded, the BDM selects a reason. Helps track why trials succeed or fail.</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  <ReasonTable title="Successful Reasons" titleColor="#065f46" titleBg="#dcfce7" type="successful" />
+                  <ReasonTable title="Unsuccessful Reasons" titleColor="#991b1b" titleBg="#fee2e2" type="unsuccessful" />
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
-                <input style={{ ...inputStyle, flex: 1 }} placeholder="BUDGET CONSTRAINTS" value={newReason} onChange={e => setNewReason(e.target.value.toUpperCase())} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} onKeyDown={e => e.key === 'Enter' && addReason()} />
-                <button onClick={() => setNewReasonType('successful')} style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', border: `1.5px solid ${newReasonType === 'successful' ? '#6ee7b7' : '#e2e8f0'}`, background: newReasonType === 'successful' ? '#d1fae5' : 'white', color: newReasonType === 'successful' ? '#065f46' : '#64748b' }}>Successful</button>
-                <button onClick={() => setNewReasonType('unsuccessful')} style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', border: `1.5px solid ${newReasonType === 'unsuccessful' ? '#fca5a5' : '#e2e8f0'}`, background: newReasonType === 'unsuccessful' ? '#fee2e2' : 'white', color: newReasonType === 'unsuccessful' ? '#991b1b' : '#64748b' }}>Unsuccessful</button>
-                <button onClick={addReason} style={{ padding: '0 16px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'brackets' && (
             <div>
@@ -3621,20 +3940,136 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
             </div>
           )}
 
-          {activeTab === 'demo' && (
-            <div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Load sample data to test the admin panel, or clear it before going live with real data.</div>
-              <div style={{ background: demoLoaded ? '#fefce8' : '#f8fafc', borderRadius: '10px', padding: '14px', border: `1px solid ${demoLoaded ? '#fde047' : '#e2e8f0'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: demoLoaded ? '#854d0e' : '#1f2937', marginBottom: '2px' }}>{demoLoaded ? 'Demo data is active' : 'No demo data loaded'}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{demoLoaded ? 'Sample venues, groups, users, oils, competitors and trials are loaded.' : 'The system is empty. Load demo data to explore all features.'}</div>
-                </div>
-                <button onClick={demoLoaded ? clearDemoData : loadDemoData} style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, background: demoLoaded ? '#fff' : '#1a428a', color: demoLoaded ? '#dc2626' : '#fff', border: demoLoaded ? '1.5px solid #fca5a5' : '1.5px solid #1a428a' }}>
-                  {demoLoaded ? 'Clear Demo Data' : 'Load Demo Data'}
-                </button>
+          {activeTab === 'theme' && (() => {
+            const merged = getThemeColors(themeConfig);
+            const updateColor = (catKey, entryKey, prop, value) => {
+              const next = { ...themeConfig };
+              if (!next[catKey]) next[catKey] = {};
+              if (entryKey !== null) {
+                if (!next[catKey][entryKey]) next[catKey][entryKey] = {};
+                next[catKey][entryKey][prop] = value;
+              } else {
+                next[catKey][prop] = value;
+              }
+              dbSetThemeConfig(next);
+            };
+            const resetEntry = (catKey, entryKey) => {
+              const next = { ...themeConfig };
+              if (next[catKey]) {
+                if (entryKey !== null) { delete next[catKey][entryKey]; if (Object.keys(next[catKey]).length === 0) delete next[catKey]; }
+                else delete next[catKey];
+              }
+              dbSetThemeConfig(next);
+            };
+            const resetAll = () => dbSetThemeConfig({});
+            const isOverridden = (catKey, entryKey) => {
+              if (!themeConfig[catKey]) return false;
+              if (entryKey !== null) return !!themeConfig[catKey][entryKey];
+              return Object.keys(themeConfig[catKey]).length > 0;
+            };
+            const ColorSwatch = ({ value, onChange, label }) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ fontSize: '9px', color: '#94a3b8', width: '38px', textAlign: 'right', fontWeight: '600', textTransform: 'uppercase' }}>{label}</div>
+                <input type="color" value={value && value.startsWith('#') ? value : '#000000'} onChange={e => onChange(e.target.value)}
+                  style={{ width: '24px', height: '24px', border: '1.5px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', padding: '1px' }} />
+                <input type="text" value={value || ''} onChange={e => onChange(e.target.value)}
+                  style={{ width: '110px', padding: '3px 6px', fontSize: '11px', fontFamily: 'monospace', border: '1.5px solid #e2e8f0', borderRadius: '4px', outline: 'none' }}
+                  onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
               </div>
-            </div>
-          )}
+            );
+            return (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>Customise badge and pill colors across the app.</span>
+                    <span style={{ fontSize: '11px', fontWeight: '600', color: themeSaved ? '#059669' : '#94a3b8', background: themeSaved ? '#d1fae5' : '#f1f5f9', padding: '2px 10px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.3s' }}>
+                      <Check size={12} /> {themeSaved ? 'Saved' : 'Auto-saves'}
+                    </span>
+                  </div>
+                  {Object.keys(themeConfig).length > 0 && (
+                    <button onClick={resetAll} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}>
+                      <RotateCcw size={12} /> Reset All
+                    </button>
+                  )}
+                </div>
+                {THEME_CATEGORIES.map(cat => {
+                  const defaults = merged[cat.key];
+                  if (!defaults || Array.isArray(defaults)) return null;
+                  const entries = cat.flat ? null : Object.entries(defaults);
+                  return (
+                    <div key={cat.key} style={{ marginBottom: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                      <div onClick={() => toggleCat(cat.key)} style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#1f2937', background: '#fafbfc', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none' }}>
+                        <ChevronDown size={14} style={{ transform: openCats.includes(cat.key) ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>{cat.label}</span>
+                        <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '400' }}>{cat.desc}</span>
+                        {themeConfig[cat.key] && Object.keys(themeConfig[cat.key]).length > 0 && (
+                          <span style={{ fontSize: '9px', color: '#1a428a', background: '#e8eef6', padding: '1px 6px', borderRadius: '4px', fontWeight: '600' }}>CUSTOMISED</span>
+                        )}
+                      </div>
+                      {openCats.includes(cat.key) && <div style={{ padding: '12px 14px', background: 'white' }}>
+                        {cat.flat ? (
+                          /* Flat key-value (THEME) */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {Object.entries(defaults).map(([propKey, propVal]) => (
+                              <div key={propKey} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', width: '90px' }}>{propKey}</div>
+                                <ColorSwatch value={merged[cat.key][propKey]} label="" onChange={v => updateColor(cat.key, null, propKey, v)} />
+                                {themeConfig[cat.key]?.[propKey] && (
+                                  <button onClick={() => { const next = { ...themeConfig }; delete next[cat.key][propKey]; if (Object.keys(next[cat.key]).length === 0) delete next[cat.key]; dbSetThemeConfig(next); }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }} title="Reset to default"><RotateCcw size={12} /></button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          /* Nested entries (ROLE_COLORS etc.) */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                            {entries.map(([entryKey, entryVal]) => (
+                              <div key={entryKey} style={{ display: 'grid', gridTemplateColumns: '120px 90px 1fr 28px', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                                {/* Editable label */}
+                                <input
+                                  type="text"
+                                  value={getEntryLabel(themeConfig, cat.key, entryKey)}
+                                  onChange={e => {
+                                    const next = { ...themeConfig };
+                                    if (!next._labels) next._labels = {};
+                                    if (!next._labels[cat.key]) next._labels[cat.key] = {};
+                                    next._labels[cat.key][entryKey] = e.target.value;
+                                    dbSetThemeConfig(next);
+                                  }}
+                                  style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', border: '1px solid transparent', borderRadius: '4px', padding: '2px 4px', background: 'transparent', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                                  onFocus={e => e.target.style.borderColor = '#1a428a'}
+                                  onBlur={e => e.target.style.borderColor = 'transparent'}
+                                />
+                                {/* Live preview */}
+                                <span style={{
+                                  padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.3px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                  background: entryVal.bg || entryVal.background || 'transparent',
+                                  color: entryVal.text || entryVal.color || '#000',
+                                  border: entryVal.border ? `1px solid ${entryVal.border}` : 'none',
+                                }}>{getEntryLabel(themeConfig, cat.key, entryKey)}</span>
+                                {/* Color swatches in fixed grid */}
+                                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cat.props.length}, 180px)`, gap: '6px' }}>
+                                  {cat.props.map(prop => (
+                                    <ColorSwatch key={prop} label={prop} value={merged[cat.key][entryKey]?.[prop] || ''} onChange={v => updateColor(cat.key, entryKey, prop, v)} />
+                                  ))}
+                                </div>
+                                {/* Reset */}
+                                {isOverridden(cat.key, entryKey) ? (
+                                  <button onClick={() => resetEntry(cat.key, entryKey)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }} title="Reset to default"><RotateCcw size={12} /></button>
+                                ) : <div />}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
         </div>
       </div>
@@ -3642,305 +4077,7 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
   );
 };
 
-const SystemSettings = ({ systemSettings: settings, setSystemSettings: setSettings, demoLoaded, loadDemoData, clearDemoData }) => {
-  return null;
-};
 
-// ==================== SEED DATA ====================
-
-const seedCompetitors = () => [
-  { id: 'comp-1', name: 'OIL2U', code: 'OIL2', status: 'active', type: 'direct', states: ['VIC', 'NSW', 'QLD'], createdAt: '2025-06-15', updatedAt: '2026-02-10', color: '#e53e3e' },
-  { id: 'comp-2', name: 'CFM', code: 'CFM', status: 'active', type: 'direct', states: ['VIC', 'NSW', 'QLD', 'SA', 'WA', 'TAS'], createdAt: '2025-06-15', updatedAt: '2026-02-12', color: '#3182ce' },
-  { id: 'comp-3', name: 'TROJAN', code: 'TROJ', status: 'active', type: 'direct', states: ['VIC', 'NSW'], createdAt: '2025-07-01', updatedAt: '2026-01-20', color: '#d69e2e' },
-  { id: 'comp-4', name: 'ECOFRY', code: 'EFRY', status: 'active', type: 'direct', states: ['VIC', 'QLD', 'WA'], createdAt: '2025-08-10', updatedAt: '2026-02-05', color: '#38a169' },
-  { id: 'comp-5', name: 'AUSCOL', code: 'AUSC', status: 'active', type: 'direct', states: ['VIC', 'NSW', 'QLD', 'SA'], createdAt: '2025-09-01', updatedAt: '2026-01-15', color: '#805ad5' },
-  { id: 'comp-6', name: 'FILTAFRY', code: 'FILT', status: 'active', type: 'direct', states: ['VIC', 'NSW', 'QLD', 'SA', 'WA'], createdAt: '2025-09-10', updatedAt: '2026-01-28', color: '#319795' },
-  { id: 'comp-7', name: 'THE FAT MAN', code: 'FMAN', status: 'active', type: 'direct', states: ['VIC', 'NSW'], createdAt: '2025-10-01', updatedAt: '2026-02-01', color: '#d53f8c' },
-  { id: 'comp-8', name: 'THE OIL MAN', code: 'OMAN', status: 'active', type: 'direct', states: ['QLD'], createdAt: '2025-10-15', updatedAt: '2026-01-30', color: '#dd6b20' },
-  { id: 'comp-9', name: 'THE OIL GUYS', code: 'THOG', status: 'active', type: 'direct', states: ['VIC', 'NSW', 'SA'], createdAt: '2025-11-01', updatedAt: '2026-02-08', color: '#5a67d8' },
-  { id: 'comp-10', name: 'VATMAN', code: 'VAT', status: 'active', type: 'direct', states: ['VIC', 'NSW', 'QLD', 'WA', 'TAS'], createdAt: '2025-11-10', updatedAt: '2026-02-14', color: '#2d3748' },
-  { id: 'comp-11', name: 'PEERLESS', code: 'PEER', status: 'active', type: 'indirect', states: ['VIC', 'NSW', 'QLD', 'SA', 'WA', 'TAS'], createdAt: '2025-06-20', updatedAt: '2026-02-10', color: '#276749' },
-  { id: 'comp-12', name: 'COLES', code: 'COLE', status: 'active', type: 'indirect', states: ['VIC', 'NSW', 'QLD', 'SA', 'WA', 'TAS'], createdAt: '2025-07-15', updatedAt: '2026-01-20', color: '#c05621' },
-  { id: 'comp-13', name: 'MSM MILLING', code: 'MSM', status: 'active', type: 'indirect', states: ['VIC', 'NSW', 'QLD'], createdAt: '2025-08-01', updatedAt: '2026-02-05', color: '#2b6cb0' },
-];
-
-const seedOilTypes = () => [
-  { id: 'oil-1', name: 'XLFRY', code: 'XLFRY', category: 'cookers', tier: 'premium', status: 'active', oilType: 'canola', packSize: 'bulk', competitorId: '' },
-  { id: 'oil-2', name: 'ULTAFRY', code: 'ULTAFRY', category: 'cookers', tier: 'elite', status: 'active', oilType: 'canola', packSize: 'bulk', competitorId: '' },
-  { id: 'oil-3', name: 'CANOLA', code: 'CANOLANA', category: 'cookers', tier: 'standard', status: 'active', oilType: 'canola', packSize: 'bulk', competitorId: '' },
-  { id: 'oil-4', name: 'COOKERS BLEND', code: 'CKBLEND', category: 'cookers', tier: 'standard', status: 'inactive', oilType: 'canola', packSize: 'bulk', competitorId: '' },
-  { id: 'oil-5', name: 'CANOLA', code: 'OIL2-CAN', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-1', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-5b', name: 'HI-PERFORMANCE', code: 'OIL2-HP', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-1', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-6', name: 'SUNFLOWER', code: 'CFM-FO', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-2', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-6b', name: 'GOLD BLEND', code: 'CFM-GB', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-2', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-6c', name: 'CANOLA LIGHT', code: 'CFM-CL', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-2', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-7', name: 'DEEP FRY', code: 'TROJ-DF', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-3', oilType: 'palm', packSize: 'bulk' },
-  { id: 'oil-7b', name: 'ENDURANCE', code: 'TROJ-EN', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-3', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-8', name: 'PREMIUM', code: 'EFRY-PR', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-4', oilType: 'sunflower', packSize: 'bulk' },
-  { id: 'oil-8b', name: 'ECOBLEND', code: 'EFRY-EB', category: 'competitor', tier: 'elite', status: 'active', competitorId: 'comp-4', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-8c', name: 'PURE CANOLA', code: 'EFRY-PC', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-4', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-9', name: 'FRY MAX', code: 'AUSC-FM', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-5', oilType: 'palm', packSize: 'bulk' },
-  { id: 'oil-9b', name: 'CANOLA SELECT', code: 'AUSC-CS', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-5', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-9c', name: 'ULTRA BLEND', code: 'AUSC-UB', category: 'competitor', tier: 'elite', status: 'active', competitorId: 'comp-5', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-10', name: 'FILTRAOIL', code: 'FILT-FO', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-6', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-10b', name: 'CANOLA', code: 'FILT-SC', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-6', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-11', name: 'FAT BLEND', code: 'FMAN-BL', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-7', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-11b', name: 'BUDGET FRY', code: 'FMAN-BF', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-7', oilType: 'palm', packSize: 'bulk' },
-  { id: 'oil-12', name: 'PREMIUM', code: 'OMAN-PR', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-8', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-13', name: 'GUYS CANOLA', code: 'THOG-CAN', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-9', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-13b', name: 'PREMIUM', code: 'THOG-PR', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-9', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-14', name: 'VATMAN FRY', code: 'VAT-FRY', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-10', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-14b', name: 'CANOLA', code: 'VAT-STD', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-10', oilType: 'canola', packSize: 'bulk' },
-  { id: 'oil-15', name: 'CANOLA 20L', code: 'PEER-C20', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-11', oilType: 'canola', packSize: '20l' },
-  { id: 'oil-15b', name: 'VEGETABLE 20L', code: 'PEER-V20', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-11', oilType: 'blend', packSize: '20l' },
-  { id: 'oil-16', name: 'CANOLA OIL 20L', code: 'COLE-C20', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-12', oilType: 'canola', packSize: '20l' },
-  { id: 'oil-17', name: 'FRYING OIL 20L', code: 'MSM-F20', category: 'competitor', tier: 'standard', status: 'active', competitorId: 'comp-13', oilType: 'canola', packSize: '20l' },
-  { id: 'oil-17b', name: 'SUNFLOWER 20L', code: 'MSM-S20', category: 'competitor', tier: 'premium', status: 'active', competitorId: 'comp-13', oilType: 'sunflower', packSize: '20l' },
-];
-
-// Generates realistic TPM readings from the seed venue data.
-// Each reading includes oilAge (days since last fill) and litresFilled when oilAge === 1.
-// oilAge resets to 1 when the hash pattern simulates an oil change.
-// litresFilled is derived from fryerCount and volume bracket — bigger venues fill more per fryer.
-const seedTpmReadings = () => {
-  const readings = [];
-  const venues = seedVenues();
-  let idCounter = 1;
-
-  const volumeToLitresPerFryer = { 'under-60': 8, '60-100': 12, '100-150': 16, '150-plus': 22 };
-
-  venues.forEach(v => {
-    if (!v.trialStartDate || v.trialStatus === 'pending') return;
-    const start = new Date(v.trialStartDate + 'T00:00:00');
-    const end = new Date((v.trialEndDate || v.trialStartDate) + 'T00:00:00');
-    const today = new Date(); today.setHours(0,0,0,0);
-    const fryerCount = v.fryerCount || 1;
-    const litresPerFill = volumeToLitresPerFryer[v.volumeBracket] || 12;
-
-    // Track oil age per fryer independently
-    const fryerOilAge = {};
-    for (let f = 1; f <= fryerCount; f++) fryerOilAge[f] = 0;
-
-    const d = new Date(start);
-    while (d <= end && d <= today) {
-      for (let f = 1; f <= fryerCount; f++) {
-        const dayIdx = Math.floor((d - start) / 86400000);
-        const seed = (hash * 31 + dayIdx * 17 + f * 53) % 100;
-        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-        // Skip some readings (weekends less likely, simulates missed days)
-        if (seed >= (isWeekend ? 70 : 95)) continue;
-
-        fryerOilAge[f]++;
-
-        // Simulate oil change: fryers change based on volume — high volume changes more often
-        const changeInterval = v.volumeBracket === '150-plus' ? 3 : v.volumeBracket === '100-150' ? 4 : 5;
-        const isOilChange = fryerOilAge[f] > changeInterval && ((hash + f + dayIdx) % changeInterval === 0);
-        if (isOilChange) fryerOilAge[f] = 1;
-
-        const currentAge = fryerOilAge[f];
-        const baseTpm = 3 + (hash % 3);
-        const dailyRise = 1.5 + ((hash + f * 3) % 10) / 10;
-        const noise = ((seed * 7 + dayIdx * 3) % 30 - 15) / 10;
-        const tpm = Math.round(Math.max(2, Math.min(24, baseTpm + ((currentAge - 1) * dailyRise) + noise)));
-
-        // Small per-fill variation so different fryers don't all show identical litres
-        const fillVariance = ((hash + f * 7) % 5) - 2; // -2 to +2 L
-        const litresFilled = currentAge === 1 ? Math.max(5, litresPerFill + fillVariance) : null;
-
-        // Temperatures: set 175-185, actual drifts slightly from set
-        const setTemp = 175 + ((hash + f * 3) % 3) * 5; // 175, 180, or 185
-        const tempDrift = ((seed + dayIdx) % 7) - 3; // -3 to +3
-        const actualTemp = setTemp + tempDrift;
-        // Filtering: more likely on low oil age days (fresh oil = recently filtered)
-        const didFilter = currentAge <= 2 ? ((hash + f + dayIdx) % 3 !== 0) : ((hash + f + dayIdx) % 5 === 0);
-        const foodTypeIdx = (hash + f * 2) % FOOD_TYPES.length;
-
-        readings.push({
-          id: `r-${idCounter++}`,
-          venueId: v.id,
-          fryerNumber: f,
-          readingDate: d.toISOString().split('T')[0],
-          takenBy: v.bdmId || null,
-          oilAge: currentAge,
-          litresFilled,
-          tpmValue: tpm,
-          setTemperature: setTemp,
-          actualTemperature: actualTemp,
-          filtered: didFilter,
-          foodType: FOOD_TYPES[foodTypeIdx],
-          notes: '',
-        });
-      }
-      d.setDate(d.getDate() + 1);
-    }
-  });
-  return readings;
-};
-
-const seedVenues = () => [
-  // JBS Hospitality Group venues (all active, NAM: Ben Andonov via group)
-  { id: 'v-1', volumeBracket: '100-150', name: 'TRUE SOUTH', fryerCount: 4, defaultOil: 'oil-3', groupId: 'g-1', status: 'active', customerCode: 'TRUSOUV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-2', volumeBracket: '150-plus', name: 'GARDEN STATE HOTEL', fryerCount: 6, defaultOil: 'oil-3', groupId: 'g-1', status: 'active', customerCode: 'GARMELV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-3', volumeBracket: '60-100', name: 'THE EMERSON', fryerCount: 3, defaultOil: 'oil-1', groupId: 'g-1', status: 'active', customerCode: 'THESOUV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-4', volumeBracket: '150-plus', name: 'THE PRECINCT HOTEL', fryerCount: 5, defaultOil: 'oil-3', groupId: 'g-1', status: 'active', customerCode: 'THEMELV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-15' },
-  { id: 'v-5', volumeBracket: '60-100', name: 'HOLLIAVA', fryerCount: 3, defaultOil: 'oil-1', groupId: 'g-1', status: 'active', customerCode: 'HOLWINV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-
-  // Betty's Burgers group — mix of active customers and trial venues (NAM: Braedan Cleave via group)
-  { id: 'v-9', volumeBracket: '60-100', name: "BETTY'S BURGERS DONCASTER", fryerCount: 4, defaultOil: 'oil-1', groupId: 'g-2', status: 'active', customerCode: 'BETDONV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-10', volumeBracket: '60-100', name: "BETTY'S BURGERS CHADSTONE", fryerCount: 4, defaultOil: 'oil-1', groupId: 'g-2', status: 'active', customerCode: 'BETCHAV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-15' },
-  { id: 'v-11', volumeBracket: '60-100', name: "BETTY'S BURGERS BRUNETTI", fryerCount: 3, defaultOil: 'oil-3', groupId: 'g-2', status: 'active', customerCode: 'BETCARV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-12', volumeBracket: '60-100', name: "BETTY'S BURGERS BRIGHTON", fryerCount: 3, defaultOil: 'oil-9', trialOilId: 'oil-1', groupId: 'g-2', status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7a', trialStatus: 'in-progress', trialStartDate: '2026-02-10', trialEndDate: '2026-02-20', currentWeeklyAvg: 85, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.45 },
-  { id: 'v-13', volumeBracket: 'under-60', name: "BETTY'S BURGERS FITZROY", fryerCount: 3, defaultOil: 'oil-9', trialOilId: 'oil-1', groupId: 'g-2', status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7b', trialStatus: 'pending', trialStartDate: '2026-02-24', trialEndDate: '2026-03-06', currentWeeklyAvg: 55, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.45 },
-
-  // Standalone active venues (no group)
-  { id: 'v-6', volumeBracket: 'under-60', name: "TONY'S FISH & CHIPS", fryerCount: 2, defaultOil: 'oil-3', groupId: null, status: 'active', customerCode: 'TONPORV0', state: 'VIC', bdmId: 'u-7a', trialOilId: '', lastTpmDate: '2026-02-15' },
-  { id: 'v-7', volumeBracket: 'under-60', name: "MARIO'S PIZZA", fryerCount: 2, defaultOil: 'oil-3', groupId: null, status: 'active', customerCode: 'MARCARV0', state: 'VIC', bdmId: 'u-7b', trialOilId: '', lastTpmDate: '2026-02-13' },
-  { id: 'v-14', volumeBracket: '60-100', name: 'SALTY DOG FISH BAR', fryerCount: 3, defaultOil: 'oil-1', groupId: 'g-4', status: 'active', customerCode: 'SALSTV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-15', volumeBracket: 'under-60', name: 'WOK THIS WAY', fryerCount: 2, defaultOil: 'oil-3', groupId: null, status: 'active', customerCode: 'WOKRICV0', state: 'VIC', bdmId: 'u-7c', trialOilId: '', lastTpmDate: '2026-02-10' },
-
-  // Standalone trial/prospect venues (BDM running trials)
-  { id: 'v-8', volumeBracket: '100-150', name: 'PROSPECT BURGER CO', fryerCount: 4, defaultOil: 'oil-6', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7c', trialStatus: 'completed', trialStartDate: '2026-02-03', trialEndDate: '2026-02-13', trialNotes: 'Strong results across all 4 fryers. Dave wants to discuss with his business partner before committing. Follow up mid-Feb.', currentWeeklyAvg: 120, currentPricePerLitre: 1.95, offeredPricePerLitre: 2.65 },
-  { id: 'v-16', volumeBracket: 'under-60', name: 'GOLDEN WONTON', fryerCount: 2, defaultOil: 'oil-5', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: 'GOLMELV0', state: 'VIC', bdmId: 'u-7a', trialStatus: 'won', trialReason: 'oil-lasted-longer', trialStartDate: '2026-02-03', trialEndDate: '2026-02-13', outcomeDate: '2026-02-14', trialNotes: 'Owner very impressed with oil life extension. Went from 3-day changes to 5-day. Keen to sign onto oil management program.', currentWeeklyAvg: 48, currentPricePerLitre: 2.20, offeredPricePerLitre: 2.85, soldPricePerLitre: 2.75 },
-  { id: 'v-40', volumeBracket: '60-100', name: 'BRUNSWICK SOUVLAKI BAR', fryerCount: 3, defaultOil: 'oil-5', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7b', trialStatus: 'in-progress', trialStartDate: '2026-02-11', trialEndDate: '2026-02-21', currentWeeklyAvg: 70, currentPricePerLitre: 2.00, offeredPricePerLitre: 2.55 },
-  { id: 'v-41', volumeBracket: '100-150', name: 'ST KILDA BURGER JOINT', fryerCount: 4, defaultOil: 'oil-7', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7c', trialStatus: 'pending', trialStartDate: '2026-02-20', trialEndDate: '2026-03-02', currentWeeklyAvg: 105, currentPricePerLitre: 1.90, offeredPricePerLitre: 2.60 },
-
-  // NSW venues
-  { id: 'v-18', volumeBracket: '60-100', name: 'THE CHIPPO', fryerCount: 3, defaultOil: 'oil-1', groupId: 'g-4', status: 'active', customerCode: 'THECHINS0', state: 'NSW', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-19', volumeBracket: '150-plus', name: 'DARLING HARBOUR FISH CO', fryerCount: 5, defaultOil: 'oil-3', groupId: 'g-3', status: 'active', customerCode: 'DARSYNS0', state: 'NSW', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-20', volumeBracket: 'under-60', name: 'BONDI BITES', fryerCount: 2, defaultOil: 'oil-1', groupId: null, status: 'active', customerCode: 'BONBONS0', state: 'NSW', bdmId: 'u-7d', trialOilId: '', lastTpmDate: '2026-02-15' },
-  { id: 'v-21', volumeBracket: '100-150', name: 'NEWTOWN NOODLE BAR', fryerCount: 3, defaultOil: 'oil-7', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7d', trialStatus: 'in-progress', trialStartDate: '2026-02-10', trialEndDate: '2026-02-19', currentWeeklyAvg: 110, currentPricePerLitre: 2.05, offeredPricePerLitre: 2.65 },
-  { id: 'v-22', volumeBracket: 'under-60', name: 'PARRAMATTA KEBABS', fryerCount: 2, defaultOil: 'oil-6', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7e', trialStatus: 'lost', trialStartDate: '2026-01-27', trialEndDate: '2026-02-06', outcomeDate: '2026-02-08', trialReason: 'no-savings', trialNotes: 'Small venue with low volume. Oil change frequency was already low so savings were marginal. Owner not willing to pay premium price for minimal benefit.', currentWeeklyAvg: 30, currentPricePerLitre: 1.85, offeredPricePerLitre: 2.45 },
-  { id: 'v-42', volumeBracket: '100-150', name: 'SURRY HILLS FRIED CHICKEN', fryerCount: 4, defaultOil: 'oil-7', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7f', trialStatus: 'in-progress', trialStartDate: '2026-02-08', trialEndDate: '2026-02-18', currentWeeklyAvg: 110, currentPricePerLitre: 2.05, offeredPricePerLitre: 2.70 },
-  { id: 'v-43', volumeBracket: '60-100', name: 'MANLY WHARF FISH CO', fryerCount: 3, defaultOil: 'oil-6', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7d', trialStatus: 'completed', trialStartDate: '2026-02-01', trialEndDate: '2026-02-11', trialNotes: 'Sarah happy with results. Wants to run numbers past her accountant before committing.', currentWeeklyAvg: 80, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.55 },
-
-  // QLD venues
-  { id: 'v-23', volumeBracket: '100-150', name: 'SURFERS FISH HOUSE', fryerCount: 4, defaultOil: 'oil-1', groupId: 'g-3', status: 'active', customerCode: 'SURSURQ0', state: 'QLD', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-24', volumeBracket: '60-100', name: 'FORTITUDE FRY BAR', fryerCount: 3, defaultOil: 'oil-3', groupId: 'g-4', status: 'active', customerCode: 'FORFORQ0', state: 'QLD', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-15' },
-  { id: 'v-25', volumeBracket: '100-150', name: 'NOOSA COASTAL KITCHEN', fryerCount: 3, defaultOil: 'oil-8', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: 'NOOQLD1', state: 'QLD', bdmId: 'u-7g', trialStatus: 'won', trialReason: 'cost-savings', trialStartDate: '2026-01-20', trialEndDate: '2026-01-30', outcomeDate: '2026-02-02', trialNotes: 'High volume venue, busy tourist season. Reading twice daily to get good data.', currentWeeklyAvg: 130, currentPricePerLitre: 2.15, offeredPricePerLitre: 2.50, soldPricePerLitre: 2.50 },
-  { id: 'v-44', volumeBracket: '60-100', name: 'WEST END WINGS', fryerCount: 3, defaultOil: 'oil-8', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7h', trialStatus: 'in-progress', trialStartDate: '2026-02-10', trialEndDate: '2026-02-20', currentWeeklyAvg: 75, currentPricePerLitre: 2.15, offeredPricePerLitre: 2.55 },
-  { id: 'v-45', volumeBracket: '150-plus', name: 'BROADBEACH BURGER BAR', fryerCount: 5, defaultOil: 'oil-6', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7i', trialStatus: 'pending', trialStartDate: '2026-02-22', trialEndDate: '2026-03-04', currentWeeklyAvg: 160, currentPricePerLitre: 1.95, offeredPricePerLitre: 2.50 },
-
-  // SA venues
-  { id: 'v-26', volumeBracket: '100-150', name: 'HENLEY BEACH SEAFOOD', fryerCount: 4, defaultOil: 'oil-1', groupId: 'g-3', status: 'active', customerCode: 'HENHENS0', state: 'SA', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-27', volumeBracket: 'under-60', name: 'RUNDLE ST CHICKEN', fryerCount: 2, defaultOil: 'oil-5', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'SA', bdmId: 'u-7j', trialStatus: 'pending', trialStartDate: '2026-02-24', trialEndDate: '2026-03-06', currentWeeklyAvg: 40, currentPricePerLitre: 2.30, offeredPricePerLitre: 2.40 },
-  { id: 'v-46', volumeBracket: '60-100', name: 'GLENELG FISH SHACK', fryerCount: 3, defaultOil: 'oil-9', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'SA', bdmId: 'u-7k', trialStatus: 'in-progress', trialStartDate: '2026-02-07', trialEndDate: '2026-02-17', currentWeeklyAvg: 65, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.50 },
-
-  // WA venues
-  { id: 'v-28', volumeBracket: '150-plus', name: 'FREMANTLE FISH MARKET', fryerCount: 5, defaultOil: 'oil-2', groupId: 'g-3', status: 'active', customerCode: 'FREFREW0', state: 'WA', bdmId: '', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-29', volumeBracket: '60-100', name: 'SCARBOROUGH BURGERS', fryerCount: 3, defaultOil: 'oil-6', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'WA', bdmId: 'u-7l', trialStatus: 'completed', trialStartDate: '2026-02-01', trialEndDate: '2026-02-11', trialNotes: 'Josh says results look good. Waiting on credit approval from head office.', currentWeeklyAvg: 75, currentPricePerLitre: 1.90, offeredPricePerLitre: 2.45 },
-  { id: 'v-47', volumeBracket: '100-150', name: 'LEEDERVILLE GRILL HOUSE', fryerCount: 4, defaultOil: 'oil-8', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'WA', bdmId: 'u-7m', trialStatus: 'in-progress', trialStartDate: '2026-02-09', trialEndDate: '2026-02-19', currentWeeklyAvg: 95, currentPricePerLitre: 2.00, offeredPricePerLitre: 2.60 },
-
-  // TAS venues
-  { id: 'v-30', volumeBracket: '60-100', name: 'SALAMANCA FISH PUNT', fryerCount: 3, defaultOil: 'oil-1', groupId: null, status: 'active', customerCode: 'SALHOBS0', state: 'TAS', bdmId: 'u-7n', trialOilId: '', lastTpmDate: '2026-02-14' },
-  { id: 'v-31', volumeBracket: 'under-60', name: 'NORTH HOBART CHICKEN', fryerCount: 2, defaultOil: 'oil-3', groupId: null, status: 'active', customerCode: 'NORHOBS0', state: 'TAS', bdmId: 'u-7n', trialOilId: '', lastTpmDate: '2026-02-06' },
-  { id: 'v-32', volumeBracket: '60-100', name: 'LAUNCESTON BURGER SHACK', fryerCount: 3, defaultOil: 'oil-13', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'TAS', bdmId: 'u-7n', trialStatus: 'lost', trialStartDate: '2026-01-13', trialEndDate: '2026-01-23', outcomeDate: '2026-01-28', trialReason: 'price-too-high', currentWeeklyAvg: 70, currentPricePerLitre: 2.00, offeredPricePerLitre: 2.45 },
-
-  // Trader House group venues (VIC)
-  { id: 'v-33', volumeBracket: '100-150', name: 'TRADER HOUSE SOUTH MELBOURNE', fryerCount: 4, defaultOil: 'oil-1', groupId: 'g-6', status: 'active', customerCode: 'TRHSMV0', state: 'VIC', bdmId: 'u-7a', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-34', volumeBracket: '60-100', name: 'TRADER HOUSE HAWTHORN', fryerCount: 3, defaultOil: 'oil-1', groupId: 'g-6', status: 'active', customerCode: 'TRHHAWV0', state: 'VIC', bdmId: 'u-7b', trialOilId: '', lastTpmDate: '2026-02-15' },
-  { id: 'v-35', volumeBracket: '60-100', name: 'TRADER HOUSE FITZROY', fryerCount: 3, defaultOil: 'oil-3', groupId: 'g-6', status: 'active', customerCode: 'TRHFITV0', state: 'VIC', bdmId: 'u-7c', trialOilId: '', lastTpmDate: '2026-02-16' },
-
-  // Guzman Y Gomez group venues (multi-state)
-  { id: 'v-36', volumeBracket: '60-100', name: 'GYG CHAPEL ST', fryerCount: 3, defaultOil: 'oil-1', groupId: 'g-7', status: 'active', customerCode: 'GYGPRAV0', state: 'VIC', bdmId: 'u-7a', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-37', volumeBracket: '100-150', name: 'GYG NEWTOWN', fryerCount: 4, defaultOil: 'oil-1', groupId: 'g-7', status: 'active', customerCode: 'GYGNETN0', state: 'NSW', bdmId: 'u-7d', trialOilId: '', lastTpmDate: '2026-02-16' },
-  { id: 'v-38', volumeBracket: '60-100', name: 'GYG JAMES ST', fryerCount: 3, defaultOil: 'oil-3', groupId: 'g-7', status: 'active', customerCode: 'GYGFORQ0', state: 'QLD', bdmId: 'u-7g', trialOilId: '', lastTpmDate: '2026-02-15' },
-  { id: 'v-39', volumeBracket: '60-100', name: 'GYG RUNDLE ST', fryerCount: 3, defaultOil: 'oil-1', groupId: 'g-7', status: 'active', customerCode: 'GYGRUNS0', state: 'SA', bdmId: 'u-7j', trialOilId: '', lastTpmDate: '2026-02-14' },
-
-  // Inactive venue (closed)
-  { id: 'v-17', volumeBracket: '60-100', name: 'THE FRYING PAN (CLOSED)', fryerCount: 2, defaultOil: 'oil-3', groupId: null, status: 'inactive', customerCode: 'FRIRICV0', state: 'VIC', bdmId: '', trialOilId: '', lastTpmDate: '2025-11-15' },
-
-  // Additional trial venues for richer analysis
-  { id: 'v-50', volumeBracket: '100-150', name: 'PRAHRAN WINGS CO', fryerCount: 4, defaultOil: 'oil-7', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7a', trialStatus: 'won', trialReason: 'oil-lasted-longer', trialStartDate: '2026-01-06', trialEndDate: '2026-01-13', outcomeDate: '2026-01-15', trialNotes: 'Quick turnaround, owner loved oil longevity.', currentWeeklyAvg: 105, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.70, soldPricePerLitre: 2.60 },
-  { id: 'v-51', volumeBracket: '60-100', name: 'SEDDON STREET EATS', fryerCount: 3, defaultOil: 'oil-5', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7b', trialStatus: 'won', trialReason: 'trial-results', trialStartDate: '2025-12-15', trialEndDate: '2025-12-22', outcomeDate: '2025-12-28', trialNotes: 'Great results. Signed 12-month supply agreement.', currentWeeklyAvg: 65, currentPricePerLitre: 1.95, offeredPricePerLitre: 2.55, soldPricePerLitre: 2.50 },
-  { id: 'v-52', volumeBracket: '150-plus', name: 'COLLINGWOOD FRIED CHICKEN', fryerCount: 6, defaultOil: 'oil-8', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7c', trialStatus: 'lost', trialStartDate: '2026-01-10', trialEndDate: '2026-01-20', outcomeDate: '2026-01-25', trialReason: 'price-too-high', trialNotes: 'Venue liked performance but wouldn\'t move off budget pricing.', currentWeeklyAvg: 180, currentPricePerLitre: 1.80, offeredPricePerLitre: 2.65 },
-  { id: 'v-53', volumeBracket: 'under-60', name: 'YARRAVILLE DUMPLINGS', fryerCount: 2, defaultOil: 'oil-10', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7a', trialStatus: 'lost', trialStartDate: '2026-01-20', trialEndDate: '2026-01-27', outcomeDate: '2026-02-03', trialReason: 'no-savings', trialNotes: 'Low volume venue, oil savings marginal.', currentWeeklyAvg: 35, currentPricePerLitre: 2.05, offeredPricePerLitre: 2.50 },
-  { id: 'v-54', volumeBracket: '100-150', name: 'COOGEE BAY FISH', fryerCount: 4, defaultOil: 'oil-9', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7d', trialStatus: 'won', trialReason: 'oil-lasted-longer', trialStartDate: '2025-12-20', trialEndDate: '2025-12-30', outcomeDate: '2026-01-03', trialNotes: 'Busy summer trade. Oil lasted 40% longer than previous.', currentWeeklyAvg: 120, currentPricePerLitre: 2.25, offeredPricePerLitre: 2.75, soldPricePerLitre: 2.70 },
-  { id: 'v-55', volumeBracket: '60-100', name: 'MARRICKVILLE FRY BAR', fryerCount: 3, defaultOil: 'oil-5', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7e', trialStatus: 'won', trialReason: 'bdm-relationship', trialStartDate: '2026-01-13', trialEndDate: '2026-01-20', outcomeDate: '2026-01-22', trialNotes: 'Quick decision. Manager was already unhappy with current supplier.', currentWeeklyAvg: 80, currentPricePerLitre: 2.00, offeredPricePerLitre: 2.60, soldPricePerLitre: 2.55 },
-  { id: 'v-56', volumeBracket: '150-plus', name: 'CRONULLA SEAFOOD HOUSE', fryerCount: 5, defaultOil: 'oil-7', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7f', trialStatus: 'lost', trialStartDate: '2026-01-06', trialEndDate: '2026-01-16', outcomeDate: '2026-01-22', trialReason: 'chose-competitor', trialNotes: 'Went with a cheaper competitor who offered rebates.', currentWeeklyAvg: 155, currentPricePerLitre: 1.85, offeredPricePerLitre: 2.50 },
-  { id: 'v-57', volumeBracket: 'under-60', name: 'REDFERN CHICKEN SHOP', fryerCount: 2, defaultOil: 'oil-11b', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7d', trialStatus: 'lost', trialStartDate: '2025-12-09', trialEndDate: '2025-12-16', outcomeDate: '2025-12-23', trialReason: 'owner-not-interested', trialNotes: 'Owner didn\'t engage during trial. No readings taken.', currentWeeklyAvg: 40, currentPricePerLitre: 1.90, offeredPricePerLitre: 2.40 },
-  { id: 'v-58', volumeBracket: '100-150', name: 'SOUTHBANK GRILL', fryerCount: 4, defaultOil: 'oil-9', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7g', trialStatus: 'won', trialReason: 'cost-savings', trialStartDate: '2026-01-15', trialEndDate: '2026-01-25', outcomeDate: '2026-01-24', trialNotes: 'Excellent results. Reduced oil changes from every 2 days to every 4.', currentWeeklyAvg: 115, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.65, soldPricePerLitre: 2.60 },
-  { id: 'v-59', volumeBracket: '60-100', name: 'PADDINGTON CHIPPY', fryerCount: 3, defaultOil: 'oil-5', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7h', trialStatus: 'lost', trialStartDate: '2026-01-20', trialEndDate: '2026-01-30', outcomeDate: '2026-02-05', trialReason: 'price-too-high', trialNotes: 'Good performance but owner is price-driven.', currentWeeklyAvg: 70, currentPricePerLitre: 1.85, offeredPricePerLitre: 2.45 },
-  { id: 'v-60', volumeBracket: '150-plus', name: 'KANGAROO POINT SEAFOOD', fryerCount: 5, defaultOil: 'oil-8', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7i', trialStatus: 'won', trialReason: 'cost-savings', trialStartDate: '2025-12-16', trialEndDate: '2025-12-26', outcomeDate: '2025-12-30', trialNotes: 'High-volume success story. Massive oil savings.', currentWeeklyAvg: 170, currentPricePerLitre: 2.20, offeredPricePerLitre: 2.80, soldPricePerLitre: 2.75 },
-  { id: 'v-61', volumeBracket: '60-100', name: 'GLENELG FISH & CHIPS', fryerCount: 3, defaultOil: 'oil-9', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'SA', bdmId: 'u-7j', trialStatus: 'won', trialReason: 'better-value', trialStartDate: '2026-01-08', trialEndDate: '2026-01-18', outcomeDate: '2026-01-17', trialNotes: 'Straightforward win. Happy customer.', currentWeeklyAvg: 85, currentPricePerLitre: 2.00, offeredPricePerLitre: 2.55, soldPricePerLitre: 2.50 },
-  { id: 'v-62', volumeBracket: '100-150', name: 'PROSPECT ROAD CHICKEN', fryerCount: 4, defaultOil: 'oil-7', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'SA', bdmId: 'u-7k', trialStatus: 'lost', trialStartDate: '2025-12-02', trialEndDate: '2025-12-12', outcomeDate: '2025-12-20', trialReason: 'chose-competitor', trialNotes: 'Competitor offered a 6-month locked rate.', currentWeeklyAvg: 100, currentPricePerLitre: 1.95, offeredPricePerLitre: 2.55 },
-  { id: 'v-63', volumeBracket: 'under-60', name: 'NORWOOD SOUVLAKI', fryerCount: 2, defaultOil: 'oil-5', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'SA', bdmId: 'u-7j', trialStatus: 'pending', trialStartDate: '2026-02-24', trialEndDate: '2026-03-06', currentWeeklyAvg: 45, currentPricePerLitre: 1.90, offeredPricePerLitre: 2.40 },
-  { id: 'v-64', volumeBracket: '60-100', name: 'COTTESLOE BEACH BITES', fryerCount: 3, defaultOil: 'oil-6', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'WA', bdmId: 'u-7l', trialStatus: 'won', trialReason: 'oil-lasted-longer', trialStartDate: '2026-01-02', trialEndDate: '2026-01-09', outcomeDate: '2026-01-11', trialNotes: 'Summer rush made trial results very clear. Oil lasted significantly longer.', currentWeeklyAvg: 90, currentPricePerLitre: 2.05, offeredPricePerLitre: 2.60, soldPricePerLitre: 2.55 },
-  { id: 'v-65', volumeBracket: '100-150', name: 'SUBIACO WINGS BAR', fryerCount: 4, defaultOil: 'oil-8', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'WA', bdmId: 'u-7m', trialStatus: 'lost', trialStartDate: '2026-01-15', trialEndDate: '2026-01-25', outcomeDate: '2026-02-01', trialReason: 'no-savings', trialNotes: 'Venue already efficient with oil usage. Marginal improvement.', currentWeeklyAvg: 110, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.65 },
-  { id: 'v-66', volumeBracket: '60-100', name: 'BATTERY POINT TAKEAWAY', fryerCount: 3, defaultOil: 'oil-14', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'TAS', bdmId: 'u-7n', trialStatus: 'won', trialReason: 'consistent-results', trialStartDate: '2026-01-22', trialEndDate: '2026-01-29', outcomeDate: '2026-01-31', trialNotes: 'Small but profitable win. Good reference site for TAS.', currentWeeklyAvg: 65, currentPricePerLitre: 2.15, offeredPricePerLitre: 2.60, soldPricePerLitre: 2.55 },
-  { id: 'v-67', volumeBracket: '100-150', name: 'RICHMOND FRIED CHICKEN', fryerCount: 4, defaultOil: 'oil-7', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7b', trialStatus: 'in-progress', trialStartDate: '2026-02-10', trialEndDate: '2026-02-20', currentWeeklyAvg: 125, currentPricePerLitre: 2.05, offeredPricePerLitre: 2.65 },
-  { id: 'v-68', volumeBracket: '60-100', name: 'DEE WHY SEAFOOD', fryerCount: 3, defaultOil: 'oil-9', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7f', trialStatus: 'in-progress', trialStartDate: '2026-02-07', trialEndDate: '2026-02-17', currentWeeklyAvg: 75, currentPricePerLitre: 2.20, offeredPricePerLitre: 2.70 },
-  { id: 'v-69', volumeBracket: '150-plus', name: 'BULIMBA BURGER CO', fryerCount: 5, defaultOil: 'oil-6', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7g', trialStatus: 'completed', trialStartDate: '2026-02-03', trialEndDate: '2026-02-13', trialNotes: 'Trial done, awaiting owner sign-off. Looks promising.', currentWeeklyAvg: 165, currentPricePerLitre: 1.90, offeredPricePerLitre: 2.55 },
-
-  // More trials — recent outcomes (last 30 days) with longer decision times
-  { id: 'v-70', volumeBracket: '60-100', name: 'HAWTHORN GRILL', fryerCount: 3, defaultOil: 'oil-3', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7a', trialStatus: 'won', trialReason: 'better-food-quality', trialStartDate: '2026-01-18', trialEndDate: '2026-01-25', outcomeDate: '2026-02-01', trialNotes: 'Owner took a week to confirm. Signed.', currentWeeklyAvg: 78, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.65, soldPricePerLitre: 2.58 },
-  { id: 'v-71', volumeBracket: '100-150', name: 'BONDI JUNCTION CHICKEN', fryerCount: 4, defaultOil: 'oil-7', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7e', trialStatus: 'lost', trialStartDate: '2026-01-20', trialEndDate: '2026-01-30', outcomeDate: '2026-02-10', trialReason: 'price-too-high', trialNotes: 'Took 11 days to decide, ultimately said no on price.', currentWeeklyAvg: 130, currentPricePerLitre: 1.95, offeredPricePerLitre: 2.55 },
-  { id: 'v-72', volumeBracket: '60-100', name: 'WEST END KEBABS', fryerCount: 3, defaultOil: 'oil-5', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7h', trialStatus: 'won', trialReason: 'oil-lasted-longer', trialStartDate: '2026-01-22', trialEndDate: '2026-01-29', outcomeDate: '2026-02-04', trialNotes: 'Happy with oil life. Signed next day after follow-up.', currentWeeklyAvg: 68, currentPricePerLitre: 1.90, offeredPricePerLitre: 2.50, soldPricePerLitre: 2.45 },
-  { id: 'v-73', volumeBracket: 'under-60', name: 'UNLEY FISH BAR', fryerCount: 2, defaultOil: 'oil-10b', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'SA', bdmId: 'u-7k', trialStatus: 'won', trialReason: 'trial-results', trialStartDate: '2026-01-25', trialEndDate: '2026-02-01', outcomeDate: '2026-02-08', trialNotes: 'Small venue but keen. Signed after seeing TPM data.', currentWeeklyAvg: 40, currentPricePerLitre: 2.15, offeredPricePerLitre: 2.60, soldPricePerLitre: 2.55 },
-  { id: 'v-74', volumeBracket: '100-150', name: 'NORTHBRIDGE WOK HOUSE', fryerCount: 4, defaultOil: 'oil-12', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'WA', bdmId: 'u-7l', trialStatus: 'lost', trialStartDate: '2026-01-28', trialEndDate: '2026-02-04', outcomeDate: '2026-02-14', trialReason: 'owner-not-interested', trialNotes: 'Owner dragged feet for 10 days then declined. Not engaged.', currentWeeklyAvg: 115, currentPricePerLitre: 2.00, offeredPricePerLitre: 2.60 },
-
-  // More trials — previous window outcomes (30-60 days ago) with shorter decision times
-  { id: 'v-75', volumeBracket: '60-100', name: 'FOOTSCRAY CHICKEN', fryerCount: 3, defaultOil: 'oil-6', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7c', trialStatus: 'won', trialReason: 'cleaner-frying', trialStartDate: '2025-12-20', trialEndDate: '2025-12-27', outcomeDate: '2025-12-28', trialNotes: 'Fastest close ever. Owner said yes same day trial ended.', currentWeeklyAvg: 72, currentPricePerLitre: 1.85, offeredPricePerLitre: 2.45, soldPricePerLitre: 2.40 },
-  { id: 'v-76', volumeBracket: '100-150', name: 'MANLY SEAFOOD GRILL', fryerCount: 4, defaultOil: 'oil-9', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7f', trialStatus: 'won', trialReason: 'cost-savings', trialStartDate: '2025-12-22', trialEndDate: '2026-01-01', outcomeDate: '2025-12-31', trialNotes: 'Quick decision over Christmas. 2 days.', currentWeeklyAvg: 110, currentPricePerLitre: 2.20, offeredPricePerLitre: 2.75, soldPricePerLitre: 2.70 },
-  { id: 'v-77', volumeBracket: '60-100', name: 'SANDGATE FISH & CHIPS', fryerCount: 3, defaultOil: 'oil-14b', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7i', trialStatus: 'lost', trialStartDate: '2025-12-26', trialEndDate: '2026-01-05', outcomeDate: '2026-01-04', trialReason: 'no-savings', trialNotes: 'Low frying volume. Savings not compelling.', currentWeeklyAvg: 60, currentPricePerLitre: 1.80, offeredPricePerLitre: 2.40 },
-  { id: 'v-78', volumeBracket: '150-plus', name: 'ADELAIDE CENTRAL CHICKEN', fryerCount: 5, defaultOil: 'oil-3', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'SA', bdmId: 'u-7j', trialStatus: 'won', trialReason: 'oil-lasted-longer', trialStartDate: '2026-01-02', trialEndDate: '2026-01-12', outcomeDate: '2026-01-10', trialNotes: 'Big venue, decisive owner. Signed next day.', currentWeeklyAvg: 160, currentPricePerLitre: 2.05, offeredPricePerLitre: 2.70, soldPricePerLitre: 2.65 },
-
-  // Extra pipeline and in-progress to fill out
-  { id: 'v-79', volumeBracket: '60-100', name: 'SOUTH YARRA POKE', fryerCount: 2, defaultOil: 'oil-11', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7b', trialStatus: 'pending', trialStartDate: '2026-02-24', trialEndDate: '2026-03-06', currentWeeklyAvg: 55, currentPricePerLitre: 2.10, offeredPricePerLitre: 2.55 },
-  { id: 'v-80', volumeBracket: '100-150', name: 'NEWSTEAD BURGER JOINT', fryerCount: 4, defaultOil: 'oil-13b', trialOilId: 'oil-2', groupId: null, status: 'trial-only', customerCode: '', state: 'QLD', bdmId: 'u-7g', trialStatus: 'in-progress', trialStartDate: '2026-02-10', trialEndDate: '2026-02-20', currentWeeklyAvg: 120, currentPricePerLitre: 1.95, offeredPricePerLitre: 2.60 },
-  { id: 'v-81', volumeBracket: '60-100', name: 'DEVONPORT SEAFOOD', fryerCount: 3, defaultOil: 'oil-14', trialOilId: 'oil-1', groupId: null, status: 'trial-only', customerCode: '', state: 'TAS', bdmId: 'u-7n', trialStatus: 'pending', trialStartDate: '2026-02-20', trialEndDate: '2026-03-02', currentWeeklyAvg: 70, currentPricePerLitre: 2.00, offeredPricePerLitre: 2.55 },
-  // Canola trials
-  { id: 'v-82', volumeBracket: 'under-60', name: 'THORNBURY FISH & CHIPS', fryerCount: 2, defaultOil: 'oil-5', trialOilId: 'oil-3', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7a', trialStatus: 'won', trialReason: 'cost-savings', trialStartDate: '2026-01-13', trialEndDate: '2026-01-23', outcomeDate: '2026-01-25', currentWeeklyAvg: 40, currentPricePerLitre: 1.75, offeredPricePerLitre: 2.10, soldPricePerLitre: 2.05 },
-  { id: 'v-83', volumeBracket: 'under-60', name: 'COBURG KEBAB HOUSE', fryerCount: 2, defaultOil: 'oil-6', trialOilId: 'oil-3', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7b', trialStatus: 'won', trialReason: 'oil-lasted-longer', trialStartDate: '2026-01-20', trialEndDate: '2026-01-30', outcomeDate: '2026-02-01', currentWeeklyAvg: 35, currentPricePerLitre: 1.65, offeredPricePerLitre: 2.00, soldPricePerLitre: 1.95 },
-  { id: 'v-84', volumeBracket: 'under-60', name: 'PRESTON CHARCOAL CHICKEN', fryerCount: 2, defaultOil: 'oil-7', trialOilId: 'oil-3', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7a', trialStatus: 'lost', trialReason: 'price-too-high', trialStartDate: '2026-01-06', trialEndDate: '2026-01-16', outcomeDate: '2026-01-20', currentWeeklyAvg: 45, currentPricePerLitre: 1.55, offeredPricePerLitre: 1.95 },
-  { id: 'v-85', volumeBracket: 'under-60', name: 'RESERVOIR HOT DOGS', fryerCount: 1, defaultOil: 'oil-5', trialOilId: 'oil-3', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7b', trialStatus: 'in-progress', trialStartDate: '2026-02-10', trialEndDate: '2026-02-20', currentWeeklyAvg: 25, currentPricePerLitre: 1.70, offeredPricePerLitre: 2.05 },
-  { id: 'v-86', volumeBracket: 'under-60', name: 'HEIDELBERG SCHNITZELS', fryerCount: 2, defaultOil: 'oil-6c', trialOilId: 'oil-3', groupId: null, status: 'trial-only', customerCode: '', state: 'VIC', bdmId: 'u-7c', trialStatus: 'pending', trialStartDate: '2026-02-24', trialEndDate: '2026-03-06', currentWeeklyAvg: 50, currentPricePerLitre: 1.80, offeredPricePerLitre: 2.10 },
-  { id: 'v-87', volumeBracket: '60-100', name: 'CAMPBELLTOWN FISH MARKET', fryerCount: 3, defaultOil: 'oil-9', trialOilId: 'oil-3', groupId: null, status: 'trial-only', customerCode: '', state: 'NSW', bdmId: 'u-7e', trialStatus: 'won', trialReason: 'cleaner-frying', trialStartDate: '2026-01-27', trialEndDate: '2026-02-06', outcomeDate: '2026-02-08', currentWeeklyAvg: 65, currentPricePerLitre: 1.80, offeredPricePerLitre: 2.15, soldPricePerLitre: 2.10 },
-];
-
-const seedGroups = () => [
-  { id: 'g-1', name: 'JBS HOSPITALITY GROUP', groupCode: 'JBS', username: 'FRYSMRT-JBS', namId: 'u-6', status: 'active', venueIds: ['v-1', 'v-2', 'v-3', 'v-4', 'v-5'], lastTpmDate: '2026-02-16' },
-  { id: 'g-2', name: "BETTY'S BURGERS", groupCode: 'BET', username: 'FRYSMRT-BET', namId: 'u-6b', status: 'active', venueIds: ['v-9', 'v-10', 'v-11', 'v-12', 'v-13'], lastTpmDate: '2026-02-16' },
-  { id: 'g-3', name: 'FISHBONE COLLECTIVE', groupCode: 'FBC', username: 'FRYSMRT-FBC', namId: 'u-6', status: 'active', venueIds: ['v-19', 'v-23', 'v-26', 'v-28'], lastTpmDate: '2026-02-16' },
-  { id: 'g-4', name: 'SALT & PEPPER HOSPITALITY', groupCode: 'SPH', username: 'FRYSMRT-SPH', namId: 'u-6b', status: 'active', venueIds: ['v-14', 'v-18', 'v-24'], lastTpmDate: '2026-02-16' },
-  { id: 'g-5', name: 'UPPERCUT DINING', groupCode: 'UCD', username: 'FRYSMRT-UCD', namId: 'u-6', status: 'inactive', venueIds: [], lastTpmDate: '2025-09-15' },
-  { id: 'g-6', name: 'TRADER HOUSE', groupCode: 'MCC', username: 'FRYSMRT-MCC', namId: 'u-6', status: 'active', venueIds: ['v-33', 'v-34', 'v-35'], lastTpmDate: '2026-02-16' },
-  { id: 'g-7', name: 'GUZMAN Y GOMEZ', groupCode: 'GYG', username: 'FRYSMRT-GYG', namId: 'u-6b', status: 'active', venueIds: ['v-36', 'v-37', 'v-38', 'v-39'], lastTpmDate: '2026-02-16' },
-];
-
-const seedUsers = () => [
-  { id: 'u-6', name: 'BEN ANDONOV', role: 'nam', venueId: null, groupId: null, status: 'active', crmCode: '', repCode: 'BA01', username: 'BANDONOV', lastActive: '2026-02-14' },
-  { id: 'u-6b', name: 'BRAEDAN CLEAVE', role: 'nam', venueId: null, groupId: null, status: 'active', crmCode: '', repCode: 'BC01', username: 'BCLEAVE', lastActive: '2026-02-15' },
-  // VIC BDMs
-  { id: 'u-7a', name: 'DAVID ANGELKOVSKI', role: 'bdm', venueId: null, groupId: null, region: 'VIC', status: 'active', crmCode: '', repCode: 'V16', username: 'DANGELKOVSKI', lastActive: '2026-02-14' },
-  { id: 'u-7b', name: 'BORIS JOKSIMOVIC', role: 'bdm', venueId: null, groupId: null, region: 'VIC', status: 'active', crmCode: '', repCode: 'V20', username: 'BJOKSIMOVIC', lastActive: '2026-02-13' },
-  { id: 'u-7c', name: 'PAUL KONKEL', role: 'bdm', venueId: null, groupId: null, region: 'VIC', status: 'active', crmCode: '', repCode: 'V22', username: 'PKONKEL', lastActive: '2026-02-12' },
-  // NSW BDMs
-  { id: 'u-7d', name: 'THOMAS MORALES', role: 'bdm', venueId: null, groupId: null, region: 'NSW', status: 'active', crmCode: '', repCode: 'N10', username: 'TMORALES', lastActive: '2026-02-11' },
-  { id: 'u-7e', name: 'TOM CHAN', role: 'bdm', venueId: null, groupId: null, region: 'NSW', status: 'active', crmCode: '', repCode: 'N11', username: 'TCHAN', lastActive: '2026-02-10' },
-  { id: 'u-7f', name: 'SUNNY NAGPAL', role: 'bdm', venueId: null, groupId: null, region: 'NSW', status: 'active', crmCode: '', repCode: 'N12', username: 'SNAGPAL', lastActive: '2026-02-14' },
-  // QLD BDMs
-  { id: 'u-7g', name: 'CORINA TAAFFE', role: 'bdm', venueId: null, groupId: null, region: 'QLD', status: 'active', crmCode: '', repCode: 'Q10', username: 'CTAAFFE', lastActive: '2026-02-12' },
-  { id: 'u-7h', name: 'REECE LANGHAN', role: 'bdm', venueId: null, groupId: null, region: 'QLD', status: 'active', crmCode: '', repCode: 'Q11', username: 'RLANGHAN', lastActive: '2026-02-11' },
-  { id: 'u-7i', name: 'JOHN ZENG', role: 'bdm', venueId: null, groupId: null, region: 'QLD', status: 'active', crmCode: '', repCode: 'Q12', username: 'JZENG', lastActive: '2026-02-09' },
-  // SA BDMs
-  { id: 'u-7j', name: 'CHRIS BADAMS', role: 'bdm', venueId: null, groupId: null, region: 'SA', status: 'active', crmCode: '', repCode: 'S10', username: 'CBADAMS', lastActive: '2026-02-13' },
-  { id: 'u-7k', name: 'DANIEL PUDNEY', role: 'bdm', venueId: null, groupId: null, region: 'SA', status: 'active', crmCode: '', repCode: 'S11', username: 'DPUDNEY', lastActive: '2026-02-10' },
-  // WA BDMs
-  { id: 'u-7l', name: 'DAVID MIRAUDO', role: 'bdm', venueId: null, groupId: null, region: 'WA', status: 'active', crmCode: '', repCode: 'W10', username: 'DMIRAUDO', lastActive: '2026-02-09' },
-  { id: 'u-7m', name: 'ADAM SWAN', role: 'bdm', venueId: null, groupId: null, region: 'WA', status: 'active', crmCode: '', repCode: 'W11', username: 'ASWAN', lastActive: '2026-02-13' },
-  // TAS BDM
-  { id: 'u-7n', name: 'CRYSTAL STEWART', role: 'bdm', venueId: null, groupId: null, region: 'TAS', status: 'active', crmCode: '', repCode: 'T10', username: 'CSTEWART', lastActive: '2026-02-08' },
-  { id: 'u-7x', name: 'JAMES HOLDEN', role: 'bdm', venueId: null, groupId: null, region: 'VIC', status: 'inactive', crmCode: '', repCode: 'V99', username: 'JHOLDEN', lastActive: '2025-12-01' },
-  { id: 'u-8a', name: 'BEN PIGOTT', role: 'state_manager', venueId: null, groupId: null, region: 'VIC', status: 'active', crmCode: '', repCode: 'BP01', username: 'BPIGOTT', lastActive: '2026-02-15' },
-  { id: 'u-8b', name: 'KYLIE CHRISTENSEN', role: 'state_manager', venueId: null, groupId: null, region: 'QLD', status: 'active', crmCode: '', repCode: 'KC01', username: 'KCHRISTENSEN', lastActive: '2026-02-14' },
-  { id: 'u-8c', name: 'ALANA WOODWARD', role: 'state_manager', venueId: null, groupId: null, region: 'NSW', status: 'active', crmCode: '', repCode: 'AW01', username: 'AWOODWARD', lastActive: '2026-02-13' },
-  { id: 'u-8d', name: 'ALEX SILVAGNI', role: 'state_manager', venueId: null, groupId: null, region: 'WA', status: 'active', crmCode: '', repCode: 'AS01', username: 'ASILVAGNI', lastActive: '2026-02-12' },
-  { id: 'u-8e', name: 'DAMON ROSSETTO', role: 'state_manager', venueId: null, groupId: null, region: 'SA', status: 'active', crmCode: '', repCode: 'DR01', username: 'DROSSETTO', lastActive: '2026-02-10' },
-  { id: 'u-8f', name: 'SCOTT OATES', role: 'state_manager', venueId: null, groupId: null, region: 'TAS', status: 'active', crmCode: '', repCode: 'SO01', username: 'SOATES', lastActive: '2026-02-08' },
-  { id: 'u-9', name: 'MICHAEL CARTY', role: 'mgt', venueId: null, groupId: null, status: 'active', crmCode: '', repCode: 'MC01', username: 'MCARTY', lastActive: '2026-02-15' },
-  { id: 'u-10', name: 'LIZ LE', role: 'admin', venueId: null, groupId: null, status: 'active', crmCode: '', repCode: '', username: 'ELE', lastActive: '2026-02-15' },
-  { id: 'u-10b', name: 'GARRY NASH', role: 'mgt', venueId: null, groupId: null, status: 'active', crmCode: '', repCode: '', username: 'GNASH', lastActive: '2026-02-11' },
-];
 
 const TRIAL_REASONS = [
   // Successful reasons
@@ -3973,7 +4110,7 @@ const TRIAL_REASONS = [
 ];
 
 // ==================== MAIN ADMIN PANEL ====================
-export default function FrysmartAdminPanel({ currentUser }) {
+export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   const [activeSection, setActiveSection] = useState('overview');
   const [overviewBdmState, setOverviewBdmState] = useState('all');
   const [matrixSort, setMatrixSort] = useState({ col: null, asc: false });
@@ -4049,10 +4186,6 @@ export default function FrysmartAdminPanel({ currentUser }) {
     return () => { cancelled = true; };
   }, []);
 
-  // Keep demoLoaded alias so the rest of the file compiles without changes
-  const demoLoaded = dataLoaded;
-  const loadDemoData = () => {};
-  const clearDemoData = () => {};
 
   // ── Supabase-aware state wrappers ──
   // These intercept prev => ... updater calls, detect create/update/delete,
@@ -4191,6 +4324,9 @@ export default function FrysmartAdminPanel({ currentUser }) {
     }
   }, []);
 
+  // Merged theme from system settings — flows into all badge components
+  const theme = getThemeColors(systemSettings.themeConfig);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
   // currentView controls which role interface is shown in the role switcher.
@@ -4230,9 +4366,9 @@ export default function FrysmartAdminPanel({ currentUser }) {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} />;
-      case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} />;
-      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} />;
+      case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} theme={theme} />;
+      case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} theme={theme} />;
+      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} theme={theme} />;
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [
@@ -4973,25 +5109,24 @@ export default function FrysmartAdminPanel({ currentUser }) {
           </div>
         );
       })();
-      case 'venues': return <VenueManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} groups={groups} competitors={competitors} users={users} setActiveSection={setActiveSection} isDesktop={isDesktop} autoOpenForm={quickActionForm === 'venues'} clearAutoOpen={() => setQuickActionForm(null)} />;
-      case 'groups': return <GroupManagement groups={groups} setGroups={dbSetGroups} venues={venues} setVenues={dbSetVenues} users={users} oilTypes={oilTypes} competitors={competitors} autoOpenForm={quickActionForm === 'groups'} clearAutoOpen={() => setQuickActionForm(null)} />;
-      case 'users': return <UserManagement users={users} setUsers={dbSetUsers} venues={venues} groups={groups} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} />;
-      case 'permissions': return <PermissionsAccess users={users} />;
+      case 'venues': return <VenueManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} groups={groups} competitors={competitors} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} setActiveSection={setActiveSection} isDesktop={isDesktop} autoOpenForm={quickActionForm === 'venues'} clearAutoOpen={() => setQuickActionForm(null)} onPreviewVenue={onPreviewVenue} theme={theme} />;
+      case 'groups': return <GroupManagement groups={groups} setGroups={dbSetGroups} rawSetGroups={setGroups} venues={venues} setVenues={dbSetVenues} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} oilTypes={oilTypes} competitors={competitors} autoOpenForm={quickActionForm === 'groups'} clearAutoOpen={() => setQuickActionForm(null)} theme={theme} />;
+      case 'users': return <UserManagement users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} venues={venues} groups={groups} currentUser={currentUser} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} theme={theme} />;
+      case 'permissions': return <PermissionsAccess users={users} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} theme={theme} />;
       case 'onboarding': return <OnboardingFlow oilTypes={oilTypes} venues={venues} groups={groups} users={users} setVenues={dbSetVenues} setGroups={dbSetGroups} setUsers={dbSetUsers} defaultFryerCount={systemSettings.defaultFryerCount} />;
-      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} demoLoaded={demoLoaded} loadDemoData={loadDemoData} clearDemoData={clearDemoData} />;
+      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} />;
       default: return (
         <div>
           <SectionHeader icon={BarChart3} title="Admin Overview" />
 
           {/* Empty system banner */}
-          {venues.length === 0 && users.length === 0 && (
+          {dataLoaded && venues.length === 0 && users.length === 0 && (
             <div style={{ background: 'linear-gradient(135deg, #e8eef6 0%, #f0f4ff 100%)', borderRadius: '14px', padding: '20px', marginBottom: '16px', border: '1px solid #c7d7f0', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
               <div style={{ fontSize: '36px' }}>🚀</div>
               <div style={{ flex: 1, minWidth: '180px' }}>
                 <div style={{ fontSize: '14px', fontWeight: '700', color: '#1a428a', marginBottom: '4px' }}>Welcome to Frysmart Admin</div>
-                <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>The system is empty. Load demo data to explore all features, or start adding real venues and users.</div>
+                <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>The system is empty. Start by adding venues and users from the sidebar.</div>
               </div>
-              <button onClick={loadDemoData} style={{ padding: '9px 18px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}>Load Demo Data</button>
             </div>
           )}
 
@@ -5346,7 +5481,7 @@ export default function FrysmartAdminPanel({ currentUser }) {
                           <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 1fr 52px 1fr 1fr 80px', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
                             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
                             <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
-                            <StateBadge state={v.state} />
+                            <StateBadge theme={theme} state={v.state} />
                             <div style={{ textAlign: 'center' }}>
                               {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
                                 : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
@@ -5375,25 +5510,44 @@ export default function FrysmartAdminPanel({ currentUser }) {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#f8fafc',
+      ...(isDesktop
+        ? { height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
+        : { minHeight: '100vh' }),
+      background: '#f8fafc',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'
     }}>
       <style>{hideScrollbarCSS}</style>
 
       {/* Frysmart header bar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 100, background: '#1a428a', padding: '14px 16px' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '20px', fontWeight: '700', color: 'white', margin: 0 }}>Frysmart</h1>
-            <span style={{
-              padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
-              background: 'rgba(236,72,153,0.25)', color: '#f9a8d4', border: '1px solid rgba(236,72,153,0.4)',
-              letterSpacing: '0.5px'
-            }}>ADMIN</span>
+      <div style={{ ...(isDesktop ? { flexShrink: 0 } : {}), zIndex: 100, background: '#1a428a', padding: isDesktop ? '6px 16px' : '0 0 0 0' }}>
+        {isDesktop ? (
+          /* Desktop: single row — logo + badge left, name right */
+          <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src="/images/App header.png" alt="Frysmart with Cookers" style={{ height: '65px' }} />
+              <span style={{
+                padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
+                background: HEADER_BADGE_COLORS.admin.bg, color: HEADER_BADGE_COLORS.admin.color, border: `1px solid ${HEADER_BADGE_COLORS.admin.border}`,
+                letterSpacing: '0.5px'
+              }}>ADMIN</span>
+            </div>
+            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>Liz</span>
-            {!isDesktop && (
+        ) : (
+          /* Mobile: two rows — logo on top, badge + name + hamburger below */
+          <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '-4px' }}>
+              <img src="/images/App header.png" alt="Frysmart with Cookers" style={{ height: '62px', maxWidth: 'calc(100vw - 16px)', objectFit: 'contain', objectPosition: 'left' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '16px', paddingRight: '12px', paddingBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{
+                  padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
+                  background: HEADER_BADGE_COLORS.admin.bg, color: HEADER_BADGE_COLORS.admin.color, border: `1px solid ${HEADER_BADGE_COLORS.admin.border}`,
+                  letterSpacing: '0.5px'
+                }}>ADMIN</span>
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
+              </div>
               <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
                 background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '10px',
                 width: '38px', height: '38px', cursor: 'pointer', display: 'flex',
@@ -5405,9 +5559,9 @@ export default function FrysmartAdminPanel({ currentUser }) {
                   <div style={{ width: '18px', height: '2px', background: 'white', borderRadius: '1px' }} />
                 </div>
               </button>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Placeholder for non-admin views */}
@@ -5435,11 +5589,11 @@ export default function FrysmartAdminPanel({ currentUser }) {
           </div>
         </div>
       ) : isDesktop ? (
-        <div style={{ display: 'flex', maxWidth: '1400px', margin: '0 auto', minHeight: 'calc(100vh - 60px)' }}>
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
           {/* Persistent sidebar */}
           <div style={{
             width: '240px', flexShrink: 0, background: 'white', borderRight: '1px solid #e2e8f0',
-            padding: '20px 12px', overflowY: 'auto', position: 'sticky', top: '60px', height: 'calc(100vh - 60px)',
+            padding: '20px 12px', overflowY: 'auto',
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
           }}>
             <div>
@@ -5501,54 +5655,7 @@ export default function FrysmartAdminPanel({ currentUser }) {
 
             {/* Bottom — Switch Role & Logout */}
             <div>
-            {/* Switch Role */}
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '14px', position: 'relative' }}>
-              <button onClick={() => setShowRoleSwitcher(s => !s)} style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                padding: '9px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                background: 'transparent',
-                color: '#64748b',
-                fontWeight: '600', fontSize: '13px', textAlign: 'left', transition: 'all 0.15s'
-              }}>
-                <Repeat2 size={15} />
-                Switch Role
-                <ChevronDown size={13} style={{ marginLeft: 'auto', transition: 'transform 0.2s', transform: showRoleSwitcher ? 'rotate(180deg)' : 'none' }} />
-              </button>
-              {showRoleSwitcher && (
-                <div style={{ position: 'absolute', bottom: '100%', left: '0', right: '0', marginBottom: '4px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 -4px 16px rgba(0,0,0,0.08)', zIndex: 10 }}>
-                  {[
-                    { id: 'admin', label: 'Admin Panel', color: '#ff69b4' },
-                    { id: 'mgt', label: 'MGT / NSM', color: '#ff0000' },
-                    { id: 'state_manager', label: 'State Manager', color: '#ffd700' },
-                    { id: 'nam', label: 'NAM View', color: '#0066ff' },
-                    { id: 'bdm', label: 'BDM Trials', color: '#00cc44' },
-                    { id: 'group', label: 'Group View', color: '#9933ff' },
-                    { id: 'venue', label: 'Venue Staff', color: '#ff6600' },
-                  ].map((v, i) => {
-                    const isActive = currentView === v.id;
-                    return (
-                      <button key={v.id}
-                        onClick={() => { setCurrentView(v.id); setShowRoleSwitcher(false); }}
-                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f1f5f9'; }}
-                        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
-                        style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
-                          padding: '9px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
-                          borderBottom: i < 6 ? '1px solid #f1f5f9' : 'none',
-                          background: isActive ? '#f8fafc' : 'transparent',
-                          color: isActive ? '#1a428a' : '#1f2937',
-                          fontWeight: isActive ? '600' : '500', fontSize: '13px',
-                          transition: 'background 0.1s'
-                        }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: v.color, flexShrink: 0 }} />
-                        {v.label}
-                        {isActive && <Check size={12} color="#1a428a" style={{ marginLeft: 'auto' }} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {/* Switch Role — hidden for now, not yet functional */}
 
             {/* Logout */}
             <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
@@ -5564,8 +5671,8 @@ export default function FrysmartAdminPanel({ currentUser }) {
             </div>
             </div>
           </div>
-          {/* Main content */}
-          <div style={{ flex: 1, padding: '24px clamp(16px, 2vw, 32px)', minWidth: 0 }}>
+          {/* Main content — scrollable */}
+          <div style={{ flex: 1, padding: '24px clamp(16px, 2vw, 32px)', minWidth: 0, overflowY: 'auto' }}>
             {renderContent()}
           </div>
         </div>
@@ -5573,7 +5680,7 @@ export default function FrysmartAdminPanel({ currentUser }) {
         /* =================== MOBILE LAYOUT =================== */
         <>
           {/* Sticky tab bars */}
-          <div style={{ position: 'sticky', top: '54px', zIndex: 90 }}>
+          <div style={{ position: 'sticky', top: 0, zIndex: 90, transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden' }}>
             {/* Main tab bar */}
             <div className="no-scrollbar" style={{
               display: 'flex', borderBottom: '1px solid #e2e8f0', overflowX: 'auto', overflowY: 'hidden',
@@ -5708,50 +5815,7 @@ export default function FrysmartAdminPanel({ currentUser }) {
                   })}
                 </div>
               ))}
-              {/* Switch Role (mobile) */}
-              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px', position: 'relative' }}>
-                <button onClick={() => setShowRoleSwitcher(s => !s)} style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                  padding: '8px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                  background: 'transparent', color: '#64748b',
-                  fontWeight: '600', fontSize: '13px', textAlign: 'left'
-                }}>
-                  <Repeat2 size={15} />
-                  Switch Role
-                  <ChevronDown size={13} style={{ marginLeft: 'auto', transition: 'transform 0.2s', transform: showRoleSwitcher ? 'rotate(180deg)' : 'none' }} />
-                </button>
-                {showRoleSwitcher && (
-                  <div style={{ marginTop: '4px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    {[
-                      { id: 'admin', label: 'Admin Panel', color: '#ff69b4' },
-                      { id: 'mgt', label: 'MGT / NSM', color: '#ff0000' },
-                      { id: 'state_manager', label: 'State Manager', color: '#ffd700' },
-                      { id: 'nam', label: 'NAM View', color: '#0066ff' },
-                      { id: 'bdm', label: 'BDM Trials', color: '#00cc44' },
-                      { id: 'group', label: 'Group View', color: '#9933ff' },
-                      { id: 'venue', label: 'Venue Staff', color: '#ff6600' },
-                    ].map((v, i) => {
-                      const isActive = currentView === v.id;
-                      return (
-                        <button key={v.id}
-                          onClick={() => { setCurrentView(v.id); setShowRoleSwitcher(false); setSidebarOpen(false); }}
-                          style={{
-                            width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
-                            padding: '9px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
-                            borderBottom: i < 6 ? '1px solid #f1f5f9' : 'none',
-                            background: isActive ? '#f8fafc' : 'transparent',
-                            color: isActive ? '#1a428a' : '#1f2937',
-                            fontWeight: isActive ? '600' : '500', fontSize: '13px'
-                          }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: v.color, flexShrink: 0 }} />
-                          {v.label}
-                          {isActive && <Check size={12} color="#1a428a" style={{ marginLeft: 'auto' }} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              {/* Switch Role (mobile) — hidden for now, not yet functional */}
               {/* Logout (mobile) */}
               <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
                 <button onClick={() => { if (window.confirm('Are you sure you want to log out?')) { supabase.auth.signOut(); } }} style={{

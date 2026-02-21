@@ -53,10 +53,12 @@ export const unMapOilType = (o) => ({
 export const mapProfile = (r) => ({
   id: r.id,
   name: r.name,
+  email: r.email ?? '',
   role: r.role,
   region: r.region ?? '',
   status: r.status,
   username: r.username ?? '',
+  password: r.password ?? '',
   repCode: r.rep_code ?? '',
   crmCode: r.crm_code ?? '',
   venueId: r.venue_id ?? '',
@@ -66,10 +68,12 @@ export const mapProfile = (r) => ({
 
 export const unMapProfile = (u) => ({
   name: u.name,
+  email: u.email || null,
   role: u.role,
   region: u.region || null,
   status: u.status,
   username: u.username || null,
+  password: u.password || null,
   rep_code: u.repCode || null,
   crm_code: u.crmCode || null,
   venue_id: u.venueId || null,
@@ -85,6 +89,7 @@ export const mapGroup = (r) => ({
   namId: r.nam_id ?? '',
   status: r.status,
   lastTpmDate: r.last_tpm_date,
+  password: r.password ?? '',
 });
 
 export const unMapGroup = (g) => ({
@@ -93,6 +98,7 @@ export const unMapGroup = (g) => ({
   username: g.username || null,
   nam_id: g.namId || null,
   status: g.status,
+  password: g.password || null,
 });
 
 // ── venues ──
@@ -119,6 +125,9 @@ export const mapVenue = (r) => ({
   outcomeDate: r.outcome_date,
   trialReason: r.trial_reason ?? '',
   soldPricePerLitre: r.sold_price_per_litre,
+  password: r.password ?? '',
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
 });
 
 export const unMapVenue = (v) => ({
@@ -143,6 +152,7 @@ export const unMapVenue = (v) => ({
   outcome_date: v.outcomeDate || null,
   trial_reason: v.trialReason || null,
   sold_price_per_litre: v.soldPricePerLitre ?? null,
+  password: v.password || null,
 });
 
 // ── tpm_readings ──
@@ -151,6 +161,7 @@ export const mapReading = (r) => ({
   venueId: r.venue_id,
   fryerNumber: r.fryer_number,
   readingDate: r.reading_date,
+  readingNumber: r.reading_number ?? 1,
   takenBy: r.taken_by,
   oilAge: r.oil_age,
   litresFilled: r.litres_filled,
@@ -161,6 +172,7 @@ export const mapReading = (r) => ({
   foodType: r.food_type,
   notes: r.notes ?? '',
   notInUse: r.not_in_use,
+  staffName: r.staff_name ?? '',
 });
 
 export const unMapReading = (rd) => ({
@@ -169,7 +181,7 @@ export const unMapReading = (rd) => ({
   reading_date: rd.readingDate,
   taken_by: rd.takenBy || null,
   oil_age: rd.oilAge,
-  litres_filled: rd.litresFilled ?? null,
+  litres_filled: rd.litresFilled != null ? rd.litresFilled : 0,
   tpm_value: rd.tpmValue ?? null,
   set_temperature: rd.setTemperature ?? null,
   actual_temperature: rd.actualTemperature ?? null,
@@ -177,6 +189,7 @@ export const unMapReading = (rd) => ({
   food_type: rd.foodType || null,
   notes: rd.notes || null,
   not_in_use: rd.notInUse ?? false,
+  staff_name: rd.staffName || null,
 });
 
 // ── trial_reasons (config — read only from frontend perspective) ──
@@ -202,6 +215,8 @@ export const mapSystemSettings = (r) => ({
   reportFrequency: r.report_frequency,
   reminderDays: r.reminder_days,
   oilTypeOptions: r.oil_type_options ?? [],
+  themeConfig: r.theme_config ?? {},
+  permissionsConfig: r.permissions_config ?? {},
 });
 
 export const unMapSystemSettings = (s) => ({
@@ -212,4 +227,6 @@ export const unMapSystemSettings = (s) => ({
   report_frequency: s.reportFrequency,
   reminder_days: s.reminderDays,
   oil_type_options: s.oilTypeOptions,
+  theme_config: s.themeConfig,
+  permissions_config: s.permissionsConfig,
 });

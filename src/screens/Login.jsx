@@ -1,75 +1,105 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-export default function Login({ onLogin }) {
-  const [email, setEmail] = useState('');
+export default function Login() {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!username.trim() || !password) return;
     setLoading(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+
+    const uname = username.trim();
+    const authEmail = `${uname}@frysmart.app`;
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: authEmail, password });
     setLoading(false);
     if (authError) {
-      setError(authError.message);
+      setError('Invalid username or password.');
     }
-    // onAuthStateChange in App.jsx handles the rest
   };
+
+  const inputStyle = (field) => ({
+    width: '100%',
+    padding: '14px 16px',
+    fontSize: '16px',
+    border: `2px solid ${focusedField === field ? '#1a428a' : '#e2e8f0'}`,
+    borderRadius: '12px',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    boxSizing: 'border-box',
+    background: focusedField === field ? '#f8faff' : '#f8fafc',
+    color: '#0f172a',
+    fontFamily: 'inherit',
+  });
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#1a428a',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
+      padding: '20px',
+      boxSizing: 'border-box',
+      overflow: 'auto',
     }}>
+      {/* Logo / branding — outside the white box */}
+      <div style={{ textAlign: 'center', marginBottom: '0px', width: '100%', maxWidth: '420px' }}>
+        <img
+          src="/images/Login Page.png"
+          alt="FrySmart"
+          style={{ width: '100%', maxWidth: '440px', margin: '0 auto', display: 'block' }}
+        />
+      </div>
+
+      {/* White login card */}
       <div style={{
-        width: '100%', maxWidth: '400px', padding: '40px',
-        background: 'white', borderRadius: '16px',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+        width: '100%',
+        maxWidth: '420px',
+        padding: '32px 28px 28px',
+        background: 'white',
+        borderRadius: '24px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        boxSizing: 'border-box',
       }}>
-        {/* Logo / branding */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            width: '56px', height: '56px', borderRadius: '14px',
-            background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px', fontSize: '24px', fontWeight: '800', color: 'white',
-            letterSpacing: '-0.5px',
-          }}>F</div>
-          <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>FrySmart</h1>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Sign in to your account</p>
-        </div>
+        <h2 style={{
+          textAlign: 'center',
+          fontSize: '20px',
+          fontWeight: '700',
+          color: '#1a428a',
+          margin: '0 0 24px',
+        }}>Welcome Back!</h2>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '18px' }}>
             <label style={{
-              display: 'block', fontSize: '12px', fontWeight: '600',
-              color: '#374151', marginBottom: '6px',
-            }}>Email</label>
+              display: 'block', fontSize: '13px', fontWeight: '600',
+              color: '#475569', marginBottom: '8px',
+            }}>Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
-              autoComplete="email"
-              placeholder="you@company.com"
-              style={{
-                width: '100%', padding: '10px 14px', fontSize: '14px',
-                border: '1.5px solid #e2e8f0', borderRadius: '10px',
-                outline: 'none', transition: 'border-color 0.2s',
-                boxSizing: 'border-box',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              autoComplete="username"
+              placeholder="Enter your username"
+              style={inputStyle('username')}
+              onFocus={() => setFocusedField('username')}
+              onBlur={() => setFocusedField(null)}
             />
           </div>
 
           <div style={{ marginBottom: '24px' }}>
             <label style={{
-              display: 'block', fontSize: '12px', fontWeight: '600',
-              color: '#374151', marginBottom: '6px',
+              display: 'block', fontSize: '13px', fontWeight: '600',
+              color: '#475569', marginBottom: '8px',
             }}>Password</label>
             <input
               type="password"
@@ -78,22 +108,17 @@ export default function Login({ onLogin }) {
               required
               autoComplete="current-password"
               placeholder="Enter your password"
-              style={{
-                width: '100%', padding: '10px 14px', fontSize: '14px',
-                border: '1.5px solid #e2e8f0', borderRadius: '10px',
-                outline: 'none', transition: 'border-color 0.2s',
-                boxSizing: 'border-box',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              style={inputStyle('password')}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField(null)}
             />
           </div>
 
           {error && (
             <div style={{
-              padding: '10px 14px', marginBottom: '16px', borderRadius: '10px',
+              padding: '12px 16px', marginBottom: '18px', borderRadius: '12px',
               background: '#fef2f2', border: '1px solid #fecaca',
-              fontSize: '13px', color: '#991b1b',
+              fontSize: '13px', color: '#991b1b', fontWeight: '500',
             }}>{error}</div>
           )}
 
@@ -101,16 +126,30 @@ export default function Login({ onLogin }) {
             type="submit"
             disabled={loading}
             style={{
-              width: '100%', padding: '12px', fontSize: '14px', fontWeight: '600',
-              color: 'white', background: loading ? '#94a3b8' : '#1a428a',
-              border: 'none', borderRadius: '10px',
+              width: '100%',
+              padding: '14px',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: 'white',
+              background: loading ? '#94a3b8' : '#f5a623',
+              border: 'none',
+              borderRadius: '12px',
               cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'background 0.2s',
+              transition: 'all 0.2s ease',
+              letterSpacing: '0.3px',
+              fontFamily: 'inherit',
             }}
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <p style={{
+          textAlign: 'center', fontSize: '12px', color: '#94a3b8',
+          marginTop: '20px', marginBottom: 0,
+        }}>
+          Forgot your password? Contact your admin.
+        </p>
       </div>
     </div>
   );
