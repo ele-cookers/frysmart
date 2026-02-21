@@ -200,7 +200,7 @@ const TrialStatusBadge = ({ status }) => {
     <span style={{
       padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
       background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: '0.3px', whiteSpace: 'nowrap',
-      display: 'inline-block', width: '82px', textAlign: 'center',
+      display: 'inline-block', width: '82px', textAlign: 'center', verticalAlign: 'middle',
     }}>{c.label}</span>
   );
 };
@@ -217,7 +217,7 @@ const OilBadge = ({ oil, competitors: comps, compact }) => {
       <span style={{
         padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
         background: s.bg, color: s.text, border: `1px solid ${s.border}`,
-        whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center',
+        whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center', verticalAlign: 'middle',
       }}>{oil.name}</span>
     );
   }
@@ -240,7 +240,7 @@ const StateBadge = ({ state }) => {
     <span style={{
       fontSize: '10px', fontWeight: '700', color: c.color, background: c.bg,
       padding: '2px 0', borderRadius: '6px', whiteSpace: 'nowrap',
-      display: 'inline-block', width: '42px', textAlign: 'center', letterSpacing: '0.3px',
+      display: 'inline-block', width: '42px', textAlign: 'center', letterSpacing: '0.3px', verticalAlign: 'middle',
     }}>{state}</span>
   );
 };
@@ -253,7 +253,7 @@ const VolumePill = ({ bracket }) => {
       padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
       background: `${b.color}18`, color: b.color, border: `1px solid ${b.color}40`,
       letterSpacing: '0.3px', whiteSpace: 'nowrap',
-      display: 'inline-block', width: '82px', textAlign: 'center',
+      display: 'inline-block', width: '82px', textAlign: 'center', verticalAlign: 'middle',
     }}>{b.label}</span>
   );
 };
@@ -272,7 +272,7 @@ const CompetitorPill = ({ comp }) => {
       background: bgColor, color: textColor,
       fontSize: '11px', fontWeight: '600', letterSpacing: '0.2px',
       width: '68px', whiteSpace: 'nowrap', overflow: 'hidden',
-      textOverflow: 'ellipsis', textAlign: 'center',
+      textOverflow: 'ellipsis', textAlign: 'center', verticalAlign: 'middle',
     }} title={comp.name}>{comp.name}</span>
   );
 };
@@ -723,6 +723,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
   const compOils = oilTypes.filter(o => o.category === 'competitor');
 
   const [editForm, setEditForm] = useState({
+    name: venue.name || '',
     trialNotes: venue.trialNotes || '',
     currentPricePerLitre: venue.currentPricePerLitre ? String(venue.currentPricePerLitre) : '',
     offeredPricePerLitre: venue.offeredPricePerLitre ? String(venue.offeredPricePerLitre) : '',
@@ -745,6 +746,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
     setEditSaving(true);
     const avgLitres = editForm.avgLitresPerWeek ? parseFloat(editForm.avgLitresPerWeek) : null;
     const updates = {
+      name: editForm.name.trim() || venue.name,
       trialNotes: editForm.trialNotes,
       currentPricePerLitre: editForm.currentPricePerLitre ? parseFloat(editForm.currentPricePerLitre) : null,
       offeredPricePerLitre: editForm.offeredPricePerLitre ? parseFloat(editForm.offeredPricePerLitre) : null,
@@ -990,6 +992,12 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
           {!isReadOnly && (
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginBottom: '12px' }}>
               <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', marginBottom: '8px' }}>Edit Trial Details</div>
+              <div style={{ marginBottom: '8px' }}>
+                <div style={S.field}>
+                  <label style={{ ...S.label, fontSize: '10px' }}>VENUE NAME</label>
+                  <input type="text" value={editForm.name} onChange={e => handleEditChange('name', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} placeholder="Venue name" />
+                </div>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                 <div style={S.field}>
                   <label style={{ ...S.label, fontSize: '10px' }}>START DATE</label>
@@ -1074,12 +1082,12 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                   </button>
                 </>
               )}
-              {['in-progress', 'completed'].includes(venue.trialStatus) && (
+              {venue.trialStatus === 'in-progress' && (
                 <>
-                  <button onClick={() => { onClose(); onOpenClose(venue, 'won'); }} style={{ flex: 1, padding: '9px 12px', background: '#d1fae5', border: '1.5px solid #6ee7b7', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#065f46', cursor: 'pointer' }}>
+                  <button onClick={() => { onClose(); onOpenClose(venue, 'won'); }} style={{ flex: 1, padding: '9px 12px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
                     Won
                   </button>
-                  <button onClick={() => { onClose(); onOpenClose(venue, 'lost'); }} style={{ flex: 1, padding: '9px 12px', background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#991b1b', cursor: 'pointer' }}>
+                  <button onClick={() => { onClose(); onOpenClose(venue, 'lost'); }} style={{ flex: 1, padding: '9px 12px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
                     Lost
                   </button>
                 </>
@@ -1947,7 +1955,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                     <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>
                     <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                    <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                    <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                     <td style={{ textAlign: 'center' }}><OilBadge oil={cookersOil} competitors={competitors} compact /></td>
                     <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                     <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
