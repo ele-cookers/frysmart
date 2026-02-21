@@ -179,6 +179,7 @@ export const unMapReading = (rd) => ({
   venue_id: rd.venueId,
   fryer_number: rd.fryerNumber,
   reading_date: rd.readingDate,
+  reading_number: rd.readingNumber ?? 1,
   taken_by: rd.takenBy || null,
   oil_age: rd.oilAge,
   litres_filled: rd.litresFilled != null ? rd.litresFilled : 0,

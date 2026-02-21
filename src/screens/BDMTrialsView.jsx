@@ -323,9 +323,9 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const [savedReadings, setSavedReadings] = useState([]);
 
   const makeFryer = (fNum) => ({
-    fryerNumber: fNum, oilAge: 1, litresFilled: '', tpmValue: '',
+    fryerNumber: fNum, oilAge: '', litresFilled: '', tpmValue: '',
     setTemperature: '', actualTemperature: '', foodType: 'Chips/Fries',
-    filtered: true, notes: '', notInUse: false,
+    filtered: null, notes: '', notInUse: false,
   });
   const [fryer, setFryerState] = useState(makeFryer(currentFryerNumber));
 
@@ -343,7 +343,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   };
 
   const isFreshOil = parseInt(fryer.oilAge) === 1;
-  const canSave = fryer.tpmValue;
+  const canSave = fryer.tpmValue && fryer.oilAge;
 
   const inputSt = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '16px', outline: 'none', boxSizing: 'border-box' };
   const lbl = { display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' };
@@ -361,6 +361,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
       venueId: venue.id,
       fryerNumber: fryer.fryerNumber,
       readingDate: date,
+      readingNumber: 1,
       takenBy: currentUser?.id || null,
       staffName: currentUser?.name || '',
       oilAge: parseInt(fryer.oilAge) || 1,
@@ -717,12 +718,13 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
 // ─────────────────────────────────────────────
 // TRIAL DETAIL MODAL — view + edit trial info
 // ─────────────────────────────────────────────
-const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, onEditReading, VOLUME_BRACKETS }) => {
+const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, VOLUME_BRACKETS }) => {
   const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
   const compOil = oilTypes.find(o => o.id === venue.defaultOil);
   const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
 
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  const [selectedCell, setSelectedCell] = useState(null); // { dateStr, fryerNum }
   useEffect(() => {
     const h = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener('resize', h);
@@ -1027,7 +1029,6 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
             {fryerCount > 1 && (
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#1a428a', padding: '0 4px 4px', letterSpacing: '0.3px' }}>Fryer {fryerNum}</div>
             )}
-            <div style={{ overflowX: dayCount > 7 ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
               <div style={{ minWidth: gridMinW ? `${gridMinW}px` : undefined }}>
                 {/* Day-of-week header row */}
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px', marginBottom: '1px' }}>
@@ -1051,12 +1052,13 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                     const hasNotes = recs.some(r => r.notes);
                     const cellBg = isFuture ? 'white' : recs.length > 0 ? '#d1fae5' : '#fee2e2';
                     const tpmColor = latest ? (latest.tpmValue <= 14 ? '#059669' : latest.tpmValue <= 18 ? '#d97706' : '#dc2626') : '#cbd5e1';
-                    const canClick = !isFuture && onEditReading;
+                    const canClick = !isFuture && recs.length > 0;
+                    const isSelected = selectedCell && selectedCell.dateStr === dateStr && selectedCell.fryerNum === fryerNum;
                     return (
-                      <div key={idx} onClick={() => canClick && onEditReading(venue, dateStr, fryerNum)} style={{
+                      <div key={idx} onClick={() => canClick && setSelectedCell(isSelected ? null : { dateStr, fryerNum, recs })} style={{
                         background: cellBg, borderRadius: '5px', padding: '2px 1px', minHeight: '72px', minWidth: `${cellMinW}px`,
-                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        border: isToday ? '2px solid #1a428a' : '1px solid #e2e8f0',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative',
+                        border: isSelected ? '2px solid #1a428a' : isToday ? '2px solid #1a428a' : '1px solid #e2e8f0',
                         opacity: isFuture ? 0.4 : 1, cursor: canClick ? 'pointer' : 'default',
                       }}>
                         <div style={{ fontSize: '9px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{day.getDate()}</div>
@@ -1089,7 +1091,6 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                   })}
                 </div>
               </div>
-            </div>
           </div>
         );
 
@@ -1110,8 +1111,51 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                 ))}
               </div>
             </div>
-            <div style={{ padding: '8px 6px' }}>
+            <div style={{ padding: '8px 6px', overflowX: dayCount > 7 ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
               {fryerList.map(fn => renderFryerCalendar(fn))}
+              {/* Selected cell detail card */}
+              {selectedCell && selectedCell.recs && selectedCell.recs.length > 0 && (() => {
+                const r = selectedCell.recs[selectedCell.recs.length - 1];
+                const dateObj = new Date(selectedCell.dateStr + 'T00:00:00');
+                const dateLabel = dateObj.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+                const tpmColor = r.tpmValue <= 14 ? '#059669' : r.tpmValue <= 18 ? '#d97706' : '#dc2626';
+                return (
+                  <div style={{
+                    margin: '8px 0 4px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0',
+                    padding: '10px 12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: '700', color: '#1f2937' }}>
+                        {dateLabel} — Fryer {selectedCell.fryerNum}
+                      </div>
+                      <button onClick={() => setSelectedCell(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                        <X size={14} color="#94a3b8" />
+                      </button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                      {[
+                        { label: 'TPM', value: r.tpmValue ?? '—', color: tpmColor },
+                        { label: 'Oil Age', value: r.oilAge ? `${r.oilAge} day${r.oilAge !== 1 ? 's' : ''}` : '—' },
+                        { label: 'Filtered', value: r.filtered === true ? 'Yes' : r.filtered === false ? 'No' : '—', color: r.filtered ? '#059669' : undefined },
+                        { label: 'Set Temp', value: r.setTemperature ? `${r.setTemperature}°` : '—' },
+                        { label: 'Actual Temp', value: r.actualTemperature ? `${r.actualTemperature}°` : '—' },
+                        { label: 'Litres', value: r.litresFilled ? `${r.litresFilled}L` : '—' },
+                      ].map(item => (
+                        <div key={item.label} style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: item.color || '#1f2937', lineHeight: 1.2 }}>{item.value}</div>
+                          <div style={{ fontSize: '8px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginTop: '1px' }}>{item.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {(r.foodType || r.notes) && (
+                      <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
+                        {r.foodType && <div style={{ fontSize: '10px', color: '#64748b' }}><span style={{ fontWeight: '600' }}>Food:</span> {r.foodType}</div>}
+                        {r.notes && <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}><span style={{ fontWeight: '600' }}>Notes:</span> {r.notes}</div>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {/* Legend */}
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 {[
@@ -1666,7 +1710,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     try {
       const inserts = readings.map(r => unMapReading(r));
-      await supabase.from('tpm_readings').insert(inserts);
+      await supabase.from('tpm_readings').upsert(inserts, { onConflict: 'venue_id,fryer_number,reading_date,reading_number' });
       const venueId = readings[0]?.venueId;
       const readingDate = readings[0]?.readingDate;
       if (venueId && readingDate) {
@@ -3652,7 +3696,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           onClose={() => setSelectedTrialVenue(null)}
           onSaveCustomerCode={handleSaveCustomerCode}
           onManage={(v) => { setSelectedTrialVenue(null); setManageVenueId(v.id); setActiveTab('manage'); }}
-          onEditReading={(v, dateStr, fryerNum) => { setSelectedTrialVenue(null); setEditReadingModal({ venue: v, date: dateStr, fryerNum }); }}
         />
       )}
 
