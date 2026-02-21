@@ -2194,47 +2194,65 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       : allTrials;
     const dashRows = [...dashFiltered].sort((a, b) => (b.trialStartDate || '').localeCompare(a.trialStartDate || ''));
 
-    // Avg time to decision — days from trial start to outcome date for won+lost trials
-    const decidedTrials = allTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialStartDate && v.outcomeDate);
-    const avgTimeToDecision = decidedTrials.length > 0
-      ? Math.round(decidedTrials.reduce((sum, v) => sum + daysBetween(v.trialStartDate, v.outcomeDate), 0) / decidedTrials.length)
+    // ── Last 90 days filter ──
+    const ninetyDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().slice(0, 10); })();
+    const recentTrials = allTrials.filter(v =>
+      (v.trialStartDate && v.trialStartDate >= ninetyDaysAgo) ||
+      (v.outcomeDate && v.outcomeDate >= ninetyDaysAgo)
+    );
+    const recentWon = recentTrials.filter(v => v.trialStatus === 'won');
+    const recentLost = recentTrials.filter(v => v.trialStatus === 'lost');
+    const recentDecidedCount = recentWon.length + recentLost.length;
+    const recentWinRate = recentDecidedCount > 0 ? Math.round((recentWon.length / recentDecidedCount) * 100) : null;
+
+    // Avg time to decision (last 90 days)
+    const recentDecidedTrials = recentTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialStartDate && v.outcomeDate);
+    const avgTimeToDecision = recentDecidedTrials.length > 0
+      ? Math.round(recentDecidedTrials.reduce((sum, v) => sum + daysBetween(v.trialStartDate, v.outcomeDate), 0) / recentDecidedTrials.length)
       : null;
 
-    // Avg XLFry sold price — average soldPricePerLitre across won trials
-    const wonWithPrice = wonTrials.filter(v => v.soldPricePerLitre);
-    const avgSoldPrice = wonWithPrice.length > 0
-      ? (wonWithPrice.reduce((sum, v) => sum + parseFloat(v.soldPricePerLitre), 0) / wonWithPrice.length).toFixed(2)
+    // Avg sold price (last 90 days)
+    const recentWonWithPrice = recentWon.filter(v => v.soldPricePerLitre);
+    const avgSoldPrice = recentWonWithPrice.length > 0
+      ? (recentWonWithPrice.reduce((sum, v) => sum + parseFloat(v.soldPricePerLitre), 0) / recentWonWithPrice.length).toFixed(2)
       : null;
 
-    // Avg trials per month — total trials / months since first trial
-    const allWithStart = allTrials.filter(v => v.trialStartDate).sort((a, b) => a.trialStartDate.localeCompare(b.trialStartDate));
-    const avgTrialsPerMonth = (() => {
-      if (allWithStart.length === 0) return null;
-      const first = new Date(allWithStart[0].trialStartDate + 'T00:00:00');
-      const now = new Date();
-      const months = Math.max(1, (now.getFullYear() - first.getFullYear()) * 12 + now.getMonth() - first.getMonth());
-      return (allWithStart.length / months).toFixed(1);
-    })();
+    // Avg trials per month (last 90 days ≈ 3 months)
+    const recentStarted = recentTrials.filter(v => v.trialStartDate && v.trialStartDate >= ninetyDaysAgo);
+    const avgTrialsPerMonth = recentStarted.length > 0 ? Math.round(recentStarted.length / 3) : null;
+
+    // Targets from admin settings
+    const targetWR = systemSettings?.targetWinRate;
+    const targetATD = systemSettings?.targetAvgTimeToDecision;
+    const targetSPL = systemSettings?.targetSoldPricePerLitre;
+    const targetTPM = systemSettings?.targetTrialsPerMonth;
 
     const statCardStyle = {
       background: 'white', borderRadius: '10px', padding: '14px 16px',
       border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
     };
 
+    const targetStyle = (met) => ({
+      fontSize: '9px', fontWeight: '600', marginTop: '3px',
+      color: met ? '#059669' : '#dc2626',
+    });
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* ── Stats Row ── */}
+        <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Last 90 days</div>
         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
           {/* Win Rate — first */}
           <div style={statCardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Win Rate</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: winRate !== null ? '#10b981' : COLORS.textFaint, marginTop: '2px' }}>{winRate !== null ? `${winRate}%` : '—'}</div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, marginTop: '2px' }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
               </div>
               <TrendingUp size={18} color="#6ee7b7" />
             </div>
-            {decidedCount > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{wonCount}W · {lostCount}L</div>}
+            {recentDecidedCount > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentWon.length}W · {recentLost.length}L</div>}
+            {targetWR != null && <div style={targetStyle(recentWinRate != null && recentWinRate >= targetWR)}>Target: {targetWR}%</div>}
           </div>
           {/* Avg Time to Decision */}
           <div style={statCardStyle}>
@@ -2245,7 +2263,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               </div>
               <Clock size={18} color="#93c5fd" />
             </div>
-            {decidedTrials.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{decidedTrials.length} decided</div>}
+            {recentDecidedTrials.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentDecidedTrials.length} decided</div>}
+            {targetATD != null && <div style={targetStyle(avgTimeToDecision != null && avgTimeToDecision <= targetATD)}>Target: {targetATD}d</div>}
           </div>
           {/* Avg Sold Price */}
           <div style={statCardStyle}>
@@ -2256,96 +2275,126 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               </div>
               <BarChart3 size={18} color="#fde68a" />
             </div>
-            {wonWithPrice.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{wonWithPrice.length} won trial{wonWithPrice.length !== 1 ? 's' : ''}</div>}
+            {recentWonWithPrice.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentWonWithPrice.length} won trial{recentWonWithPrice.length !== 1 ? 's' : ''}</div>}
+            {targetSPL != null && <div style={targetStyle(avgSoldPrice != null && parseFloat(avgSoldPrice) >= targetSPL)}>Target: ${Number(targetSPL).toFixed(2)}</div>}
           </div>
           {/* Avg Trials per Month */}
           <div style={statCardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Trials / Month</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', marginTop: '2px' }}>{avgTrialsPerMonth || '—'}</div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', marginTop: '2px' }}>{avgTrialsPerMonth ?? '—'}</div>
               </div>
               <Calendar size={18} color="#cbd5e1" />
             </div>
-            {allWithStart.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{allTrials.length} total</div>}
+            {recentStarted.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentStarted.length} in 90d</div>}
+            {targetTPM != null && <div style={targetStyle(avgTrialsPerMonth != null && avgTrialsPerMonth >= targetTPM)}>Target: {targetTPM}</div>}
           </div>
         </div>
 
-        {/* ── Awaiting Recording Today + Awaiting Cust Code — side by side ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '16px' }}>
+        {/* ── Awaiting Recording + Awaiting Decision + Awaiting Cust Code — 3 columns ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '10px', marginBottom: '16px' }}>
           {/* Awaiting Recording Today */}
-          {activeTrials.length > 0 && (
-            <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Calendar size={13} color={awaitingRecording.length > 0 ? '#f59e0b' : '#10b981'} />
-                  <span style={{ fontSize: '10px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording</span>
-                </div>
-                <span style={{
-                  fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '10px',
-                  background: awaitingRecording.length > 0 ? '#fef3c7' : '#d1fae5',
-                  color: awaitingRecording.length > 0 ? '#92400e' : '#065f46',
-                }}>{awaitingRecording.length} / {activeTrials.length}</span>
+          <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Calendar size={12} color={awaitingRecording.length > 0 ? '#f59e0b' : '#10b981'} />
+                <span style={{ fontSize: '9px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording</span>
               </div>
-              {awaitingRecording.length > 0 ? (
-                <div style={{ padding: '6px 14px 10px', maxHeight: '162px', overflowY: 'auto' }}>
-                  {awaitingRecording.map(v => {
-                    const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
-                    return (
-                      <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
-                        borderBottom: '1px solid #f8fafc', cursor: 'pointer',
-                      }}>
-                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text }}>{v.name}</span>
-                          {daysIn != null && <span style={{ fontSize: '10px', color: COLORS.textMuted, marginLeft: '6px' }}>Day {daysIn}</span>}
-                        </div>
-                        <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>No reading</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{ padding: '14px', textAlign: 'center', fontSize: '11px', color: '#059669', fontWeight: '500' }}>
-                  <Check size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />All recorded today
-                </div>
-              )}
+              <span style={{
+                fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
+                background: awaitingRecording.length > 0 ? '#fef3c7' : '#d1fae5',
+                color: awaitingRecording.length > 0 ? '#92400e' : '#065f46',
+              }}>{awaitingRecording.length} / {activeTrials.length}</span>
             </div>
-          )}
+            {awaitingRecording.length > 0 ? (
+              <div style={{ padding: '4px 12px 8px', maxHeight: '135px', overflowY: 'auto' }}>
+                {awaitingRecording.map(v => {
+                  const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
+                  return (
+                    <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
+                      display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
+                      borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+                    }}>
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                      {daysIn != null && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>Day {daysIn}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
+                <Check size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />All recorded
+              </div>
+            )}
+          </div>
+
+          {/* Awaiting Decision */}
+          <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Clock size={12} color={pendingCount > 0 ? '#eab308' : '#10b981'} />
+                <span style={{ fontSize: '9px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Decision</span>
+              </div>
+              <span style={{
+                fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
+                background: pendingCount > 0 ? '#fef3c7' : '#d1fae5',
+                color: pendingCount > 0 ? '#92400e' : '#065f46',
+              }}>{pendingCount}</span>
+            </div>
+            {pendingCount > 0 ? (
+              <div style={{ padding: '4px 12px 8px', maxHeight: '135px', overflowY: 'auto' }}>
+                {pendingOutcomeTrials.map(v => {
+                  const daysSinceEnd = v.trialEndDate ? daysBetween(v.trialEndDate, todayStr) : null;
+                  return (
+                    <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
+                      display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
+                      borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+                    }}>
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#eab308', flexShrink: 0 }} />
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                      {daysSinceEnd != null && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>{daysSinceEnd}d ago</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
+                <Check size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />All decided
+              </div>
+            )}
+          </div>
 
           {/* Awaiting Customer Code */}
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ClipboardList size={13} color={acceptedCount > 0 ? '#f59e0b' : '#10b981'} />
-                <span style={{ fontSize: '10px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Cust Code</span>
+            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <ClipboardList size={12} color={acceptedCount > 0 ? '#f59e0b' : '#10b981'} />
+                <span style={{ fontSize: '9px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Cust Code</span>
               </div>
               <span style={{
-                fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '10px',
+                fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
                 background: acceptedCount > 0 ? '#ffedd5' : '#d1fae5',
                 color: acceptedCount > 0 ? '#9a3412' : '#065f46',
               }}>{acceptedCount}</span>
             </div>
             {acceptedCount > 0 ? (
-              <div style={{ padding: '6px 14px 10px', maxHeight: '162px', overflowY: 'auto' }}>
+              <div style={{ padding: '4px 12px 8px', maxHeight: '135px', overflowY: 'auto' }}>
                 {acceptedTrials.map(v => (
                   <div key={v.id} onClick={() => { setManageVenueId(v.id); setActiveTab('manage'); }} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
+                    display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
                     borderBottom: '1px solid #f8fafc', cursor: 'pointer',
                   }}>
-                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text }}>{v.name}</span>
-                      {v.outcomeDate && <span style={{ fontSize: '10px', color: COLORS.textMuted, marginLeft: '6px' }}>Won {displayDate(v.outcomeDate)}</span>}
-                    </div>
-                    <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: '600' }}>Needs code</span>
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                    <span style={{ fontSize: '11px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                    {v.outcomeDate && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>Won {displayDate(v.outcomeDate)}</span>}
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ padding: '14px', textAlign: 'center', fontSize: '11px', color: '#059669', fontWeight: '500' }}>
-                <Check size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />All codes assigned
+              <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
+                <Check size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />All assigned
               </div>
             )}
           </div>

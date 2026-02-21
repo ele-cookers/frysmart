@@ -217,6 +217,10 @@ export const mapSystemSettings = (r) => ({
   oilTypeOptions: r.oil_type_options ?? [],
   themeConfig: r.theme_config ?? {},
   permissionsConfig: r.permissions_config ?? {},
+  targetWinRate: r.target_win_rate ?? 75,
+  targetAvgTimeToDecision: r.target_avg_time_to_decision ?? 14,
+  targetSoldPricePerLitre: r.target_sold_price_per_litre ?? 2.50,
+  targetTrialsPerMonth: r.target_trials_per_month ?? 12,
 });
 
 export const unMapSystemSettings = (s) => ({
@@ -229,4 +233,8 @@ export const unMapSystemSettings = (s) => ({
   oil_type_options: s.oilTypeOptions,
   theme_config: s.themeConfig,
   permissions_config: s.permissionsConfig,
+  target_win_rate: s.targetWinRate,
+  target_avg_time_to_decision: s.targetAvgTimeToDecision,
+  target_sold_price_per_litre: s.targetSoldPricePerLitre,
+  target_trials_per_month: s.targetTrialsPerMonth,
 });

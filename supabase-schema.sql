@@ -32,7 +32,11 @@ create table system_settings (
   reminder_days int not null default 7,
   oil_type_options text[] not null default array['canola','palm','sunflower','soybean','cottonseed','tallow','blend','unknown'],
   theme_config jsonb not null default '{}'::jsonb,
-  permissions_config jsonb not null default '{}'::jsonb
+  permissions_config jsonb not null default '{}'::jsonb,
+  target_win_rate numeric not null default 75,
+  target_avg_time_to_decision int not null default 14,
+  target_sold_price_per_litre numeric not null default 2.50,
+  target_trials_per_month int not null default 12
 );
 
 -- ============================================================
@@ -286,6 +290,15 @@ create policy "Allow update for authenticated" on system_settings
 -- ALTER TABLE venues DROP CONSTRAINT venues_trial_status_check;
 -- ALTER TABLE venues ADD CONSTRAINT venues_trial_status_check
 --   CHECK (trial_status IN ('pending', 'in-progress', 'completed', 'accepted', 'won', 'lost'));
+
+-- ============================================================
+-- 13. Migration: add performance target columns to system_settings
+-- ============================================================
+
+-- ALTER TABLE system_settings ADD COLUMN target_win_rate numeric NOT NULL DEFAULT 75;
+-- ALTER TABLE system_settings ADD COLUMN target_avg_time_to_decision int NOT NULL DEFAULT 14;
+-- ALTER TABLE system_settings ADD COLUMN target_sold_price_per_litre numeric NOT NULL DEFAULT 2.50;
+-- ALTER TABLE system_settings ADD COLUMN target_trials_per_month int NOT NULL DEFAULT 12;
 
 -- ============================================================
 -- Done! All tables, constraints, seeds, and temp RLS created.

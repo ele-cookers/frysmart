@@ -10,7 +10,7 @@ import {
   mapTrialReason, mapVolumeBracket,
   mapSystemSettings, unMapSystemSettings,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Shield, Droplets, Archive, Filter, Copy, Layers, UserPlus, CheckCircle, BarChart3, Globe, RefreshCw, Zap, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, Palette, RotateCcw } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Shield, Droplets, Archive, Filter, Copy, Layers, UserPlus, CheckCircle, BarChart3, Globe, RefreshCw, Zap, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, Palette, RotateCcw, TrendingUp } from 'lucide-react';
 import {
   HEADER_BADGE_COLORS, ROLE_COLORS, STATE_BADGE_COLORS, STATE_COLOURS,
   STATUS_COLORS, OIL_TIER_COLORS, COMPETITOR_TIER_COLORS, CODE_BADGE_COLORS,
@@ -3744,6 +3744,7 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
     { key: 'brackets', label: 'Volume Brackets',   icon: BarChart3,   group: 'Trials' },
     { key: 'oiltypes', label: 'Oil Types',         icon: Droplets,    group: 'Trials' },
     { key: 'defaults', label: 'Trial Defaults',    icon: Target,      group: 'Trials' },
+    { key: 'targets',  label: 'Performance Targets', icon: TrendingUp, group: 'Trials' },
     { key: 'tpm',      label: 'TPM Thresholds',    icon: AlertCircle, group: 'System' },
     { key: 'fryers',   label: 'Default Fryers',    icon: Settings,    group: 'System' },
     { key: 'reporting',label: 'Reporting',         icon: RefreshCw,   group: 'System' },
@@ -3888,6 +3889,26 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
               <FormField label="Default Trial Duration (days)">
                 <input type="number" min="1" max="90" style={inputStyle} value={systemSettings.trialDuration} onChange={e => setSystemSettings(s => ({ ...s, trialDuration: parseInt(e.target.value) }))} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
               </FormField>
+            </div>
+          )}
+
+          {activeTab === 'targets' && (
+            <div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>Set performance targets for BDM trial metrics. These are displayed on the BDM dashboard KPI cards.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <FormField label="Target Win Rate (%)">
+                  <input type="number" min="0" max="100" step="1" style={{ ...inputStyle, textAlign: 'center' }} value={systemSettings.targetWinRate ?? 75} onChange={e => setSystemSettings(s => ({ ...s, targetWinRate: parseFloat(e.target.value) || 0 }))} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </FormField>
+                <FormField label="Target Avg Time to Decision (days)">
+                  <input type="number" min="1" max="90" step="1" style={{ ...inputStyle, textAlign: 'center' }} value={systemSettings.targetAvgTimeToDecision ?? 14} onChange={e => setSystemSettings(s => ({ ...s, targetAvgTimeToDecision: parseInt(e.target.value) || 1 }))} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </FormField>
+                <FormField label="Target Sold Price / Litre ($)">
+                  <input type="number" min="0" step="0.01" style={{ ...inputStyle, textAlign: 'center' }} value={systemSettings.targetSoldPricePerLitre ?? 2.50} onChange={e => setSystemSettings(s => ({ ...s, targetSoldPricePerLitre: parseFloat(e.target.value) || 0 }))} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </FormField>
+                <FormField label="Target Trials / Month">
+                  <input type="number" min="1" max="100" step="1" style={{ ...inputStyle, textAlign: 'center' }} value={systemSettings.targetTrialsPerMonth ?? 12} onChange={e => setSystemSettings(s => ({ ...s, targetTrialsPerMonth: parseInt(e.target.value) || 1 }))} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                </FormField>
+              </div>
             </div>
           )}
 
@@ -4146,7 +4167,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   const [oilTypeOptions, setOilTypeOptions] = useState([]);
   const [systemSettings, setSystemSettings] = useState({
     warningThreshold: 18, criticalThreshold: 24, defaultFryerCount: 4,
-    reportFrequency: 'weekly', reminderDays: 7, trialDuration: 7
+    reportFrequency: 'weekly', reminderDays: 7, trialDuration: 7,
+    targetWinRate: 75, targetAvgTimeToDecision: 14, targetSoldPricePerLitre: 2.50, targetTrialsPerMonth: 12
   });
 
   // ── Supabase: fetch all data on mount ──
