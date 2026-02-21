@@ -1603,8 +1603,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   // ─────────────────────────────────────────
-  // LOADING — static logo (no animation) matches App.jsx so there's
-  // no visible flicker when React swaps the two loading screens.
+  // LOADING — scale-only pulse, matches App.jsx. No opacity change
+  // so animation restart on DOM swap is imperceptible.
   // ─────────────────────────────────────────
   if (loading) {
     return (
@@ -1615,6 +1615,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}>
         <style>{`
+          @keyframes cookersPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+          }
           @keyframes dotFlash {
             0%, 20% { opacity: 0; }
             40%, 100% { opacity: 1; }
@@ -1622,6 +1626,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         `}</style>
         <img src="/images/Cookers drop icon.png" alt="Loading" style={{
           width: '100px', height: '100px', objectFit: 'contain',
+          animation: 'cookersPulse 1.6s ease-in-out infinite',
         }} />
         <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
           Loading
