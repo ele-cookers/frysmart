@@ -11,7 +11,7 @@ import {
   XCircle, Building, ChevronUp, ChevronDown,
   LayoutList, LayoutGrid, ArrowUpDown, CheckCircle2,
   Search, ArrowDown, Filter, Monitor, Smartphone,
-  Edit3, Calendar, Save, ChevronRight, BarChart3, TrendingUp, RotateCcw,
+  Edit3, Calendar, Save, ChevronRight, BarChart3, TrendingUp, TrendingDown, RotateCcw,
   Star, MessageSquare
 } from 'lucide-react';
 
@@ -2270,9 +2270,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const good = inverted ? val <= 0 : val >= 0;
       const sign = val > 0 ? '+' : '';
       return (
-        <span style={{ fontSize: '9px', fontWeight: '600', color: good ? '#059669' : '#dc2626', marginLeft: '6px' }}>
+        <div style={{ fontSize: '10px', fontWeight: '700', color: good ? '#059669' : '#dc2626', display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {good ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
           {sign}{val}{suffix}
-        </span>
+        </div>
       );
     };
 
@@ -2283,58 +2284,49 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
           {/* Win Rate */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Win Rate</div>
-              {targetWR != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (recentWinRate != null && recentWinRate >= targetWR) ? '#059669' : '#dc2626' }}>Target: {targetWR}%</span>}
-            </div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Win Rate</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</span>
-                {deltaLabel(deltaWR, '%', false)}
+              <div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, lineHeight: 1 }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
+                {targetWR != null && <div style={{ fontSize: '9px', fontWeight: '600', color: (recentWinRate != null && recentWinRate >= targetWR) ? '#059669' : '#dc2626', marginTop: '3px' }}>Target: {targetWR}%</div>}
               </div>
-              <TrendingUp size={16} color="#6ee7b7" />
+              {deltaLabel(deltaWR, '%', false)}
             </div>
           </div>
           {/* Avg Time to Decision */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Time to Decision</div>
-              {targetATD != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (avgTimeToDecision != null && avgTimeToDecision <= targetATD) ? '#059669' : '#dc2626' }}>Target: {targetATD}d</span>}
-            </div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Time to Decision</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6' }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</span>
-                {deltaLabel(deltaATD, 'd', true)}
+              <div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6', lineHeight: 1 }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
+                {targetATD != null && <div style={{ fontSize: '9px', fontWeight: '600', color: (avgTimeToDecision != null && avgTimeToDecision <= targetATD) ? '#059669' : '#dc2626', marginTop: '3px' }}>Target: {targetATD}d</div>}
               </div>
-              <Clock size={16} color="#93c5fd" />
+              {deltaLabel(deltaATD, 'd', true)}
             </div>
           </div>
           {/* Avg Sold Price */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Sold $/L</div>
-              {targetSPL != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (avgSoldPrice != null && parseFloat(avgSoldPrice) >= targetSPL) ? '#059669' : '#dc2626' }}>Target: ${Number(targetSPL).toFixed(2)}</span>}
-            </div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Sold $/L</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b' }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</span>
-                {deltaSP != null && <span style={{ fontSize: '9px', fontWeight: '600', color: deltaSP >= 0 ? '#059669' : '#dc2626', marginLeft: '6px' }}>{deltaSP >= 0 ? '+' : ''}${deltaSP.toFixed(2)}</span>}
+              <div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b', lineHeight: 1 }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
+                {targetSPL != null && <div style={{ fontSize: '9px', fontWeight: '600', color: (avgSoldPrice != null && parseFloat(avgSoldPrice) >= targetSPL) ? '#059669' : '#dc2626', marginTop: '3px' }}>Target: ${Number(targetSPL).toFixed(2)}</div>}
               </div>
-              <BarChart3 size={16} color="#fde68a" />
+              {deltaSP != null && (() => {
+                const good = deltaSP >= 0;
+                return <div style={{ fontSize: '10px', fontWeight: '700', color: good ? '#059669' : '#dc2626', display: 'flex', alignItems: 'center', gap: '2px' }}>{good ? <TrendingUp size={10} /> : <TrendingDown size={10} />}{deltaSP >= 0 ? '+' : ''}${deltaSP.toFixed(2)}</div>;
+              })()}
             </div>
           </div>
           {/* Avg Trials per Month */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Trials / Month</div>
-              {targetTPM != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (avgTrialsPerMonth != null && avgTrialsPerMonth >= targetTPM) ? '#059669' : '#dc2626' }}>Target: {targetTPM}</span>}
-            </div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Trials / Month</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '24px', fontWeight: '800', color: '#64748b' }}>{avgTrialsPerMonth ?? '—'}</span>
-                {deltaLabel(deltaTrials, '', false)}
+              <div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
+                {targetTPM != null && <div style={{ fontSize: '9px', fontWeight: '600', color: (avgTrialsPerMonth != null && avgTrialsPerMonth >= targetTPM) ? '#059669' : '#dc2626', marginTop: '3px' }}>Target: {targetTPM}</div>}
               </div>
-              <Calendar size={16} color="#cbd5e1" />
+              {deltaLabel(deltaTrials, '', false)}
             </div>
           </div>
         </div>
@@ -2343,7 +2335,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '10px', marginBottom: '16px' }}>
           {/* Awaiting Recording Today */}
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Calendar size={12} color={awaitingRecording.length > 0 ? '#f59e0b' : '#10b981'} />
                 <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording</span>
@@ -2355,16 +2347,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{awaitingRecording.length} / {activeTrials.length}</span>
             </div>
             {awaitingRecording.length > 0 ? (
-              <div style={{ padding: '4px 12px 8px', maxHeight: '115px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
                 {awaitingRecording.map(v => {
                   const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
                   return (
                     <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
-                      display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
-                      borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
+                      borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
                     }}>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                       {daysIn != null && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>Day {daysIn}</span>}
                     </div>
                   );
@@ -2379,7 +2371,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
           {/* Awaiting Decision */}
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Clock size={12} color={pendingCount > 0 ? '#eab308' : '#10b981'} />
                 <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Decision</span>
@@ -2391,16 +2383,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{pendingCount}</span>
             </div>
             {pendingCount > 0 ? (
-              <div style={{ padding: '4px 12px 8px', maxHeight: '115px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
                 {pendingOutcomeTrials.map(v => {
                   const daysSinceEnd = v.trialEndDate ? daysBetween(v.trialEndDate, todayStr) : null;
                   return (
                     <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
-                      display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
-                      borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
+                      borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
                     }}>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#eab308', flexShrink: 0 }} />
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                       {daysSinceEnd != null && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>{daysSinceEnd}d ago</span>}
                     </div>
                   );
@@ -2415,7 +2407,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
           {/* Awaiting Customer Code */}
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <ClipboardList size={12} color={acceptedCount > 0 ? '#f59e0b' : '#10b981'} />
                 <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Cust Code</span>
@@ -2427,14 +2419,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{acceptedCount}</span>
             </div>
             {acceptedCount > 0 ? (
-              <div style={{ padding: '4px 12px 8px', maxHeight: '115px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
                 {acceptedTrials.map(v => (
                   <div key={v.id} onClick={() => { setManageVenueId(v.id); setActiveTab('manage'); }} style={{
                     display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
                     borderBottom: '1px solid #f8fafc', cursor: 'pointer',
                   }}>
                     <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
-                    <span style={{ fontSize: '11px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                     {v.outcomeDate && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>Won {displayDate(v.outcomeDate)}</span>}
                   </div>
                 ))}
@@ -2867,8 +2859,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         </div>
 
-        {/* Two-column layout on desktop */}
-        <div style={{ display: isDesktop ? 'grid' : 'block', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
+        {/* Stacked layout — details then calendar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* LEFT COLUMN — Trial Details + Actions */}
           <div>
