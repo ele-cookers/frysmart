@@ -2601,85 +2601,97 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           }}>
             <div>
-              {/* New Trial — prominent CTA */}
-              <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); }} style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                padding: '11px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                marginBottom: '16px', transition: 'all 0.15s',
-                background: activeTab === 'new' ? COLORS.brand : '#f5a623',
-                color: 'white',
-                fontWeight: '700', fontSize: '13px', letterSpacing: '0.2px',
-                boxShadow: activeTab === 'new' ? 'none' : '0 2px 8px rgba(245,166,35,0.3)',
-              }}>
-                <Plus size={16} strokeWidth={2.5} />
-                New Trial
-              </button>
+              {/* Core section — New Trial + Dashboard */}
+              <div style={{ background: '#f0f4fa', borderRadius: '10px', padding: '6px', marginBottom: '14px' }}>
+                {/* New Trial — prominent CTA */}
+                <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); }} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '11px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                  marginBottom: '4px', transition: 'all 0.15s',
+                  background: activeTab === 'new' ? COLORS.brand : '#f5a623',
+                  color: 'white',
+                  fontWeight: '700', fontSize: '13px', letterSpacing: '0.2px',
+                  boxShadow: activeTab === 'new' ? 'none' : '0 2px 8px rgba(245,166,35,0.3)',
+                }}>
+                  <Plus size={16} strokeWidth={2.5} />
+                  New Trial
+                </button>
 
-              {/* Dashboard */}
-              <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); }} style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                marginBottom: '12px', transition: 'all 0.15s', textAlign: 'left',
-                background: activeTab === 'dashboard' ? '#e8eef6' : 'transparent',
-                color: activeTab === 'dashboard' ? COLORS.brand : '#1f2937',
-                fontWeight: activeTab === 'dashboard' ? '700' : '500', fontSize: '13px',
-              }}>
-                <BarChart3 size={16} />
-                Dashboard
-              </button>
+                {/* Dashboard */}
+                {(() => {
+                  const isActive = activeTab === 'dashboard';
+                  return (
+                    <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); }} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
+                      background: isActive ? '#1a428a' : 'transparent',
+                      color: isActive ? 'white' : '#1a428a',
+                      fontWeight: '600', fontSize: '13px',
+                    }}>
+                      <BarChart3 size={17} color={isActive ? 'white' : '#1a428a'} />
+                      Dashboard
+                    </button>
+                  );
+                })()}
+              </div>
 
               {/* Trials section */}
-              <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Trials</div>
-              {NAV_ITEMS.map(tab => {
-                const isActive = activeTab === tab.id;
-                const activeColor = tab.color || COLORS.brand;
-                return (
-                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                    padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
-                    background: isActive ? '#e8eef6' : 'transparent',
-                    color: isActive ? activeColor : '#1f2937',
-                    fontWeight: isActive ? '600' : '500', fontSize: '13px',
-                  }}>
-                    <tab.icon size={15} />
-                    {tab.label}
-                    {tab.count != null && tab.count > 0 && (
-                      <span style={{
-                        marginLeft: 'auto', background: isActive ? activeColor : '#e2e8f0',
-                        color: isActive ? 'white' : COLORS.textMuted,
-                        padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
-                      }}>{tab.count}</span>
-                    )}
-                  </button>
-                );
-              })}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Trials</div>
+                {NAV_ITEMS.map(tab => {
+                  const isActive = activeTab === tab.id;
+                  const activeColor = tab.color || COLORS.brand;
+                  return (
+                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                      padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
+                      background: isActive ? '#e8eef6' : 'transparent',
+                      color: isActive ? activeColor : '#1f2937',
+                      fontWeight: isActive ? '600' : '500', fontSize: '13px',
+                    }}>
+                      <tab.icon size={15} />
+                      {tab.label}
+                      {tab.count != null && tab.count > 0 && (
+                        <span style={{
+                          marginLeft: 'auto', background: isActive ? activeColor : '#e2e8f0',
+                          color: isActive ? 'white' : COLORS.textMuted,
+                          padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
+                        }}>{tab.count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-              {/* Archive section — Successful / Unsuccessful as own pages */}
-              <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: '16px', marginBottom: '2px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>Archive</div>
-              {ARCHIVE_ITEMS.map(tab => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                    padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
-                    background: isActive ? '#e8eef6' : 'transparent',
-                    color: isActive ? tab.color : '#1f2937',
-                    fontWeight: isActive ? '600' : '500', fontSize: '13px',
-                  }}>
-                    <tab.icon size={15} />
-                    {tab.label}
-                    {tab.count > 0 && (
-                      <span style={{
-                        marginLeft: 'auto', background: isActive ? tab.color : '#e2e8f0',
-                        color: isActive ? 'white' : COLORS.textMuted,
-                        padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
-                      }}>{tab.count}</span>
-                    )}
-                  </button>
-                );
-              })}
+              {/* Archive section */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>Archive</div>
+                {ARCHIVE_ITEMS.map(tab => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                      padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
+                      background: isActive ? '#e8eef6' : 'transparent',
+                      color: isActive ? tab.color : '#1f2937',
+                      fontWeight: isActive ? '600' : '500', fontSize: '13px',
+                    }}>
+                      <tab.icon size={15} />
+                      {tab.label}
+                      {tab.count > 0 && (
+                        <span style={{
+                          marginLeft: 'auto', background: isActive ? tab.color : '#e2e8f0',
+                          color: isActive ? 'white' : COLORS.textMuted,
+                          padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
+                        }}>{tab.count}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             {/* Logout */}
             <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>

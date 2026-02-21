@@ -1538,152 +1538,108 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
         <div>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 30 days</p>
 
-          {/* Top KPIs 2x2 — same as venue staff exec summary */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-            {[
-              { label: 'COMPLIANCE', value: `${avgCompliance}%`, color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
-              { label: 'REACHED CRITICAL', value: `${groupCritRate}%`, color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
-              { label: 'AVG TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
-              { label: 'FILTERING', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' }
-            ].map(kpi => (
-              <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
-                <div style={{ fontSize: '26px', fontWeight: '700', color: kpi.color, lineHeight: '1', marginBottom: '6px' }}>{kpi.value}</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8' }}>target: {kpi.target}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Oil Management Overview */}
-          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>Oil Management</h3>
-              <div style={{ padding: '3px 8px', borderRadius: '5px', background: oilGrade.bg, color: oilGrade.color, fontSize: '11px', fontWeight: '700' }}>{oilGrade.label}</div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+          {/* Row 1: KPI cards (left) + Oil Management (right) */}
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
+            {/* Top KPIs 2x2 */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               {[
-                { val: groupAvgOilAge.toFixed(1), label: 'Avg Oil Life', sub: 'Longer is better*' },
-                { val: groupChangedTooEarly, label: 'Changed Too Early', sub: `Before ${warnAt} TPM` },
-                { val: groupChangedTooLate, label: 'Changed Too Late', sub: `After ${critAt} TPM` },
-                { val: `${groupTempControlRate}%`, label: 'Temp Control', sub: `${groupAvgSignedTempVariance > 0 ? '+' : groupAvgSignedTempVariance < 0 ? '-' : ''}${Math.abs(groupAvgSignedTempVariance).toFixed(1)}% avg` }
-              ].map(item => (
-                <div key={item.label} style={{ textAlign: 'center', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{item.val}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{item.label}</div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px', fontWeight: '600' }}>{item.sub}</div>
+                { label: 'COMPLIANCE', value: `${avgCompliance}%`, color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
+                { label: 'REACHED CRITICAL', value: `${groupCritRate}%`, color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
+                { label: 'AVG TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
+                { label: 'FILTERING', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' }
+              ].map(kpi => (
+                <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
+                  <div style={{ fontSize: '26px', fontWeight: '700', color: kpi.color, lineHeight: '1', marginBottom: '6px' }}>{kpi.value}</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8' }}>target: {kpi.target}</div>
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '10px', fontStyle: 'italic' }}>*Proper filtering and monitoring extends oil life</div>
+
+            {/* Oil Management Overview */}
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>Oil Management</h3>
+                <div style={{ padding: '3px 8px', borderRadius: '5px', background: oilGrade.bg, color: oilGrade.color, fontSize: '11px', fontWeight: '700' }}>{oilGrade.label}</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', flex: 1 }}>
+                {[
+                  { val: groupAvgOilAge.toFixed(1), label: 'Avg Oil Life', sub: 'Longer is better*' },
+                  { val: groupChangedTooEarly, label: 'Changed Too Early', sub: `Before ${warnAt} TPM` },
+                  { val: groupChangedTooLate, label: 'Changed Too Late', sub: `After ${critAt} TPM` },
+                  { val: `${groupTempControlRate}%`, label: 'Temp Control', sub: `${groupAvgSignedTempVariance > 0 ? '+' : groupAvgSignedTempVariance < 0 ? '-' : ''}${Math.abs(groupAvgSignedTempVariance).toFixed(1)}% avg` }
+                ].map(item => (
+                  <div key={item.label} style={{ textAlign: 'center', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{item.val}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>{item.label}</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px', fontWeight: '600' }}>{item.sub}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '10px', fontStyle: 'italic' }}>*Proper filtering and monitoring extends oil life</div>
+            </div>
           </div>
 
-          {/* TPM Recording Health — from admin panel */}
-          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: tpmHealthIsHealthy ? '#d1fae5' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Droplets size={15} color={tpmHealthIsHealthy ? '#059669' : '#dc2626'} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>TPM Recording Health</div>
-                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{totalVenues} venues</div>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '22px', fontWeight: '700', color: tpmHealthIsHealthy ? '#059669' : '#dc2626', lineHeight: 1 }}>{tpmHealthCompliancePct}%</div>
-                <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', marginTop: '2px' }}>COMPLIANT</div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-              {[
-                { label: 'Today', count: tpmHealthToday, color: '#10b981', bg: '#d1fae5' },
-                { label: 'Yesterday', count: tpmHealthYesterday, color: '#3b82f6', bg: '#dbeafe' },
-                { label: '2–6 days', count: tpmHealthOverdue2, color: '#f59e0b', bg: '#fef3c7' },
-                { label: '7+ days', count: tpmHealthOverdue7, color: '#ef4444', bg: '#fee2e2' },
-              ].map(b => (
-                <div key={b.label} style={{ background: b.bg, borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: b.color, lineHeight: 1 }}>{b.count}</div>
-                  <div style={{ fontSize: '10px', fontWeight: '600', color: b.color, marginTop: '4px' }}>{b.label}</div>
-                </div>
-              ))}
-            </div>
-            {overdueVenueList.length > 0 && (
-              <div style={{ marginTop: '12px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
-                {overdueVenueList.slice(0, 6).map((v, i) => {
-                  const days = (() => { if (!v.lastTpmDate) return 999; const d = new Date(v.lastTpmDate + 'T00:00:00'); const t = new Date(); t.setHours(0,0,0,0); return Math.floor((t - d) / 86400000); })();
+          {/* Row 2: Weekly Compliance + 7-Day TPM Trend side by side */}
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
+            {/* Weekly Compliance Pattern */}
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Avg recording rate by day of week across all venues (last 30 days)</p>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                {dayNames.map(day => {
+                  const rate = groupDayStats[day].total > 0 ? Math.round((groupDayStats[day].recorded / groupDayStats[day].total) * 100) : 0;
+                  const col = rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#ef4444';
                   return (
-                    <div key={v.id} onClick={() => onDrillDown(v.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < Math.min(overdueVenueList.length, 6) - 1 ? '1px solid #f1f5f9' : 'none', cursor: 'pointer' }}>
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: days >= 7 ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
-                      <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937' }}>{days}d ago</span>
+                    <div key={day} style={{ flex: 1, textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>{day}</div>
+                      <div style={{ height: '50px', background: '#f3f4f6', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${rate}%`, background: col, transition: 'height 0.3s' }} />
+                      </div>
+                      <div style={{ fontSize: '11px', fontWeight: '700', color: col, marginTop: '4px' }}>{rate}%</div>
                     </div>
                   );
                 })}
-                {overdueVenueList.length > 6 && (
-                  <div style={{ padding: '6px 0', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>+{overdueVenueList.length - 6} more</div>
-                )}
               </div>
-            )}
-          </div>
+              <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', fontStyle: 'italic' }}>
+                {(() => {
+                  const rates = dayNames.map(d => ({ day: d, rate: groupDayStats[d].total > 0 ? Math.round((groupDayStats[d].recorded / groupDayStats[d].total) * 100) : 0 }));
+                  const lowest = rates.reduce((m, c) => c.rate < m.rate ? c : m);
+                  const highest = rates.reduce((m, c) => c.rate > m.rate ? c : m);
+                  return lowest.rate < 50 ? `${lowest.day} is commonly missed • ${highest.day} has best compliance` : 'Great consistency across all days!';
+                })()}
+              </div>
+            </div>
 
-          {/* Weekly Compliance Pattern */}
-          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Avg recording rate by day of week across all venues (last 30 days)</p>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-              {dayNames.map(day => {
-                const rate = groupDayStats[day].total > 0 ? Math.round((groupDayStats[day].recorded / groupDayStats[day].total) * 100) : 0;
-                const col = rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#ef4444';
-                return (
-                  <div key={day} style={{ flex: 1, textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>{day}</div>
-                    <div style={{ height: '50px', background: '#f3f4f6', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${rate}%`, background: col, transition: 'height 0.3s' }} />
-                    </div>
-                    <div style={{ fontSize: '11px', fontWeight: '700', color: col, marginTop: '4px' }}>{rate}%</div>
+            {/* 7-Day TPM Trend */}
+            {(() => {
+              const maxT = Math.max(...groupLast7.filter(d => d.avg != null).map(d => d.avg), 30);
+              return (
+                <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>7-Day TPM Trend</h3>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>
+                    {groupLast7.map((day, i) => (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                        {day.avg != null ? (
+                          <>
+                            <div style={{ fontSize: '10px', fontWeight: '700', color: getTPMStatus(day.avg, warnAt, critAt).color, marginBottom: '3px' }}>{day.avg.toFixed(0)}</div>
+                            <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '4px' }} />
+                          </>
+                        ) : (
+                          <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px' }} />
+                        )}
+                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>{day.label}</div>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-            <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', fontStyle: 'italic' }}>
-              {(() => {
-                const rates = dayNames.map(d => ({ day: d, rate: groupDayStats[d].total > 0 ? Math.round((groupDayStats[d].recorded / groupDayStats[d].total) * 100) : 0 }));
-                const lowest = rates.reduce((m, c) => c.rate < m.rate ? c : m);
-                const highest = rates.reduce((m, c) => c.rate > m.rate ? c : m);
-                return lowest.rate < 50 ? `${lowest.day} is commonly missed • ${highest.day} has best compliance` : 'Great consistency across all days!';
-              })()}
-            </div>
+                  <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({warnAt})</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({critAt})</div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
-
-          {/* 7-Day TPM Trend */}
-          {(() => {
-            const maxT = Math.max(...groupLast7.filter(d => d.avg != null).map(d => d.avg), 30);
-            return (
-              <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>7-Day TPM Trend</h3>
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>
-                  {groupLast7.map((day, i) => (
-                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                      {day.avg != null ? (
-                        <>
-                          <div style={{ fontSize: '10px', fontWeight: '700', color: getTPMStatus(day.avg, warnAt, critAt).color, marginBottom: '3px' }}>{day.avg.toFixed(0)}</div>
-                          <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '4px' }} />
-                        </>
-                      ) : (
-                        <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px' }} />
-                      )}
-                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>{day.label}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({warnAt})</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({critAt})</div>
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Quality Distribution */}
           {totalGroupReadings > 0 && (
@@ -1702,9 +1658,59 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
             </div>
           )}
 
-          {/* League tables */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-            {/* Top Performers */}
+          {/* Row 3: TPM Recording Health + Most Compliant + Needs Attention */}
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '10px' }}>
+            {/* TPM Recording Health */}
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: tpmHealthIsHealthy ? '#d1fae5' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Droplets size={15} color={tpmHealthIsHealthy ? '#059669' : '#dc2626'} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>TPM Recording Health</div>
+                    <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{totalVenues} venues</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '22px', fontWeight: '700', color: tpmHealthIsHealthy ? '#059669' : '#dc2626', lineHeight: 1 }}>{tpmHealthCompliancePct}%</div>
+                  <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', marginTop: '2px' }}>COMPLIANT</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                {[
+                  { label: 'Today', count: tpmHealthToday, color: '#10b981', bg: '#d1fae5' },
+                  { label: 'Yesterday', count: tpmHealthYesterday, color: '#3b82f6', bg: '#dbeafe' },
+                  { label: '2–6 days', count: tpmHealthOverdue2, color: '#f59e0b', bg: '#fef3c7' },
+                  { label: '7+ days', count: tpmHealthOverdue7, color: '#ef4444', bg: '#fee2e2' },
+                ].map(b => (
+                  <div key={b.label} style={{ background: b.bg, borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: b.color, lineHeight: 1 }}>{b.count}</div>
+                    <div style={{ fontSize: '10px', fontWeight: '600', color: b.color, marginTop: '4px' }}>{b.label}</div>
+                  </div>
+                ))}
+              </div>
+              {overdueVenueList.length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
+                  {overdueVenueList.slice(0, 6).map((v, i) => {
+                    const days = (() => { if (!v.lastTpmDate) return 999; const d = new Date(v.lastTpmDate + 'T00:00:00'); const t = new Date(); t.setHours(0,0,0,0); return Math.floor((t - d) / 86400000); })();
+                    return (
+                      <div key={v.id} onClick={() => onDrillDown(v.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < Math.min(overdueVenueList.length, 6) - 1 ? '1px solid #f1f5f9' : 'none', cursor: 'pointer' }}>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: days >= 7 ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
+                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937' }}>{days}d ago</span>
+                      </div>
+                    );
+                  })}
+                  {overdueVenueList.length > 6 && (
+                    <div style={{ padding: '6px 0', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>+{overdueVenueList.length - 6} more</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Most Compliant */}
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Most Compliant</div>
               {bestPerformers.map((v, i) => (
@@ -1964,29 +1970,31 @@ export default function GroupManagerView({ currentUser, onLogout }) {
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           }}>
             <div>
-              {/* ── Group Dashboard section ── */}
-              <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Dashboard</div>
-              {[
-                { id: 'glance', label: 'At a Glance', icon: BarChart3 },
-                { id: 'exec',   label: 'Exec Summary', icon: Eye },
-              ].map(item => {
-                const isActive = primaryTab === 'all-venues' && groupView === item.id;
-                return (
-                  <button key={item.id} onClick={() => { setPrimaryTab('all-venues'); setGroupView(item.id); }} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                    padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
-                    background: isActive ? '#e8eef6' : 'transparent',
-                    color: isActive ? COLORS.brand : '#1f2937',
-                    fontWeight: isActive ? '600' : '500', fontSize: '13px',
-                  }}>
-                    <item.icon size={15} /> {item.label}
-                  </button>
-                );
-              })}
+              {/* Core section — At a Glance + Exec Summary */}
+              <div style={{ background: '#f0f4fa', borderRadius: '10px', padding: '6px', marginBottom: '14px' }}>
+                {[
+                  { id: 'glance', label: 'At a Glance', icon: BarChart3 },
+                  { id: 'exec',   label: 'Exec Summary', icon: Eye },
+                ].map(item => {
+                  const isActive = primaryTab === 'all-venues' && groupView === item.id;
+                  return (
+                    <button key={item.id} onClick={() => { setPrimaryTab('all-venues'); setGroupView(item.id); }} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
+                      background: isActive ? '#1a428a' : 'transparent',
+                      color: isActive ? 'white' : '#1a428a',
+                      fontWeight: '600', fontSize: '13px',
+                    }}>
+                      <item.icon size={17} color={isActive ? 'white' : '#1a428a'} /> {item.label}
+                    </button>
+                  );
+                })}
+              </div>
 
-              {/* ── By Venue section ── */}
-              <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px', marginTop: '14px' }}>By Venue</div>
+              {/* By Venue section */}
+              <div style={{ marginBottom: '14px' }}>
+              <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>By Venue</div>
               {/* Venue dropdown */}
               <div style={{ padding: '0 12px 8px 16px' }}>
                 <div style={{ position: 'relative' }}>
@@ -2061,6 +2069,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
                     }}>{v}</button>
                   );
                 })}
+              </div>
               </div>
             </div>
             {/* Logout at bottom */}

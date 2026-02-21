@@ -2745,81 +2745,87 @@ export default function VenueStaffView({
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           }}>
             <div>
-              {/* Summary + Dashboard at top (like admin panel) */}
-              {[
-                { id: 'summary', label: 'Summary', icon: BarChart3 },
-                { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-              ].map(item => {
-                const isActive = currentView === item.id;
-                return (
-                  <button key={item.id} onClick={() => setCurrentView(item.id)} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
-                    background: isActive ? '#e8eef6' : 'transparent',
-                    color: isActive ? '#1a428a' : '#64748b',
-                    fontWeight: isActive ? '600' : '500', fontSize: '13px',
-                  }}>
-                    <item.icon size={16} />
-                    {item.label}
-                  </button>
-                );
-              })}
-              {/* Separator */}
-              <div style={{ borderTop: '1px solid #e2e8f0', margin: '8px 0' }} />
-              {/* Record, Calendar, Settings below */}
-              {[
-                { id: 'record', label: 'Record', icon: ClipboardList },
-                { id: 'calendar', label: 'Calendar', icon: Calendar },
-              ].map(item => {
-                const isActive = currentView === item.id;
-                return (
-                  <button key={item.id} onClick={() => setCurrentView(item.id)} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
-                    background: isActive ? '#e8eef6' : 'transparent',
-                    color: isActive ? '#1a428a' : '#64748b',
-                    fontWeight: isActive ? '600' : '500', fontSize: '13px',
-                  }}>
-                    <item.icon size={16} />
-                    {item.label}
-                  </button>
-                );
-              })}
-              {/* Day / Week / Month / Qtr / Year — always visible under Calendar */}
-              <div style={{ paddingLeft: '28px', marginTop: '2px', marginBottom: '4px' }}>
-                {['Day', 'Week', 'Month', 'Quarter', 'Year'].map(v => {
-                  const isScale = currentView === 'calendar' && calendarView === v.toLowerCase();
+              {/* Core section — Summary + Dashboard */}
+              <div style={{ background: '#f0f4fa', borderRadius: '10px', padding: '6px', marginBottom: '14px' }}>
+                {[
+                  { id: 'summary', label: 'Summary', icon: BarChart3 },
+                  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                ].map(item => {
+                  const isActive = currentView === item.id;
                   return (
-                    <button key={v} onClick={() => { setCurrentView('calendar'); setCalendarView(v.toLowerCase()); }} style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '7px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                      marginBottom: '1px', textAlign: 'left',
-                      background: isScale ? '#f0f4ff' : 'transparent',
-                      color: isScale ? '#1a428a' : '#94a3b8',
-                      fontWeight: isScale ? '600' : '500', fontSize: '13px',
-                    }}>{v}</button>
+                    <button key={item.id} onClick={() => setCurrentView(item.id)} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
+                      background: isActive ? '#1a428a' : 'transparent',
+                      color: isActive ? 'white' : '#1a428a',
+                      fontWeight: '600', fontSize: '13px',
+                    }}>
+                      <item.icon size={17} color={isActive ? 'white' : '#1a428a'} />
+                      {item.label}
+                    </button>
                   );
                 })}
               </div>
-              {/* Settings */}
-              {(() => {
-                const isActive = currentView === 'settings';
-                return (
-                  <button onClick={() => setCurrentView('settings')} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
-                    background: isActive ? '#e8eef6' : 'transparent',
-                    color: isActive ? '#1a428a' : '#64748b',
-                    fontWeight: isActive ? '600' : '500', fontSize: '13px',
-                  }}>
-                    <Settings size={16} />
-                    Settings
-                  </button>
-                );
-              })()}
+              {/* Recording section */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Recording</div>
+                {[
+                  { id: 'record', label: 'Record', icon: ClipboardList },
+                  { id: 'calendar', label: 'Calendar', icon: Calendar },
+                ].map(item => {
+                  const isActive = currentView === item.id;
+                  return (
+                    <button key={item.id} onClick={() => setCurrentView(item.id)} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                      padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
+                      background: isActive ? '#e8eef6' : 'transparent',
+                      color: isActive ? '#1a428a' : '#1f2937',
+                      fontWeight: isActive ? '600' : '500', fontSize: '13px',
+                    }}>
+                      <item.icon size={15} />
+                      {item.label}
+                    </button>
+                  );
+                })}
+                {/* Day / Week / Month / Qtr / Year — always visible under Calendar */}
+                <div style={{ paddingLeft: '28px', marginTop: '2px', marginBottom: '4px' }}>
+                  {['Day', 'Week', 'Month', 'Quarter', 'Year'].map(v => {
+                    const isScale = currentView === 'calendar' && calendarView === v.toLowerCase();
+                    return (
+                      <button key={v} onClick={() => { setCurrentView('calendar'); setCalendarView(v.toLowerCase()); }} style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '7px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        marginBottom: '1px', textAlign: 'left',
+                        background: isScale ? '#f0f4ff' : 'transparent',
+                        color: isScale ? '#1a428a' : '#94a3b8',
+                        fontWeight: isScale ? '600' : '500', fontSize: '13px',
+                      }}>{v}</button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Configuration section */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Configuration</div>
+                {(() => {
+                  const isActive = currentView === 'settings';
+                  return (
+                    <button onClick={() => setCurrentView('settings')} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                      padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
+                      background: isActive ? '#e8eef6' : 'transparent',
+                      color: isActive ? '#1a428a' : '#1f2937',
+                      fontWeight: isActive ? '600' : '500', fontSize: '13px',
+                    }}>
+                      <Settings size={15} />
+                      Settings
+                    </button>
+                  );
+                })()}
+              </div>
             </div>
             {/* Logout at bottom */}
             {onLogout && currentUser?.role !== 'admin' && (
