@@ -771,7 +771,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
       <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '95vw' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
-      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 380px', overflowY: 'auto', maxHeight: '94vh' } : {}}>
+      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 480px', overflowY: 'auto', maxHeight: '94vh' } : {}}>
 
         {/* Header */}
         <div style={{
@@ -2505,7 +2505,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           /* Desktop: full table */
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, maxHeight: '45vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, maxHeight: '40vh', display: 'flex', flexDirection: 'column' }}>
               <div style={{ overflow: 'auto', flex: 1 }}>
               <style>{`
                 .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
