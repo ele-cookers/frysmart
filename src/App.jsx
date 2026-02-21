@@ -18,8 +18,8 @@ const LoadingScreen = () => (
   }}>
     <style>{`
       @keyframes cookersPulse {
-        0%, 100% { transform: scale(1); opacity: 0.9; }
-        50% { transform: scale(1.08); opacity: 1; }
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.06); opacity: 0.92; }
       }
       @keyframes dotFlash {
         0%, 20% { opacity: 0; }
@@ -30,7 +30,7 @@ const LoadingScreen = () => (
       src="/images/Cookers drop icon.png"
       alt="Loading"
       style={{
-        width: '120px', height: '120px', objectFit: 'contain',
+        width: '105px', height: '105px', objectFit: 'contain',
         animation: 'cookersPulse 1.6s ease-in-out infinite',
       }}
     />
