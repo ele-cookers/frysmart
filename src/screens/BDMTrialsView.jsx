@@ -768,10 +768,10 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
 
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '850px' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '95vw' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
-      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 35%', maxWidth: '35%', overflowY: 'auto', maxHeight: '94vh' } : {}}>
+      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 380px', overflowY: 'auto', maxHeight: '94vh' } : {}}>
 
         {/* Header */}
         <div style={{
@@ -991,8 +991,30 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
       {isDesktop && calendarData.hasData && (() => {
         const { days, readingsByDate } = calendarData;
         const today = new Date(); today.setHours(0, 0, 0, 0);
-        const totalReadings = Object.values(readingsByDate).reduce((s, arr) => s + arr.length, 0);
+        const allReadings = Object.values(readingsByDate).flat();
+        const totalReadings = allReadings.length;
         const fryerList = Array.from({ length: fryerCount }, (_, i) => i + 1);
+
+        // Stats computed from all readings
+        const tpmVals = allReadings.filter(r => r.tpmValue != null).map(r => r.tpmValue);
+        const oilAgeVals = allReadings.filter(r => r.oilAge != null && r.oilAge > 0).map(r => r.oilAge);
+        const setTempVals = allReadings.filter(r => r.setTemperature != null).map(r => r.setTemperature);
+        const actTempVals = allReadings.filter(r => r.actualTemperature != null).map(r => r.actualTemperature);
+        const tempVariances = allReadings.filter(r => r.setTemperature != null && r.actualTemperature != null).map(r => Math.abs(r.actualTemperature - r.setTemperature));
+        const litreVals = allReadings.filter(r => r.litresFilled > 0).map(r => r.litresFilled);
+        const filteredCount = allReadings.filter(r => r.filtered === true).length;
+
+        const avg = (arr) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+        const trialStats = [
+          { label: 'Avg Oil Days', value: avg(oilAgeVals) != null ? avg(oilAgeVals).toFixed(1) : '—', suffix: 'd' },
+          { label: 'Avg TPM', value: avg(tpmVals) != null ? avg(tpmVals).toFixed(1) : '—', color: avg(tpmVals) != null ? (avg(tpmVals) <= 14 ? '#059669' : avg(tpmVals) <= 18 ? '#d97706' : '#dc2626') : '#94a3b8' },
+          { label: 'Min TPM', value: tpmVals.length > 0 ? Math.min(...tpmVals) : '—', color: tpmVals.length > 0 ? (Math.min(...tpmVals) <= 14 ? '#059669' : Math.min(...tpmVals) <= 18 ? '#d97706' : '#dc2626') : '#94a3b8' },
+          { label: 'Max TPM', value: tpmVals.length > 0 ? Math.max(...tpmVals) : '—', color: tpmVals.length > 0 ? (Math.max(...tpmVals) <= 14 ? '#059669' : Math.max(...tpmVals) <= 18 ? '#d97706' : '#dc2626') : '#94a3b8' },
+          { label: 'Avg Set Temp', value: avg(setTempVals) != null ? `${Math.round(avg(setTempVals))}°` : '—' },
+          { label: 'Avg Temp Var.', value: avg(tempVariances) != null ? `±${avg(tempVariances).toFixed(1)}°` : '—', color: avg(tempVariances) != null ? (avg(tempVariances) <= 3 ? '#059669' : avg(tempVariances) <= 6 ? '#d97706' : '#dc2626') : '#94a3b8' },
+          { label: 'Total Litres', value: litreVals.length > 0 ? Math.round(litreVals.reduce((a, b) => a + b, 0)) + 'L' : '—' },
+          { label: 'Filter Rate', value: totalReadings > 0 ? Math.round((filteredCount / totalReadings) * 100) + '%' : '—' },
+        ];
         // Use the actual number of days as columns — all days in one row
         const dayCount = days.length;
 
@@ -1072,10 +1094,21 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         );
 
         return (
-          <div style={{ flex: '1 1 65%', maxWidth: '500px', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', overflowX: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+          <div style={{ flex: '1 1 auto', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', overflowX: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days • {fryerCount} fryer{fryerCount > 1 ? 's' : ''}</div>
+            </div>
+            {/* Stats summary */}
+            <div style={{ padding: '10px 12px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                {trialStats.map(st => (
+                  <div key={st.label} style={{ background: '#f8fafc', borderRadius: '8px', padding: '6px 8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: st.color || '#1f2937', lineHeight: 1.2 }}>{st.value}{st.suffix && st.value !== '—' ? st.suffix : ''}</div>
+                    <div style={{ fontSize: '8px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: '2px' }}>{st.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
             <div style={{ padding: '8px 6px' }}>
               {fryerList.map(fn => renderFryerCalendar(fn))}
@@ -2472,7 +2505,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           /* Desktop: full table */
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, maxHeight: '45vh', display: 'flex', flexDirection: 'column' }}>
               <div style={{ overflow: 'auto', flex: 1 }}>
               <style>{`
                 .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
@@ -2788,7 +2821,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     };
 
     return (
-      <div>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px' }}>
         {/* Back button + header + action buttons */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <button onClick={() => setManageVenueId(null)} style={{
