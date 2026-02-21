@@ -38,7 +38,7 @@ export default function Login() {
   });
 
   return (
-    <div className="no-scrollbar" style={{
+    <div style={{
       minHeight: '100dvh',
       display: 'flex',
       flexDirection: 'column',
