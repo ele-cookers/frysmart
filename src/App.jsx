@@ -21,6 +21,18 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true); // prevents flash while profile loads
 
+  // Determine if the app is still in a loading state
+  const isAppLoading = session === undefined || (session && userLoading);
+
+  // Hide splash once app is no longer loading (and it's not BDM/GM which handle their own)
+  // For BDM/GM, they hide splash themselves after their data loads.
+  const isBdmOrGm = currentUser?.role === 'bdm' || currentUser?.role === 'group_viewer';
+  useEffect(() => {
+    if (!isAppLoading && !isBdmOrGm) {
+      hideSplash();
+    }
+  }, [isAppLoading, isBdmOrGm]);
+
   // Venue staff state
   const [staffVenue, setStaffVenue] = useState(null);
   const [staffReadings, setStaffReadings] = useState([]);
@@ -250,16 +262,14 @@ function App() {
     return null;
   }
 
-  // No session → login
+  // No session → login (splash hidden by useEffect above)
   if (!session) {
-    hideSplash();
     return <Login />;
   }
 
   // Admin previewing a venue's staff view
   if (previewVenueId && currentUser?.role === 'admin') {
     if (staffLoading || !staffVenue) return null;
-    hideSplash();
     return (
       <VenueStaffView
         currentUser={currentUser}
@@ -275,7 +285,6 @@ function App() {
   // Venue staff login (via profile.venueId OR venue login match)
   if (currentUser?.venueId || venueLogin) {
     if (staffLoading || !staffVenue) return null;
-    hideSplash();
     return (
       <VenueStaffView
         currentUser={currentUser}
@@ -298,8 +307,7 @@ function App() {
     return <BDMTrialsView currentUser={currentUser} onLogout={handleLogout} />;
   }
 
-  // Authenticated → admin panel
-  hideSplash();
+  // Authenticated → admin panel (splash hidden by useEffect above)
   return <FrysmartAdminPanel currentUser={currentUser} onPreviewVenue={handlePreviewVenue} />;
 }
 
