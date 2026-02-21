@@ -1018,7 +1018,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
           { label: 'Avg Set Temp', value: avg(setTempVals) != null ? `${Math.round(avg(setTempVals))}°` : '—' },
           { label: 'Avg Temp Var.', value: avg(tempVariances) != null ? `±${avg(tempVariances).toFixed(1)}°` : '—', color: avg(tempVariances) != null ? (avg(tempVariances) <= 3 ? '#059669' : avg(tempVariances) <= 6 ? '#d97706' : '#dc2626') : '#94a3b8' },
           { label: 'Total Litres', value: litreVals.length > 0 ? Math.round(litreVals.reduce((a, b) => a + b, 0)) + 'L' : '—' },
-          { label: 'Filter Rate', value: totalReadings > 0 ? Math.round((filteredCount / totalReadings) * 100) + '%' : '—' },
+          { label: 'Avg Act. Temp', value: avg(actTempVals) != null ? `${Math.round(avg(actTempVals))}°` : '—' },
         ];
         // Use the actual number of days as columns — all days in one row
         const dayCount = days.length;
@@ -1098,7 +1098,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         );
 
         return (
-          <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+          <div style={{ flex: 2, minWidth: 0, borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days • {fryerCount} fryer{fryerCount > 1 ? 's' : ''}</div>
@@ -1114,7 +1114,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                 ))}
               </div>
             </div>
-            <div style={{ padding: '8px 6px', overflowX: dayCount > 7 ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ padding: '8px 6px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {fryerList.map(fn => renderFryerCalendar(fn))}
             </div>
             {/* Selected cell detail card (outside scroll) */}
