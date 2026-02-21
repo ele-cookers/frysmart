@@ -768,10 +768,10 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
 
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '1020px' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '90vw' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
-      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 55%', maxWidth: '55%', overflowY: 'auto', maxHeight: '94vh' } : {}}>
+      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 35%', maxWidth: '35%', overflowY: 'auto', maxHeight: '94vh' } : {}}>
 
         {/* Header */}
         <div style={{
@@ -992,25 +992,25 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         const { days, readingsByDate } = calendarData;
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const totalReadings = Object.values(readingsByDate).reduce((s, arr) => s + arr.length, 0);
-        const cols = 7;
-        const startDow = days[0].getDay();
-        const padBefore = startDow;
         const fryerList = Array.from({ length: fryerCount }, (_, i) => i + 1);
+        // Use the actual number of days as columns — all days in one row
+        const dayCount = days.length;
 
         const renderFryerCalendar = (fryerNum) => (
           <div key={fryerNum} style={{ marginBottom: fryerNum < fryerCount ? '12px' : '0' }}>
             {fryerCount > 1 && (
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#1a428a', padding: '0 4px 4px', letterSpacing: '0.3px' }}>Fryer {fryerNum}</div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '2px', marginBottom: '2px' }}>
-              {['S','M','T','W','T','F','S'].map((d, i) => (
-                <div key={i} style={{ textAlign: 'center', fontSize: '9px', fontWeight: '700', color: '#94a3b8', padding: '2px 0' }}>{d}</div>
+            {/* Day-of-week header row */}
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px', marginBottom: '1px' }}>
+              {days.map((day, i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: '8px', fontWeight: '600', color: '#94a3b8', padding: '1px 0' }}>
+                  {day.toLocaleDateString('en-AU', { weekday: 'narrow' })}
+                </div>
               ))}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '2px' }}>
-              {Array.from({ length: padBefore }).map((_, i) => (
-                <div key={`pad-${i}`} style={{ background: '#fafafa', borderRadius: '4px', minHeight: '72px' }} />
-              ))}
+            {/* Day cells — one row */}
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px' }}>
               {days.map((day, idx) => {
                 const dateStr = day.toISOString().split('T')[0];
                 const allRecs = readingsByDate[dateStr] || [];
@@ -1033,7 +1033,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                     <div style={{ fontSize: '9px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{day.getDate()}</div>
                     {latest ? (
                       <>
-                        <div style={{ fontSize: 'clamp(13px, 3vw, 16px)', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
+                        <div style={{ fontSize: 'clamp(12px, 3vw, 16px)', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
                         <div style={{ fontSize: '9px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
                           {hasFresh ? 'Fresh' : `${latest.oilAge}d`}
                         </div>
@@ -1063,7 +1063,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         );
 
         return (
-          <div style={{ flex: '0 0 45%', maxWidth: '45%', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+          <div style={{ flex: '1 1 65%', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days • {fryerCount} fryer{fryerCount > 1 ? 's' : ''}</div>
