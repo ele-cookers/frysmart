@@ -768,7 +768,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
 
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '90vw' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '850px' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
       <div style={isDesktop && calendarData.hasData ? { flex: '0 0 35%', maxWidth: '35%', overflowY: 'auto', maxHeight: '94vh' } : {}}>
@@ -1072,7 +1072,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         );
 
         return (
-          <div style={{ flex: '1 1 65%', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+          <div style={{ flex: '1 1 65%', maxWidth: '500px', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', overflowX: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days • {fryerCount} fryer{fryerCount > 1 ? 's' : ''}</div>
@@ -2221,6 +2221,39 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const recentStarted = recentTrials.filter(v => v.trialStartDate && v.trialStartDate >= ninetyDaysAgo);
     const avgTrialsPerMonth = recentStarted.length > 0 ? Math.round(recentStarted.length / 3) : null;
 
+    // ── 30-day rolling deltas ──
+    const thirtyDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10); })();
+    const sixtyDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 60); return d.toISOString().slice(0, 10); })();
+    const filterWindow = (start, end) => allTrials.filter(v =>
+      (v.trialStartDate && v.trialStartDate >= start && v.trialStartDate < end) ||
+      (v.outcomeDate && v.outcomeDate >= start && v.outcomeDate < end)
+    );
+    const last30 = filterWindow(thirtyDaysAgo, new Date().toISOString().slice(0, 10) + 'z');
+    const prev30 = filterWindow(sixtyDaysAgo, thirtyDaysAgo);
+
+    // Win rate delta
+    const calcWR = (trials) => { const w = trials.filter(v => v.trialStatus === 'won').length; const d = w + trials.filter(v => v.trialStatus === 'lost').length; return d > 0 ? Math.round((w / d) * 100) : null; };
+    const last30WR = calcWR(last30);
+    const prev30WR = calcWR(prev30);
+    const deltaWR = (last30WR != null && prev30WR != null) ? last30WR - prev30WR : null;
+
+    // ATD delta
+    const calcATD = (trials) => { const dt = trials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialStartDate && v.outcomeDate); return dt.length > 0 ? Math.round(dt.reduce((s, v) => s + daysBetween(v.trialStartDate, v.outcomeDate), 0) / dt.length) : null; };
+    const last30ATD = calcATD(last30);
+    const prev30ATD = calcATD(prev30);
+    const deltaATD = (last30ATD != null && prev30ATD != null) ? last30ATD - prev30ATD : null;
+
+    // Sold price delta
+    const calcSP = (trials) => { const wp = trials.filter(v => v.trialStatus === 'won' && v.soldPricePerLitre); return wp.length > 0 ? wp.reduce((s, v) => s + parseFloat(v.soldPricePerLitre), 0) / wp.length : null; };
+    const last30SP = calcSP(last30);
+    const prev30SP = calcSP(prev30);
+    const deltaSP = (last30SP != null && prev30SP != null) ? last30SP - prev30SP : null;
+
+    // Trials count delta
+    const last30Started = last30.filter(v => v.trialStartDate && v.trialStartDate >= thirtyDaysAgo).length;
+    const prev30Started = prev30.filter(v => v.trialStartDate && v.trialStartDate >= sixtyDaysAgo && v.trialStartDate < thirtyDaysAgo).length;
+    const deltaTrials = (last30Started > 0 || prev30Started > 0) ? last30Started - prev30Started : null;
+
     // Targets from admin settings
     const targetWR = systemSettings?.targetWinRate;
     const targetATD = systemSettings?.targetAvgTimeToDecision;
@@ -2228,67 +2261,81 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const targetTPM = systemSettings?.targetTrialsPerMonth;
 
     const statCardStyle = {
-      background: 'white', borderRadius: '10px', padding: '14px 16px',
+      background: 'white', borderRadius: '10px', padding: '10px 14px',
       border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
     };
 
-    const targetStyle = (met) => ({
-      fontSize: '9px', fontWeight: '600', marginTop: '3px',
-      color: met ? '#059669' : '#dc2626',
-    });
+    const deltaLabel = (val, suffix, inverted) => {
+      if (val == null) return null;
+      const good = inverted ? val <= 0 : val >= 0;
+      const sign = val > 0 ? '+' : '';
+      return (
+        <span style={{ fontSize: '9px', fontWeight: '600', color: good ? '#059669' : '#dc2626', marginLeft: '6px' }}>
+          {sign}{val}{suffix}
+        </span>
+      );
+    };
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* ── Stats Row ── */}
         <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Last 90 days</div>
         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
-          {/* Win Rate — first */}
+          {/* Win Rate */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Win Rate</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, marginTop: '2px' }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
-              </div>
-              <TrendingUp size={18} color="#6ee7b7" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Win Rate</div>
+              {targetWR != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (recentWinRate != null && recentWinRate >= targetWR) ? '#059669' : '#dc2626' }}>Target: {targetWR}%</span>}
             </div>
-            {recentDecidedCount > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentWon.length}W · {recentLost.length}L</div>}
-            {targetWR != null && <div style={targetStyle(recentWinRate != null && recentWinRate >= targetWR)}>Target: {targetWR}%</div>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</span>
+                {deltaLabel(deltaWR, '%', false)}
+              </div>
+              <TrendingUp size={16} color="#6ee7b7" />
+            </div>
           </div>
           {/* Avg Time to Decision */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Time to Decision</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6', marginTop: '2px' }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
-              </div>
-              <Clock size={18} color="#93c5fd" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Time to Decision</div>
+              {targetATD != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (avgTimeToDecision != null && avgTimeToDecision <= targetATD) ? '#059669' : '#dc2626' }}>Target: {targetATD}d</span>}
             </div>
-            {recentDecidedTrials.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentDecidedTrials.length} decided</div>}
-            {targetATD != null && <div style={targetStyle(avgTimeToDecision != null && avgTimeToDecision <= targetATD)}>Target: {targetATD}d</div>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6' }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</span>
+                {deltaLabel(deltaATD, 'd', true)}
+              </div>
+              <Clock size={16} color="#93c5fd" />
+            </div>
           </div>
           {/* Avg Sold Price */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Sold $/L</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b', marginTop: '2px' }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
-              </div>
-              <BarChart3 size={18} color="#fde68a" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Sold $/L</div>
+              {targetSPL != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (avgSoldPrice != null && parseFloat(avgSoldPrice) >= targetSPL) ? '#059669' : '#dc2626' }}>Target: ${Number(targetSPL).toFixed(2)}</span>}
             </div>
-            {recentWonWithPrice.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentWonWithPrice.length} won trial{recentWonWithPrice.length !== 1 ? 's' : ''}</div>}
-            {targetSPL != null && <div style={targetStyle(avgSoldPrice != null && parseFloat(avgSoldPrice) >= targetSPL)}>Target: ${Number(targetSPL).toFixed(2)}</div>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b' }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</span>
+                {deltaSP != null && <span style={{ fontSize: '9px', fontWeight: '600', color: deltaSP >= 0 ? '#059669' : '#dc2626', marginLeft: '6px' }}>{deltaSP >= 0 ? '+' : ''}${deltaSP.toFixed(2)}</span>}
+              </div>
+              <BarChart3 size={16} color="#fde68a" />
+            </div>
           </div>
           {/* Avg Trials per Month */}
           <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Trials / Month</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', marginTop: '2px' }}>{avgTrialsPerMonth ?? '—'}</div>
-              </div>
-              <Calendar size={18} color="#cbd5e1" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Trials / Month</div>
+              {targetTPM != null && <span style={{ fontSize: '9px', fontWeight: '600', color: (avgTrialsPerMonth != null && avgTrialsPerMonth >= targetTPM) ? '#059669' : '#dc2626' }}>Target: {targetTPM}</span>}
             </div>
-            {recentStarted.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{recentStarted.length} in 90d</div>}
-            {targetTPM != null && <div style={targetStyle(avgTrialsPerMonth != null && avgTrialsPerMonth >= targetTPM)}>Target: {targetTPM}</div>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '24px', fontWeight: '800', color: '#64748b' }}>{avgTrialsPerMonth ?? '—'}</span>
+                {deltaLabel(deltaTrials, '', false)}
+              </div>
+              <Calendar size={16} color="#cbd5e1" />
+            </div>
           </div>
         </div>
 
@@ -2299,16 +2346,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Calendar size={12} color={awaitingRecording.length > 0 ? '#f59e0b' : '#10b981'} />
-                <span style={{ fontSize: '9px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording</span>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording</span>
               </div>
               <span style={{
-                fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
+                fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
                 background: awaitingRecording.length > 0 ? '#fef3c7' : '#d1fae5',
                 color: awaitingRecording.length > 0 ? '#92400e' : '#065f46',
               }}>{awaitingRecording.length} / {activeTrials.length}</span>
             </div>
             {awaitingRecording.length > 0 ? (
-              <div style={{ padding: '4px 12px 8px', maxHeight: '135px', overflowY: 'auto' }}>
+              <div style={{ padding: '4px 12px 8px', maxHeight: '115px', overflowY: 'auto' }}>
                 {awaitingRecording.map(v => {
                   const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
                   return (
@@ -2335,16 +2382,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Clock size={12} color={pendingCount > 0 ? '#eab308' : '#10b981'} />
-                <span style={{ fontSize: '9px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Decision</span>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Decision</span>
               </div>
               <span style={{
-                fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
+                fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
                 background: pendingCount > 0 ? '#fef3c7' : '#d1fae5',
                 color: pendingCount > 0 ? '#92400e' : '#065f46',
               }}>{pendingCount}</span>
             </div>
             {pendingCount > 0 ? (
-              <div style={{ padding: '4px 12px 8px', maxHeight: '135px', overflowY: 'auto' }}>
+              <div style={{ padding: '4px 12px 8px', maxHeight: '115px', overflowY: 'auto' }}>
                 {pendingOutcomeTrials.map(v => {
                   const daysSinceEnd = v.trialEndDate ? daysBetween(v.trialEndDate, todayStr) : null;
                   return (
@@ -2371,16 +2418,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <ClipboardList size={12} color={acceptedCount > 0 ? '#f59e0b' : '#10b981'} />
-                <span style={{ fontSize: '9px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Cust Code</span>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Cust Code</span>
               </div>
               <span style={{
-                fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
+                fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
                 background: acceptedCount > 0 ? '#ffedd5' : '#d1fae5',
                 color: acceptedCount > 0 ? '#9a3412' : '#065f46',
               }}>{acceptedCount}</span>
             </div>
             {acceptedCount > 0 ? (
-              <div style={{ padding: '4px 12px 8px', maxHeight: '135px', overflowY: 'auto' }}>
+              <div style={{ padding: '4px 12px 8px', maxHeight: '115px', overflowY: 'auto' }}>
                 {acceptedTrials.map(v => (
                   <div key={v.id} onClick={() => { setManageVenueId(v.id); setActiveTab('manage'); }} style={{
                     display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
@@ -2750,22 +2797,73 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     return (
       <div>
-        {/* Back button + header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+        {/* Back button + header + action buttons */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <button onClick={() => setManageVenueId(null)} style={{
-            background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '8px 12px',
+            background: '#f1f5f9', border: 'none', borderRadius: '6px', padding: '6px 10px',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-            fontSize: '12px', fontWeight: '600', color: '#64748b',
+            fontSize: '11px', fontWeight: '600', color: '#64748b',
           }}>
-            <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> Back
+            <ChevronDown size={12} style={{ transform: 'rotate(90deg)' }} /> Back
           </button>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: 0 }}>{venue.name}</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
               <TrialStatusBadge status={venue.trialStatus} />
               <StateBadge state={venue.state} />
               {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
             </div>
+          </div>
+          {/* Inline action buttons */}
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
+            {venue.trialStatus === 'pending' && (
+              <button onClick={() => { if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{
+                padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><Play size={12} /> Start</button>
+            )}
+            {venue.trialStatus === 'in-progress' && (<>
+              <button onClick={() => setReadingModal(venue)} style={{
+                padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><ClipboardList size={12} /> Log</button>
+              <button onClick={() => setEndTrialModal(venue)} style={{
+                padding: '5px 10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: '#475569', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><Check size={12} /> End</button>
+              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) handlePushBack(venue.id, 'pending'); }} style={{
+                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><RotateCcw size={10} /> Back to Pipeline</button>
+            </>)}
+            {venue.trialStatus === 'completed' && (<>
+              <button onClick={() => setCloseTrialModal({ venue, outcome: 'won' })} style={{
+                padding: '5px 10px', background: '#059669', border: 'none', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><Trophy size={12} /> Won</button>
+              <button onClick={() => setCloseTrialModal({ venue, outcome: 'lost' })} style={{
+                padding: '5px 10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: '#64748b', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><XCircle size={12} /> Lost</button>
+              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'in-progress'); }} style={{
+                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><RotateCcw size={10} /> Back to Active</button>
+            </>)}
+            {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && (
+              <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending Outcome?`)) handlePushBack(venue.id, 'completed'); }} style={{
+                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><RotateCcw size={10} /> Reopen</button>
+            )}
           </div>
         </div>
 
@@ -2901,60 +2999,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               </div>
             )}
 
-            {/* Status Actions */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '10px' }}>Actions</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {/* Primary actions */}
-                {venue.trialStatus === 'pending' && (
-                  <button onClick={() => { if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{ width: '100%', padding: '10px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    <Play size={14} /> Start Trial
-                  </button>
-                )}
-                {venue.trialStatus === 'in-progress' && (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => setReadingModal(venue)} style={{ flex: 1, padding: '10px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <ClipboardList size={14} /> Log Reading
-                    </button>
-                    <button onClick={() => setEndTrialModal(venue)} style={{ flex: 1, padding: '10px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <Check size={14} /> End Trial
-                    </button>
-                  </div>
-                )}
-                {(venue.trialStatus === 'in-progress' || venue.trialStatus === 'completed') && (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => setCloseTrialModal({ venue, outcome: 'won' })} style={{ flex: 1, padding: '10px', background: '#059669', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <Trophy size={14} /> Won
-                    </button>
-                    <button onClick={() => setCloseTrialModal({ venue, outcome: 'lost' })} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <XCircle size={14} /> Lost
-                    </button>
-                  </div>
-                )}
-                {/* Move back — secondary */}
-                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '4px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', letterSpacing: '0.3px', textTransform: 'uppercase', marginBottom: '6px' }}>Move to Previous Stage</div>
-                  {venue.trialStatus === 'in-progress' && (
-                    <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) handlePushBack(venue.id, 'pending'); }} style={{ width: '100%', padding: '8px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                      <RotateCcw size={12} /> Back to Pipeline
-                    </button>
-                  )}
-                  {venue.trialStatus === 'completed' && (
-                    <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'in-progress'); }} style={{ width: '100%', padding: '8px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                      <RotateCcw size={12} /> Back to Active
-                    </button>
-                  )}
-                  {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && (
-                    <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending Outcome?`)) handlePushBack(venue.id, 'completed'); }} style={{ width: '100%', padding: '8px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                      <RotateCcw size={12} /> Reopen Trial
-                    </button>
-                  )}
-                  {venue.trialStatus === 'pending' && (
-                    <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>This trial is at the earliest stage</div>
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* RIGHT COLUMN — Calendar */}
