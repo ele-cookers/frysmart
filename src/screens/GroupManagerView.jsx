@@ -1161,6 +1161,13 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 // ─────────────────────────────────────────────
 const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings, onDrillDown, groupView = 'glance' }) => {
   const [healthFilter, setHealthFilter] = useState('all');
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const warnAt = systemSettings?.warningThreshold || 18;
   const critAt = systemSettings?.criticalThreshold || 24;
