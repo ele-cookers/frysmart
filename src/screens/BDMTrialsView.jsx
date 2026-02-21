@@ -737,7 +737,8 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
   });
   const [editSaving, setEditSaving] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
-  const [editExpanded, setEditExpanded] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedCalFryer, setSelectedCalFryer] = useState(1);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
   useEffect(() => {
     const h = () => setIsDesktop(window.innerWidth >= 768);
@@ -769,6 +770,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
     await onSave(venue.id, updates);
     setEditSaving(false);
     setEditDirty(false);
+    setEditModalOpen(false);
   };
 
   // Pricing & savings
@@ -1017,155 +1019,140 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
             <CustomerCodeInput venueId={venue.id} onSave={onSaveCustomerCode} />
           )}
 
-          {/* Editable fields — collapsed by default */}
-          {!isReadOnly && (
-            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginBottom: '12px' }}>
-              <button onClick={() => setEditExpanded(!editExpanded)} style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 8px 0',
-              }}>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase' }}>Trial Details</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: '600', color: '#1a428a' }}>
-                  <Edit3 size={12} /> {editExpanded ? 'Collapse' : 'Edit'}
-                  {editExpanded ? <ChevronUp size={14} color="#64748b" /> : <ChevronDown size={14} color="#64748b" />}
-                </div>
-              </button>
-              {/* Collapsed summary */}
-              {!editExpanded && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '11px' }}>
-                  {editForm.name && <div><span style={{ color: '#94a3b8' }}>Name:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>{editForm.name}</span></div>}
-                  {editForm.trialStartDate && <div><span style={{ color: '#94a3b8' }}>Start:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>{editForm.trialStartDate}</span></div>}
-                  {editForm.trialEndDate && <div><span style={{ color: '#94a3b8' }}>End:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>{editForm.trialEndDate}</span></div>}
-                  {editForm.currentPricePerLitre && <div><span style={{ color: '#94a3b8' }}>Current $/L:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>${editForm.currentPricePerLitre}</span></div>}
-                  {editForm.offeredPricePerLitre && <div><span style={{ color: '#94a3b8' }}>Offered $/L:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>${editForm.offeredPricePerLitre}</span></div>}
-                  {editForm.fryerCount > 1 && <div><span style={{ color: '#94a3b8' }}>Fryers:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>{editForm.fryerCount}</span></div>}
-                  {editForm.avgLitresPerWeek && <div><span style={{ color: '#94a3b8' }}>Avg L/wk:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>{editForm.avgLitresPerWeek}</span></div>}
-                  {editForm.trialNotes && <div style={{ gridColumn: '1 / -1' }}><span style={{ color: '#94a3b8' }}>Notes:</span> <span style={{ color: '#1f2937', fontWeight: '500' }}>{editForm.trialNotes.length > 60 ? editForm.trialNotes.slice(0, 60) + '...' : editForm.trialNotes}</span></div>}
-                </div>
+          {/* Action bar — clean, intuitive */}
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Primary actions row */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {venue.trialStatus === 'pending' && (
+                <button onClick={() => { onClose(); if (window.confirm(`Start trial for ${venue.name}?`)) onOpenLog(venue, 'start'); }} style={{ flex: 1, padding: '10px 14px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <Play size={14} /> Start Trial
+                </button>
               )}
-              {/* Expanded edit form */}
-              {editExpanded && (
+              {venue.trialStatus === 'in-progress' && (
+                <button onClick={() => { onClose(); onOpenLog(venue, 'log'); }} style={{ flex: 1, padding: '10px 14px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <ClipboardList size={14} /> Log Reading
+                </button>
+              )}
+              {(venue.trialStatus === 'in-progress' || venue.trialStatus === 'completed') && (
                 <>
-                  <div style={{ marginBottom: '8px' }}>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>VENUE NAME</label>
-                      <input type="text" value={editForm.name} onChange={e => handleEditChange('name', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} placeholder="Venue name" />
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>START DATE</label>
-                      <input type="date" value={editForm.trialStartDate} onChange={e => handleEditChange('trialStartDate', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} />
-                    </div>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>END DATE</label>
-                      <input type="date" value={editForm.trialEndDate} onChange={e => handleEditChange('trialEndDate', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>CURRENT $/L</label>
-                      <input type="number" step="0.01" min="0" value={editForm.currentPricePerLitre} onChange={e => handleEditChange('currentPricePerLitre', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} placeholder="0.00" />
-                    </div>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>OFFERED $/L</label>
-                      <input type="number" step="0.01" min="0" value={editForm.offeredPricePerLitre} onChange={e => handleEditChange('offeredPricePerLitre', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} placeholder="0.00" />
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>TRIAL OIL</label>
-                      <select value={editForm.trialOilId} onChange={e => handleEditChange('trialOilId', e.target.value)} style={{ ...selectStyle, fontSize: '12px', padding: '6px 8px' }}>
-                        <option value="">—</option>
-                        {cookerOils.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-                      </select>
-                    </div>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>CURRENT OIL</label>
-                      <select value={editForm.defaultOil} onChange={e => handleEditChange('defaultOil', e.target.value)} style={{ ...selectStyle, fontSize: '12px', padding: '6px 8px' }}>
-                        <option value="">—</option>
-                        {oilTypes.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>AVG LITRES/WEEK</label>
-                      <input type="number" min="0" step="1" value={editForm.avgLitresPerWeek} onChange={e => handleEditChange('avgLitresPerWeek', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} placeholder="e.g. 80" />
-                      {editForm.avgLitresPerWeek && calcVolumeBracket(editForm.avgLitresPerWeek) && (
-                        <div style={{ marginTop: '4px' }}><VolumePill bracket={calcVolumeBracket(editForm.avgLitresPerWeek)} /></div>
-                      )}
-                    </div>
-                    <div style={S.field}>
-                      <label style={{ ...S.label, fontSize: '10px' }}>FRYER COUNT</label>
-                      <input type="number" min="1" max="20" value={editForm.fryerCount} onChange={e => handleEditChange('fryerCount', e.target.value)} style={{ ...inputStyle, fontSize: '12px', padding: '6px 8px' }} />
-                    </div>
-                  </div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ ...S.label, fontSize: '10px' }}>NOTES</label>
-                    <textarea value={editForm.trialNotes} onChange={e => handleEditChange('trialNotes', e.target.value)}
-                      rows={2} style={{ ...inputStyle, resize: 'vertical', fontSize: '12px', padding: '6px 8px' }} placeholder="Trial notes..." />
-                  </div>
-                  {editDirty && (
-                    <button onClick={handleSaveEdits} disabled={editSaving} style={{
-                      width: '100%', padding: '9px', background: editSaving ? '#94a3b8' : '#1a428a', border: 'none',
-                      borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white',
-                      cursor: editSaving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                    }}>
-                      <Save size={14} /> {editSaving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  )}
+                  <button onClick={() => { onClose(); onOpenClose(venue, 'won'); }} style={{ flex: 1, padding: '10px 14px', background: '#059669', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <Trophy size={14} /> Won
+                  </button>
+                  <button onClick={() => { onClose(); onOpenClose(venue, 'lost'); }} style={{ flex: 1, padding: '10px 14px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <XCircle size={14} /> Lost
+                  </button>
                 </>
               )}
             </div>
-          )}
-
-          {/* Action buttons */}
-          <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-            {/* Push back — in-progress → pending */}
-            {venue.trialStatus === 'in-progress' && onPushBack && (
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) { onPushBack(venue.id, 'pending'); onClose(); } }} style={{ flex: 1, padding: '9px 12px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                <RotateCcw size={13} /> Back to Pipeline
-              </button>
-            )}
-            {/* Push back — completed → in-progress */}
-            {venue.trialStatus === 'completed' && onPushBack && (
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) { onPushBack(venue.id, 'in-progress'); onClose(); } }} style={{ flex: 1, padding: '9px 12px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                <RotateCcw size={13} /> Back to Active
-              </button>
-            )}
-            {/* Push back — won/lost/accepted → completed */}
-            {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && onPushBack && (
-              <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending Outcome?`)) { onPushBack(venue.id, 'completed'); onClose(); } }} style={{ flex: 1, padding: '9px 12px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                <RotateCcw size={13} /> Reopen Trial
-              </button>
-            )}
-            {venue.trialStatus === 'pending' && (
-              <button onClick={() => { onClose(); if (window.confirm(`Start trial for ${venue.name}?`)) onOpenLog(venue, 'start'); }} style={{ flex: 1, padding: '9px 12px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                Start Trial
-              </button>
-            )}
-            {venue.trialStatus === 'in-progress' && (
-              <>
-                <button onClick={() => { onClose(); onOpenLog(venue, 'log'); }} style={{ flex: 1, padding: '9px 12px', background: '#e8eef6', border: '1.5px solid #1a428a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
-                  Log Reading
+            {/* Secondary actions row — edit + contextual */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {!isReadOnly && (
+                <button onClick={() => setEditModalOpen(true)} style={{ flex: 1, padding: '8px 12px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                  <Edit3 size={13} /> Edit Details
                 </button>
-                <button onClick={() => { onClose(); onOpenEnd(venue); }} style={{ flex: 1, padding: '9px 12px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                  End Trial
+              )}
+              {venue.trialStatus === 'in-progress' && (
+                <button onClick={() => { onClose(); onOpenEnd(venue); }} style={{ flex: 1, padding: '8px 12px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                  <Check size={13} /> End Trial
                 </button>
-              </>
-            )}
-            {(venue.trialStatus === 'in-progress' || venue.trialStatus === 'completed') && (
-              <>
-                <button onClick={() => { onClose(); onOpenClose(venue, 'won'); }} style={{ flex: 1, padding: '9px 12px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                  Won
+              )}
+              {/* Push back — subtle link style */}
+              {venue.trialStatus === 'in-progress' && onPushBack && (
+                <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) { onPushBack(venue.id, 'pending'); onClose(); } }} style={{ padding: '8px 12px', background: 'none', border: 'none', fontSize: '11px', fontWeight: '500', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                  <RotateCcw size={11} /> Back to Pipeline
                 </button>
-                <button onClick={() => { onClose(); onOpenClose(venue, 'lost'); }} style={{ flex: 1, padding: '9px 12px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                  Lost
+              )}
+              {venue.trialStatus === 'completed' && onPushBack && (
+                <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) { onPushBack(venue.id, 'in-progress'); onClose(); } }} style={{ padding: '8px 12px', background: 'none', border: 'none', fontSize: '11px', fontWeight: '500', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                  <RotateCcw size={11} /> Back to Active
                 </button>
-              </>
-            )}
+              )}
+              {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && onPushBack && (
+                <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending Outcome?`)) { onPushBack(venue.id, 'completed'); onClose(); } }} style={{ padding: '8px 12px', background: 'none', border: 'none', fontSize: '11px', fontWeight: '500', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                  <RotateCcw size={11} /> Reopen
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Edit Details Modal */}
+          {editModalOpen && (
+            <div onClick={() => setEditModalOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 1100 }}>
+              <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '16px', padding: '20px', maxWidth: '480px', width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Edit Trial Details</h3>
+                  <button onClick={() => setEditModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px', cursor: 'pointer', display: 'flex' }}><X size={16} color="#64748b" /></button>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>VENUE NAME</label>
+                    <input type="text" value={editForm.name} onChange={e => handleEditChange('name', e.target.value)} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="Venue name" />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>START DATE</label>
+                    <input type="date" value={editForm.trialStartDate} onChange={e => handleEditChange('trialStartDate', e.target.value)} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} />
+                  </div>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>END DATE</label>
+                    <input type="date" value={editForm.trialEndDate} onChange={e => handleEditChange('trialEndDate', e.target.value)} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>CURRENT $/L</label>
+                    <input type="number" step="0.01" min="0" value={editForm.currentPricePerLitre} onChange={e => handleEditChange('currentPricePerLitre', e.target.value)} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="0.00" />
+                  </div>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>OFFERED $/L</label>
+                    <input type="number" step="0.01" min="0" value={editForm.offeredPricePerLitre} onChange={e => handleEditChange('offeredPricePerLitre', e.target.value)} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="0.00" />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>TRIAL OIL</label>
+                    <select value={editForm.trialOilId} onChange={e => handleEditChange('trialOilId', e.target.value)} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}>
+                      <option value="">—</option>
+                      {cookerOils.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>CURRENT OIL</label>
+                    <select value={editForm.defaultOil} onChange={e => handleEditChange('defaultOil', e.target.value)} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}>
+                      <option value="">—</option>
+                      {oilTypes.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>AVG LITRES/WEEK</label>
+                    <input type="number" min="0" step="1" value={editForm.avgLitresPerWeek} onChange={e => handleEditChange('avgLitresPerWeek', e.target.value)} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="e.g. 80" />
+                    {editForm.avgLitresPerWeek && calcVolumeBracket(editForm.avgLitresPerWeek) && (
+                      <div style={{ marginTop: '4px' }}><VolumePill bracket={calcVolumeBracket(editForm.avgLitresPerWeek)} /></div>
+                    )}
+                  </div>
+                  <div style={S.field}>
+                    <label style={{ ...S.label, fontSize: '11px' }}>FRYER COUNT</label>
+                    <input type="number" min="1" max="20" value={editForm.fryerCount} onChange={e => handleEditChange('fryerCount', e.target.value)} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ ...S.label, fontSize: '11px' }}>NOTES</label>
+                  <textarea value={editForm.trialNotes} onChange={e => handleEditChange('trialNotes', e.target.value)}
+                    rows={3} style={{ ...inputStyle, resize: 'vertical', fontSize: '13px', padding: '8px 10px' }} placeholder="Trial notes..." />
+                </div>
+                <button onClick={handleSaveEdits} disabled={editSaving || !editDirty} style={{
+                  width: '100%', padding: '11px', background: editSaving ? '#94a3b8' : !editDirty ? '#e2e8f0' : '#1a428a', border: 'none',
+                  borderRadius: '8px', fontSize: '14px', fontWeight: '600', color: !editDirty ? '#94a3b8' : 'white',
+                  cursor: editSaving || !editDirty ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                }}>
+                  <Save size={15} /> {editSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
@@ -1175,16 +1162,30 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         const { days, readingsByDate } = calendarData;
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const totalReadings = Object.values(readingsByDate).reduce((s, arr) => s + arr.length, 0);
-        // Show 7 columns (one week per row)
         const cols = 7;
-        // Pad start to align to day-of-week
-        const startDow = days[0].getDay(); // 0=Sun
+        const startDow = days[0].getDay();
         const padBefore = startDow;
         return (
           <div style={{ flex: '0 0 45%', maxWidth: '45%', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days</div>
+              {/* Fryer tabs */}
+              {fryerCount > 1 && (
+                <div style={{ display: 'flex', gap: '0', marginTop: '8px' }}>
+                  {Array.from({ length: fryerCount }, (_, i) => i + 1).map(fn => (
+                    <button key={fn} onClick={() => setSelectedCalFryer(fn)} style={{
+                      flex: '1 1 0', padding: '6px 4px', background: selectedCalFryer === fn ? '#1a428a' : 'white',
+                      color: selectedCalFryer === fn ? 'white' : '#1f2937',
+                      border: selectedCalFryer === fn ? '1.5px solid #1a428a' : '1.5px solid #e2e8f0',
+                      borderRadius: fn === 1 ? '8px 0 0 8px' : fn === fryerCount ? '0 8px 8px 0' : '0',
+                      fontSize: '11px', fontWeight: '600', cursor: 'pointer', textAlign: 'center',
+                      marginLeft: fn > 1 ? '-1.5px' : '0', position: 'relative',
+                      zIndex: selectedCalFryer === fn ? 1 : 0
+                    }}>Fryer {fn}</button>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={{ padding: '8px 6px' }}>
               {/* Day-of-week headers */}
@@ -1195,60 +1196,52 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
               </div>
               {/* Calendar grid */}
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '2px' }}>
-                {/* Empty cells before trial start */}
                 {Array.from({ length: padBefore }).map((_, i) => (
-                  <div key={`pad-${i}`} style={{ background: '#fafafa', borderRadius: '4px', minHeight: '90px' }} />
+                  <div key={`pad-${i}`} style={{ background: '#fafafa', borderRadius: '4px', minHeight: '80px' }} />
                 ))}
-                {/* Day cells */}
                 {days.map((day, idx) => {
                   const dateStr = day.toISOString().split('T')[0];
-                  const recs = readingsByDate[dateStr] || [];
+                  const allRecs = readingsByDate[dateStr] || [];
+                  const recs = allRecs.filter(r => (r.fryerNumber || 1) === selectedCalFryer);
                   const isFuture = day > today;
                   const isToday = day.getTime() === today.getTime();
-                  const latest = recs.length > 0 ? recs.sort((a, b) => (b.fryerNumber || 1) - (a.fryerNumber || 1))[0] : null;
+                  const latest = recs.length > 0 ? recs[recs.length - 1] : null;
                   const hasFresh = recs.some(r => r.oilAge === 1);
                   const hasFiltered = recs.some(r => r.filtered === true);
                   const hasNotes = recs.some(r => r.notes);
-                  // Background color
                   const cellBg = isFuture ? 'white' : recs.length > 0 ? '#d1fae5' : '#fee2e2';
                   const tpmColor = latest ? (latest.tpmValue <= 14 ? '#059669' : latest.tpmValue <= 18 ? '#d97706' : '#dc2626') : '#cbd5e1';
                   return (
                     <div key={idx} style={{
-                      background: cellBg, borderRadius: '6px', padding: '4px 3px', minHeight: '90px',
+                      background: cellBg, borderRadius: '6px', padding: '3px 2px', minHeight: '80px',
                       display: 'flex', flexDirection: 'column', alignItems: 'center',
                       border: isToday ? '2px solid #1a428a' : '1px solid #e2e8f0',
                       opacity: isFuture ? 0.4 : 1,
                     }}>
-                      {/* Date number */}
-                      <div style={{ fontSize: '11px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{day.getDate()}</div>
+                      <div style={{ fontSize: 'clamp(9px, 2.5vw, 11px)', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{day.getDate()}</div>
                       {latest ? (
                         <>
-                          {/* TPM */}
-                          <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px' }}>TPM</div>
-                          <div style={{ fontSize: '18px', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
-                          {/* Oil age */}
-                          <div style={{ fontSize: '10px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
+                          <div style={{ fontSize: '8px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px' }}>TPM</div>
+                          <div style={{ fontSize: 'clamp(14px, 3.5vw, 18px)', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
+                          <div style={{ fontSize: 'clamp(8px, 2vw, 10px)', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
                             {hasFresh ? 'Fresh' : `${latest.oilAge}d`}
                           </div>
-                          {/* Temps */}
-                          <div style={{ fontSize: '9px', color: '#64748b', lineHeight: '1.3', textAlign: 'center', marginTop: '1px' }}>
+                          <div style={{ fontSize: 'clamp(7px, 1.8vw, 9px)', color: '#64748b', lineHeight: '1.3', textAlign: 'center', marginTop: '1px' }}>
                             {latest.setTemperature && <div>S:{latest.setTemperature}°</div>}
                             {latest.actualTemperature && <div>A:{latest.actualTemperature}°</div>}
                           </div>
-                          {/* Badges row */}
                           <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2px' }}>
                             {hasFiltered && <Filter size={9} color="#1e40af" strokeWidth={2.5} />}
                             {hasFresh && <Star size={9} color="#92400e" fill="#92400e" />}
                             {hasNotes && <MessageSquare size={9} color="#475569" strokeWidth={2.5} />}
                           </div>
-                          {/* Top-up */}
                           {latest.litresFilled > 0 && (
                             <div style={{ fontSize: '8px', color: '#1f2937', fontWeight: '600', marginTop: '1px' }}>{latest.litresFilled}L</div>
                           )}
                         </>
                       ) : !isFuture ? (
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: '600' }}>Missed</span>
+                          <span style={{ fontSize: 'clamp(8px, 2vw, 10px)', color: '#dc2626', fontWeight: '600' }}>Missed</span>
                         </div>
                       ) : null}
                     </div>
