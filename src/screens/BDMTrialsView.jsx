@@ -1603,39 +1603,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   // ─────────────────────────────────────────
-  // LOADING — identical to App.jsx LoadingScreen for seamless transition
+  // LOADING — return null so the #root blue background (from index.css)
+  // stays visible seamlessly from App.jsx's LoadingScreen. No second
+  // loading screen = no DOM unmount/remount flicker.
   // ─────────────────────────────────────────
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: '24px',
-        paddingBottom: '20vh', background: '#1a428a',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      }}>
-        <style>{`
-          @keyframes cookersPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.06); opacity: 0.92; }
-          }
-          @keyframes dotFlash {
-            0%, 20% { opacity: 0; }
-            40%, 100% { opacity: 1; }
-          }
-        `}</style>
-        <img src="/images/Cookers drop icon.png" alt="Loading" style={{
-          width: '100px', height: '100px', objectFit: 'contain',
-          animation: 'cookersPulse 1.6s ease-in-out infinite',
-        }} />
-        <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
-          Loading
-          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0s', opacity: 0 }}>.</span>
-          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.3s', opacity: 0 }}>.</span>
-          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.6s', opacity: 0 }}>.</span>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return null;
 
   // ─────────────────────────────────────────
   // SORT BAR (A-Z / Recent) — shown for mobile card view

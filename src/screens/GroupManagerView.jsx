@@ -1378,7 +1378,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
                   <th style={{ textAlign: 'center' }}>Changed Late</th>
                   <th style={{ textAlign: 'center' }}>Changed Early</th>
                   <th style={{ textAlign: 'center' }}>Oil Filtered</th>
-                  <th style={{ textAlign: 'center' }}>Oil Rating</th>
+                  <th style={{ textAlign: 'center' }}>Oil Mgt Rating</th>
                   <th style={{ textAlign: 'center' }}>Today</th>
                   <th style={{ width: '32px' }}></th>
                 </tr>
@@ -1422,9 +1422,9 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '10px' }}>
             {[
               { label: 'Recorded Today', value: `${recordedToday}/${totalVenues}`, color: recordedToday === totalVenues ? '#10b981' : '#f59e0b', icon: ClipboardList },
-              { label: 'Venues Healthy', value: `${healthyVenues}/${totalVenues}`, color: healthyVenues === totalVenues ? '#10b981' : criticalVenues > 0 ? COLORS.critical : '#f59e0b', icon: Building },
+              { label: 'Venues On Track', value: `${healthyVenues}/${totalVenues}`, color: healthyVenues === totalVenues ? '#10b981' : criticalVenues > 0 ? COLORS.critical : '#f59e0b', icon: Building },
               { label: 'Avg Compliance', value: `${avgCompliance}%`, color: complianceColor(avgCompliance), icon: BarChart3 },
-              { label: 'Oil Health Rating', value: oilGrade.label, color: oilGrade.color, icon: AlertTriangle },
+              { label: 'Oil Mgt Rating', value: oilGrade.label, color: oilGrade.color, icon: AlertTriangle },
             ].map(s => (
               <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -1456,7 +1456,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
             {/* Venues to Review */}
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Venues to Review
+                Action Items
                 {alerts.length > 0 && <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '10px', background: COLORS.criticalBg, color: COLORS.critical }}>{alerts.length}</span>}
               </div>
               {alerts.length === 0 ? (
@@ -1495,13 +1495,6 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
             </div>
           </div>
 
-          {/* Outstanding venues list — if any not recorded today */}
-          {notRecordedToday > 0 && (
-            <div style={{ background: '#fffbeb', borderRadius: '12px', border: '1px solid #fde68a', padding: '12px 16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#92400e', marginBottom: '6px' }}>NOT RECORDED TODAY ({notRecordedToday})</div>
-              <div style={{ fontSize: '12px', color: '#78350f', lineHeight: '1.6' }}>{notRecordedNames.join(' · ')}</div>
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -1603,39 +1596,10 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   const critAt = systemSettings?.criticalThreshold || 24;
 
   // ─────────────────────────────────────────
-  // LOADING — identical to App.jsx LoadingScreen for seamless transition
+  // LOADING — return null so #root blue background stays visible
+  // seamlessly from App.jsx's LoadingScreen (no DOM flicker).
   // ─────────────────────────────────────────
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: '24px',
-        paddingBottom: '20vh', background: '#1a428a',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      }}>
-        <style>{`
-          @keyframes cookersPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.06); opacity: 0.92; }
-          }
-          @keyframes dotFlash {
-            0%, 20% { opacity: 0; }
-            40%, 100% { opacity: 1; }
-          }
-        `}</style>
-        <img src="/images/Cookers drop icon.png" alt="Loading" style={{
-          width: '100px', height: '100px', objectFit: 'contain',
-          animation: 'cookersPulse 1.6s ease-in-out infinite',
-        }} />
-        <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
-          Loading
-          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0s', opacity: 0 }}>.</span>
-          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.3s', opacity: 0 }}>.</span>
-          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.6s', opacity: 0 }}>.</span>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return null;
 
   // Tab styles
   const primaryTabStyle = (active) => ({
