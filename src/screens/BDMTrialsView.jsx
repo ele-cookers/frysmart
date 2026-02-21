@@ -737,6 +737,12 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
   const [editSaving, setEditSaving] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
   const [editExpanded, setEditExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
 
   const handleEditChange = (field, val) => {
     setEditForm(prev => ({ ...prev, [field]: val }));
@@ -782,9 +788,26 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
 
   const isReadOnly = venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted';
 
+  // Build detailed readings list for the right panel (desktop)
+  const detailedReadings = useMemo(() => {
+    if (!venue.trialStartDate || venue.trialStatus === 'pending') return [];
+    const trialRecs = venueReadings.filter(r => r.readingDate >= (venue.trialStartDate || ''));
+    return trialRecs
+      .sort((a, b) => b.readingDate.localeCompare(a.readingDate))
+      .map(r => {
+        const variance = r.setTemperature && r.actualTemperature
+          ? ((r.actualTemperature - r.setTemperature) / r.setTemperature * 100).toFixed(1)
+          : null;
+        return { ...r, variance };
+      });
+  }, [venueReadings, venue.trialStartDate, venue.trialStatus]);
+
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && detailedReadings.length > 0 ? '1020px' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && detailedReadings.length > 0 ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
+
+      {/* Left column — existing content */}
+      <div style={isDesktop && detailedReadings.length > 0 ? { flex: '0 0 55%', maxWidth: '55%', overflowY: 'auto', maxHeight: '94vh' } : {}}>
 
         {/* Header */}
         <div style={{
@@ -1137,6 +1160,80 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
           </div>
 
         </div>
+      </div>
+
+      {/* Right column — detailed readings (desktop only) */}
+      {isDesktop && detailedReadings.length > 0 && (
+        <div style={{ flex: '0 0 45%', maxWidth: '45%', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Reading Details</div>
+            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{detailedReadings.length} readings during trial</div>
+          </div>
+          <div style={{ padding: '8px' }}>
+            {detailedReadings.map((r, i) => {
+              const tpmColor = r.tpmValue <= 14 ? '#059669' : r.tpmValue <= 18 ? '#d97706' : '#dc2626';
+              const tpmBg = r.tpmValue <= 14 ? '#d1fae5' : r.tpmValue <= 18 ? '#fef3c7' : '#fee2e2';
+              const varNum = r.variance ? parseFloat(r.variance) : null;
+              const varColor = varNum !== null ? (Math.abs(varNum) <= 3 ? '#059669' : Math.abs(varNum) <= 7 ? '#d97706' : '#dc2626') : '#64748b';
+              return (
+                <div key={r.id || i} style={{ background: 'white', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px', border: '1px solid #e2e8f0' }}>
+                  {/* Date + Fryer + TPM */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>
+                        {new Date(r.readingDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </span>
+                      <span style={{ fontSize: '10px', color: '#94a3b8', marginLeft: '6px' }}>Fryer {r.fryerNumber || 1}</span>
+                    </div>
+                    <div style={{ padding: '2px 10px', borderRadius: '6px', background: tpmBg, color: tpmColor, fontSize: '13px', fontWeight: '700' }}>
+                      {r.tpmValue}
+                    </div>
+                  </div>
+                  {/* Detail grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
+                    <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>OIL AGE</div>
+                      <div style={{ fontSize: '11px', fontWeight: '600', color: r.oilAge === 1 ? '#059669' : '#1f2937' }}>{r.oilAge === 1 ? 'Fresh' : `Day ${r.oilAge}`}</div>
+                    </div>
+                    <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>TOP-UP</div>
+                      <div style={{ fontSize: '11px', fontWeight: '600', color: r.litresFilled > 0 ? '#1f2937' : '#cbd5e1' }}>{r.litresFilled > 0 ? `${r.litresFilled}L` : '—'}</div>
+                    </div>
+                    <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>FILTERED</div>
+                      <div style={{ fontSize: '11px', fontWeight: '600', color: r.filtered === true ? '#059669' : r.filtered === false ? '#dc2626' : '#cbd5e1' }}>{r.filtered === true ? 'Yes' : r.filtered === false ? 'No' : '—'}</div>
+                    </div>
+                  </div>
+                  {/* Temps */}
+                  {(r.setTemperature || r.actualTemperature) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', marginTop: '4px' }}>
+                      <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>SET TEMP</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937' }}>{r.setTemperature ? `${r.setTemperature}°C` : '—'}</div>
+                      </div>
+                      <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>ACTUAL</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937' }}>{r.actualTemperature ? `${r.actualTemperature}°C` : '—'}</div>
+                      </div>
+                      <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
+                        <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>VARIANCE</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: varColor }}>{varNum !== null ? `${varNum > 0 ? '+' : ''}${varNum}%` : '—'}</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Notes */}
+                  {r.notes && (
+                    <div style={{ marginTop: '4px', fontSize: '10px', color: '#64748b', fontStyle: 'italic', padding: '3px 6px', background: '#fffbeb', borderRadius: '4px', border: '1px solid #fef3c7' }}>
+                      {r.notes}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );
@@ -1574,14 +1671,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     setSuccessMsg('Customer Code Saved — moved to Successful');
   };
 
-  const handlePushBack = async (venueId, targetStatus) => {
+  const handlePushBack = (venueId, targetStatus) => {
     const labels = { 'pending': 'Pipeline', 'in-progress': 'Active', 'completed': 'Pending Outcome' };
     const clearFields = targetStatus === 'completed'
       ? { trialStatus: targetStatus, outcomeDate: null, trialReason: null, soldPricePerLitre: null, customerCode: null }
       : { trialStatus: targetStatus };
-    await updateVenue(venueId, clearFields);
     setSelectedTrialVenue(null);
     setSuccessMsg(`Moved back to ${labels[targetStatus] || targetStatus}`);
+    updateVenue(venueId, clearFields);
   };
 
   // ── Save reading ──
@@ -2546,7 +2643,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length },
     { id: 'active', label: 'Active', icon: Play, count: activeTrials.length },
     { id: 'pending', label: 'Pending Outcome', icon: AlertTriangle, count: pendingOutcomeTrials.length },
-    { id: 'accepted', label: 'Awaiting', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
+    { id: 'accepted', label: 'Awaiting Code', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
   ];
   const ARCHIVE_ITEMS = [
     { id: 'won', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#10b981' },
