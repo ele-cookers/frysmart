@@ -74,12 +74,14 @@ create table oil_types (
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
+  email text,
   role text not null check (role in ('admin', 'mgt', 'state_manager', 'nam', 'bdm')),
   region text,
   status text not null default 'active' check (status in ('active', 'inactive')),
   username text,
   rep_code text,
   crm_code text,
+  password text,
   venue_id uuid,
   group_id uuid,
   last_active date
@@ -95,6 +97,7 @@ create table groups (
   group_code text not null,
   username text,
   nam_id uuid references profiles(id) on delete set null,
+  password text,
   status text not null default 'active' check (status in ('active', 'inactive')),
   last_tpm_date date
 );
@@ -115,7 +118,7 @@ create table venues (
   group_id uuid references groups(id) on delete set null,
   bdm_id uuid references profiles(id) on delete set null,
   last_tpm_date date,
-  trial_status text check (trial_status in ('pending', 'in-progress', 'completed', 'won', 'lost')),
+  trial_status text check (trial_status in ('pending', 'in-progress', 'completed', 'accepted', 'won', 'lost')),
   trial_start_date date,
   trial_end_date date,
   trial_oil_id uuid references oil_types(id) on delete set null,
@@ -125,7 +128,10 @@ create table venues (
   offered_price_per_litre numeric,
   outcome_date date,
   trial_reason text references trial_reasons(key),
-  sold_price_per_litre numeric
+  sold_price_per_litre numeric,
+  password text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 -- ============================================================
@@ -137,6 +143,7 @@ create table tpm_readings (
   venue_id uuid not null references venues(id) on delete cascade,
   fryer_number int not null,
   reading_date date not null,
+  reading_number int not null default 1,
   taken_by uuid references profiles(id) on delete set null,
   oil_age int,
   litres_filled numeric,
@@ -147,9 +154,10 @@ create table tpm_readings (
   food_type text,
   notes text,
   not_in_use bool not null default false,
+  staff_name text,
 
-  constraint tpm_readings_venue_fryer_date_unique
-    unique (venue_id, fryer_number, reading_date)
+  constraint tpm_readings_venue_fryer_date_num_unique
+    unique (venue_id, fryer_number, reading_date, reading_number)
 );
 
 -- ============================================================
@@ -268,6 +276,16 @@ create policy "Allow read for authenticated" on system_settings
 
 create policy "Allow update for authenticated" on system_settings
   for update to authenticated using (true) with check (true);
+
+-- ============================================================
+-- 12. Migration: fix live DB to add 'accepted' trial status
+--     Run this on existing databases that were created before
+--     the 'accepted' status was added to the CHECK constraint.
+-- ============================================================
+
+-- ALTER TABLE venues DROP CONSTRAINT venues_trial_status_check;
+-- ALTER TABLE venues ADD CONSTRAINT venues_trial_status_check
+--   CHECK (trial_status IN ('pending', 'in-progress', 'completed', 'accepted', 'won', 'lost'));
 
 -- ============================================================
 -- Done! All tables, constraints, seeds, and temp RLS created.

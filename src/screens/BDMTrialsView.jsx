@@ -717,11 +717,10 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
 // ─────────────────────────────────────────────
 // TRIAL DETAIL MODAL — view + edit trial info
 // ─────────────────────────────────────────────
-const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSave, onOpenLog, onOpenEnd, onOpenClose, onSaveCustomerCode, onPushBack, onManage, onEditReading, VOLUME_BRACKETS }) => {
+const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, onEditReading, VOLUME_BRACKETS }) => {
   const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
   const compOil = oilTypes.find(o => o.id === venue.defaultOil);
   const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
-  const compOils = oilTypes.filter(o => o.category === 'competitor');
 
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
   useEffect(() => {
@@ -2289,7 +2288,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 }}>{awaitingRecording.length} / {activeTrials.length}</span>
               </div>
               {awaitingRecording.length > 0 ? (
-                <div style={{ padding: '6px 14px 10px', maxHeight: '180px', overflowY: 'auto' }}>
+                <div style={{ padding: '6px 14px 10px', maxHeight: '162px', overflowY: 'auto' }}>
                   {awaitingRecording.map(v => {
                     const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
                     return (
@@ -2329,7 +2328,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{acceptedCount}</span>
             </div>
             {acceptedCount > 0 ? (
-              <div style={{ padding: '6px 14px 10px', maxHeight: '180px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 14px 10px', maxHeight: '162px', overflowY: 'auto' }}>
                 {acceptedTrials.map(v => (
                   <div key={v.id} onClick={() => { setManageVenueId(v.id); setActiveTab('manage'); }} style={{
                     display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
@@ -3461,18 +3460,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           readings={tpmReadings}
           VOLUME_BRACKETS={VOLUME_BRACKETS}
           onClose={() => setSelectedTrialVenue(null)}
-          onSave={handleSaveTrialEdits}
-          onOpenLog={(v, type) => {
-            if (type === 'start') {
-              if (window.confirm(`Start trial for ${v.name}?`)) handleStartTrial(v.id);
-            } else {
-              setReadingModal(v);
-            }
-          }}
-          onOpenEnd={(v) => setEndTrialModal(v)}
-          onOpenClose={(v, outcome) => setCloseTrialModal({ venue: v, outcome })}
           onSaveCustomerCode={handleSaveCustomerCode}
-          onPushBack={handlePushBack}
           onManage={(v) => { setSelectedTrialVenue(null); setManageVenueId(v.id); setActiveTab('manage'); }}
           onEditReading={(v, dateStr, fryerNum) => { setSelectedTrialVenue(null); setEditReadingModal({ venue: v, date: dateStr, fryerNum }); }}
         />
