@@ -21,3 +21,6 @@ body {
   min-height: 100vh;
   min-width: 100vw;
 }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
