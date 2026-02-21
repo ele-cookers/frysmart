@@ -72,7 +72,7 @@ export const TRIAL_STATUS_COLORS = {
   'pending':     { bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1', label: 'Pipeline',     accent: '#94a3b8' },
   'in-progress': { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd', label: 'Active',       accent: '#3b82f6' },
   'completed':   { bg: '#fef3c7', text: '#a16207', border: '#fde047', label: 'Pending',      accent: '#fbbf24' },
-  'accepted':    { bg: '#fef3c7', text: '#92400e', border: '#fde68a', label: 'Awaiting Cust Code', accent: '#f59e0b' },
+  'accepted':    { bg: '#fef3c7', text: '#92400e', border: '#fde68a', label: 'Awaiting', accent: '#f59e0b' },
   'won':         { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7', label: 'Successful',   accent: '#10b981' },
   'lost':        { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5', label: 'Unsuccessful', accent: '#ef4444' },
 };

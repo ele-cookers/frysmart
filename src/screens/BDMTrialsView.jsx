@@ -2170,7 +2170,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     };
 
     return (
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* ── Stats Row ── */}
         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
           <div style={statCardStyle}>
@@ -2284,9 +2284,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {/* ── All Trials ── */}
         {isDesktop ? (
           /* Desktop: full table */
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
-            <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto' }}>
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ overflow: 'auto', flex: 1 }}>
               <style>{`
                 .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
                 .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
@@ -2307,7 +2308,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <FilterableTh colKey="soldPrice" label="Sold $" options={getUniqueValues(dashFiltered, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '52px' }} />
                   <FilterableTh colKey="start" label="Start" options={getUniqueValues(dashFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
                   <FilterableTh colKey="end" label="End" options={getUniqueValues(dashFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-                  <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Awaiting Cust Code'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+                  <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Awaiting'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
                 </tr></thead>
                 <tbody>
                   {(() => {
@@ -2341,6 +2342,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   })()}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         ) : (
@@ -2482,7 +2484,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length },
     { id: 'active', label: 'Active', icon: Play, count: activeTrials.length },
     { id: 'pending', label: 'Pending Outcome', icon: AlertTriangle, count: pendingOutcomeTrials.length },
-    { id: 'accepted', label: 'Awaiting Cust Code', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
+    { id: 'accepted', label: 'Awaiting', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
   ];
   const ARCHIVE_ITEMS = [
     { id: 'won', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#10b981' },
@@ -2689,11 +2691,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <div style={{
               ...(bdmView === 'desktop'
                 ? { padding: '24px clamp(16px, 2vw, 32px) 40px' }
                 : { maxWidth: '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }),
+              ...(activeTab === 'dashboard' ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
             }}>
               {renderTabContent()}
             </div>

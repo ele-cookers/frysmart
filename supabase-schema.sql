@@ -30,7 +30,9 @@ create table system_settings (
   trial_duration int not null default 7,
   report_frequency text not null default 'weekly',
   reminder_days int not null default 7,
-  oil_type_options text[] not null default array['canola','palm','sunflower','soybean','cottonseed','tallow','blend','unknown']
+  oil_type_options text[] not null default array['canola','palm','sunflower','soybean','cottonseed','tallow','blend','unknown'],
+  theme_config jsonb not null default '{}'::jsonb,
+  permissions_config jsonb not null default '{}'::jsonb
 );
 
 -- ============================================================

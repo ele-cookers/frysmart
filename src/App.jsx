@@ -30,7 +30,7 @@ const LoadingScreen = () => (
       src="/images/Cookers drop icon.png"
       alt="Loading"
       style={{
-        width: '105px', height: '105px', objectFit: 'contain',
+        width: '100px', height: '100px', objectFit: 'contain',
         animation: 'cookersPulse 1.6s ease-in-out infinite',
       }}
     />
