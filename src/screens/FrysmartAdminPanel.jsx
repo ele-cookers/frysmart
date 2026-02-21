@@ -2441,7 +2441,8 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
     pending: baseFiltered.filter(v => v.trialStatus === 'pending').length,
     'in-progress': baseFiltered.filter(v => v.trialStatus === 'in-progress').length,
     completed: baseFiltered.filter(v => v.trialStatus === 'completed').length,
-    won: baseFiltered.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted').length,
+    accepted: baseFiltered.filter(v => v.trialStatus === 'accepted').length,
+    won: baseFiltered.filter(v => v.trialStatus === 'won').length,
     lost: baseFiltered.filter(v => v.trialStatus === 'lost').length,
   };
 
@@ -2486,6 +2487,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
           { key: 'pending', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
           { key: 'in-progress', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
           { key: 'completed', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
+          { key: 'accepted', label: 'Awaiting Code', color: '#92400e', bg: '#fef3c7', activeBg: '#f59e0b', activeText: '#78350f' },
           { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
           { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
         ].map(s => {
@@ -2600,7 +2602,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                   {colVis('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(trials, v => v.trialStartDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(trials, v => v.trialEndDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   {colVis('closedDate') && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(trials, v => v.outcomeDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                  {colVis('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Awaiting Cust Code'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
                   {colVis('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => trials.some(v => v.trialReason === r.key)).map(r => ({value:r.key,label:r.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                   <th style={{ width: '30px' }}></th>
                 </tr>
@@ -5232,7 +5234,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             };
 
             return (
-              <div className="breakdown-grid-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+              <div className="breakdown-grid-4" style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '10px' }}>
                 {/* Accounts Split donut */}
                 <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Account Overview</div>
@@ -5387,7 +5389,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             return (
               <>
                 {/* Row 1: State + Trial breakdowns — 4 across on wide desktop */}
-                <div className="breakdown-grid-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
+                <div className="breakdown-grid-4" style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '20px' }}>
                   <BreakdownCard title="Calendars by State" icon={Building} iconColor="#10b981" data={calByState} badgeBg="#d1fae5" badgeText="#065f46" />
                   <BreakdownCard title="Trials by State" icon={AlertTriangle} iconColor="#f59e0b" data={trialByState} badgeBg="#fef3c7" badgeText="#92400e" />
                   <BreakdownCard title="Trials by Competitor" icon={Globe} iconColor="#dc2626" data={trialByComp} badgeBg="#fee2e2" badgeText="#991b1b" />
