@@ -4511,14 +4511,56 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             const comp = oil?.competitorId ? competitors.find(c => c.id === oil.competitorId) : null;
             const compName = comp ? comp.name : 'Unknown';
             const key = `${compName} · ${oilName}`;
-            if (!compOilDetail[key]) compOilDetail[key] = { total: 0, won: 0, lost: 0, other: 0 };
+            if (!compOilDetail[key]) compOilDetail[key] = { compName, oilName, total: 0, won: 0, lost: 0, other: 0 };
             compOilDetail[key].total += 1;
             if (v.trialStatus === 'won') compOilDetail[key].won += 1;
             else if (v.trialStatus === 'lost') compOilDetail[key].lost += 1;
             else compOilDetail[key].other += 1;
           }
         });
-        const topCompOilDetail = Object.entries(compOilDetail).sort((a, b) => b[1].total - a[1].total).slice(0, 3);
+        const topCompOilDetail = Object.entries(compOilDetail).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
+
+        // Top 5 competitors (grouped by competitor, not oil)
+        const compDetail = {};
+        filtered.forEach(v => {
+          if (v.defaultOil) {
+            const oil = oilTypes.find(o => o.id === v.defaultOil);
+            const comp = oil?.competitorId ? competitors.find(c => c.id === oil.competitorId) : null;
+            const compName = comp ? comp.name : 'Unknown';
+            if (!compDetail[compName]) compDetail[compName] = { total: 0, won: 0, lost: 0 };
+            compDetail[compName].total += 1;
+            if (v.trialStatus === 'won') compDetail[compName].won += 1;
+            else if (v.trialStatus === 'lost') compDetail[compName].lost += 1;
+          }
+        });
+        const topCompetitorData = Object.entries(compDetail).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
+
+        // BDM avg days to decision (trialEndDate → outcomeDate)
+        const bdmDecisionMap = {};
+        filtered.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialEndDate && v.outcomeDate).forEach(v => {
+          const name = v.bdmId ? getUN(v.bdmId) : 'Unassigned';
+          if (!bdmDecisionMap[name]) bdmDecisionMap[name] = [];
+          const days = Math.round((new Date(v.outcomeDate) - new Date(v.trialEndDate)) / 86400000);
+          if (days >= 0) bdmDecisionMap[name].push(days);
+        });
+        const bdmDecisionEntries = Object.entries(bdmDecisionMap)
+          .filter(([, days]) => days.length > 0)
+          .map(([name, days]) => ({ name, avg: Math.round(days.reduce((s, d) => s + d, 0) / days.length), count: days.length }))
+          .sort((a, b) => a.avg - b.avg);
+        // Pick top 2 fastest, median, bottom 2 slowest (5 total, deduped)
+        const bdmDecisionDisplay = (() => {
+          if (bdmDecisionEntries.length <= 5) return bdmDecisionEntries.map((e, i) => ({ ...e, rank: i }));
+          const top2 = bdmDecisionEntries.slice(0, 2);
+          const medIdx = Math.floor(bdmDecisionEntries.length / 2);
+          const median = bdmDecisionEntries[medIdx];
+          const bot2 = bdmDecisionEntries.slice(-2);
+          const seen = new Set();
+          const result = [];
+          [...top2, median, ...bot2].forEach(e => {
+            if (!seen.has(e.name)) { seen.add(e.name); result.push(e); }
+          });
+          return result;
+        })();
 
         // Duration
         const durs = closedTrials.filter(v => v.trialStartDate && v.trialEndDate).map(v => (new Date(v.trialEndDate + 'T00:00:00') - new Date(v.trialStartDate + 'T00:00:00')) / 86400000);
@@ -4853,12 +4895,12 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                 })()}
               </div>
               {/* Top Successful Reasons */}
-              {wonTrials.length > 0 && (
-                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
-                    <Trophy size={14} color="#10b981" />
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Top Successful Reasons</span>
-                  </div>
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
+                  <Trophy size={14} color="#10b981" />
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Top Successful Reasons</span>
+                </div>
+                {wonReasonData.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {wonReasonData.slice(0, 5).map(([key, count]) => {
                       const reason = trialReasons.find(r => r.key === key);
@@ -4872,15 +4914,15 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                       );
                     })}
                   </div>
-                </div>
-              )}
+                ) : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
+              </div>
               {/* Top Unsuccessful Reasons */}
-              {lostTrials.length > 0 && (
-                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
-                    <AlertTriangle size={14} color="#ef4444" />
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Top Unsuccessful Reasons</span>
-                  </div>
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
+                  <AlertTriangle size={14} color="#ef4444" />
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Top Unsuccessful Reasons</span>
+                </div>
+                {lostReasonData.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {lostReasonData.slice(0, 5).map(([key, count]) => {
                       const reason = trialReasons.find(r => r.key === key);
@@ -4894,96 +4936,114 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                       );
                     })}
                   </div>
-                </div>
-              )}
+                ) : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
+              </div>
             </div>
 
-            {/* ── Row 2b: Top 3 Oils + Vol Bracket Wins ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '10px' }}>
+            {/* ── Row 2b: Top 5 Oils + Top 5 Competitors + BDM Decision Days ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '8px', marginBottom: '10px' }}>
+              {/* Top 5 Oils Trialled Against */}
               <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Top 3 Oils Trialled Against</div>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Top 5 Oils Trialled Against</div>
                 {topCompOilDetail.length > 0 ? (() => {
-                  const maxTotal = Math.max(...topCompOilDetail.map(([, d]) => d.won + d.lost), 1);
                   const maxWon = Math.max(...topCompOilDetail.map(([, d]) => d.won), 1);
                   const maxLost = Math.max(...topCompOilDetail.map(([, d]) => d.lost), 1);
+                  const maxTotal = Math.max(...topCompOilDetail.map(([, d]) => d.won + d.lost), 1);
                   return (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Oil</th>
-                        <th style={{ textAlign: 'center', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
-                        <th style={{ textAlign: 'center', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
-                        <th style={{ textAlign: 'center', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
+                        <th style={{ textAlign: 'left', padding: '6px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Competitor</th>
+                        <th style={{ textAlign: 'left', padding: '6px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Oil</th>
+                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
+                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
+                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {topCompOilDetail.map(([name, d]) => {
+                      {topCompOilDetail.map(([key, d]) => {
                         const total = d.won + d.lost;
                         const wonOp = d.won ? Math.max(0.1, (d.won / maxWon) * 0.4) : 0;
                         const lostOp = d.lost ? Math.max(0.08, (d.lost / maxLost) * 0.35) : 0;
                         const totalOp = Math.max(0.1, (total / maxTotal) * 0.35);
                         return (
-                        <tr key={name}>
-                          <td style={{ padding: '7px 8px', fontWeight: '600', color: '#1f2937', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: isDesktop ? '160px' : '100px' }} title={name}>{name}</td>
-                          <td style={{ padding: '7px 8px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.won ? <span style={{ fontSize: '12px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '3px 10px', borderRadius: '20px', display: 'inline-block', minWidth: '32px' }}>{d.won}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                          <td style={{ padding: '7px 8px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.lost ? <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '3px 10px', borderRadius: '20px', display: 'inline-block', minWidth: '32px' }}>{d.lost}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                          <td style={{ padding: '7px 8px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '12px', fontWeight: '700', color: '#6d28d9', background: `rgba(139, 92, 246, ${totalOp})`, padding: '3px 10px', borderRadius: '20px', display: 'inline-block', minWidth: '32px' }}>{total}</span></td>
+                        <tr key={key}>
+                          <td style={{ padding: '6px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }} title={d.compName}><span style={{ fontSize: '10px', fontWeight: '700', color: '#e53e3e', background: 'rgba(229,62,62,0.08)', padding: '2px 8px', borderRadius: '20px' }}>{d.compName}</span></td>
+                          <td style={{ padding: '6px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }} title={d.oilName}><span style={{ fontSize: '10px', fontWeight: '600', color: '#1f2937' }}>{d.oilName}</span></td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.won ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.won}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.lost ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.lost}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '11px', fontWeight: '700', color: '#6d28d9', background: `rgba(139, 92, 246, ${totalOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{total}</span></td>
                         </tr>
                         );
                       })}
                     </tbody>
                   </table>
                   );
-                })() : <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '8px 0' }}>No data</div>}
+                })() : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
               </div>
+              {/* Top 5 Competitors Trialled Against */}
               <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Avg Days to Decision by Volume</div>
-                {(() => {
-                  const bracketMap = {};
-                  volumeBrackets.forEach(b => { bracketMap[b.key] = { label: b.label, color: b.color, days: [], wins: 0, total: 0 }; });
-                  filtered.filter(v => v.trialStatus === 'won' || v.trialStatus === 'lost').forEach(v => {
-                    const bk = v.volumeBracket || 'unknown';
-                    if (!bracketMap[bk]) return;
-                    const end = v.trialEndDate;
-                    const outcome = v.outcomeDate;
-                    if (end && outcome) {
-                      const d = Math.round((new Date(outcome) - new Date(end)) / 86400000);
-                      if (d >= 0) bracketMap[bk].days.push(d);
-                    }
-                    bracketMap[bk].total++;
-                    if (v.trialStatus === 'won') bracketMap[bk].wins++;
-                  });
-                  const rows = Object.values(bracketMap);
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Top 5 Competitors Trialled Against</div>
+                {topCompetitorData.length > 0 ? (() => {
+                  const maxWon = Math.max(...topCompetitorData.map(([, d]) => d.won), 1);
+                  const maxLost = Math.max(...topCompetitorData.map(([, d]) => d.lost), 1);
+                  const maxTotal = Math.max(...topCompetitorData.map(([, d]) => d.total), 1);
                   return (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Bracket</th>
-                          <th style={{ textAlign: 'center', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Avg Days</th>
-                          <th style={{ textAlign: 'center', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Win Rate</th>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Competitor</th>
+                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
+                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
+                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
+                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Win %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topCompetitorData.map(([name, d]) => {
+                        const wonOp = d.won ? Math.max(0.1, (d.won / maxWon) * 0.4) : 0;
+                        const lostOp = d.lost ? Math.max(0.08, (d.lost / maxLost) * 0.35) : 0;
+                        const totalOp = Math.max(0.1, (d.total / maxTotal) * 0.35);
+                        const decided = d.won + d.lost;
+                        const wp = decided > 0 ? Math.round((d.won / decided) * 100) : null;
+                        return (
+                        <tr key={name}>
+                          <td style={{ padding: '6px 8px', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '10px', fontWeight: '700', color: '#e53e3e', background: 'rgba(229,62,62,0.08)', padding: '2px 8px', borderRadius: '20px' }}>{name}</span></td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.won ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.won}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.lost ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.lost}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '11px', fontWeight: '700', color: '#6d28d9', background: `rgba(139, 92, 246, ${totalOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.total}</span></td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{wp !== null ? <span style={{ fontSize: '11px', fontWeight: '700', color: wp >= 60 ? '#059669' : wp >= 40 ? '#ca8a04' : '#dc2626' }}>{wp}%</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map(r => {
-                          const avg = r.days.length > 0 ? Math.round(r.days.reduce((s, d) => s + d, 0) / r.days.length) : null;
-                          const winRate = r.total > 0 ? Math.round((r.wins / r.total) * 100) : null;
-                          return (
-                            <tr key={r.label}>
-                              <td style={{ padding: '7px 8px', borderBottom: '1px solid #f1f5f9' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: r.color, flexShrink: 0 }} />
-                                  <span style={{ fontWeight: '600', color: '#1f2937' }}>{r.label}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '7px 8px', textAlign: 'center', fontWeight: '700', color: avg !== null ? '#1f2937' : '#cbd5e1', borderBottom: '1px solid #f1f5f9' }}>{avg !== null ? `${avg}d` : '—'}</td>
-                              <td style={{ padding: '7px 8px', textAlign: 'center', fontWeight: '700', color: winRate !== null ? '#1f2937' : '#cbd5e1', borderBottom: '1px solid #f1f5f9' }}>{winRate !== null ? `${winRate}%` : '—'}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                   );
-                })()}
+                })() : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
+              </div>
+              {/* Avg Days to Decision — BDMs */}
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Avg Days to Decision</div>
+                {bdmDecisionDisplay.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {bdmDecisionDisplay.map((entry, idx) => {
+                      const isFastest = bdmDecisionEntries.indexOf(entry) < 2;
+                      const isSlowest = bdmDecisionEntries.indexOf(entry) >= bdmDecisionEntries.length - 2;
+                      const color = isFastest ? '#059669' : isSlowest ? '#dc2626' : '#ca8a04';
+                      const bg = isFastest ? 'rgba(5,150,105,0.08)' : isSlowest ? 'rgba(220,38,38,0.08)' : 'rgba(202,138,4,0.08)';
+                      const label = isFastest ? 'Fastest' : isSlowest ? 'Slowest' : 'Median';
+                      return (
+                        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '6px 10px', background: bg, borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                            <span style={{ fontSize: '8px', fontWeight: '700', color, textTransform: 'uppercase', flexShrink: 0 }}>{label}</span>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name}</span>
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color, flexShrink: 0 }}>{entry.avg}d</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
               </div>
             </div>
 
