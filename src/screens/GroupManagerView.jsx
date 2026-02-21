@@ -1421,10 +1421,9 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
           {/* KPI stat cards — consolidated from both views, no duplicates */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '10px' }}>
             {[
-              { label: 'Recorded Today', value: `${recordedToday}/${totalVenues}`, color: recordedToday === totalVenues ? '#10b981' : '#f59e0b', icon: ClipboardList },
-              { label: 'Venues On Track', value: `${healthyVenues}/${totalVenues}`, color: healthyVenues === totalVenues ? '#10b981' : criticalVenues > 0 ? COLORS.critical : '#f59e0b', icon: Building },
-              { label: 'Avg Compliance', value: `${avgCompliance}%`, color: complianceColor(avgCompliance), icon: BarChart3 },
-              { label: 'Oil Mgt Rating', value: oilGrade.label, color: oilGrade.color, icon: AlertTriangle },
+              { label: 'Recorded Today', value: `${recordedToday}/${totalVenues}`, color: recordedToday === totalVenues ? '#10b981' : '#f59e0b', icon: ClipboardList, target: `Target: ${totalVenues}/${totalVenues}` },
+              { label: 'Avg Compliance', value: `${avgCompliance}%`, color: complianceColor(avgCompliance), icon: BarChart3, target: 'Target: 100%' },
+              { label: 'Oil Mgt Rating', value: oilGrade.label, color: oilGrade.color, icon: AlertTriangle, target: 'Target: A+' },
             ].map(s => (
               <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -1432,14 +1431,15 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
                   <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
                 </div>
                 <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', marginTop: '4px' }}>{s.target}</div>
               </div>
             ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '10px' }}>
             {[
-              { label: 'Avg TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : '#f59e0b', icon: Target },
-              { label: 'Filtering Rate', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : COLORS.critical, icon: Filter },
-              { label: 'Late Changes', value: totalLateChanges, color: totalLateChanges > 0 ? COLORS.critical : '#64748b', icon: Clock },
+              { label: 'Avg TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : '#f59e0b', icon: Target, target: `Target: <${warnAt}` },
+              { label: 'Filtering Rate', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : COLORS.critical, icon: Filter, target: 'Target: 80%+' },
+              { label: 'Early Changes', value: totalEarlyChanges, color: totalEarlyChanges > 0 ? '#10b981' : '#64748b', icon: Clock, target: 'Target: 100%' },
             ].map(s => (
               <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -1447,31 +1447,13 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
                   <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
                 </div>
                 <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', marginTop: '4px' }}>{s.target}</div>
               </div>
             ))}
           </div>
 
           {/* Insight grid — action items + league tables */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-            {/* Venues to Review */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Action Items
-                {alerts.length > 0 && <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '10px', background: COLORS.criticalBg, color: COLORS.critical }}>{alerts.length}</span>}
-              </div>
-              {alerts.length === 0 ? (
-                <div style={{ fontSize: '12px', color: '#64748b' }}>All venues on track</div>
-              ) : alerts.slice(0, 4).map((a, i) => (
-                <div key={i} onClick={() => onDrillDown(a.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: i < Math.min(alerts.length, 4) - 1 ? '1px solid #f1f5f9' : 'none', cursor: 'pointer' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '3px', background: a.type === 'critical' ? COLORS.critical : '#f59e0b', flexShrink: 0 }} />
-                  <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', flex: 1 }}>{a.venue}</span>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: a.type === 'critical' ? COLORS.critical : '#f59e0b' }}>
-                    {a.msg.includes('Compliance') ? `${a.msg.match(/\d+/)?.[0] || ''}%` : a.msg.includes('late') ? `${a.msg.match(/\d+/)?.[0] || ''} late` : a.msg.includes('critical') ? `${a.msg.match(/\d+/)?.[0] || ''}% crit` : `${a.msg.match(/\d+/)?.[0] || ''}%`}
-                  </span>
-                </div>
-              ))}
-            </div>
-
             {/* Top Performers */}
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Most Compliant</div>
