@@ -1603,7 +1603,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   // ─────────────────────────────────────────
-  // LOADING SCREEN
+  // LOADING — identical to App.jsx LoadingScreen for seamless transition
   // ─────────────────────────────────────────
   if (loading) {
     return (
@@ -1611,7 +1611,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', gap: '24px',
         paddingBottom: '20vh', background: '#1a428a',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}>
         <style>{`
           @keyframes cookersPulse {
@@ -2503,6 +2503,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
     }}>
       <style>{`
+        @keyframes cookersPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.06); opacity: 0.92; }
+        }
         button, input, select, textarea { font-family: inherit; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

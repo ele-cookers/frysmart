@@ -1603,8 +1603,39 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   const critAt = systemSettings?.criticalThreshold || 24;
 
   // ─────────────────────────────────────────
-  // LOADING — no separate screen; handled inline in main render
+  // LOADING — identical to App.jsx LoadingScreen for seamless transition
   // ─────────────────────────────────────────
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: '24px',
+        paddingBottom: '20vh', background: '#1a428a',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}>
+        <style>{`
+          @keyframes cookersPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.06); opacity: 0.92; }
+          }
+          @keyframes dotFlash {
+            0%, 20% { opacity: 0; }
+            40%, 100% { opacity: 1; }
+          }
+        `}</style>
+        <img src="/images/Cookers drop icon.png" alt="Loading" style={{
+          width: '100px', height: '100px', objectFit: 'contain',
+          animation: 'cookersPulse 1.6s ease-in-out infinite',
+        }} />
+        <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
+          Loading
+          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0s', opacity: 0 }}>.</span>
+          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.3s', opacity: 0 }}>.</span>
+          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.6s', opacity: 0 }}>.</span>
+        </div>
+      </div>
+    );
+  }
 
   // Tab styles
   const primaryTabStyle = (active) => ({
@@ -1651,10 +1682,6 @@ export default function GroupManagerView({ currentUser, onLogout }) {
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
     }}>
     <style>{`
-      @keyframes cookersPulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.06); opacity: 0.92; }
-      }
       .gm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
       .gm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
       .gm-table tbody tr { transition: background 0.1s; cursor: pointer; }
@@ -1825,38 +1852,27 @@ export default function GroupManagerView({ currentUser, onLogout }) {
           </div>
           {/* Content — scrollable */}
           <div style={{ flex: 1, minWidth: 0, padding: '24px clamp(16px, 2vw, 32px) 40px', overflowY: 'auto' }}>
-            {loading ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', opacity: 0.5 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <img src="/images/Cookers drop icon.png" alt="Loading" style={{ width: '48px', height: '48px', objectFit: 'contain', opacity: 0.6, animation: 'cookersPulse 1.6s ease-in-out infinite' }} />
-                  <div style={{ fontSize: '12px', color: COLORS.textMuted, marginTop: '8px' }}>Loading venues…</div>
-                </div>
+            {primaryTab === 'all-venues' && (
+              <ManagerOverview venues={venues} recordingsByVenue={recordingsByVenue} groupName={group?.name || currentUser?.name || 'Group'} systemSettings={systemSettings} onDrillDown={handleDrillDown} groupView={groupView} />
+            )}
+            {primaryTab === 'by-venue' && !selectedVenueId && (
+              <div style={{ maxWidth: '600px', margin: '60px auto', padding: '20px', textAlign: 'center' }}>
+                <Building size={48} color={COLORS.textFaint} style={{ marginBottom: '16px' }} />
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: COLORS.text, marginBottom: '8px' }}>Select a Venue</h3>
+                <p style={{ color: COLORS.textMuted, fontSize: '14px' }}>Choose a venue from the sidebar to view its details.</p>
               </div>
-            ) : (
-              <>
-                {primaryTab === 'all-venues' && (
-                  <ManagerOverview venues={venues} recordingsByVenue={recordingsByVenue} groupName={group?.name || currentUser?.name || 'Group'} systemSettings={systemSettings} onDrillDown={handleDrillDown} groupView={groupView} />
-                )}
-                {primaryTab === 'by-venue' && !selectedVenueId && (
-                  <div style={{ maxWidth: '600px', margin: '60px auto', padding: '20px', textAlign: 'center' }}>
-                    <Building size={48} color={COLORS.textFaint} style={{ marginBottom: '16px' }} />
-                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: COLORS.text, marginBottom: '8px' }}>Select a Venue</h3>
-                    <p style={{ color: COLORS.textMuted, fontSize: '14px' }}>Choose a venue from the sidebar to view its details.</p>
-                  </div>
-                )}
-                {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'overview' && (
-                  <VenueOverview recordings={activeRecordings} venueName={selectedVenue?.name || ''} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />
-                )}
-                {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
-                  <div>
-                    {calendarView === 'day'     && <DayView     recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'week'    && <WeekView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'month'   && <MonthView   recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'quarter' && <QuarterView recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'year'    && <YearView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                  </div>
-                )}
-              </>
+            )}
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'overview' && (
+              <VenueOverview recordings={activeRecordings} venueName={selectedVenue?.name || ''} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />
+            )}
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
+              <div>
+                {calendarView === 'day'     && <DayView     recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'week'    && <WeekView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'month'   && <MonthView   recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'quarter' && <QuarterView recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'year'    && <YearView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
+              </div>
             )}
           </div>
         </div>
@@ -1909,37 +1925,26 @@ export default function GroupManagerView({ currentUser, onLogout }) {
             )}
           </div>
           <div style={{ paddingBottom: '40px' }}>
-            {loading ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px', opacity: 0.5 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <img src="/images/Cookers drop icon.png" alt="Loading" style={{ width: '48px', height: '48px', objectFit: 'contain', opacity: 0.6, animation: 'cookersPulse 1.6s ease-in-out infinite' }} />
-                  <div style={{ fontSize: '12px', color: COLORS.textMuted, marginTop: '8px' }}>Loading venues…</div>
-                </div>
+            {primaryTab === 'all-venues' && (
+              <ManagerOverview venues={venues} recordingsByVenue={recordingsByVenue} groupName={group?.name || currentUser?.name || 'Group'} systemSettings={systemSettings} onDrillDown={handleDrillDown} groupView={groupView} />
+            )}
+            {primaryTab === 'by-venue' && !selectedVenueId && (
+              <div style={{ maxWidth: '600px', margin: '60px auto', padding: '20px', textAlign: 'center' }}>
+                <Building size={48} color={COLORS.textFaint} style={{ marginBottom: '16px' }} />
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: COLORS.text, marginBottom: '8px' }}>Select a Venue</h3>
+                <p style={{ color: COLORS.textMuted, fontSize: '14px' }}>Choose a venue from the dropdown above to view its details.</p>
               </div>
-            ) : (
+            )}
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'overview' && (
+              <VenueOverview recordings={activeRecordings} venueName={selectedVenue?.name || ''} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />
+            )}
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
               <>
-                {primaryTab === 'all-venues' && (
-                  <ManagerOverview venues={venues} recordingsByVenue={recordingsByVenue} groupName={group?.name || currentUser?.name || 'Group'} systemSettings={systemSettings} onDrillDown={handleDrillDown} groupView={groupView} />
-                )}
-                {primaryTab === 'by-venue' && !selectedVenueId && (
-                  <div style={{ maxWidth: '600px', margin: '60px auto', padding: '20px', textAlign: 'center' }}>
-                    <Building size={48} color={COLORS.textFaint} style={{ marginBottom: '16px' }} />
-                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: COLORS.text, marginBottom: '8px' }}>Select a Venue</h3>
-                    <p style={{ color: COLORS.textMuted, fontSize: '14px' }}>Choose a venue from the dropdown above to view its details.</p>
-                  </div>
-                )}
-                {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'overview' && (
-                  <VenueOverview recordings={activeRecordings} venueName={selectedVenue?.name || ''} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />
-                )}
-                {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
-                  <>
-                    {calendarView === 'day'     && <DayView     recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'week'    && <WeekView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'month'   && <MonthView   recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'quarter' && <QuarterView recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                    {calendarView === 'year'    && <YearView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
-                  </>
-                )}
+                {calendarView === 'day'     && <DayView     recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'week'    && <WeekView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'month'   && <MonthView   recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'quarter' && <QuarterView recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
+                {calendarView === 'year'    && <YearView    recordings={activeRecordings} selectedDate={selectedDate} onDateChange={setSelectedDate} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />}
               </>
             )}
           </div>
