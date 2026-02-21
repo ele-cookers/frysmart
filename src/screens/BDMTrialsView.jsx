@@ -11,7 +11,8 @@ import {
   XCircle, Building, ChevronUp, ChevronDown,
   LayoutList, LayoutGrid, ArrowUpDown, CheckCircle2,
   Search, ArrowDown, Filter, Monitor, Smartphone,
-  Edit3, Calendar, Save, ChevronRight, BarChart3, TrendingUp, RotateCcw
+  Edit3, Calendar, Save, ChevronRight, BarChart3, TrendingUp, RotateCcw,
+  Star, MessageSquare
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -788,26 +789,33 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
 
   const isReadOnly = venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted';
 
-  // Build detailed readings list for the right panel (desktop)
-  const detailedReadings = useMemo(() => {
-    if (!venue.trialStartDate || venue.trialStatus === 'pending') return [];
-    const trialRecs = venueReadings.filter(r => r.readingDate >= (venue.trialStartDate || ''));
-    return trialRecs
-      .sort((a, b) => b.readingDate.localeCompare(a.readingDate))
-      .map(r => {
-        const variance = r.setTemperature && r.actualTemperature
-          ? ((r.actualTemperature - r.setTemperature) / r.setTemperature * 100).toFixed(1)
-          : null;
-        return { ...r, variance };
-      });
-  }, [venueReadings, venue.trialStartDate, venue.trialStatus]);
+  // Build calendar data for the right panel (desktop)
+  const calendarData = useMemo(() => {
+    if (!venue.trialStartDate || venue.trialStatus === 'pending') return { days: [], readingsByDate: {}, hasData: false };
+    const start = new Date(venue.trialStartDate + 'T00:00:00');
+    const end = venue.trialEndDate ? new Date(venue.trialEndDate + 'T00:00:00') : new Date();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const cap = venue.trialEndDate ? end : today;
+    const days = [];
+    const d = new Date(start);
+    while (d <= cap) { days.push(new Date(d)); d.setDate(d.getDate() + 1); }
+    // Group readings by date, picking latest per fryer per date
+    const readingsByDate = {};
+    venueReadings.forEach(r => {
+      if (r.readingDate >= (venue.trialStartDate || '')) {
+        if (!readingsByDate[r.readingDate]) readingsByDate[r.readingDate] = [];
+        readingsByDate[r.readingDate].push(r);
+      }
+    });
+    return { days, readingsByDate, hasData: days.length > 0 };
+  }, [venueReadings, venue.trialStartDate, venue.trialEndDate, venue.trialStatus]);
 
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && detailedReadings.length > 0 ? '1020px' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && detailedReadings.length > 0 ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '1020px' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
-      <div style={isDesktop && detailedReadings.length > 0 ? { flex: '0 0 55%', maxWidth: '55%', overflowY: 'auto', maxHeight: '94vh' } : {}}>
+      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 55%', maxWidth: '55%', overflowY: 'auto', maxHeight: '94vh' } : {}}>
 
         {/* Header */}
         <div style={{
@@ -908,8 +916,8 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
             </div>
           )}
 
-          {/* TPM Readings Calendar */}
-          {venue.trialStartDate && venue.trialStatus !== 'pending' && (() => {
+          {/* TPM Readings Calendar — compact version for mobile only */}
+          {!isDesktop && venue.trialStartDate && venue.trialStatus !== 'pending' && (() => {
             const start = new Date(venue.trialStartDate + 'T00:00:00');
             const end = venue.trialEndDate ? new Date(venue.trialEndDate + 'T00:00:00') : new Date();
             const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1162,77 +1170,110 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         </div>
       </div>
 
-      {/* Right column — detailed readings (desktop only) */}
-      {isDesktop && detailedReadings.length > 0 && (
-        <div style={{ flex: '0 0 45%', maxWidth: '45%', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Reading Details</div>
-            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{detailedReadings.length} readings during trial</div>
-          </div>
-          <div style={{ padding: '8px' }}>
-            {detailedReadings.map((r, i) => {
-              const tpmColor = r.tpmValue <= 14 ? '#059669' : r.tpmValue <= 18 ? '#d97706' : '#dc2626';
-              const tpmBg = r.tpmValue <= 14 ? '#d1fae5' : r.tpmValue <= 18 ? '#fef3c7' : '#fee2e2';
-              const varNum = r.variance ? parseFloat(r.variance) : null;
-              const varColor = varNum !== null ? (Math.abs(varNum) <= 3 ? '#059669' : Math.abs(varNum) <= 7 ? '#d97706' : '#dc2626') : '#64748b';
-              return (
-                <div key={r.id || i} style={{ background: 'white', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px', border: '1px solid #e2e8f0' }}>
-                  {/* Date + Fryer + TPM */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <div>
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>
-                        {new Date(r.readingDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
-                      </span>
-                      <span style={{ fontSize: '10px', color: '#94a3b8', marginLeft: '6px' }}>Fryer {r.fryerNumber || 1}</span>
+      {/* Right column — trial calendar (desktop only, like venue staff monthly view) */}
+      {isDesktop && calendarData.hasData && (() => {
+        const { days, readingsByDate } = calendarData;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const totalReadings = Object.values(readingsByDate).reduce((s, arr) => s + arr.length, 0);
+        // Show 7 columns (one week per row)
+        const cols = 7;
+        // Pad start to align to day-of-week
+        const startDow = days[0].getDay(); // 0=Sun
+        const padBefore = startDow;
+        return (
+          <div style={{ flex: '0 0 45%', maxWidth: '45%', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
+              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days</div>
+            </div>
+            <div style={{ padding: '8px 6px' }}>
+              {/* Day-of-week headers */}
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '2px', marginBottom: '2px' }}>
+                {['S','M','T','W','T','F','S'].map((d, i) => (
+                  <div key={i} style={{ textAlign: 'center', fontSize: '10px', fontWeight: '700', color: '#64748b', padding: '4px 0' }}>{d}</div>
+                ))}
+              </div>
+              {/* Calendar grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '2px' }}>
+                {/* Empty cells before trial start */}
+                {Array.from({ length: padBefore }).map((_, i) => (
+                  <div key={`pad-${i}`} style={{ background: '#fafafa', borderRadius: '4px', minHeight: '90px' }} />
+                ))}
+                {/* Day cells */}
+                {days.map((day, idx) => {
+                  const dateStr = day.toISOString().split('T')[0];
+                  const recs = readingsByDate[dateStr] || [];
+                  const isFuture = day > today;
+                  const isToday = day.getTime() === today.getTime();
+                  const latest = recs.length > 0 ? recs.sort((a, b) => (b.fryerNumber || 1) - (a.fryerNumber || 1))[0] : null;
+                  const hasFresh = recs.some(r => r.oilAge === 1);
+                  const hasFiltered = recs.some(r => r.filtered === true);
+                  const hasNotes = recs.some(r => r.notes);
+                  // Background color
+                  const cellBg = isFuture ? 'white' : recs.length > 0 ? '#d1fae5' : '#fee2e2';
+                  const tpmColor = latest ? (latest.tpmValue <= 14 ? '#059669' : latest.tpmValue <= 18 ? '#d97706' : '#dc2626') : '#cbd5e1';
+                  return (
+                    <div key={idx} style={{
+                      background: cellBg, borderRadius: '6px', padding: '4px 3px', minHeight: '90px',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      border: isToday ? '2px solid #1a428a' : '1px solid #e2e8f0',
+                      opacity: isFuture ? 0.4 : 1,
+                    }}>
+                      {/* Date number */}
+                      <div style={{ fontSize: '11px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{day.getDate()}</div>
+                      {latest ? (
+                        <>
+                          {/* TPM */}
+                          <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px' }}>TPM</div>
+                          <div style={{ fontSize: '18px', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
+                          {/* Oil age */}
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
+                            {hasFresh ? 'Fresh' : `${latest.oilAge}d`}
+                          </div>
+                          {/* Temps */}
+                          <div style={{ fontSize: '9px', color: '#64748b', lineHeight: '1.3', textAlign: 'center', marginTop: '1px' }}>
+                            {latest.setTemperature && <div>S:{latest.setTemperature}°</div>}
+                            {latest.actualTemperature && <div>A:{latest.actualTemperature}°</div>}
+                          </div>
+                          {/* Badges row */}
+                          <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2px' }}>
+                            {hasFiltered && <Filter size={9} color="#1e40af" strokeWidth={2.5} />}
+                            {hasFresh && <Star size={9} color="#92400e" fill="#92400e" />}
+                            {hasNotes && <MessageSquare size={9} color="#475569" strokeWidth={2.5} />}
+                          </div>
+                          {/* Top-up */}
+                          {latest.litresFilled > 0 && (
+                            <div style={{ fontSize: '8px', color: '#1f2937', fontWeight: '600', marginTop: '1px' }}>{latest.litresFilled}L</div>
+                          )}
+                        </>
+                      ) : !isFuture ? (
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: '600' }}>Missed</span>
+                        </div>
+                      ) : null}
                     </div>
-                    <div style={{ padding: '2px 10px', borderRadius: '6px', background: tpmBg, color: tpmColor, fontSize: '13px', fontWeight: '700' }}>
-                      {r.tpmValue}
-                    </div>
+                  );
+                })}
+              </div>
+              {/* Legend */}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                {[
+                  { bg: '#d1fae5', label: 'Recorded' },
+                  { bg: '#fee2e2', label: 'Missed' },
+                  { icon: <Filter size={9} color="#1e40af" strokeWidth={2.5} />, label: 'Filtered' },
+                  { icon: <Star size={9} color="#92400e" fill="#92400e" />, label: 'Fresh Oil' },
+                  { icon: <MessageSquare size={9} color="#475569" strokeWidth={2.5} />, label: 'Notes' },
+                ].map(l => (
+                  <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    {l.bg ? <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: l.bg }} /> : l.icon}
+                    <span style={{ fontSize: '10px', color: '#64748b' }}>{l.label}</span>
                   </div>
-                  {/* Detail grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
-                    <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
-                      <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>OIL AGE</div>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: r.oilAge === 1 ? '#059669' : '#1f2937' }}>{r.oilAge === 1 ? 'Fresh' : `Day ${r.oilAge}`}</div>
-                    </div>
-                    <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
-                      <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>TOP-UP</div>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: r.litresFilled > 0 ? '#1f2937' : '#cbd5e1' }}>{r.litresFilled > 0 ? `${r.litresFilled}L` : '—'}</div>
-                    </div>
-                    <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
-                      <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>FILTERED</div>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: r.filtered === true ? '#059669' : r.filtered === false ? '#dc2626' : '#cbd5e1' }}>{r.filtered === true ? 'Yes' : r.filtered === false ? 'No' : '—'}</div>
-                    </div>
-                  </div>
-                  {/* Temps */}
-                  {(r.setTemperature || r.actualTemperature) && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', marginTop: '4px' }}>
-                      <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>SET TEMP</div>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937' }}>{r.setTemperature ? `${r.setTemperature}°C` : '—'}</div>
-                      </div>
-                      <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>ACTUAL</div>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937' }}>{r.actualTemperature ? `${r.actualTemperature}°C` : '—'}</div>
-                      </div>
-                      <div style={{ padding: '4px 6px', background: '#f8fafc', borderRadius: '4px' }}>
-                        <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '600' }}>VARIANCE</div>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: varColor }}>{varNum !== null ? `${varNum > 0 ? '+' : ''}${varNum}%` : '—'}</div>
-                      </div>
-                    </div>
-                  )}
-                  {/* Notes */}
-                  {r.notes && (
-                    <div style={{ marginTop: '4px', fontSize: '10px', color: '#64748b', fontStyle: 'italic', padding: '3px 6px', background: '#fffbeb', borderRadius: '4px', border: '1px solid #fef3c7' }}>
-                      {r.notes}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       </div>
     </div>
