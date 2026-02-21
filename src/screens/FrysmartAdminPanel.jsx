@@ -3321,20 +3321,22 @@ const PermissionsAccess = ({ users, systemSettings, setSystemSettings, theme }) 
 
   const getCapabilities = (role) => saved[role] || DEFAULT_ROLE_CAPABILITIES[role] || [];
 
-  const toggleCapability = (role, capKey) => {
+  const toggleCapability = async (role, capKey) => {
     const current = [...getCapabilities(role)];
     const idx = current.indexOf(capKey);
     if (idx >= 0) current.splice(idx, 1); else current.push(capKey);
     const next = { ...saved, [role]: current };
     setSystemSettings(prev => ({ ...prev, permissionsConfig: next }));
-    supabase.from('system_settings').update({ permissions_config: next }).eq('id', 1);
+    const { error } = await supabase.from('system_settings').update({ permissions_config: next }).eq('id', 1);
+    if (error) console.error('Failed to save permissions:', error.message);
   };
 
-  const resetRole = (role) => {
+  const resetRole = async (role) => {
     const next = { ...saved };
     delete next[role];
     setSystemSettings(prev => ({ ...prev, permissionsConfig: next }));
-    supabase.from('system_settings').update({ permissions_config: next }).eq('id', 1);
+    const { error } = await supabase.from('system_settings').update({ permissions_config: next }).eq('id', 1);
+    if (error) console.error('Failed to reset permissions:', error.message);
   };
 
   const roleCounts = {};
@@ -3697,9 +3699,13 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
   // ── Theme config — derived from systemSettings, persisted directly ──
   const themeConfig = systemSettings.themeConfig || {};
   const [themeSaved, setThemeSaved] = useState(false);
-  const dbSetThemeConfig = useCallback((next) => {
+  const dbSetThemeConfig = useCallback(async (next) => {
     setSystemSettings(prev => ({ ...prev, themeConfig: next }));
-    supabase.from('system_settings').update({ theme_config: next }).eq('id', 1);
+    const { error } = await supabase.from('system_settings').update({ theme_config: next }).eq('id', 1);
+    if (error) {
+      console.error('Failed to save theme config:', error.message);
+      return;
+    }
     setThemeSaved(true);
     setTimeout(() => setThemeSaved(false), 2000);
   }, [setSystemSettings]);
@@ -4304,12 +4310,16 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
     if (typeof updater === 'function') {
       setSystemSettings(prev => {
         const next = updater(prev);
-        supabase.from('system_settings').update(unMapSystemSettings(next)).eq('id', 1);
+        supabase.from('system_settings').update(unMapSystemSettings(next)).eq('id', 1).then(({ error }) => {
+          if (error) console.error('Failed to save system settings:', error.message);
+        });
         return next;
       });
     } else {
       setSystemSettings(updater);
-      supabase.from('system_settings').update(unMapSystemSettings(updater)).eq('id', 1);
+      supabase.from('system_settings').update(unMapSystemSettings(updater)).eq('id', 1).then(({ error }) => {
+        if (error) console.error('Failed to save system settings:', error.message);
+      });
     }
   }, []);
 
@@ -4317,12 +4327,16 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
     if (typeof updater === 'function') {
       setOilTypeOptions(prev => {
         const next = updater(prev);
-        supabase.from('system_settings').update({ oil_type_options: next }).eq('id', 1);
+        supabase.from('system_settings').update({ oil_type_options: next }).eq('id', 1).then(({ error }) => {
+          if (error) console.error('Failed to save oil type options:', error.message);
+        });
         return next;
       });
     } else {
       setOilTypeOptions(updater);
-      supabase.from('system_settings').update({ oil_type_options: updater }).eq('id', 1);
+      supabase.from('system_settings').update({ oil_type_options: updater }).eq('id', 1).then(({ error }) => {
+        if (error) console.error('Failed to save oil type options:', error.message);
+      });
     }
   }, []);
 
