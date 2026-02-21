@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { mapGroup, mapVenue, mapReading, mapSystemSettings } from '../lib/mappers';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check,
-  AlertCircle, AlertTriangle, Clock, Star, Building, LogOut, BarChart3, Calendar, Eye, ClipboardList, Target
+  AlertCircle, AlertTriangle, Clock, Star, Building, LogOut, BarChart3, Calendar, Eye, ClipboardList, Target, Droplets
 } from 'lucide-react';
 import { HEADER_BADGE_COLORS, OIL_STATUS_COLORS, TPM_COLORS, getThemeColors } from '../lib/badgeConfig';
 
@@ -1314,10 +1314,128 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     const totalLateChanges = venueStats.reduce((s, v) => s + v.changedLate, 0);
     const totalEarlyChanges = venueStats.reduce((s, v) => s + v.changedEarly, 0);
 
-    return { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges };
+    // ── Exec Summary extras — group-level aggregates from all venue readings ──
+
+    // Flatten all readings across all venues for last 30 days
+    const allGroupRecs = venueStats.flatMap(v => {
+      const recs = recordingsByVenue[v.id] || {};
+      return last30.flatMap(date => (recs[date] || []).filter(r => !r.notInUse && r.tpmValue != null).map(r => ({ ...r, date })));
+    });
+    const totalGroupReadings = allGroupRecs.length;
+
+    // Group-level critical rate
+    const groupCritCount = allGroupRecs.filter(r => r.tpmValue >= critAt).length;
+    const groupWarnCount = allGroupRecs.filter(r => r.tpmValue >= warnAt && r.tpmValue < critAt).length;
+    const groupGoodCount = allGroupRecs.filter(r => r.tpmValue < warnAt).length;
+    const groupCritRate = totalGroupReadings > 0 ? Math.round((groupCritCount / totalGroupReadings) * 100) : 0;
+
+    // Oil management stats — group level
+    const oilAgeRecs = allGroupRecs.filter(r => r.oilAge);
+    const groupAvgOilAge = oilAgeRecs.length > 0 ? oilAgeRecs.reduce((s, r) => s + parseInt(r.oilAge), 0) / oilAgeRecs.length : 0;
+
+    // Changed Too Early / Too Late — group level (from individual readings)
+    const groupChangedTooEarly = (() => {
+      let count = 0;
+      const byVenueFryer = {};
+      allGroupRecs.forEach(r => {
+        const key = `${r.venueId || ''}_${r.fryerNumber}`;
+        if (!byVenueFryer[key]) byVenueFryer[key] = {};
+        if (!byVenueFryer[key][r.date]) byVenueFryer[key][r.date] = [];
+        byVenueFryer[key][r.date].push(r);
+      });
+      Object.values(byVenueFryer).forEach(fryerDates => {
+        const sorted = Object.keys(fryerDates).sort();
+        for (let i = 1; i < sorted.length; i++) {
+          const fresh = fryerDates[sorted[i]].find(r => isFreshOil(r.oilAge));
+          if (!fresh) continue;
+          const prevMax = Math.max(...fryerDates[sorted[i - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v)));
+          if (prevMax < warnAt) count++;
+        }
+      });
+      return count;
+    })();
+    const groupChangedTooLate = (() => {
+      let count = 0;
+      const byVenueFryer = {};
+      allGroupRecs.forEach(r => {
+        const key = `${r.venueId || ''}_${r.fryerNumber}`;
+        if (!byVenueFryer[key]) byVenueFryer[key] = {};
+        if (!byVenueFryer[key][r.date]) byVenueFryer[key][r.date] = [];
+        byVenueFryer[key][r.date].push(r);
+      });
+      Object.values(byVenueFryer).forEach(fryerDates => {
+        const sorted = Object.keys(fryerDates).sort();
+        for (let i = 1; i < sorted.length; i++) {
+          const fresh = fryerDates[sorted[i]].find(r => isFreshOil(r.oilAge));
+          if (!fresh) continue;
+          const prevMax = Math.max(...fryerDates[sorted[i - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v)));
+          if (prevMax >= critAt) count++;
+        }
+      });
+      return count;
+    })();
+
+    // Temp control — group level
+    const groupTempRecs = allGroupRecs.filter(r => r.setTemperature && r.actualTemperature);
+    const groupTempVariances = groupTempRecs.map(r => Math.abs(((parseFloat(r.actualTemperature) - parseFloat(r.setTemperature)) / parseFloat(r.setTemperature)) * 100));
+    const groupSignedTempVariances = groupTempRecs.map(r => ((parseFloat(r.actualTemperature) - parseFloat(r.setTemperature)) / parseFloat(r.setTemperature)) * 100);
+    const groupGoodTempControl = groupTempVariances.filter(v => v <= 7).length;
+    const groupTempControlRate = groupTempRecs.length > 0 ? Math.round((groupGoodTempControl / groupTempRecs.length) * 100) : 0;
+    const groupAvgSignedTempVariance = groupSignedTempVariances.length > 0 ? (groupSignedTempVariances.reduce((a, b) => a + b, 0) / groupSignedTempVariances.length) : 0;
+
+    // Weekly compliance pattern — group level (avg across venues)
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const groupDayStats = {};
+    dayNames.forEach(d => { groupDayStats[d] = { recorded: 0, total: 0 }; });
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const dn = dayNames[d.getDay()];
+      const ds = formatDate(d);
+      // Count how many venues recorded on this date
+      const venuesRecorded = venues.filter(v => {
+        const recs = recordingsByVenue[v.id] || {};
+        return (recs[ds] || []).length > 0;
+      }).length;
+      groupDayStats[dn].total += totalVenues;
+      groupDayStats[dn].recorded += venuesRecorded;
+    }
+
+    // 7-Day TPM Trend — group level (avg TPM across all venues per day)
+    const groupLast7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const ds = formatDate(d);
+      const dayRecs = venues.flatMap(v => {
+        const recs = recordingsByVenue[v.id] || {};
+        return (recs[ds] || []).filter(r => !r.notInUse && r.tpmValue != null);
+      });
+      const avg = dayRecs.length > 0 ? dayRecs.reduce((s, r) => s + r.tpmValue, 0) / dayRecs.length : null;
+      groupLast7.push({ label: d.toLocaleDateString('en-AU', { weekday: 'short' }), avg, count: dayRecs.length });
+    }
+
+    // TPM Recording Health — group level (like admin panel)
+    const getAgeDays = (dateStr) => {
+      if (!dateStr) return 999;
+      const d = new Date(dateStr + 'T00:00:00');
+      return Math.floor((today - d) / 86400000);
+    };
+    const venueLastTpm = venueStats.map(v => {
+      const recs = recordingsByVenue[v.id] || {};
+      const allDates = Object.keys(recs).filter(d => (recs[d] || []).length > 0).sort().reverse();
+      return { ...v, lastTpmDate: allDates[0] || null };
+    });
+    const tpmHealthToday = venueLastTpm.filter(v => getAgeDays(v.lastTpmDate) === 0).length;
+    const tpmHealthYesterday = venueLastTpm.filter(v => getAgeDays(v.lastTpmDate) === 1).length;
+    const tpmHealthOverdue2 = venueLastTpm.filter(v => getAgeDays(v.lastTpmDate) >= 2 && getAgeDays(v.lastTpmDate) < 7).length;
+    const tpmHealthOverdue7 = venueLastTpm.filter(v => getAgeDays(v.lastTpmDate) >= 7).length;
+    const tpmHealthCompliancePct = totalVenues > 0 ? Math.round(((tpmHealthToday + tpmHealthYesterday) / totalVenues) * 100) : 0;
+    const tpmHealthIsHealthy = tpmHealthCompliancePct >= 80;
+    const overdueVenueList = venueLastTpm.filter(v => getAgeDays(v.lastTpmDate) >= 2).sort((a, b) => getAgeDays(b.lastTpmDate) - getAgeDays(a.lastTpmDate));
+
+    return { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList };
   }, [venues, recordingsByVenue, warnAt, critAt]);
 
-  const { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges } = computed;
+  const { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList } = computed;
 
   if (venues.length === 0) {
     return (
@@ -1415,44 +1533,176 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
         </div>
       </>)}
 
-      {/* EXEC SUMMARY — modelled after admin dashboard */}
+      {/* EXEC SUMMARY — venue staff KPIs + admin recording health at group level */}
       {groupView === 'exec' && (
         <div>
-          {/* KPI stat cards — consolidated from both views, no duplicates */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 30 days</p>
+
+          {/* Top KPIs 2x2 — same as venue staff exec summary */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
             {[
-              { label: 'Recorded Today', value: `${recordedToday}/${totalVenues}`, color: recordedToday === totalVenues ? '#10b981' : '#f59e0b', icon: ClipboardList, target: `Target: ${totalVenues}/${totalVenues}` },
-              { label: 'Avg Compliance', value: `${avgCompliance}%`, color: complianceColor(avgCompliance), icon: BarChart3, target: 'Target: 100%' },
-              { label: 'Oil Mgt Rating', value: oilGrade.label, color: oilGrade.color, icon: AlertTriangle, target: 'Target: A+' },
-            ].map(s => (
-              <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <s.icon size={16} color={s.color} />
-                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
-                </div>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', marginTop: '4px' }}>{s.target}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-            {[
-              { label: 'Avg TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : '#f59e0b', icon: Target, target: `Target: <${warnAt}` },
-              { label: 'Filtering Rate', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : COLORS.critical, icon: Filter, target: 'Target: 80%+' },
-              { label: 'Early Changes', value: totalEarlyChanges, color: totalEarlyChanges > 0 ? '#10b981' : '#64748b', icon: Clock, target: 'Target: 100%' },
-            ].map(s => (
-              <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <s.icon size={16} color={s.color} />
-                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
-                </div>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', marginTop: '4px' }}>{s.target}</div>
+              { label: 'COMPLIANCE', value: `${avgCompliance}%`, color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
+              { label: 'REACHED CRITICAL', value: `${groupCritRate}%`, color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
+              { label: 'AVG TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
+              { label: 'FILTERING', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' }
+            ].map(kpi => (
+              <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
+                <div style={{ fontSize: '26px', fontWeight: '700', color: kpi.color, lineHeight: '1', marginBottom: '6px' }}>{kpi.value}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8' }}>target: {kpi.target}</div>
               </div>
             ))}
           </div>
 
-          {/* Insight grid — action items + league tables */}
+          {/* Oil Management Overview */}
+          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>Oil Management</h3>
+              <div style={{ padding: '3px 8px', borderRadius: '5px', background: oilGrade.bg, color: oilGrade.color, fontSize: '11px', fontWeight: '700' }}>{oilGrade.label}</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              {[
+                { val: groupAvgOilAge.toFixed(1), label: 'Avg Oil Life', sub: 'Longer is better*' },
+                { val: groupChangedTooEarly, label: 'Changed Too Early', sub: `Before ${warnAt} TPM` },
+                { val: groupChangedTooLate, label: 'Changed Too Late', sub: `After ${critAt} TPM` },
+                { val: `${groupTempControlRate}%`, label: 'Temp Control', sub: `${groupAvgSignedTempVariance > 0 ? '+' : groupAvgSignedTempVariance < 0 ? '-' : ''}${Math.abs(groupAvgSignedTempVariance).toFixed(1)}% avg` }
+              ].map(item => (
+                <div key={item.label} style={{ textAlign: 'center', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{item.val}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{item.label}</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px', fontWeight: '600' }}>{item.sub}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '10px', fontStyle: 'italic' }}>*Proper filtering and monitoring extends oil life</div>
+          </div>
+
+          {/* TPM Recording Health — from admin panel */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: tpmHealthIsHealthy ? '#d1fae5' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Droplets size={15} color={tpmHealthIsHealthy ? '#059669' : '#dc2626'} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>TPM Recording Health</div>
+                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{totalVenues} venues</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '22px', fontWeight: '700', color: tpmHealthIsHealthy ? '#059669' : '#dc2626', lineHeight: 1 }}>{tpmHealthCompliancePct}%</div>
+                <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', marginTop: '2px' }}>COMPLIANT</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+              {[
+                { label: 'Today', count: tpmHealthToday, color: '#10b981', bg: '#d1fae5' },
+                { label: 'Yesterday', count: tpmHealthYesterday, color: '#3b82f6', bg: '#dbeafe' },
+                { label: '2–6 days', count: tpmHealthOverdue2, color: '#f59e0b', bg: '#fef3c7' },
+                { label: '7+ days', count: tpmHealthOverdue7, color: '#ef4444', bg: '#fee2e2' },
+              ].map(b => (
+                <div key={b.label} style={{ background: b.bg, borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: b.color, lineHeight: 1 }}>{b.count}</div>
+                  <div style={{ fontSize: '10px', fontWeight: '600', color: b.color, marginTop: '4px' }}>{b.label}</div>
+                </div>
+              ))}
+            </div>
+            {overdueVenueList.length > 0 && (
+              <div style={{ marginTop: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
+                {overdueVenueList.slice(0, 6).map((v, i) => {
+                  const days = (() => { if (!v.lastTpmDate) return 999; const d = new Date(v.lastTpmDate + 'T00:00:00'); const t = new Date(); t.setHours(0,0,0,0); return Math.floor((t - d) / 86400000); })();
+                  return (
+                    <div key={v.id} onClick={() => onDrillDown(v.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < Math.min(overdueVenueList.length, 6) - 1 ? '1px solid #f1f5f9' : 'none', cursor: 'pointer' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: days >= 7 ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
+                      <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937' }}>{days}d ago</span>
+                    </div>
+                  );
+                })}
+                {overdueVenueList.length > 6 && (
+                  <div style={{ padding: '6px 0', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>+{overdueVenueList.length - 6} more</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Weekly Compliance Pattern */}
+          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Avg recording rate by day of week across all venues (last 30 days)</p>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+              {dayNames.map(day => {
+                const rate = groupDayStats[day].total > 0 ? Math.round((groupDayStats[day].recorded / groupDayStats[day].total) * 100) : 0;
+                const col = rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#ef4444';
+                return (
+                  <div key={day} style={{ flex: 1, textAlign: 'center' }}>
+                    <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>{day}</div>
+                    <div style={{ height: '50px', background: '#f3f4f6', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${rate}%`, background: col, transition: 'height 0.3s' }} />
+                    </div>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: col, marginTop: '4px' }}>{rate}%</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', fontStyle: 'italic' }}>
+              {(() => {
+                const rates = dayNames.map(d => ({ day: d, rate: groupDayStats[d].total > 0 ? Math.round((groupDayStats[d].recorded / groupDayStats[d].total) * 100) : 0 }));
+                const lowest = rates.reduce((m, c) => c.rate < m.rate ? c : m);
+                const highest = rates.reduce((m, c) => c.rate > m.rate ? c : m);
+                return lowest.rate < 50 ? `${lowest.day} is commonly missed • ${highest.day} has best compliance` : 'Great consistency across all days!';
+              })()}
+            </div>
+          </div>
+
+          {/* 7-Day TPM Trend */}
+          {(() => {
+            const maxT = Math.max(...groupLast7.filter(d => d.avg != null).map(d => d.avg), 30);
+            return (
+              <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>7-Day TPM Trend</h3>
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>
+                  {groupLast7.map((day, i) => (
+                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                      {day.avg != null ? (
+                        <>
+                          <div style={{ fontSize: '10px', fontWeight: '700', color: getTPMStatus(day.avg, warnAt, critAt).color, marginBottom: '3px' }}>{day.avg.toFixed(0)}</div>
+                          <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '4px' }} />
+                        </>
+                      ) : (
+                        <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px' }} />
+                      )}
+                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>{day.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({warnAt})</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({critAt})</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Quality Distribution */}
+          {totalGroupReadings > 0 && (
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Quality Distribution</h3>
+              <div style={{ display: 'flex', gap: '0', marginBottom: '6px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
+                <div style={{ flex: groupGoodCount, background: '#10b981' }} />
+                <div style={{ flex: groupWarnCount, background: '#f59e0b' }} />
+                <div style={{ flex: groupCritCount, background: '#ef4444' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', textAlign: 'center' }}>
+                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((groupGoodCount/totalGroupReadings)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Good ({groupGoodCount})</div></div>
+                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((groupWarnCount/totalGroupReadings)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Warning ({groupWarnCount})</div></div>
+                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{groupCritRate}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Critical ({groupCritCount})</div></div>
+              </div>
+            </div>
+          )}
+
+          {/* League tables */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '8px', marginBottom: '10px' }}>
             {/* Top Performers */}
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
