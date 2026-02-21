@@ -1792,19 +1792,22 @@ export default function GroupManagerView({ currentUser, onLogout }) {
 
         if (settingsData) setSystemSettings(mapSystemSettings(settingsData));
 
-        // Fetch readings for all venues in parallel
+        // Fetch readings for all venues in a single batch query
         if (mappedVenues.length > 0) {
-          const readingsPromises = mappedVenues.map(v =>
-            supabase.from('tpm_readings').select('*').eq('venue_id', v.id)
-          );
-          const readingsResults = await Promise.all(readingsPromises);
+          const venueIds = mappedVenues.map(v => v.id);
+          const { data: allReadings } = await supabase
+            .from('tpm_readings')
+            .select('*')
+            .in('venue_id', venueIds);
 
-          const byVenue = {};
-          readingsResults.forEach((res, idx) => {
-            const venueId = mappedVenues[idx].id;
-            const mapped = (res.data || []).map(mapReading);
-            byVenue[venueId] = buildRecordingMap(mapped);
+          // Group by venue, then use buildRecordingMap per venue
+          const grouped = {};
+          (allReadings || []).map(mapReading).forEach(r => {
+            if (!grouped[r.venueId]) grouped[r.venueId] = [];
+            grouped[r.venueId].push(r);
           });
+          const byVenue = {};
+          venueIds.forEach(id => { byVenue[id] = buildRecordingMap(grouped[id] || []); });
           setRecordingsByVenue(byVenue);
         }
       } catch (err) {
