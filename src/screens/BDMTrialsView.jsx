@@ -1615,8 +1615,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       }}>
         <style>{`
           @keyframes cookersPulse {
-            0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.08); opacity: 1; }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.06); opacity: 0.92; }
           }
           @keyframes dotFlash {
             0%, 20% { opacity: 0; }
@@ -1624,7 +1624,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           }
         `}</style>
         <img src="/images/Cookers drop icon.png" alt="Loading" style={{
-          width: '90px', height: '90px', objectFit: 'contain',
+          width: '100px', height: '100px', objectFit: 'contain',
           animation: 'cookersPulse 1.6s ease-in-out infinite',
         }} />
         <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
