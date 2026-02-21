@@ -773,7 +773,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
       <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '95vw' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
-      <div style={isDesktop && calendarData.hasData ? { flex: '0 0 400px', overflowY: 'auto', maxHeight: '94vh' } : {}}>
+      <div style={isDesktop && calendarData.hasData ? { flex: 1, minWidth: 0, overflowY: 'auto', maxHeight: '94vh' } : {}}>
 
         {/* Header */}
         <div style={{
@@ -791,9 +791,12 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
               <TrialStatusBadge status={venue.trialStatus} />
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', flexShrink: 0, marginLeft: '8px' }}>
-            <X size={18} color="#94a3b8" />
-          </button>
+          {/* X button here only when notes column won't show (mobile / no calendar) */}
+          {!(isDesktop && calendarData.hasData) && (
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', flexShrink: 0, marginLeft: '8px' }}>
+              <X size={18} color="#94a3b8" />
+            </button>
+          )}
         </div>
 
         <div style={{ padding: '12px 16px' }}>
@@ -1095,7 +1098,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         );
 
         return (
-          <div style={{ flex: '0 0 530px', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', overflowX: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
+          <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days • {fryerCount} fryer{fryerCount > 1 ? 's' : ''}</div>
@@ -1113,64 +1116,64 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
             </div>
             <div style={{ padding: '8px 6px', overflowX: dayCount > 7 ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
               {fryerList.map(fn => renderFryerCalendar(fn))}
-              {/* Selected cell detail card */}
-              {selectedCell && selectedCell.recs && selectedCell.recs.length > 0 && (() => {
-                const r = selectedCell.recs[selectedCell.recs.length - 1];
-                const dateObj = new Date(selectedCell.dateStr + 'T00:00:00');
-                const dateLabel = dateObj.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
-                const tpmColor = r.tpmValue <= 14 ? '#059669' : r.tpmValue <= 18 ? '#d97706' : '#dc2626';
-                return (
-                  <div style={{
-                    margin: '8px 0 4px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0',
-                    padding: '10px 12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: '700', color: '#1f2937' }}>
-                        {dateLabel} — Fryer {selectedCell.fryerNum}
-                      </div>
-                      <button onClick={() => setSelectedCell(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}>
-                        <X size={14} color="#94a3b8" />
-                      </button>
+            </div>
+            {/* Selected cell detail card (outside scroll) */}
+            {selectedCell && selectedCell.recs && selectedCell.recs.length > 0 && (() => {
+              const r = selectedCell.recs[selectedCell.recs.length - 1];
+              const dateObj = new Date(selectedCell.dateStr + 'T00:00:00');
+              const dateLabel = dateObj.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+              const tpmColor = r.tpmValue <= 14 ? '#059669' : r.tpmValue <= 18 ? '#d97706' : '#dc2626';
+              return (
+                <div style={{
+                  margin: '4px 6px 4px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0',
+                  padding: '10px 12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#1f2937' }}>
+                      {dateLabel} — Fryer {selectedCell.fryerNum}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                      {[
-                        { label: 'TPM', value: r.tpmValue ?? '—', color: tpmColor },
-                        { label: 'Oil Age', value: r.oilAge ? `${r.oilAge} day${r.oilAge !== 1 ? 's' : ''}` : '—' },
-                        { label: 'Filtered', value: r.filtered === true ? 'Yes' : r.filtered === false ? 'No' : '—', color: r.filtered ? '#059669' : undefined },
-                        { label: 'Set Temp', value: r.setTemperature ? `${r.setTemperature}°` : '—' },
-                        { label: 'Actual Temp', value: r.actualTemperature ? `${r.actualTemperature}°` : '—' },
-                        { label: 'Litres', value: r.litresFilled ? `${r.litresFilled}L` : '—' },
-                      ].map(item => (
-                        <div key={item.label} style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '12px', fontWeight: '700', color: item.color || '#1f2937', lineHeight: 1.2 }}>{item.value}</div>
-                          <div style={{ fontSize: '8px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginTop: '1px' }}>{item.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                    {(r.foodType || r.notes) && (
-                      <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
-                        {r.foodType && <div style={{ fontSize: '10px', color: '#64748b' }}><span style={{ fontWeight: '600' }}>Food:</span> {r.foodType}</div>}
-                        {r.notes && <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}><span style={{ fontWeight: '600' }}>Notes:</span> {r.notes}</div>}
+                    <button onClick={() => setSelectedCell(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                      <X size={14} color="#94a3b8" />
+                    </button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                    {[
+                      { label: 'TPM', value: r.tpmValue ?? '—', color: tpmColor },
+                      { label: 'Oil Age', value: r.oilAge ? `${r.oilAge} day${r.oilAge !== 1 ? 's' : ''}` : '—' },
+                      { label: 'Filtered', value: r.filtered === true ? 'Yes' : r.filtered === false ? 'No' : '—', color: r.filtered ? '#059669' : undefined },
+                      { label: 'Set Temp', value: r.setTemperature ? `${r.setTemperature}°` : '—' },
+                      { label: 'Actual Temp', value: r.actualTemperature ? `${r.actualTemperature}°` : '—' },
+                      { label: 'Litres', value: r.litresFilled ? `${r.litresFilled}L` : '—' },
+                    ].map(item => (
+                      <div key={item.label} style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: item.color || '#1f2937', lineHeight: 1.2 }}>{item.value}</div>
+                        <div style={{ fontSize: '8px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', marginTop: '1px' }}>{item.label}</div>
                       </div>
-                    )}
+                    ))}
                   </div>
-                );
-              })()}
-              {/* Legend */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                {[
-                  { bg: '#d1fae5', label: 'Recorded' },
-                  { bg: '#fee2e2', label: 'Missed' },
-                  { icon: <Filter size={8} color="#1e40af" strokeWidth={2.5} />, label: 'Filtered' },
-                  { icon: <Star size={8} color="#92400e" fill="#92400e" />, label: 'Fresh Oil' },
-                  { icon: <MessageSquare size={8} color="#475569" strokeWidth={2.5} />, label: 'Notes' },
-                ].map(l => (
-                  <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    {l.bg ? <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: l.bg }} /> : l.icon}
-                    <span style={{ fontSize: '9px', color: '#64748b' }}>{l.label}</span>
-                  </div>
-                ))}
-              </div>
+                  {(r.foodType || r.notes) && (
+                    <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
+                      {r.foodType && <div style={{ fontSize: '10px', color: '#64748b' }}><span style={{ fontWeight: '600' }}>Food:</span> {r.foodType}</div>}
+                      {r.notes && <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}><span style={{ fontWeight: '600' }}>Notes:</span> {r.notes}</div>}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: '8px', padding: '4px 6px 8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {[
+                { bg: '#d1fae5', label: 'Recorded' },
+                { bg: '#fee2e2', label: 'Missed' },
+                { icon: <Filter size={8} color="#1e40af" strokeWidth={2.5} />, label: 'Filtered' },
+                { icon: <Star size={8} color="#92400e" fill="#92400e" />, label: 'Fresh Oil' },
+                { icon: <MessageSquare size={8} color="#475569" strokeWidth={2.5} />, label: 'Notes' },
+              ].map(l => (
+                <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  {l.bg ? <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: l.bg }} /> : l.icon}
+                  <span style={{ fontSize: '9px', color: '#64748b' }}>{l.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -1203,23 +1206,29 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         venueReadings.filter(r => r.notes && r.notes.trim()).forEach(r => {
           notes.push({ date: r.readingDate, type: 'reading', text: r.notes.trim(), fryer: r.fryerNumber });
         });
-        // Sort by date
-        notes.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+        // Sort: creation first, then recordings by date, then outcome last
+        const typePriority = { creation: 0, reading: 1, 'outcome-won': 2, 'outcome-lost': 2 };
+        notes.sort((a, b) => (typePriority[a.type] ?? 1) - (typePriority[b.type] ?? 1) || (a.date || '').localeCompare(b.date || ''));
 
         const typeConfig = {
           creation: { label: 'Trial Created', color: '#1a428a', bg: 'rgba(26,66,138,0.06)' },
-          reading: { label: 'Reading Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
-          'outcome-won': { label: 'Won', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
-          'outcome-lost': { label: 'Lost', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
+          reading: { label: 'Recording Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
+          'outcome-won': { label: 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
+          'outcome-lost': { label: 'Unsuccessful', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
         };
 
         return (
-          <div style={{ flex: '0 0 260px', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: 'white' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Notes</div>
-              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{notes.length} note{notes.length !== 1 ? 's' : ''}</div>
+          <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Notes</div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{notes.length} note{notes.length !== 1 ? 's' : ''}</div>
+              </div>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>
+                <X size={16} color="#94a3b8" />
+              </button>
             </div>
-            <div style={{ padding: '8px 12px' }}>
+            <div style={{ padding: '8px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               {notes.length > 0 ? notes.map((n, i) => {
                 const cfg = typeConfig[n.type] || typeConfig.creation;
                 return (
@@ -1238,7 +1247,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
                   </div>
                 );
               }) : (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0' }}>
                   <MessageSquare size={20} color="#cbd5e1" style={{ marginBottom: '6px' }} />
                   <div style={{ fontSize: '11px', color: '#94a3b8' }}>No notes yet</div>
                 </div>
