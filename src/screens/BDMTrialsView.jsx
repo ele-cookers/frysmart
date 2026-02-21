@@ -313,12 +313,13 @@ const SuccessToast = ({ message, onClose }) => {
 // ─────────────────────────────────────────────
 // LOG READING MODAL (no staff name for BDM)
 // ─────────────────────────────────────────────
-const LogReadingModal = ({ venue, currentUser, onClose, onSave }) => {
+const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, initialFryer }) => {
   const fryerCount = venue.fryerCount || 1;
   const fryerNums = Array.from({ length: fryerCount }, (_, i) => i + 1);
-  const [currentFryerIndex, setCurrentFryerIndex] = useState(0);
+  const startIdx = initialFryer ? Math.max(0, fryerNums.indexOf(initialFryer)) : 0;
+  const [currentFryerIndex, setCurrentFryerIndex] = useState(startIdx);
   const currentFryerNumber = fryerNums[currentFryerIndex];
-  const [date] = useState(getTodayString());
+  const [date] = useState(initialDate || getTodayString());
   const [savedReadings, setSavedReadings] = useState([]);
 
   const makeFryer = (fNum) => ({
@@ -716,7 +717,7 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
 // ─────────────────────────────────────────────
 // TRIAL DETAIL MODAL — view + edit trial info
 // ─────────────────────────────────────────────
-const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSave, onOpenLog, onOpenEnd, onOpenClose, onSaveCustomerCode, onPushBack, onManage, VOLUME_BRACKETS }) => {
+const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSave, onOpenLog, onOpenEnd, onOpenClose, onSaveCustomerCode, onPushBack, onManage, onEditReading, VOLUME_BRACKETS }) => {
   const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
   const compOil = oilTypes.find(o => o.id === venue.defaultOil);
   const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
@@ -996,68 +997,77 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         // Use the actual number of days as columns — all days in one row
         const dayCount = days.length;
 
+        // Min width per cell so they don't squish; scroll if more than 7 days
+        const cellMinW = 58;
+        const gridMinW = dayCount > 7 ? dayCount * (cellMinW + 2) : undefined;
+
         const renderFryerCalendar = (fryerNum) => (
           <div key={fryerNum} style={{ marginBottom: fryerNum < fryerCount ? '12px' : '0' }}>
             {fryerCount > 1 && (
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#1a428a', padding: '0 4px 4px', letterSpacing: '0.3px' }}>Fryer {fryerNum}</div>
             )}
-            {/* Day-of-week header row */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px', marginBottom: '1px' }}>
-              {days.map((day, i) => (
-                <div key={i} style={{ textAlign: 'center', fontSize: '8px', fontWeight: '600', color: '#94a3b8', padding: '1px 0' }}>
-                  {day.toLocaleDateString('en-AU', { weekday: 'narrow' })}
+            <div style={{ overflowX: dayCount > 7 ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ minWidth: gridMinW ? `${gridMinW}px` : undefined }}>
+                {/* Day-of-week header row */}
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px', marginBottom: '1px' }}>
+                  {days.map((day, i) => (
+                    <div key={i} style={{ textAlign: 'center', fontSize: '8px', fontWeight: '600', color: '#94a3b8', padding: '1px 0', minWidth: `${cellMinW}px` }}>
+                      {day.toLocaleDateString('en-AU', { weekday: 'narrow' })}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            {/* Day cells — one row */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px' }}>
-              {days.map((day, idx) => {
-                const dateStr = day.toISOString().split('T')[0];
-                const allRecs = readingsByDate[dateStr] || [];
-                const recs = allRecs.filter(r => (r.fryerNumber || 1) === fryerNum);
-                const isFuture = day > today;
-                const isToday = day.getTime() === today.getTime();
-                const latest = recs.length > 0 ? recs[recs.length - 1] : null;
-                const hasFresh = recs.some(r => r.oilAge === 1);
-                const hasFiltered = recs.some(r => r.filtered === true);
-                const hasNotes = recs.some(r => r.notes);
-                const cellBg = isFuture ? 'white' : recs.length > 0 ? '#d1fae5' : '#fee2e2';
-                const tpmColor = latest ? (latest.tpmValue <= 14 ? '#059669' : latest.tpmValue <= 18 ? '#d97706' : '#dc2626') : '#cbd5e1';
-                return (
-                  <div key={idx} style={{
-                    background: cellBg, borderRadius: '5px', padding: '2px 1px', minHeight: '72px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    border: isToday ? '2px solid #1a428a' : '1px solid #e2e8f0',
-                    opacity: isFuture ? 0.4 : 1,
-                  }}>
-                    <div style={{ fontSize: '9px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{day.getDate()}</div>
-                    {latest ? (
-                      <>
-                        <div style={{ fontSize: 'clamp(12px, 3vw, 16px)', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
-                        <div style={{ fontSize: '9px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
-                          {hasFresh ? 'Fresh' : `${latest.oilAge}d`}
-                        </div>
-                        <div style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.2', textAlign: 'center' }}>
-                          {latest.setTemperature && <span>S:{latest.setTemperature}° </span>}
-                          {latest.actualTemperature && <span>A:{latest.actualTemperature}°</span>}
-                        </div>
-                        <div style={{ display: 'flex', gap: '1px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1px' }}>
-                          {hasFiltered && <Filter size={8} color="#1e40af" strokeWidth={2.5} />}
-                          {hasFresh && <Star size={8} color="#92400e" fill="#92400e" />}
-                          {hasNotes && <MessageSquare size={8} color="#475569" strokeWidth={2.5} />}
-                        </div>
-                        {latest.litresFilled > 0 && (
-                          <div style={{ fontSize: '7px', color: '#1f2937', fontWeight: '600', marginTop: '1px' }}>{latest.litresFilled}L</div>
-                        )}
-                      </>
-                    ) : !isFuture ? (
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '9px', color: '#dc2626', fontWeight: '600' }}>Missed</span>
+                {/* Day cells — one row */}
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px' }}>
+                  {days.map((day, idx) => {
+                    const dateStr = day.toISOString().split('T')[0];
+                    const allRecs = readingsByDate[dateStr] || [];
+                    const recs = allRecs.filter(r => (r.fryerNumber || 1) === fryerNum);
+                    const isFuture = day > today;
+                    const isToday = day.getTime() === today.getTime();
+                    const latest = recs.length > 0 ? recs[recs.length - 1] : null;
+                    const hasFresh = recs.some(r => r.oilAge === 1);
+                    const hasFiltered = recs.some(r => r.filtered === true);
+                    const hasNotes = recs.some(r => r.notes);
+                    const cellBg = isFuture ? 'white' : recs.length > 0 ? '#d1fae5' : '#fee2e2';
+                    const tpmColor = latest ? (latest.tpmValue <= 14 ? '#059669' : latest.tpmValue <= 18 ? '#d97706' : '#dc2626') : '#cbd5e1';
+                    const canClick = !isFuture && onEditReading;
+                    return (
+                      <div key={idx} onClick={() => canClick && onEditReading(venue, dateStr, fryerNum)} style={{
+                        background: cellBg, borderRadius: '5px', padding: '2px 1px', minHeight: '72px', minWidth: `${cellMinW}px`,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        border: isToday ? '2px solid #1a428a' : '1px solid #e2e8f0',
+                        opacity: isFuture ? 0.4 : 1, cursor: canClick ? 'pointer' : 'default',
+                      }}>
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{day.getDate()}</div>
+                        {latest ? (
+                          <>
+                            <div style={{ fontSize: 'clamp(12px, 3vw, 16px)', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
+                            <div style={{ fontSize: '9px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
+                              {hasFresh ? 'Fresh' : `${latest.oilAge}d`}
+                            </div>
+                            <div style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.2', textAlign: 'center' }}>
+                              {latest.setTemperature && <span>S:{latest.setTemperature}° </span>}
+                              {latest.actualTemperature && <span>A:{latest.actualTemperature}°</span>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '1px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1px' }}>
+                              {hasFiltered && <Filter size={8} color="#1e40af" strokeWidth={2.5} />}
+                              {hasFresh && <Star size={8} color="#92400e" fill="#92400e" />}
+                              {hasNotes && <MessageSquare size={8} color="#475569" strokeWidth={2.5} />}
+                            </div>
+                            {latest.litresFilled > 0 && (
+                              <div style={{ fontSize: '7px', color: '#1f2937', fontWeight: '600', marginTop: '1px' }}>{latest.litresFilled}L</div>
+                            )}
+                          </>
+                        ) : !isFuture ? (
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '9px', color: '#dc2626', fontWeight: '600' }}>Missed</span>
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -1291,6 +1301,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [sortNewest, setSortNewest] = useState(false); // false = A-Z, true = most recent
   const colFilters = useColumnFilters();
   const [readingModal, setReadingModal] = useState(null);
+  const [editReadingModal, setEditReadingModal] = useState(null); // { venue, date, fryerNum }
   const [closeTrialModal, setCloseTrialModal] = useState(null);
   const [endTrialModal, setEndTrialModal] = useState(null); // venue object when end trial modal is open
   const [selectedTrialVenue, setSelectedTrialVenue] = useState(null); // venue for detail modal
@@ -1562,6 +1573,137 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     } catch (err) {
       console.error('Save reading error:', err);
     }
+  };
+
+  // ── Seed demo data ──
+  const [seeding, setSeeding] = useState(false);
+  const seedDemoData = async () => {
+    if (seeding) return;
+    setSeeding(true);
+    try {
+      // Pick first available cooker oil and competitor oil from loaded state
+      const cookerOil = oilTypes.find(o => !o.competitorId && o.status === 'active');
+      const compOil = oilTypes.find(o => o.competitorId && o.status === 'active');
+      const trialOilId = cookerOil?.id || null;
+      const defaultOilId = compOil?.id || cookerOil?.id || null;
+      const bdmId = currentUser.id;
+      const region = currentUser.region || 'VIC';
+      const today = new Date(); today.setHours(0,0,0,0);
+      const fmt = (d) => d.toISOString().slice(0, 10);
+      const daysAgo = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return d; };
+      const randomTpm = () => Math.floor(Math.random() * 12) + 4; // 4-15
+      const reasonKeys = trialReasons.length > 0 ? trialReasons.filter(r => r.type === 'won').map(r => r.key) : ['price'];
+      const lossReasons = trialReasons.length > 0 ? trialReasons.filter(r => r.type === 'lost').map(r => r.key) : ['no-improvement'];
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const states = ['VIC', 'NSW', 'QLD', 'SA', 'WA'];
+
+      const seedVenues = [
+        // Pipeline (pending) — 3 venues
+        { name: "Mario's Pizzeria",     city: 'Melbourne',  trialStatus: 'pending', fryerCount: 2, currentPrice: 2.80, offeredPrice: 2.45, avgL: 85  },
+        { name: "Harbor Fish Bar",      city: 'Sydney',     trialStatus: 'pending', fryerCount: 1, currentPrice: 3.10, offeredPrice: 2.60, avgL: 45  },
+        { name: "Golden Dragon Chinese", city: 'Brisbane',  trialStatus: 'pending', fryerCount: 3, currentPrice: 2.95, offeredPrice: 2.50, avgL: 120 },
+
+        // Active (in-progress) — 4 venues with different day ranges
+        { name: "Seaside Fish & Chips", city: 'Geelong',   trialStatus: 'in-progress', fryerCount: 2, currentPrice: 3.00, offeredPrice: 2.50, avgL: 90,  startDaysAgo: 5  },
+        { name: "The Fryer's Delight",  city: 'Perth',     trialStatus: 'in-progress', fryerCount: 1, currentPrice: 2.70, offeredPrice: 2.35, avgL: 55,  startDaysAgo: 12 },
+        { name: "Burgertown Grill",     city: 'Adelaide',  trialStatus: 'in-progress', fryerCount: 3, currentPrice: 2.90, offeredPrice: 2.40, avgL: 160, startDaysAgo: 8  },
+        { name: "Noodle Box Central",   city: 'Melbourne',  trialStatus: 'in-progress', fryerCount: 2, currentPrice: 3.20, offeredPrice: 2.55, avgL: 70,  startDaysAgo: 3  },
+
+        // Pending Outcome (completed) — 2 venues
+        { name: "Ocean Breeze Takeaway", city: 'Gold Coast', trialStatus: 'completed', fryerCount: 2, currentPrice: 2.85, offeredPrice: 2.40, avgL: 95,  startDaysAgo: 18, endDaysAgo: 3 },
+        { name: "Betty's Chicken Shop",  city: 'Hobart',    trialStatus: 'completed', fryerCount: 1, currentPrice: 3.05, offeredPrice: 2.55, avgL: 40,  startDaysAgo: 14, endDaysAgo: 1 },
+
+        // Awaiting Cust Code (accepted) — 2 venues
+        { name: "Thai Garden Kitchen",  city: 'Canberra',  trialStatus: 'accepted', fryerCount: 2, currentPrice: 2.75, offeredPrice: 2.30, avgL: 80,  startDaysAgo: 25, endDaysAgo: 8,  outcomeDaysAgo: 5, soldPrice: 2.35, reason: 'won' },
+        { name: "Star Kebab House",     city: 'Darwin',    trialStatus: 'accepted', fryerCount: 1, currentPrice: 3.15, offeredPrice: 2.50, avgL: 50,  startDaysAgo: 20, endDaysAgo: 6,  outcomeDaysAgo: 3, soldPrice: 2.55, reason: 'won' },
+
+        // Successful (won) — 3 venues
+        { name: "Uncle Pete's Fish Bar", city: 'Melbourne', trialStatus: 'won', fryerCount: 2, currentPrice: 2.90, offeredPrice: 2.40, avgL: 110, startDaysAgo: 35, endDaysAgo: 18, outcomeDaysAgo: 15, soldPrice: 2.45, custCode: 'CUST-0042', reason: 'won' },
+        { name: "Crispy Corner",         city: 'Sydney',    trialStatus: 'won', fryerCount: 1, currentPrice: 3.00, offeredPrice: 2.50, avgL: 65,  startDaysAgo: 42, endDaysAgo: 28, outcomeDaysAgo: 25, soldPrice: 2.55, custCode: 'CUST-0058', reason: 'won' },
+        { name: "Flame Grill House",     city: 'Brisbane',  trialStatus: 'won', fryerCount: 3, currentPrice: 2.80, offeredPrice: 2.35, avgL: 145, startDaysAgo: 50, endDaysAgo: 35, outcomeDaysAgo: 32, soldPrice: 2.40, custCode: 'CUST-0073', reason: 'won' },
+
+        // Unsuccessful (lost) — 2 venues
+        { name: "Raj's Curry Palace",   city: 'Adelaide',  trialStatus: 'lost', fryerCount: 2, currentPrice: 2.60, offeredPrice: 2.30, avgL: 75,  startDaysAgo: 30, endDaysAgo: 16, outcomeDaysAgo: 14, reason: 'lost' },
+        { name: "The Donut Shack",      city: 'Perth',     trialStatus: 'lost', fryerCount: 1, currentPrice: 3.25, offeredPrice: 2.70, avgL: 35,  startDaysAgo: 22, endDaysAgo: 10, outcomeDaysAgo: 8,  reason: 'lost' },
+      ];
+
+      const insertedVenues = [];
+      for (const sv of seedVenues) {
+        const trialId = `TRL-${String(venues.length + insertedVenues.length + 1).padStart(4, '0')}`;
+        const prospectCode = `PRS-${String(insertedVenues.filter(v => !v.custCode).length + 1).padStart(4, '0')}`;
+        const venue = {
+          name: sv.name,
+          status: 'trial-only',
+          customer_code: sv.custCode || prospectCode,
+          state: pick(states),
+          fryer_count: sv.fryerCount,
+          default_oil: defaultOilId,
+          bdm_id: bdmId,
+          trial_status: sv.trialStatus,
+          trial_oil_id: trialOilId,
+          trial_notes: `${trialId} | ${sv.city}`,
+          current_price_per_litre: sv.currentPrice,
+          offered_price_per_litre: sv.offeredPrice,
+          volume_bracket: calcVolumeBracket(sv.avgL),
+          current_weekly_avg: sv.avgL,
+          trial_start_date: sv.startDaysAgo ? fmt(daysAgo(sv.startDaysAgo)) : null,
+          trial_end_date: sv.endDaysAgo ? fmt(daysAgo(sv.endDaysAgo)) : null,
+          outcome_date: sv.outcomeDaysAgo ? fmt(daysAgo(sv.outcomeDaysAgo)) : null,
+          trial_reason: sv.reason === 'won' ? pick(reasonKeys) : sv.reason === 'lost' ? pick(lossReasons) : null,
+          sold_price_per_litre: sv.soldPrice || null,
+        };
+        const { data, error } = await supabase.from('venues').insert(venue).select().single();
+        if (error) { console.error('Seed venue error:', error); continue; }
+        insertedVenues.push({ ...sv, dbId: data.id });
+      }
+
+      // Insert TPM readings for venues that have start dates (active, completed, accepted, won, lost)
+      const readingInserts = [];
+      for (const sv of insertedVenues) {
+        if (!sv.startDaysAgo || sv.trialStatus === 'pending') continue;
+        const venueId = sv.dbId;
+        const startDay = sv.startDaysAgo;
+        const endDay = sv.endDaysAgo || 0; // 0 = today
+        for (let d = startDay; d >= endDay; d--) {
+          // Skip some random days to simulate missing readings (20% chance)
+          if (d !== startDay && d !== endDay && Math.random() < 0.2) continue;
+          const date = fmt(daysAgo(d));
+          for (let f = 1; f <= sv.fryerCount; f++) {
+            const tpm = randomTpm();
+            const oilAge = Math.floor(Math.random() * 5) + 1;
+            const litres = Math.round((sv.avgL / 7) * (0.7 + Math.random() * 0.6));
+            readingInserts.push({
+              venue_id: venueId,
+              fryer_number: f,
+              reading_date: date,
+              taken_by: bdmId,
+              oil_age: oilAge,
+              litres_filled: oilAge === 1 ? litres : 0,
+              tpm_value: tpm,
+              set_temperature: 180,
+              actual_temperature: 178 + Math.floor(Math.random() * 5),
+              filtered: Math.random() > 0.3,
+              food_type: pick(FOOD_TYPES),
+              notes: '',
+              not_in_use: false,
+              staff_name: '',
+            });
+          }
+        }
+      }
+      // Insert readings in batches of 50
+      for (let i = 0; i < readingInserts.length; i += 50) {
+        const batch = readingInserts.slice(i, i + 50);
+        const { error } = await supabase.from('tpm_readings').insert(batch);
+        if (error) console.error('Seed readings batch error:', error);
+      }
+
+      await refreshData();
+      setSuccessMsg(`Seeded ${insertedVenues.length} venues & ${readingInserts.length} readings`);
+    } catch (err) {
+      console.error('Seed error:', err);
+    }
+    setSeeding(false);
   };
 
   // ── Create new trial ──
@@ -2184,6 +2326,28 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       : allTrials;
     const dashRows = [...dashFiltered].sort((a, b) => (b.trialStartDate || '').localeCompare(a.trialStartDate || ''));
 
+    // Avg time to decision — days from trial start to outcome date for won+lost trials
+    const decidedTrials = allTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialStartDate && v.outcomeDate);
+    const avgTimeToDecision = decidedTrials.length > 0
+      ? Math.round(decidedTrials.reduce((sum, v) => sum + daysBetween(v.trialStartDate, v.outcomeDate), 0) / decidedTrials.length)
+      : null;
+
+    // Avg XLFry sold price — average soldPricePerLitre across won trials
+    const wonWithPrice = wonTrials.filter(v => v.soldPricePerLitre);
+    const avgSoldPrice = wonWithPrice.length > 0
+      ? (wonWithPrice.reduce((sum, v) => sum + parseFloat(v.soldPricePerLitre), 0) / wonWithPrice.length).toFixed(2)
+      : null;
+
+    // Avg trials per month — total trials / months since first trial
+    const allWithStart = allTrials.filter(v => v.trialStartDate).sort((a, b) => a.trialStartDate.localeCompare(b.trialStartDate));
+    const avgTrialsPerMonth = (() => {
+      if (allWithStart.length === 0) return null;
+      const first = new Date(allWithStart[0].trialStartDate + 'T00:00:00');
+      const now = new Date();
+      const months = Math.max(1, (now.getFullYear() - first.getFullYear()) * 12 + now.getMonth() - first.getMonth());
+      return (allWithStart.length / months).toFixed(1);
+    })();
+
     const statCardStyle = {
       background: 'white', borderRadius: '10px', padding: '14px 16px',
       border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
@@ -2193,15 +2357,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* ── Stats Row ── */}
         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
-          <div style={statCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Active Trials</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6', marginTop: '2px' }}>{activeCount}</div>
-              </div>
-              <Play size={18} color="#93c5fd" />
-            </div>
-          </div>
+          {/* Win Rate — first */}
           <div style={statCardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
@@ -2212,66 +2368,120 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             </div>
             {decidedCount > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{wonCount}W · {lostCount}L</div>}
           </div>
+          {/* Avg Time to Decision */}
           <div style={statCardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Pending Decision</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b', marginTop: '2px' }}>{pendingCount + acceptedCount}</div>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Time to Decision</div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6', marginTop: '2px' }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
               </div>
-              <AlertTriangle size={18} color="#fde68a" />
+              <Clock size={18} color="#93c5fd" />
             </div>
+            {decidedTrials.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{decidedTrials.length} decided</div>}
           </div>
+          {/* Avg Sold Price */}
           <div style={statCardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Pipeline</div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', marginTop: '2px' }}>{pipelineCount}</div>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Sold $/L</div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b', marginTop: '2px' }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
               </div>
-              <Clock size={18} color="#cbd5e1" />
+              <BarChart3 size={18} color="#fde68a" />
             </div>
+            {wonWithPrice.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{wonWithPrice.length} won trial{wonWithPrice.length !== 1 ? 's' : ''}</div>}
+          </div>
+          {/* Avg Trials per Month */}
+          <div style={statCardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Avg Trials / Month</div>
+                <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', marginTop: '2px' }}>{avgTrialsPerMonth || '—'}</div>
+              </div>
+              <Calendar size={18} color="#cbd5e1" />
+            </div>
+            {allWithStart.length > 0 && <div style={{ fontSize: '10px', color: COLORS.textMuted, marginTop: '2px' }}>{allTrials.length} total</div>}
           </div>
         </div>
 
-        {/* ── Awaiting Recording Today ── */}
-        {activeTrials.length > 0 && (
-          <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Calendar size={14} color={awaitingRecording.length > 0 ? '#f59e0b' : '#10b981'} />
-                <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording Today</span>
+        {/* ── Awaiting Recording Today + Awaiting Cust Code — side by side ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '16px' }}>
+          {/* Awaiting Recording Today */}
+          {activeTrials.length > 0 && (
+            <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={13} color={awaitingRecording.length > 0 ? '#f59e0b' : '#10b981'} />
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording</span>
+                </div>
+                <span style={{
+                  fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '10px',
+                  background: awaitingRecording.length > 0 ? '#fef3c7' : '#d1fae5',
+                  color: awaitingRecording.length > 0 ? '#92400e' : '#065f46',
+                }}>{awaitingRecording.length} / {activeTrials.length}</span>
+              </div>
+              {awaitingRecording.length > 0 ? (
+                <div style={{ padding: '6px 14px 10px', maxHeight: '180px', overflowY: 'auto' }}>
+                  {awaitingRecording.map(v => {
+                    const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
+                    return (
+                      <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
+                        display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
+                        borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+                      }}>
+                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text }}>{v.name}</span>
+                          {daysIn != null && <span style={{ fontSize: '10px', color: COLORS.textMuted, marginLeft: '6px' }}>Day {daysIn}</span>}
+                        </div>
+                        <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>No reading</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ padding: '14px', textAlign: 'center', fontSize: '11px', color: '#059669', fontWeight: '500' }}>
+                  <Check size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />All recorded today
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Awaiting Customer Code */}
+          <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ClipboardList size={13} color={acceptedCount > 0 ? '#f59e0b' : '#10b981'} />
+                <span style={{ fontSize: '10px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Cust Code</span>
               </div>
               <span style={{
-                fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '10px',
-                background: awaitingRecording.length > 0 ? '#fef3c7' : '#d1fae5',
-                color: awaitingRecording.length > 0 ? '#92400e' : '#065f46',
-              }}>{awaitingRecording.length} / {activeTrials.length}</span>
+                fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '10px',
+                background: acceptedCount > 0 ? '#ffedd5' : '#d1fae5',
+                color: acceptedCount > 0 ? '#9a3412' : '#065f46',
+              }}>{acceptedCount}</span>
             </div>
-            {awaitingRecording.length > 0 ? (
-              <div style={{ padding: '8px 16px 12px' }}>
-                {awaitingRecording.map(v => {
-                  const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
-                  return (
-                    <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 0',
-                      borderBottom: '1px solid #f8fafc', cursor: 'pointer',
-                    }}>
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ fontSize: '13px', fontWeight: '600', color: COLORS.text }}>{v.name}</span>
-                        {daysIn != null && <span style={{ fontSize: '11px', color: COLORS.textMuted, marginLeft: '8px' }}>Day {daysIn}</span>}
-                      </div>
-                      <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>No reading</span>
+            {acceptedCount > 0 ? (
+              <div style={{ padding: '6px 14px 10px', maxHeight: '180px', overflowY: 'auto' }}>
+                {acceptedTrials.map(v => (
+                  <div key={v.id} onClick={() => { setManageVenueId(v.id); setActiveTab('manage'); }} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
+                    borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+                  }}>
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text }}>{v.name}</span>
+                      {v.outcomeDate && <span style={{ fontSize: '10px', color: COLORS.textMuted, marginLeft: '6px' }}>Won {displayDate(v.outcomeDate)}</span>}
                     </div>
-                  );
-                })}
+                    <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: '600' }}>Needs code</span>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div style={{ padding: '14px 16px', textAlign: 'center', fontSize: '12px', color: '#059669', fontWeight: '500' }}>
-                <Check size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />All active trials have a reading today
+              <div style={{ padding: '14px', textAlign: 'center', fontSize: '11px', color: '#059669', fontWeight: '500' }}>
+                <Check size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />All codes assigned
               </div>
             )}
           </div>
-        )}
+        </div>
 
         {/* ── Status Filter Strip (admin-panel style) ── */}
         <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', overflowX: 'auto' }}>
@@ -2411,6 +2621,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             })()}
           </div>
         )}
+
+        {/* ── Seed Demo Data Button ── */}
+        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
+          <button onClick={seedDemoData} disabled={seeding} style={{
+            padding: '8px 20px', borderRadius: '8px', border: '1px dashed #cbd5e1',
+            background: seeding ? '#f1f5f9' : 'white', color: '#64748b', fontSize: '12px',
+            fontWeight: '600', cursor: seeding ? 'not-allowed' : 'pointer', opacity: seeding ? 0.6 : 1,
+          }}>
+            {seeding ? 'Seeding…' : '+ Seed Demo Data'}
+          </button>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>Adds sample venues & readings across all trial stages</div>
+        </div>
       </div>
     );
   };
@@ -3342,6 +3564,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         />
       )}
 
+      {editReadingModal && (
+        <LogReadingModal
+          venue={editReadingModal.venue}
+          currentUser={currentUser}
+          initialDate={editReadingModal.date}
+          initialFryer={editReadingModal.fryerNum}
+          onClose={() => setEditReadingModal(null)}
+          onSave={handleSaveReading}
+        />
+      )}
+
       {closeTrialModal && (
         <CloseTrialModal
           venue={closeTrialModal.venue}
@@ -3383,6 +3616,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           onSaveCustomerCode={handleSaveCustomerCode}
           onPushBack={handlePushBack}
           onManage={(v) => { setSelectedTrialVenue(null); setManageVenueId(v.id); setActiveTab('manage'); }}
+          onEditReading={(v, dateStr, fryerNum) => { setSelectedTrialVenue(null); setEditReadingModal({ venue: v, date: dateStr, fryerNum }); }}
         />
       )}
 
