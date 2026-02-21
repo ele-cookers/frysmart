@@ -7,31 +7,46 @@ import VenueStaffView from './screens/VenueStaffView';
 import GroupManagerView from './screens/GroupManagerView';
 import BDMTrialsView from './screens/BDMTrialsView';
 
-// Hide the HTML splash screen (lives in index.html, outside React).
-// Fades out over 0.3s then removes from DOM.
-const hideSplash = () => {
-  const el = document.getElementById('splash');
-  if (!el) return;
-  el.classList.add('hidden');
-  setTimeout(() => el.remove(), 350);
-};
+// Cookers drop pulsing loader with sequential dot animation
+const LoadingScreen = () => (
+  <div style={{
+    minHeight: '100vh', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: '24px',
+    paddingBottom: '20vh',
+    background: '#1a428a',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  }}>
+    <style>{`
+      @keyframes cookersPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.06); opacity: 0.92; }
+      }
+      @keyframes dotFlash {
+        0%, 20% { opacity: 0; }
+        40%, 100% { opacity: 1; }
+      }
+    `}</style>
+    <img
+      src="/images/Cookers drop icon.png"
+      alt="Loading"
+      style={{
+        width: '100px', height: '100px', objectFit: 'contain',
+        animation: 'cookersPulse 1.6s ease-in-out infinite',
+      }}
+    />
+    <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
+      Loading
+      <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0s', opacity: 0 }}>.</span>
+      <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.3s', opacity: 0 }}>.</span>
+      <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.6s', opacity: 0 }}>.</span>
+    </div>
+  </div>
+);
 
 function App() {
   const [session, setSession] = useState(undefined); // undefined = loading, null = no session
   const [currentUser, setCurrentUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true); // prevents flash while profile loads
-
-  // Determine if the app is still in a loading state
-  const isAppLoading = session === undefined || (session && userLoading);
-
-  // Hide splash once app is no longer loading (and it's not BDM/GM which handle their own)
-  // For BDM/GM, they hide splash themselves after their data loads.
-  const isBdmOrGm = currentUser?.role === 'bdm' || currentUser?.role === 'group_viewer';
-  useEffect(() => {
-    if (!isAppLoading && !isBdmOrGm) {
-      hideSplash();
-    }
-  }, [isAppLoading, isBdmOrGm]);
 
   // Venue staff state
   const [staffVenue, setStaffVenue] = useState(null);
@@ -257,19 +272,20 @@ function App() {
   };
 
   // Loading state (session loading OR user/profile loading)
-  // Splash screen in index.html stays visible — render nothing here.
   if (session === undefined || (session && userLoading)) {
-    return null;
+    return <LoadingScreen />;
   }
 
-  // No session → login (splash hidden by useEffect above)
+  // No session → login
   if (!session) {
     return <Login />;
   }
 
   // Admin previewing a venue's staff view
   if (previewVenueId && currentUser?.role === 'admin') {
-    if (staffLoading || !staffVenue) return null;
+    if (staffLoading || !staffVenue) {
+      return <LoadingScreen />;
+    }
     return (
       <VenueStaffView
         currentUser={currentUser}
@@ -284,7 +300,9 @@ function App() {
 
   // Venue staff login (via profile.venueId OR venue login match)
   if (currentUser?.venueId || venueLogin) {
-    if (staffLoading || !staffVenue) return null;
+    if (staffLoading || !staffVenue) {
+      return <LoadingScreen />;
+    }
     return (
       <VenueStaffView
         currentUser={currentUser}
@@ -297,17 +315,17 @@ function App() {
     );
   }
 
-  // Group manager view — splash hidden by component after data loads
+  // Group manager view
   if (currentUser?.role === 'group_viewer') {
     return <GroupManagerView currentUser={currentUser} onLogout={handleLogout} />;
   }
 
-  // BDM view — splash hidden by component after data loads
+  // BDM view — dedicated oil trials screen
   if (currentUser?.role === 'bdm') {
     return <BDMTrialsView currentUser={currentUser} onLogout={handleLogout} />;
   }
 
-  // Authenticated → admin panel (splash hidden by useEffect above)
+  // Authenticated → admin panel
   return <FrysmartAdminPanel currentUser={currentUser} onPreviewVenue={handlePreviewVenue} />;
 }
 

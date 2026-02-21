@@ -1595,18 +1595,37 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   const warnAt = systemSettings?.warningThreshold || 18;
   const critAt = systemSettings?.criticalThreshold || 24;
 
-  // Hide the HTML splash screen once data has loaded.
-  useEffect(() => {
-    if (!loading) {
-      const el = document.getElementById('splash');
-      if (el) {
-        el.classList.add('hidden');
-        setTimeout(() => el.remove(), 350);
-      }
-    }
-  }, [loading]);
-
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: '24px',
+        paddingBottom: '20vh', background: '#1a428a',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}>
+        <style>{`
+          @keyframes cookersPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.06); opacity: 0.92; }
+          }
+          @keyframes dotFlash {
+            0%, 20% { opacity: 0; }
+            40%, 100% { opacity: 1; }
+          }
+        `}</style>
+        <img src="/images/Cookers drop icon.png" alt="Loading" style={{
+          width: '100px', height: '100px', objectFit: 'contain',
+          animation: 'cookersPulse 1.6s ease-in-out infinite',
+        }} />
+        <div style={{ color: '#cbd5e1', fontSize: '16px', fontWeight: '500', letterSpacing: '0.5px' }}>
+          Loading
+          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0s', opacity: 0 }}>.</span>
+          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.3s', opacity: 0 }}>.</span>
+          <span style={{ animation: 'dotFlash 1.4s infinite', animationDelay: '0.6s', opacity: 0 }}>.</span>
+        </div>
+      </div>
+    );
+  }
 
   // Tab styles
   const primaryTabStyle = (active) => ({

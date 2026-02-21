@@ -48,7 +48,7 @@ export default function Login() {
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
       padding: '20px',
       boxSizing: 'border-box',
-      overflow: 'hidden',
+      overflow: 'auto',
     }}>
       {/* Logo / branding — outside the white box */}
       <div style={{ textAlign: 'center', marginBottom: '0px', width: '100%', maxWidth: '420px' }}>
