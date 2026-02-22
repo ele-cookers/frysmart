@@ -6,9 +6,11 @@ import {
   mapProfile, unMapProfile,
   mapGroup, unMapGroup,
   mapVenue, unMapVenue,
+  mapTrial, unMapTrial,
   mapReading, unMapReading,
   mapTrialReason, mapVolumeBracket,
   mapSystemSettings, unMapSystemSettings,
+  mergeTrialIntoVenue, splitTrialFromVenue, TRIAL_FIELDS,
 } from '../lib/mappers';
 import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Shield, Droplets, Archive, Filter, Copy, Layers, UserPlus, CheckCircle, BarChart3, Globe, RefreshCw, Zap, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, Palette, RotateCcw, TrendingUp } from 'lucide-react';
 import {
@@ -2362,7 +2364,7 @@ const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTi
   );
 };
 
-const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, theme }) => {
+const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, theme }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [search, setSearch] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
@@ -2941,14 +2943,15 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
 
                     {/* Pending — Start Trial kicks it to in-progress and opens the reading modal */}
                     {t.trialStatus === 'pending' && (
-                      <button onClick={() => {
+                      <button onClick={async () => {
                         const today = new Date().toISOString().split('T')[0];
-                        setVenues(prev => prev.map(v => v.id === t.id ? {
-                          ...v,
-                          trialStatus: 'in-progress',
-                          trialStartDate: v.trialStartDate || today,
-                        } : v));
-                        setAddReadingModal({ ...t, trialStatus: 'in-progress', trialStartDate: t.trialStartDate || today });
+                        const trialUpdates = { trialStatus: 'in-progress', trialStartDate: t.trialStartDate || today };
+                        rawSetVenues(prev => prev.map(v => v.id === t.id ? { ...v, ...trialUpdates } : v));
+                        if (t.trialId) {
+                          const dbTrial = unMapTrial({ ...splitTrialFromVenue(t), ...trialUpdates });
+                          await supabase.from('trials').update(dbTrial).eq('id', t.trialId);
+                        }
+                        setAddReadingModal({ ...t, ...trialUpdates });
                         const fc2 = (t.fryerCount || 1);
                         const initFryers2 = {};
                         for (let i = 1; i <= fc2; i++) initFryers2[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
@@ -3038,15 +3041,19 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => setCloseTrialModal(null)} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
-                  <button disabled={!canSubmit} onClick={() => {
-                    setVenues(prev => prev.map(v => v.id === t.id ? {
-                      ...v,
+                  <button disabled={!canSubmit} onClick={async () => {
+                    const trialUpdates = {
                       trialStatus: outcome,
                       trialReason: closeForm.reason,
                       outcomeDate: closeForm.outcomeDate,
                       trialNotes: closeForm.notes,
-                      ...(isWon ? { soldPricePerLitre: parseFloat(closeForm.soldPrice), status: 'trial-only' } : {}),
-                    } : v));
+                      ...(isWon ? { soldPricePerLitre: parseFloat(closeForm.soldPrice) } : {}),
+                    };
+                    rawSetVenues(prev => prev.map(v => v.id === t.id ? { ...v, ...trialUpdates } : v));
+                    if (t.trialId) {
+                      const dbTrial = unMapTrial({ ...splitTrialFromVenue(t), ...trialUpdates });
+                      await supabase.from('trials').update(dbTrial).eq('id', t.trialId);
+                    }
                     setCloseTrialModal(null);
                   }} style={{ flex: 2, padding: '10px', background: canSubmit ? (isWon ? '#10b981' : '#ef4444') : '#94a3b8', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
                     {isWon ? 'Mark as Won' : 'Mark as Lost'}
@@ -3246,7 +3253,7 @@ const TrialManagement = ({ venues, setVenues, oilTypes, competitors, users, grou
                       const fdata = readingForm.fryers[n] || {};
                       return {
                         id: `r-${Date.now()}-${n}`,
-                        venueId: t.id, fryerNumber: n, readingDate: readingForm.date, takenBy: currentUser?.id || null,
+                        venueId: t.id, trialId: t.trialId || null, fryerNumber: n, readingDate: readingForm.date, takenBy: currentUser?.id || null,
                         notInUse: fdata.notInUse || false,
                         oilAge: fdata.notInUse ? null : parseInt(fdata.oilAge),
                         litresFilled: fdata.notInUse ? 0 : (parseFloat(fdata.litresFilled) || 0),
@@ -4181,6 +4188,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         { data: profileRows },
         { data: groupRows },
         { data: venueRows },
+        { data: trialRows },
         { data: readingRows },
         { data: reasonRows },
         { data: bracketRows },
@@ -4191,6 +4199,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         supabase.from('profiles').select('*'),
         supabase.from('groups').select('*'),
         supabase.from('venues').select('*'),
+        supabase.from('trials').select('*'),
         supabase.from('tpm_readings').select('*'),
         supabase.from('trial_reasons').select('*'),
         supabase.from('volume_brackets').select('*'),
@@ -4201,7 +4210,14 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
       setOilTypes((oilRows || []).map(mapOilType));
       setUsers((profileRows || []).map(mapProfile));
       setGroups((groupRows || []).map(mapGroup));
-      setVenues((venueRows || []).map(mapVenue));
+      // Merge trials into venues so UI continues using venue.trialStatus etc.
+      const mappedVenues = (venueRows || []).map(mapVenue);
+      const mappedTrials = (trialRows || []).map(mapTrial);
+      const mergedVenues = mappedVenues.map(v => {
+        const trial = mappedTrials.find(t => t.venueId === v.id);
+        return mergeTrialIntoVenue(v, trial);
+      });
+      setVenues(mergedVenues);
       setTpmReadings((readingRows || []).map(mapReading));
       setTrialReasons((reasonRows || []).map(mapTrialReason));
       setVolumeBrackets((bracketRows || []).map(mapVolumeBracket));
@@ -4406,7 +4422,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
     switch (activeSection) {
       case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} theme={theme} />;
       case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} theme={theme} />;
-      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} theme={theme} />;
+      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} theme={theme} />;
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [

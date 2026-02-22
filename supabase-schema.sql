@@ -122,29 +122,42 @@ create table venues (
   group_id uuid references groups(id) on delete set null,
   bdm_id uuid references profiles(id) on delete set null,
   last_tpm_date date,
-  trial_status text check (trial_status in ('pending', 'in-progress', 'completed', 'accepted', 'won', 'lost')),
-  trial_start_date date,
-  trial_end_date date,
-  trial_oil_id uuid references oil_types(id) on delete set null,
-  trial_notes text,
-  current_weekly_avg numeric,
-  current_price_per_litre numeric,
-  offered_price_per_litre numeric,
-  outcome_date date,
-  trial_reason text references trial_reasons(key),
-  sold_price_per_litre numeric,
   password text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 -- ============================================================
--- 7. tpm_readings (references venues, profiles)
+-- 7. trials (references venues, oil_types, trial_reasons)
+-- ============================================================
+
+create table trials (
+  id uuid primary key default uuid_generate_v4(),
+  venue_id uuid not null references venues(id) on delete cascade,
+  status text not null default 'pending'
+    check (status in ('pending', 'in-progress', 'completed', 'accepted', 'won', 'lost')),
+  start_date date,
+  end_date date,
+  trial_oil_id uuid references oil_types(id) on delete set null,
+  notes text,
+  current_weekly_avg numeric,
+  current_price_per_litre numeric,
+  offered_price_per_litre numeric,
+  outcome_date date,
+  trial_reason text references trial_reasons(key),
+  sold_price_per_litre numeric,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ============================================================
+-- 8. tpm_readings (references venues, trials, profiles)
 -- ============================================================
 
 create table tpm_readings (
   id uuid primary key default uuid_generate_v4(),
   venue_id uuid not null references venues(id) on delete cascade,
+  trial_id uuid references trials(id) on delete set null,
   fryer_number int not null,
   reading_date date not null,
   reading_number int not null default 1,
@@ -165,7 +178,7 @@ create table tpm_readings (
 );
 
 -- ============================================================
--- 8. Add deferred FK from profiles back to venues and groups
+-- 9. Add deferred FK from profiles back to venues and groups
 -- ============================================================
 
 alter table profiles
@@ -177,7 +190,7 @@ alter table profiles
   foreign key (group_id) references groups(id) on delete set null;
 
 -- ============================================================
--- 9. Auto-update updated_at on competitors
+-- 10. Auto-update updated_at on competitors & trials
 -- ============================================================
 
 create or replace function update_updated_at()
@@ -192,8 +205,12 @@ create trigger competitors_updated_at
   before update on competitors
   for each row execute function update_updated_at();
 
+create trigger trials_updated_at
+  before update on trials
+  for each row execute function update_updated_at();
+
 -- ============================================================
--- 10. Seed config tables
+-- 11. Seed config tables
 -- ============================================================
 
 insert into trial_reasons (key, label, type) values
@@ -233,7 +250,7 @@ insert into system_settings (warning_threshold, critical_threshold, default_frye
 values (18, 24, 4, 7, 'weekly', 7, array['canola','palm','sunflower','soybean','cottonseed','tallow','blend','unknown']);
 
 -- ============================================================
--- 11. Enable Row Level Security on all tables
+-- 12. Enable Row Level Security on all tables
 --     (policies will be added in a later phase)
 -- ============================================================
 
@@ -242,6 +259,7 @@ alter table oil_types enable row level security;
 alter table profiles enable row level security;
 alter table groups enable row level security;
 alter table venues enable row level security;
+alter table trials enable row level security;
 alter table tpm_readings enable row level security;
 alter table trial_reasons enable row level security;
 alter table volume_brackets enable row level security;
@@ -266,6 +284,9 @@ create policy "Allow all for authenticated" on groups
 create policy "Allow all for authenticated" on venues
   for all to authenticated using (true) with check (true);
 
+create policy "Allow all for authenticated" on trials
+  for all to authenticated using (true) with check (true);
+
 create policy "Allow all for authenticated" on tpm_readings
   for all to authenticated using (true) with check (true);
 
@@ -282,17 +303,45 @@ create policy "Allow update for authenticated" on system_settings
   for update to authenticated using (true) with check (true);
 
 -- ============================================================
--- 12. Migration: fix live DB to add 'accepted' trial status
---     Run this on existing databases that were created before
---     the 'accepted' status was added to the CHECK constraint.
+-- 13. Migration: extract trials from venues into trials table
+--     Run this on existing databases to migrate test data.
 -- ============================================================
 
--- ALTER TABLE venues DROP CONSTRAINT venues_trial_status_check;
--- ALTER TABLE venues ADD CONSTRAINT venues_trial_status_check
---   CHECK (trial_status IN ('pending', 'in-progress', 'completed', 'accepted', 'won', 'lost'));
+-- Step 1: Create trials table (already in schema above for fresh installs)
+-- Step 2: Add trial_id to tpm_readings (already in schema above for fresh installs)
+-- Step 3: Migrate existing trial data:
+
+-- INSERT INTO trials (venue_id, status, start_date, end_date, trial_oil_id,
+--   notes, current_weekly_avg, current_price_per_litre, offered_price_per_litre,
+--   outcome_date, trial_reason, sold_price_per_litre)
+-- SELECT id, trial_status, trial_start_date, trial_end_date, trial_oil_id,
+--   trial_notes, current_weekly_avg, current_price_per_litre, offered_price_per_litre,
+--   outcome_date, trial_reason, sold_price_per_litre
+-- FROM venues
+-- WHERE trial_status IS NOT NULL;
+
+-- Step 4: Backfill trial_id on existing readings:
+-- UPDATE tpm_readings r SET trial_id = t.id
+-- FROM trials t
+-- WHERE r.venue_id = t.venue_id
+--   AND r.reading_date >= t.start_date
+--   AND (t.end_date IS NULL OR r.reading_date <= t.end_date);
+
+-- Step 5: Drop old trial columns from venues:
+-- ALTER TABLE venues DROP COLUMN IF EXISTS trial_status;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS trial_start_date;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS trial_end_date;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS trial_oil_id;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS trial_notes;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS current_weekly_avg;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS current_price_per_litre;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS offered_price_per_litre;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS outcome_date;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS trial_reason;
+-- ALTER TABLE venues DROP COLUMN IF EXISTS sold_price_per_litre;
 
 -- ============================================================
--- 13. Migration: add performance target columns to system_settings
+-- 14. Migration: add performance target columns to system_settings
 -- ============================================================
 
 -- ALTER TABLE system_settings ADD COLUMN target_win_rate numeric NOT NULL DEFAULT 75;

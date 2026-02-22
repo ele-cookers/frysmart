@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { mapVenue, unMapVenue, mapOilType, mapCompetitor, mapReading, unMapReading, mapTrialReason, mapSystemSettings } from '../lib/mappers';
+import { mapVenue, unMapVenue, mapTrial, unMapTrial, mapOilType, mapCompetitor, mapReading, unMapReading, mapTrialReason, mapSystemSettings, mergeTrialIntoVenue, splitTrialFromVenue, TRIAL_FIELDS } from '../lib/mappers';
 import {
   TRIAL_STATUS_COLORS, OIL_TIER_COLORS, COMPETITOR_TIER_COLORS,
   STATE_BADGE_COLORS, VOLUME_BRACKET_COLORS, getThemeColors,
@@ -359,6 +359,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
     if (!canSave) return;
     const reading = {
       venueId: venue.id,
+      trialId: venue.trialId || null,
       fryerNumber: fryer.fryerNumber,
       readingDate: date,
       readingNumber: 1,
@@ -1507,12 +1508,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const loadData = async () => {
       setLoading(true);
       try {
-        const { data: venueData } = await supabase
-          .from('venues')
-          .select('*')
-          .eq('status', 'trial-only');
+        // Load venues + trials in parallel, then merge
+        const [{ data: venueData }, { data: trialData }] = await Promise.all([
+          supabase.from('venues').select('*').eq('status', 'trial-only'),
+          supabase.from('trials').select('*'),
+        ]);
         const mappedVenues = (venueData || []).map(mapVenue);
-        setVenues(mappedVenues);
+        const mappedTrials = (trialData || []).map(mapTrial);
+        const merged = mappedVenues.map(v => {
+          const trial = mappedTrials.find(t => t.venueId === v.id);
+          return mergeTrialIntoVenue(v, trial);
+        });
+        setVenues(merged);
 
         const { data: oilData } = await supabase.from('oil_types').select('*');
         setOilTypes((oilData || []).map(mapOilType));
@@ -1526,8 +1533,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const { data: settingsData } = await supabase.from('system_settings').select('*').single();
         if (settingsData) setSystemSettings(mapSystemSettings(settingsData));
 
-        if (mappedVenues.length > 0) {
-          const venueIds = mappedVenues.map(v => v.id);
+        if (merged.length > 0) {
+          const venueIds = merged.map(v => v.id);
           const { data: readingData } = await supabase
             .from('tpm_readings')
             .select('*')
@@ -1545,12 +1552,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ── Refresh helper ──
   const refreshData = async () => {
     try {
-      const { data: venueData } = await supabase.from('venues').select('*').eq('status', 'trial-only');
+      const [{ data: venueData }, { data: trialData }] = await Promise.all([
+        supabase.from('venues').select('*').eq('status', 'trial-only'),
+        supabase.from('trials').select('*'),
+      ]);
       const mappedVenues = (venueData || []).map(mapVenue);
-      setVenues(mappedVenues);
+      const mappedTrials = (trialData || []).map(mapTrial);
+      const merged = mappedVenues.map(v => {
+        const trial = mappedTrials.find(t => t.venueId === v.id);
+        return mergeTrialIntoVenue(v, trial);
+      });
+      setVenues(merged);
 
-      if (mappedVenues.length > 0) {
-        const venueIds = mappedVenues.map(v => v.id);
+      if (merged.length > 0) {
+        const venueIds = merged.map(v => v.id);
         const { data: readingData } = await supabase.from('tpm_readings').select('*').in('venue_id', venueIds);
         setTpmReadings((readingData || []).map(mapReading));
       }
@@ -1661,10 +1676,34 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ── Venue mutation helpers ──
   const updateVenue = async (venueId, updates) => {
     setSaving(true);
+    // Optimistic UI update (merged object)
     setVenues(prev => prev.map(v => v.id === venueId ? { ...v, ...updates } : v));
     try {
-      const dbUpdates = unMapVenue({ ...venues.find(v => v.id === venueId), ...updates });
-      await supabase.from('venues').update(dbUpdates).eq('id', venueId);
+      const venue = venues.find(v => v.id === venueId);
+
+      // Split updates: venue fields vs trial fields
+      const venueUpdates = {};
+      const trialUpdates = {};
+      for (const [key, val] of Object.entries(updates)) {
+        if (TRIAL_FIELDS.includes(key)) {
+          trialUpdates[key] = val;
+        } else {
+          venueUpdates[key] = val;
+        }
+      }
+
+      // Update venues table if venue fields changed
+      if (Object.keys(venueUpdates).length > 0) {
+        const dbVenue = unMapVenue({ ...venue, ...venueUpdates });
+        await supabase.from('venues').update(dbVenue).eq('id', venueId);
+      }
+
+      // Update trials table if trial fields changed
+      if (Object.keys(trialUpdates).length > 0 && venue?.trialId) {
+        const currentTrial = splitTrialFromVenue(venue);
+        const dbTrial = unMapTrial({ ...currentTrial, ...trialUpdates });
+        await supabase.from('trials').update(dbTrial).eq('id', venue.trialId);
+      }
     } catch (err) {
       console.error('Update venue error:', err);
     }
@@ -1748,6 +1787,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const trialId = nextTrialId;
       const custCode = trialType === 'existing' ? newTrialForm.customerCode.trim() : nextProspectCode;
 
+      // 1. Insert venue (venue-only fields)
       const newVenue = {
         name: newTrialForm.venueName.trim(),
         status: 'trial-only',
@@ -1756,20 +1796,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         fryerCount: parseInt(newTrialForm.fryerCount) || 1,
         defaultOil: newTrialForm.defaultOil || null,
         bdmId: currentUser.id,
+        volumeBracket: calcVolumeBracket(newTrialForm.avgLitresPerWeek),
+      };
+      const dbVenue = unMapVenue(newVenue);
+      const { data: venueRow, error: venueErr } = await supabase.from('venues').insert(dbVenue).select().single();
+      if (venueErr) throw venueErr;
+
+      // 2. Insert trial linked to that venue
+      const newTrialObj = {
+        venueId: venueRow.id,
         trialStatus: 'pending',
         trialOilId: newTrialForm.trialOilId,
         trialNotes: `${trialId}${newTrialForm.city ? ` | ${newTrialForm.city.trim()}` : ''}${newTrialForm.notes ? `\n${newTrialForm.notes}` : ''}`,
         currentPricePerLitre: parseFloat(newTrialForm.currentPrice),
         offeredPricePerLitre: parseFloat(newTrialForm.offeredPrice),
-        volumeBracket: calcVolumeBracket(newTrialForm.avgLitresPerWeek),
         currentWeeklyAvg: parseFloat(newTrialForm.avgLitresPerWeek),
       };
-      const dbVenue = unMapVenue(newVenue);
-      const { data, error } = await supabase.from('venues').insert(dbVenue).select().single();
-      if (error) throw error;
-      if (data) {
-        setVenues(prev => [...prev, mapVenue(data)]);
-      }
+      const dbTrial = unMapTrial(newTrialObj);
+      const { data: trialRow, error: trialErr } = await supabase.from('trials').insert(dbTrial).select().single();
+      if (trialErr) throw trialErr;
+
+      // 3. Merge for local state
+      const mappedVenue = mapVenue(venueRow);
+      const mappedTrial = trialRow ? mapTrial(trialRow) : null;
+      const merged = mergeTrialIntoVenue(mappedVenue, mappedTrial);
+      setVenues(prev => [...prev, merged]);
 
       setNewTrialForm({
         customerCode: '', venueName: '', city: '',

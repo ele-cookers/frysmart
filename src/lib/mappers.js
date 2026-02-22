@@ -101,7 +101,7 @@ export const unMapGroup = (g) => ({
   password: g.password || null,
 });
 
-// ── venues ──
+// ── venues (no trial fields — those live in trials table now) ──
 export const mapVenue = (r) => ({
   id: r.id,
   name: r.name,
@@ -114,17 +114,6 @@ export const mapVenue = (r) => ({
   groupId: r.group_id ?? '',
   bdmId: r.bdm_id ?? '',
   lastTpmDate: r.last_tpm_date,
-  trialStatus: r.trial_status,
-  trialStartDate: r.trial_start_date,
-  trialEndDate: r.trial_end_date,
-  trialOilId: r.trial_oil_id ?? '',
-  trialNotes: r.trial_notes ?? '',
-  currentWeeklyAvg: r.current_weekly_avg,
-  currentPricePerLitre: r.current_price_per_litre,
-  offeredPricePerLitre: r.offered_price_per_litre,
-  outcomeDate: r.outcome_date,
-  trialReason: r.trial_reason ?? '',
-  soldPricePerLitre: r.sold_price_per_litre,
   password: r.password ?? '',
   createdAt: r.created_at,
   updatedAt: r.updated_at,
@@ -141,24 +130,70 @@ export const unMapVenue = (v) => ({
   group_id: v.groupId || null,
   bdm_id: v.bdmId || null,
   last_tpm_date: v.lastTpmDate || null,
-  trial_status: v.trialStatus || null,
-  trial_start_date: v.trialStartDate || null,
-  trial_end_date: v.trialEndDate || null,
-  trial_oil_id: v.trialOilId || null,
-  trial_notes: v.trialNotes || null,
-  current_weekly_avg: v.currentWeeklyAvg ?? null,
-  current_price_per_litre: v.currentPricePerLitre ?? null,
-  offered_price_per_litre: v.offeredPricePerLitre ?? null,
-  outcome_date: v.outcomeDate || null,
-  trial_reason: v.trialReason || null,
-  sold_price_per_litre: v.soldPricePerLitre ?? null,
   password: v.password || null,
 });
+
+// ── trials ──
+export const mapTrial = (r) => ({
+  trialId: r.id,
+  venueId: r.venue_id,
+  trialStatus: r.status,
+  trialStartDate: r.start_date,
+  trialEndDate: r.end_date,
+  trialOilId: r.trial_oil_id ?? '',
+  trialNotes: r.notes ?? '',
+  currentWeeklyAvg: r.current_weekly_avg,
+  currentPricePerLitre: r.current_price_per_litre,
+  offeredPricePerLitre: r.offered_price_per_litre,
+  outcomeDate: r.outcome_date,
+  trialReason: r.trial_reason ?? '',
+  soldPricePerLitre: r.sold_price_per_litre,
+  trialCreatedAt: r.created_at,
+});
+
+export const unMapTrial = (t) => ({
+  venue_id: t.venueId,
+  status: t.trialStatus || null,
+  start_date: t.trialStartDate || null,
+  end_date: t.trialEndDate || null,
+  trial_oil_id: t.trialOilId || null,
+  notes: t.trialNotes || null,
+  current_weekly_avg: t.currentWeeklyAvg ?? null,
+  current_price_per_litre: t.currentPricePerLitre ?? null,
+  offered_price_per_litre: t.offeredPricePerLitre ?? null,
+  outcome_date: t.outcomeDate || null,
+  trial_reason: t.trialReason || null,
+  sold_price_per_litre: t.soldPricePerLitre ?? null,
+});
+
+// ── Trial ↔ Venue merge/split helpers ──
+// These let existing UI code continue using venue.trialStatus etc.
+export const TRIAL_FIELDS = [
+  'trialId', 'trialStatus', 'trialStartDate', 'trialEndDate',
+  'trialOilId', 'trialNotes', 'currentWeeklyAvg', 'currentPricePerLitre',
+  'offeredPricePerLitre', 'outcomeDate', 'trialReason', 'soldPricePerLitre',
+  'trialCreatedAt',
+];
+
+export const mergeTrialIntoVenue = (venue, trial) => {
+  if (!trial) return venue;
+  const merged = { ...venue };
+  TRIAL_FIELDS.forEach(f => { if (trial[f] !== undefined) merged[f] = trial[f]; });
+  return merged;
+};
+
+export const splitTrialFromVenue = (merged) => {
+  const trial = {};
+  TRIAL_FIELDS.forEach(f => { trial[f] = merged[f]; });
+  trial.venueId = merged.id;
+  return trial;
+};
 
 // ── tpm_readings ──
 export const mapReading = (r) => ({
   id: r.id,
   venueId: r.venue_id,
+  trialId: r.trial_id ?? null,
   fryerNumber: r.fryer_number,
   readingDate: r.reading_date,
   readingNumber: r.reading_number ?? 1,
@@ -177,6 +212,7 @@ export const mapReading = (r) => ({
 
 export const unMapReading = (rd) => ({
   venue_id: rd.venueId,
+  trial_id: rd.trialId || null,
   fryer_number: rd.fryerNumber,
   reading_date: rd.readingDate,
   reading_number: rd.readingNumber ?? 1,
