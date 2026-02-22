@@ -1221,6 +1221,13 @@ const DayView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
                 )}
               </div>
 
+              {/* Empty fryer body */}
+              {!latestReading && (
+                <div style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>No recordings for this day</div>
+                </div>
+              )}
+
               {/* Reading details — always visible, no accordion toggle */}
               {latestReading && (
                 <div style={{ padding: '12px 16px' }}>
@@ -1571,7 +1578,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
 
             return (
               <div key={idx} onClick={() => hasAnyRec && setModalDate(date)} style={{
-                position: 'relative', width: '100%', paddingBottom: '220%',
+                position: 'relative', width: '100%', paddingBottom: '280%',
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                 borderBottom: '1px solid #e2e8f0'
@@ -1993,7 +2000,7 @@ const SummaryView = ({ readings }) => {
 
   if (allActive.length === 0) {
     return (
-      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '20px', textAlign: 'center' }}>
+      <div style={{ margin: '40px auto', padding: '20px', textAlign: 'center' }}>
         <BarChart3 size={48} color="#cbd5e1" style={{ marginBottom: '16px' }} />
         <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', marginBottom: '8px' }}>No Data Yet</h2>
         <p style={{ color: '#94a3b8', fontSize: '14px' }}>Start recording TPM to see executive insights.</p>
@@ -2111,7 +2118,7 @@ const SummaryView = ({ readings }) => {
   }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
+    <div style={{ margin: '0 auto', padding: '16px' }}>
       <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>Executive Summary</h2>
       <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>{allActive.length} readings analyzed • Last 30 days</p>
 
@@ -2331,7 +2338,7 @@ const DashboardView = ({ readings }) => {
 
   if (allActive.length === 0) {
     return (
-      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '20px', textAlign: 'center' }}>
+      <div style={{ margin: '40px auto', padding: '20px', textAlign: 'center' }}>
         <BarChart3 size={48} color="#cbd5e1" style={{ marginBottom: '16px' }} />
         <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', marginBottom: '8px' }}>No Data Yet</h2>
         <p style={{ color: '#94a3b8', fontSize: '14px' }}>Start recording TPM to see your stats!</p>
@@ -2403,7 +2410,7 @@ const DashboardView = ({ readings }) => {
   const avgTPM = (allActive.reduce((s, r) => s + r.tpmValue, 0) / allActive.length).toFixed(1);
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
+    <div style={{ margin: '0 auto', padding: '16px' }}>
       <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Dashboard</h2>
 
       {/* Achievement banner */}
@@ -2942,10 +2949,10 @@ export default function VenueStaffView({
               />
             )}
             {currentView === 'summary' && (
-              <SummaryView readings={readings} />
+              <div style={{ maxWidth: '600px', margin: '0 auto' }}><SummaryView readings={readings} /></div>
             )}
             {currentView === 'dashboard' && (
-              <DashboardView readings={readings} />
+              <div style={{ maxWidth: '600px', margin: '0 auto' }}><DashboardView readings={readings} /></div>
             )}
           </div>
           </div>
@@ -3039,10 +3046,10 @@ export default function VenueStaffView({
               />
             )}
             {currentView === 'summary' && (
-              <SummaryView readings={readings} />
+              <div style={{ maxWidth: '600px', margin: '0 auto' }}><SummaryView readings={readings} /></div>
             )}
             {currentView === 'dashboard' && (
-              <DashboardView readings={readings} />
+              <div style={{ maxWidth: '600px', margin: '0 auto' }}><DashboardView readings={readings} /></div>
             )}
           </div>
         </>

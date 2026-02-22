@@ -3975,7 +3975,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   }, [activeSection]);
 
   const navGroups = [
-    { key: 'overview', label: 'Dashboard', icon: Rocket },
+    { key: 'overview', label: 'Admin Overview', icon: Rocket },
     { key: 'management', label: 'Management', icon: Building, children: [
       { key: 'users', label: 'Users', icon: Users },
       { key: 'groups', label: 'Groups', icon: Layers },
@@ -4006,8 +4006,6 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         const awaitingStart = allTrials.filter(v => v.trialStatus === 'pending');
         const awaitingRecording = allTrials.filter(v => v.trialStatus === 'in-progress' && !tpmReadings.some(r => r.venueId === v.id && r.readingDate === todayStr));
         const awaitingDecision = allTrials.filter(v => v.trialStatus === 'completed');
-        const awaitingCustCode = allTrials.filter(v => v.trialStatus === 'accepted');
-
         const getBdmName = (v) => { const u = users.find(u => u.id === v.bdmId); return u ? u.name : '—'; };
 
         const OverviewCard = ({ title, icon: Icon, iconColor, items, emptyMsg }) => {
@@ -4051,12 +4049,116 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             </div>
 
             {/* Status overview cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
               <OverviewCard title="Awaiting Start" icon={Clock} iconColor="#64748b" items={awaitingStart} emptyMsg="No trials awaiting start" />
               <OverviewCard title="Awaiting Recording Today" icon={ClipboardList} iconColor="#1e40af" items={awaitingRecording} emptyMsg="All active trials recorded today" />
               <OverviewCard title="Awaiting Decision" icon={Target} iconColor="#d97706" items={awaitingDecision} emptyMsg="No trials awaiting decision" />
-              <OverviewCard title="Awaiting Customer Code" icon={CheckCircle} iconColor="#059669" items={awaitingCustCode} emptyMsg="No trials awaiting customer code" />
             </div>
+
+            {/* TPM Recording Health Check */}
+            {(() => {
+              const activeVenuesForTpm = venues.filter(v => v.status === 'active');
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const getAgeDays = (dateStr) => {
+                if (!dateStr) return 999;
+                const d = new Date(dateStr + 'T00:00:00');
+                return Math.floor((today - d) / 86400000);
+              };
+              const recordedToday = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) === 0);
+              const recordedYesterday = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) === 1);
+              const overdue2 = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) >= 2 && getAgeDays(v.lastTpmDate) < 7);
+              const overdue7 = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) >= 7);
+              const totalActive = activeVenuesForTpm.length;
+              const compliancePct = totalActive > 0 ? Math.round(((recordedToday.length + recordedYesterday.length) / totalActive) * 100) : 0;
+              const isHealthy = compliancePct >= 80;
+
+              const barData = [
+                { label: 'Today', count: recordedToday.length, color: '#10b981', bg: '#d1fae5' },
+                { label: 'Yesterday', count: recordedYesterday.length, color: '#3b82f6', bg: '#dbeafe' },
+                { label: '2–6 days', count: overdue2.length, color: '#f59e0b', bg: '#fef3c7' },
+                { label: '7+ days', count: overdue7.length, color: '#ef4444', bg: '#fee2e2' },
+              ];
+
+              const overdueVenues = activeVenuesForTpm
+                .filter(v => getAgeDays(v.lastTpmDate) >= 2)
+                .sort((a, b) => getAgeDays(b.lastTpmDate) - getAgeDays(a.lastTpmDate));
+              const getOverdueUserName = makeGetUserName(users, true);
+              const getOverdueNam = (v) => {
+                if (!v.groupId) return null;
+                const g = groups.find(g => g.id === v.groupId);
+                return g?.namId ? getOverdueUserName(g.namId) : null;
+              };
+              const getOverdueBdm = (v) => v.bdmId ? getOverdueUserName(v.bdmId) : null;
+
+              return (
+                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: isHealthy ? '#d1fae5' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Droplets size={15} color={isHealthy ? '#059669' : '#dc2626'} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>TPM Recording Health</div>
+                        <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{totalActive} active calendars</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '22px', fontWeight: '700', color: isHealthy ? '#059669' : '#dc2626', lineHeight: 1 }}>{compliancePct}%</div>
+                      <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', marginTop: '2px' }}>COMPLIANT</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                    {barData.map(b => (
+                      <div key={b.label} style={{ background: b.bg, borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: b.color, lineHeight: 1 }}>{b.count}</div>
+                        <div style={{ fontSize: '10px', fontWeight: '600', color: b.color, marginTop: '4px' }}>{b.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {overdueVenues.length > 0 && (
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
+                      <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'auto' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '6px 2fr 1fr 1fr 1fr 1fr', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
+                          <span />
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px' }}>VENUE</span>
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>STATE</span>
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>BDM</span>
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'right' }}>LAST RECORDING</span>
+                        </div>
+                        {overdueVenues.slice(0, 8).map((v, i) => {
+                          const days = getAgeDays(v.lastTpmDate);
+                          const isSevere = days >= 7;
+                          const bdm = getOverdueBdm(v);
+                          const nam = getOverdueNam(v);
+                          return (
+                            <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 2fr 1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
+                              <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
+                              <div style={{ display: 'flex', justifyContent: 'center' }}><StateBadge theme={theme} state={v.state} /></div>
+                              <div style={{ textAlign: 'center' }}>
+                                {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
+                                  : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
+                              </div>
+                              <div style={{ textAlign: 'center' }}>
+                                {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
+                                  : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', textAlign: 'right' }}>{days}d ago</span>
+                            </div>
+                          );
+                        })}
+                        {overdueVenues.length > 8 && (
+                          <div style={{ padding: '6px 12px', fontSize: '11px', color: '#64748b', textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>+{overdueVenues.length - 8} more</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         );
       })();
@@ -5163,112 +5265,6 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             );
           })()}
 
-          {/* TPM Recording Health Check */}
-          {(() => {
-            const activeVenuesForTpm = venues.filter(v => v.status === 'active');
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const getAgeDays = (dateStr) => {
-              if (!dateStr) return 999;
-              const d = new Date(dateStr + 'T00:00:00');
-              return Math.floor((today - d) / 86400000);
-            };
-            const recordedToday = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) === 0);
-            const recordedYesterday = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) === 1);
-            const overdue2 = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) >= 2 && getAgeDays(v.lastTpmDate) < 7);
-            const overdue7 = activeVenuesForTpm.filter(v => getAgeDays(v.lastTpmDate) >= 7);
-            const totalActive = activeVenuesForTpm.length;
-            const compliancePct = totalActive > 0 ? Math.round(((recordedToday.length + recordedYesterday.length) / totalActive) * 100) : 0;
-            const isHealthy = compliancePct >= 80;
-
-            const barData = [
-              { label: 'Today', count: recordedToday.length, color: '#10b981', bg: '#d1fae5' },
-              { label: 'Yesterday', count: recordedYesterday.length, color: '#3b82f6', bg: '#dbeafe' },
-              { label: '2–6 days', count: overdue2.length, color: '#f59e0b', bg: '#fef3c7' },
-              { label: '7+ days', count: overdue7.length, color: '#ef4444', bg: '#fee2e2' },
-            ];
-
-            // Build overdue venue list
-            const overdueVenues = activeVenuesForTpm
-              .filter(v => getAgeDays(v.lastTpmDate) >= 2)
-              .sort((a, b) => getAgeDays(b.lastTpmDate) - getAgeDays(a.lastTpmDate));
-            const getOverdueUserName = makeGetUserName(users, true);
-            const getOverdueNam = (v) => {
-              if (!v.groupId) return null;
-              const g = groups.find(g => g.id === v.groupId);
-              return g?.namId ? getOverdueUserName(g.namId) : null;
-            };
-            const getOverdueBdm = (v) => v.bdmId ? getOverdueUserName(v.bdmId) : null;
-
-            return (
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: isHealthy ? '#d1fae5' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Droplets size={15} color={isHealthy ? '#059669' : '#dc2626'} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>TPM Recording Health</div>
-                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{totalActive} active calendars</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '22px', fontWeight: '700', color: isHealthy ? '#059669' : '#dc2626', lineHeight: 1 }}>{compliancePct}%</div>
-                    <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', marginTop: '2px' }}>COMPLIANT</div>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                  {barData.map(b => (
-                    <div key={b.label} style={{ background: b.bg, borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '700', color: b.color, lineHeight: 1 }}>{b.count}</div>
-                      <div style={{ fontSize: '10px', fontWeight: '600', color: b.color, marginTop: '4px' }}>{b.label}</div>
-                    </div>
-                  ))}
-                </div>
-                {overdueVenues.length > 0 && (
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
-                    <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'auto' }}>
-                      {/* Header row */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '6px 2fr 0.8fr 0.8fr 0.8fr 1fr', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
-                        <span />
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px' }}>VENUE</span>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>STATE</span>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>BDM</span>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'right' }}>LAST RECORDING</span>
-                      </div>
-                      {overdueVenues.slice(0, 8).map((v, i) => {
-                        const days = getAgeDays(v.lastTpmDate);
-                        const isSevere = days >= 7;
-                        const bdm = getOverdueBdm(v);
-                        const nam = getOverdueNam(v);
-                        return (
-                          <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 2fr 0.8fr 0.8fr 0.8fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
-                            <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
-                            <div style={{ display: 'flex', justifyContent: 'center' }}><StateBadge theme={theme} state={v.state} /></div>
-                            <div style={{ textAlign: 'center' }}>
-                              {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
-                                : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                              {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
-                                : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
-                            </div>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', textAlign: 'right' }}>{days}d ago</span>
-                          </div>
-                        );
-                      })}
-                      {overdueVenues.length > 8 && (
-                        <div style={{ padding: '6px 12px', fontSize: '11px', color: '#64748b', textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>+{overdueVenues.length - 8} more</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
         </div>
       );
     }

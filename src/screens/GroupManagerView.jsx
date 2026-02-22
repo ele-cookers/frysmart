@@ -1771,7 +1771,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   // Navigation
   const [primaryTab, setPrimaryTab]         = useState('all-venues');
   const [groupView, setGroupView]           = useState('glance');
-  const [byVenueView, setByVenueView]      = useState('dashboard');
+  const [byVenueView, setByVenueView]      = useState('summary');
   const [calendarView, setCalendarView]     = useState('week');
   const [selectedDate, setSelectedDate]     = useState(new Date());
   const [selectedVenueId, setSelectedVenueId] = useState(null);
@@ -1845,7 +1845,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   const handleDrillDown = (venueId) => {
     setSelectedVenueId(venueId);
     setPrimaryTab('by-venue');
-    setByVenueView('dashboard');
+    setByVenueView('summary');
   };
 
   const selectedVenue = venues.find(v => v.id === selectedVenueId);
@@ -2045,16 +2045,6 @@ export default function GroupManagerView({ currentUser, onLogout }) {
                 const dashActive = primaryTab === 'by-venue' && byVenueView === 'dashboard';
                 const summActive = primaryTab === 'by-venue' && byVenueView === 'summary';
                 return (<>
-                  <button onClick={() => goToByVenue('dashboard')} style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
-                    padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                    marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
-                    background: dashActive ? '#e8eef6' : 'transparent',
-                    color: dashActive ? COLORS.brand : '#1f2937',
-                    fontWeight: dashActive ? '600' : '500', fontSize: '13px',
-                  }}>
-                    <Eye size={15} /> Dashboard
-                  </button>
                   <button onClick={() => goToByVenue('summary')} style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                     padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2064,6 +2054,16 @@ export default function GroupManagerView({ currentUser, onLogout }) {
                     fontWeight: summActive ? '600' : '500', fontSize: '13px',
                   }}>
                     <BarChart3 size={15} /> Summary
+                  </button>
+                  <button onClick={() => goToByVenue('dashboard')} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                    padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                    marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
+                    background: dashActive ? '#e8eef6' : 'transparent',
+                    color: dashActive ? COLORS.brand : '#1f2937',
+                    fontWeight: dashActive ? '600' : '500', fontSize: '13px',
+                  }}>
+                    <Eye size={15} /> Dashboard
                   </button>
                 </>);
               })()}
@@ -2178,8 +2178,8 @@ export default function GroupManagerView({ currentUser, onLogout }) {
             )}
             {primaryTab === 'by-venue' && (
               <div style={{ padding: '10px 16px', display: 'flex', gap: '8px', borderBottom: byVenueView === 'calendar' ? `1.5px solid ${COLORS.border}` : 'none', background: COLORS.white }}>
-                <button onClick={() => { if (selectedVenueId) setByVenueView('dashboard'); }} style={toggleStyle(byVenueView === 'dashboard', !selectedVenueId)}><Eye size={15} /> Dashboard</button>
                 <button onClick={() => { if (selectedVenueId) setByVenueView('summary'); }} style={toggleStyle(byVenueView === 'summary', !selectedVenueId)}><BarChart3 size={15} /> Summary</button>
+                <button onClick={() => { if (selectedVenueId) setByVenueView('dashboard'); }} style={toggleStyle(byVenueView === 'dashboard', !selectedVenueId)}><Eye size={15} /> Dashboard</button>
                 <button onClick={() => { if (selectedVenueId) setByVenueView('calendar'); }} style={toggleStyle(byVenueView === 'calendar', !selectedVenueId)}><Calendar size={15} /> Calendar</button>
               </div>
             )}

@@ -121,6 +121,7 @@ export const mapVenue = (r) => ({
   password: r.password ?? '',
   createdAt: r.created_at,
   updatedAt: r.updated_at,
+  customerCodeSavedAt: r.customer_code_saved_at || null,
 });
 
 export const unMapVenue = (v) => ({
@@ -135,6 +136,7 @@ export const unMapVenue = (v) => ({
   bdm_id: v.bdmId || null,
   last_tpm_date: v.lastTpmDate || null,
   password: v.password || null,
+  customer_code_saved_at: v.customerCodeSavedAt || null,
 });
 
 // ── trials ──

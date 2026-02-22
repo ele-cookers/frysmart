@@ -1040,7 +1040,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   const handleSaveCustomerCode = async (venueId, code) => {
-    await updateVenue(venueId, { customerCode: code, trialStatus: 'won' });
+    await updateVenue(venueId, { customerCode: code, customerCodeSavedAt: new Date().toISOString(), trialStatus: 'won' });
     setSuccessMsg('Customer Code Saved — Successful');
   };
 
@@ -1460,8 +1460,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const tc = (key) => trialVisibleCols.includes(key);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ flex: 1 }}><BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} /></div>
           <ColumnToggle columns={BDM_TRIAL_COLS} visible={trialVisibleCols} setVisible={setTrialVisibleCols} />
         </div>
         <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
@@ -2156,8 +2156,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           })}
         </div>
         {(() => { const mc = (key) => manageVisibleCols.includes(key); return (<>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ flex: 1 }}><BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} /></div>
           <ColumnToggle columns={BDM_TRIAL_COLS} visible={manageVisibleCols} setVisible={setManageVisibleCols} />
         </div>
         <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 280px)' }}>
@@ -2418,7 +2418,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     };
 
     return (
-      <div style={{ maxWidth: '900px', margin: '0 auto', ...(isDesktop ? { padding: '24px 32px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' } : { padding: '16px 12px' }) }}>
+      <div style={{ ...(isDesktop ? { padding: '24px 0', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' } : { padding: '16px 0' }) }}>
         {/* Back button + header + action buttons */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <button onClick={() => setManageVenueId(null)} style={{
@@ -2576,12 +2576,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <div><label style={{ ...S.label, fontSize: '10px' }}>END DATE</label><input type="date" value={mEditForm.trialEndDate} onChange={e => setMEditForm(p => ({ ...p, trialEndDate: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} /></div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                    <div><label style={{ ...S.label, fontSize: '10px' }}>CURRENT $/L</label><input type="number" step="0.01" min="0" value={mEditForm.currentPricePerLitre} onChange={e => setMEditForm(p => ({ ...p, currentPricePerLitre: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="0.00" /></div>
-                    <div><label style={{ ...S.label, fontSize: '10px' }}>OFFERED $/L</label><input type="number" step="0.01" min="0" value={mEditForm.offeredPricePerLitre} onChange={e => setMEditForm(p => ({ ...p, offeredPricePerLitre: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="0.00" /></div>
+                    <div><label style={{ ...S.label, fontSize: '10px' }}>CURRENT $/L</label><div style={{ position: 'relative' }}><span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b', pointerEvents: 'none' }}>$</span><input type="number" step="0.01" min="0" value={mEditForm.currentPricePerLitre} onChange={e => setMEditForm(p => ({ ...p, currentPricePerLitre: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px 8px 22px', width: '100%', boxSizing: 'border-box' }} placeholder="0.00" /></div></div>
+                    <div><label style={{ ...S.label, fontSize: '10px' }}>OFFERED $/L</label><div style={{ position: 'relative' }}><span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b', pointerEvents: 'none' }}>$</span><input type="number" step="0.01" min="0" value={mEditForm.offeredPricePerLitre} onChange={e => setMEditForm(p => ({ ...p, offeredPricePerLitre: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px 8px 22px', width: '100%', boxSizing: 'border-box' }} placeholder="0.00" /></div></div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                    <div><label style={{ ...S.label, fontSize: '10px' }}>TRIAL OIL</label><select value={mEditForm.trialOilId} onChange={e => setMEditForm(p => ({ ...p, trialOilId: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option>{cookerOilsList.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
                     <div><label style={{ ...S.label, fontSize: '10px' }}>CURRENT OIL</label><select value={mEditForm.defaultOil} onChange={e => setMEditForm(p => ({ ...p, defaultOil: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option>{oilTypes.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
+                    <div><label style={{ ...S.label, fontSize: '10px' }}>TRIAL OIL</label><select value={mEditForm.trialOilId} onChange={e => setMEditForm(p => ({ ...p, trialOilId: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option>{cookerOilsList.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                     <div><label style={{ ...S.label, fontSize: '10px' }}>AVG LITRES/WEEK</label><input type="number" min="0" step="1" value={mEditForm.avgLitresPerWeek} onChange={e => setMEditForm(p => ({ ...p, avgLitresPerWeek: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="e.g. 80" /></div>
