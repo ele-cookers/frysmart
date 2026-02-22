@@ -97,7 +97,42 @@ function App() {
     const authEmail = authUser.email || '';
     const emailPrefix = authEmail.replace('@frysmart.app', '');
 
-    // 1. Check venue match FIRST — customer code in email takes priority
+    // 1. Check profile FIRST — admin/bdm/nam users always have a profiles row
+    let profileData = null;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data) {
+      profileData = data;
+    } else if (emailPrefix) {
+      // Fallback: match by username (handles cases where auth ID ≠ profile ID)
+      const { data: byUsername } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`username.eq.${emailPrefix},username.eq.${emailPrefix.toUpperCase()}`)
+        .limit(1)
+        .single();
+      if (byUsername) profileData = byUsername;
+    }
+
+    if (profileData) {
+      const profile = mapProfile(profileData);
+      const merged = { ...profile, id: userId };
+      setCurrentUser(merged);
+      supabase.from('profiles').update({ last_active: new Date().toISOString().split('T')[0] }).eq('id', profileData.id).then(({ error }) => {
+        if (error) console.error('Failed to update last_active:', error);
+      });
+      if (merged.venueId) {
+        await loadStaffData(merged.venueId);
+      }
+      setUserLoading(false);
+      return;
+    }
+
+    // 2. No profile row — check venue match by customer code
     if (emailPrefix) {
       const prefixUpper = emailPrefix.toUpperCase();
       const { data: venueData } = await supabase
@@ -127,43 +162,6 @@ function App() {
         setUserLoading(false);
         return;
       }
-    }
-
-    // 2. No venue/group match — try profile row (admin, bdm, nam, etc.)
-    // First try by auth user ID, then fall back to username match
-    let profileData = null;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (!error && data) {
-      profileData = data;
-    } else if (emailPrefix) {
-      // Fallback: match by username (handles cases where auth ID ≠ profile ID)
-      const { data: byUsername } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`username.eq.${emailPrefix},username.eq.${emailPrefix.toUpperCase()}`)
-        .limit(1)
-        .single();
-      if (byUsername) profileData = byUsername;
-    }
-
-    if (profileData) {
-      const profile = mapProfile(profileData);
-      // Use the auth user ID but keep the profile's role and other fields
-      const merged = { ...profile, id: userId };
-      setCurrentUser(merged);
-      supabase.from('profiles').update({ last_active: new Date().toISOString().split('T')[0] }).eq('id', profileData.id).then(({ error }) => {
-        if (error) console.error('Failed to update last_active:', error);
-      });
-      if (merged.venueId) {
-        await loadStaffData(merged.venueId);
-      }
-      setUserLoading(false);
-      return;
     }
 
     // 3. No match at all — fallback
