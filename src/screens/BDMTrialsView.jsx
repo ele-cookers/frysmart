@@ -10,7 +10,7 @@ import {
   ClipboardList, Play, Trophy,
   XCircle, Building, ChevronUp, ChevronDown,
   ArrowUpDown, CheckCircle2,
-  Search, ArrowDown, Filter, Monitor, Smartphone,
+  Search, ArrowDown, Filter,
   Edit3, Calendar, Save, ChevronRight, BarChart3, TrendingUp, TrendingDown, RotateCcw,
   Star, MessageSquare
 } from 'lucide-react';
@@ -789,12 +789,17 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
 // ─────────────────────────────────────────────
 // TRIAL DETAIL MODAL — view + edit trial info
 // ─────────────────────────────────────────────
-const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, VOLUME_BRACKETS, bdmView }) => {
+const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, VOLUME_BRACKETS }) => {
   const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
   const compOil = oilTypes.find(o => o.id === venue.defaultOil);
   const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
 
-  const isDesktop = bdmView === 'desktop';
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [selectedCell, setSelectedCell] = useState(null); // { dateStr, fryerNum }
 
   // Pricing & savings
@@ -1574,7 +1579,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ── UI state ──
   const [activeTab, setActiveTab] = useState('dashboard');
   // archiveSubTab removed — Successful/Unsuccessful are now separate top-level tabs
-  const [bdmView, setBdmView] = useState('desktop'); // 'desktop' | 'mobile'
+  // bdmView removed — responsive design uses isDesktop (window.innerWidth >= 768)
   const [sortNewest, setSortNewest] = useState(false); // false = A-Z, true = most recent
   const colFilters = useColumnFilters();
   const [readingModal, setReadingModal] = useState(null);
@@ -1756,7 +1761,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // In desktop mode, column filters are applied via table. In mobile, just sort.
   const getFiltered = (list) => {
-    if (bdmView === 'desktop' && colFilters.activeCount > 0) {
+    if (isDesktop && colFilters.activeCount > 0) {
       return sortList(colFilters.applyFilters(list, colAccessors));
     }
     return sortList(list);
@@ -2067,9 +2072,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {cardOilBadge(venue.defaultOil, 'Current')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Days</div><div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysIn ?? '—'}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Readings</div><div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venueReadings.length}</div></div>
+          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
+          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Days</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysIn ?? '—'}</div></div>
+          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Readings</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venueReadings.length}</div></div>
         </div>
         {latestReading && (
           <div style={{ background: COLORS.bg, borderRadius: '8px', padding: '10px 12px', marginBottom: '10px' }}>
@@ -2108,9 +2113,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {cardOilBadge(venue.trialOilId, 'Trial')}
         {cardOilBadge(venue.defaultOil, 'Current')}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Fryers</div><div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.fryerCount || 1}</div></div>
-        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Volume</div><div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.volumeBracket || '—'}</div></div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Fryers</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.fryerCount || 1}</div></div>
+        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Volume</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.volumeBracket || '—'}</div></div>
+        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Created</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.trialCreatedAt ? displayDate(venue.trialCreatedAt.split('T')[0]) : '—'}</div></div>
       </div>
       <div style={{ marginBottom: '12px' }}>{pricingRow(venue)}</div>
       <button onClick={(e) => { e.stopPropagation(); if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{
@@ -2487,7 +2493,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     </div>
   );
 
-  const isTableView = bdmView === 'desktop';
+  const isTableView = isDesktop;
 
   // ─────────────────────────────────────────
   // DASHBOARD
@@ -3530,6 +3536,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     { id: 'lost', label: 'Unsuccessful', icon: XCircle, count: lostTrials.length, color: '#ef4444' },
   ];
 
+  // ── Mobile nav helpers ──
+  const TRIAL_TAB_IDS = ['pipeline', 'active', 'pending', 'accepted', 'won', 'lost'];
+  const isTrialsTab = TRIAL_TAB_IDS.includes(activeTab);
+  const totalTrialsCount = pipelineTrials.length + activeTrials.length + pendingOutcomeTrials.length + acceptedTrials.length + wonTrials.length + lostTrials.length;
+  const TRIAL_SUB_TABS = [
+    { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length },
+    { id: 'active', label: 'Active', icon: Play, count: activeTrials.length },
+    { id: 'pending', label: 'Pending', icon: AlertTriangle, count: pendingOutcomeTrials.length },
+    { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
+    { id: 'won', label: 'Won', icon: Trophy, count: wonTrials.length, color: '#10b981' },
+    { id: 'lost', label: 'Lost', icon: XCircle, count: lostTrials.length, color: '#ef4444' },
+  ];
+
   // ─────────────────────────────────────────
   // MAIN RENDER
   // ─────────────────────────────────────────
@@ -3563,28 +3582,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 letterSpacing: '0.5px',
               }}>OIL TRIALS</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {/* Desktop/Mobile view toggle */}
-              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.12)', borderRadius: '8px', padding: '2px' }}>
-                <button onClick={() => setBdmView('desktop')} style={{
-                  display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                  background: bdmView === 'desktop' ? 'rgba(255,255,255,0.25)' : 'transparent',
-                  color: bdmView === 'desktop' ? '#ffffff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '11px', fontWeight: '600', transition: 'all 0.15s',
-                }}>
-                  <Monitor size={13} /> Desktop
-                </button>
-                <button onClick={() => setBdmView('mobile')} style={{
-                  display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                  background: bdmView === 'mobile' ? 'rgba(255,255,255,0.25)' : 'transparent',
-                  color: bdmView === 'mobile' ? '#ffffff' : 'rgba(255,255,255,0.5)',
-                  fontSize: '11px', fontWeight: '600', transition: 'all 0.15s',
-                }}>
-                  <Smartphone size={13} /> Mobile
-                </button>
-              </div>
-              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
-            </div>
+            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
           </div>
         ) : (
           <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0px' }}>
@@ -3598,25 +3596,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   background: 'rgba(16,185,129,0.25)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.4)',
                   letterSpacing: '0.5px',
                 }}>OIL TRIALS</span>
-                {/* Desktop/Mobile view toggle */}
-                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.12)', borderRadius: '6px', padding: '2px' }}>
-                  <button onClick={() => setBdmView('desktop')} style={{
-                    display: 'flex', alignItems: 'center', gap: '3px', padding: '3px 7px', borderRadius: '5px', border: 'none', cursor: 'pointer',
-                    background: bdmView === 'desktop' ? 'rgba(255,255,255,0.25)' : 'transparent',
-                    color: bdmView === 'desktop' ? '#ffffff' : 'rgba(255,255,255,0.5)',
-                    fontSize: '10px', fontWeight: '600', transition: 'all 0.15s',
-                  }}>
-                    <Monitor size={11} />
-                  </button>
-                  <button onClick={() => setBdmView('mobile')} style={{
-                    display: 'flex', alignItems: 'center', gap: '3px', padding: '3px 7px', borderRadius: '5px', border: 'none', cursor: 'pointer',
-                    background: bdmView === 'mobile' ? 'rgba(255,255,255,0.25)' : 'transparent',
-                    color: bdmView === 'mobile' ? '#ffffff' : 'rgba(255,255,255,0.5)',
-                    fontSize: '10px', fontWeight: '600', transition: 'all 0.15s',
-                  }}>
-                    <Smartphone size={11} />
-                  </button>
-                </div>
                 <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
               </div>
               <button
@@ -3765,7 +3744,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {/* Content */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <div style={{
-              ...(bdmView === 'desktop'
+              ...(isDesktop
                 ? { padding: '24px clamp(16px, 2vw, 32px) 40px' }
                 : { maxWidth: '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }),
               ...(['dashboard', 'pipeline', 'active', 'pending', 'won', 'lost'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
@@ -3776,102 +3755,102 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </div>
       ) : (
         <>
-          {/* ── Mobile: Tab bar ── */}
+          {/* ── Mobile: Row 1 — Main tabs ── */}
           <div style={{
             position: 'sticky', top: 0, zIndex: 100,
             transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden',
-            width: '100%', overflow: 'hidden',
+            width: '100%', background: 'white', borderBottom: isTrialsTab ? 'none' : '1px solid #e2e8f0',
           }}>
-            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderBottom: '1px solid #e2e8f0', background: 'white' }} className="no-scrollbar">
-              <div style={{ display: 'inline-flex', padding: '0 2px', minWidth: '100%' }}>
-              {/* Dashboard tab */}
+            <div style={{ display: 'flex', borderBottom: isTrialsTab ? '1px solid #f1f5f9' : 'none' }}>
+              {/* Dashboard */}
               <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); }} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '11px 8px', border: 'none', background: 'transparent',
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '10px 4px 8px', border: 'none', background: 'transparent',
                 borderBottom: activeTab === 'dashboard' ? `3px solid ${BLUE}` : '3px solid transparent',
-                marginBottom: '-1px',
-                color: activeTab === 'dashboard' ? BLUE : '#64748b',
-                fontSize: '11px', fontWeight: activeTab === 'dashboard' ? '700' : '500',
-                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0,
+                color: activeTab === 'dashboard' ? BLUE : '#94a3b8',
+                fontSize: '10px', fontWeight: activeTab === 'dashboard' ? '700' : '500',
+                cursor: 'pointer', transition: 'all 0.15s',
               }}>
-                <BarChart3 size={13} />
+                <BarChart3 size={18} />
+                <span>Dashboard</span>
               </button>
-              {/* Manage Trial tab */}
+              {/* Trials */}
+              <button onClick={() => { if (!isTrialsTab) setActiveTab('pipeline'); colFilters.clearAll(); }} style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '10px 4px 8px', border: 'none', background: 'transparent',
+                borderBottom: isTrialsTab ? `3px solid ${BLUE}` : '3px solid transparent',
+                color: isTrialsTab ? BLUE : '#94a3b8',
+                fontSize: '10px', fontWeight: isTrialsTab ? '700' : '500',
+                cursor: 'pointer', transition: 'all 0.15s', position: 'relative',
+              }}>
+                <ClipboardList size={18} />
+                <span>Trials</span>
+                {totalTrialsCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '4px', right: 'calc(50% - 20px)',
+                    background: isTrialsTab ? BLUE : '#94a3b8', color: 'white',
+                    padding: '1px 5px', borderRadius: '8px', fontSize: '9px', fontWeight: '700', minWidth: '16px', textAlign: 'center',
+                  }}>{totalTrialsCount}</span>
+                )}
+              </button>
+              {/* Manage */}
               <button onClick={() => { setActiveTab('manage'); colFilters.clearAll(); }} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '11px 8px', border: 'none', background: 'transparent',
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '10px 4px 8px', border: 'none', background: 'transparent',
                 borderBottom: activeTab === 'manage' ? `3px solid ${BLUE}` : '3px solid transparent',
-                marginBottom: '-1px',
-                color: activeTab === 'manage' ? BLUE : '#64748b',
-                fontSize: '11px', fontWeight: activeTab === 'manage' ? '700' : '500',
-                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0,
+                color: activeTab === 'manage' ? BLUE : '#94a3b8',
+                fontSize: '10px', fontWeight: activeTab === 'manage' ? '700' : '500',
+                cursor: 'pointer', transition: 'all 0.15s',
               }}>
-                <Edit3 size={13} />
+                <Edit3 size={18} />
+                <span>Manage</span>
               </button>
-              {/* New Trial — prominent tab */}
+              {/* + New */}
               <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); }} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '9px 10px', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                borderRadius: '8px 8px 0 0', margin: '4px 2px 0',
-                background: activeTab === 'new' ? '#f5a623' : '#fff7ed',
-                color: activeTab === 'new' ? 'white' : '#f5a623',
-                fontSize: '12px', fontWeight: '700', transition: 'all 0.15s', flexShrink: 0,
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '10px 4px 8px', border: 'none', background: 'transparent',
+                borderBottom: activeTab === 'new' ? '3px solid #f5a623' : '3px solid transparent',
+                color: activeTab === 'new' ? '#f5a623' : '#94a3b8',
+                fontSize: '10px', fontWeight: activeTab === 'new' ? '700' : '500',
+                cursor: 'pointer', transition: 'all 0.15s',
               }}>
-                <Plus size={14} strokeWidth={2.5} />
-                New
+                <Plus size={18} strokeWidth={2.5} />
+                <span>New</span>
               </button>
-              {NAV_ITEMS.map(tab => {
-                const active = activeTab === tab.id;
-                const tabColor = tab.color || BLUE;
-                return (
-                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                    padding: '11px 10px', border: 'none', background: 'transparent',
-                    borderBottom: active ? `3px solid ${tabColor}` : '3px solid transparent',
-                    marginBottom: '-1px', flexShrink: 0,
-                    color: active ? tabColor : '#64748b',
-                    fontSize: '11px', fontWeight: active ? '700' : '500',
-                    cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-                  }}>
-                    <tab.icon size={13} />
-                    {tab.id === 'accepted' ? 'Cust Code' : tab.label}
-                    {tab.count != null && tab.count > 0 && (
-                      <span style={{
-                        background: active ? tabColor : '#e2e8f0',
-                        color: active ? 'white' : '#64748b',
-                        padding: '1px 5px', borderRadius: '8px', fontSize: '10px', fontWeight: '600',
-                      }}>{tab.count}</span>
-                    )}
-                  </button>
-                );
-              })}
-              {/* Successful & Unsuccessful tabs */}
-              {ARCHIVE_ITEMS.map(tab => {
-                const active = activeTab === tab.id;
-                return (
-                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                    padding: '11px 10px', border: 'none', background: 'transparent',
-                    borderBottom: active ? `3px solid ${tab.color}` : '3px solid transparent',
-                    marginBottom: '-1px', flexShrink: 0,
-                    color: active ? tab.color : '#64748b',
-                    fontSize: '11px', fontWeight: active ? '700' : '500',
-                    cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-                  }}>
-                    <tab.icon size={13} />
-                    {tab.id === 'won' ? 'Won' : 'Lost'}
-                    {tab.count > 0 && (
-                      <span style={{
-                        background: active ? tab.color : '#e2e8f0',
-                        color: active ? 'white' : '#64748b',
-                        padding: '1px 5px', borderRadius: '8px', fontSize: '10px', fontWeight: '600',
-                      }}>{tab.count}</span>
-                    )}
-                  </button>
-                );
-              })}
-              </div>
             </div>
+
+            {/* ── Mobile: Row 2 — Trial sub-tabs (pill bar) ── */}
+            {isTrialsTab && (
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }} className="no-scrollbar">
+                <div style={{ display: 'inline-flex', gap: '6px', padding: '8px 12px', minWidth: '100%' }}>
+                  {TRIAL_SUB_TABS.map(tab => {
+                    const active = activeTab === tab.id;
+                    const tabColor = tab.color || BLUE;
+                    return (
+                      <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        padding: '6px 12px', border: active ? 'none' : '1px solid #e2e8f0',
+                        borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
+                        background: active ? tabColor : 'white',
+                        color: active ? 'white' : '#64748b',
+                        fontSize: '12px', fontWeight: active ? '600' : '500',
+                        transition: 'all 0.15s', flexShrink: 0,
+                      }}>
+                        <tab.icon size={13} />
+                        {tab.label}
+                        {tab.count > 0 && (
+                          <span style={{
+                            background: active ? 'rgba(255,255,255,0.3)' : '#f1f5f9',
+                            color: active ? 'white' : '#64748b',
+                            padding: '1px 6px', borderRadius: '10px', fontSize: '10px', fontWeight: '600',
+                          }}>{tab.count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mobile content */}
@@ -3929,7 +3908,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           trialReasons={trialReasons}
           readings={tpmReadings}
           VOLUME_BRACKETS={VOLUME_BRACKETS}
-          bdmView={bdmView}
           onClose={() => setSelectedTrialVenue(null)}
           onSaveCustomerCode={handleSaveCustomerCode}
           onManage={(v) => { setSelectedTrialVenue(null); setManageVenueId(v.id); setActiveTab('manage'); }}
