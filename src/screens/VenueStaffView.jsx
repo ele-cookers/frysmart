@@ -3082,3 +3082,5 @@ export default function VenueStaffView({
     </div>
   );
 }
+
+export { SummaryView, DashboardView };

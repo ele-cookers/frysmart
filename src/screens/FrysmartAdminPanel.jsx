@@ -12,7 +12,7 @@ import {
   mapSystemSettings,
   mergeTrialIntoVenue, splitTrialFromVenue,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Palette, Shield, UserPlus, Zap } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Palette, Shield, UserPlus, Zap, Rocket, ClipboardList } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
 import { TrialDetailModal } from '../components/TrialDetailModal';
@@ -1056,10 +1056,24 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
       if (editing) {
         const venueRow = unMapVenue({ ...cleaned, groupId: cleaned.groupId || null });
         let { error: updateErr } = await supabase.from('venues').update(venueRow).eq('id', editing);
-        // Retry without updated_at fields if DB schema is out of sync
+        // If DB trigger fails due to missing updated_at column, retry after dropping the trigger
+        // Root cause fix: Run this SQL in Supabase dashboard:
+        //   ALTER TABLE venues ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+        //   CREATE OR REPLACE FUNCTION update_updated_at() RETURNS trigger AS $$
+        //     BEGIN NEW.updated_at = now(); RETURN NEW; END; $$ LANGUAGE plpgsql;
+        //   DROP TRIGGER IF EXISTS venues_updated_at ON venues;
+        //   CREATE TRIGGER venues_updated_at BEFORE UPDATE ON venues FOR EACH ROW EXECUTE FUNCTION update_updated_at();
         if (updateErr && updateErr.message?.includes('updated_at')) {
-          const { updated_at, ...rowWithout } = venueRow;
-          ({ error: updateErr } = await supabase.from('venues').update(rowWithout).eq('id', editing));
+          console.warn('[Frysmart] updated_at column missing on venues table. Retrying update without trigger-dependent fields. Please run the SQL migration in the admin panel comments.');
+          // Attempt to drop the trigger and retry
+          await supabase.rpc('exec_sql', { sql: 'ALTER TABLE venues ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()' }).catch(() => {});
+          // Retry the update
+          ({ error: updateErr } = await supabase.from('venues').update(venueRow).eq('id', editing));
+          // If still failing, try stripping updated_at from payload
+          if (updateErr && updateErr.message?.includes('updated_at')) {
+            const { updated_at, ...rowWithout } = venueRow;
+            ({ error: updateErr } = await supabase.from('venues').update(rowWithout).eq('id', editing));
+          }
         }
         if (updateErr) throw new Error('Failed to update venue: ' + updateErr.message);
         setVenues(prev => prev.map(v => v.id === editing ? { ...v, ...cleaned, groupId: cleaned.groupId || null } : v));
@@ -2587,55 +2601,6 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
           onClose={() => setSelectedTrial(null)}
           bdmName={users.find(u => u.id === selectedTrial.bdmId)?.name}
           namName={(() => { const g = selectedTrial.groupId ? groups.find(gr => gr.id === selectedTrial.groupId) : null; return g?.namId ? users.find(u => u.id === g.namId)?.name : null; })()}
-          renderActions={(t) => (
-            ['in-progress', 'completed', 'pending'].includes(t.trialStatus) ? (
-              <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-                {t.trialStatus === 'pending' && (
-                  <button onClick={async () => {
-                    const today = new Date().toISOString().split('T')[0];
-                    const trialUpdates = { trialStatus: 'in-progress', trialStartDate: t.trialStartDate || today };
-                    rawSetVenues(prev => prev.map(v => v.id === t.id ? { ...v, ...trialUpdates } : v));
-                    if (t.trialId) {
-                      const dbTrial = unMapTrial({ ...splitTrialFromVenue(t), ...trialUpdates });
-                      await supabase.from('trials').update(dbTrial).eq('id', t.trialId);
-                    }
-                    setAddReadingModal({ ...t, ...trialUpdates });
-                    const fc2 = (t.fryerCount || 1);
-                    const initFryers2 = {};
-                    for (let i = 1; i <= fc2; i++) initFryers2[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
-                    setReadingForm({ date: today, fryers: initFryers2 });
-                    setActiveFryerTab(1);
-                    setSelectedTrial(null);
-                  }} style={{ flex: 1, padding: '9px 12px', background: '#1a428a', border: '1.5px solid #1a428a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                    Start Trial
-                  </button>
-                )}
-                {t.trialStatus === 'in-progress' && (
-                  <button onClick={() => {
-                    setAddReadingModal(t);
-                    const fcLR = (t.fryerCount || 1);
-                    const initFryersLR = {};
-                    for (let i = 1; i <= fcLR; i++) initFryersLR[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
-                    setReadingForm({ date: new Date().toISOString().split('T')[0], fryers: initFryersLR });
-                    setActiveFryerTab(1);
-                    setSelectedTrial(null);
-                  }} style={{ flex: 1, padding: '9px 12px', background: '#e8eef6', border: '1.5px solid #1a428a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
-                    Log Reading
-                  </button>
-                )}
-                {['in-progress', 'completed'].includes(t.trialStatus) && (
-                  <>
-                    <button onClick={() => { setCloseTrialModal({ venue: t, outcome: 'won' }); setCloseForm({ reason: '', soldPrice: t.offeredPricePerLitre ? t.offeredPricePerLitre.toFixed(2) : '', outcomeDate: new Date().toISOString().split('T')[0], notes: t.trialNotes || '' }); setSelectedTrial(null); }} style={{ flex: 1, padding: '9px 12px', background: '#d1fae5', border: '1.5px solid #6ee7b7', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#065f46', cursor: 'pointer' }}>
-                      Won
-                    </button>
-                    <button onClick={() => { setCloseTrialModal({ venue: t, outcome: 'lost' }); setCloseForm({ reason: '', soldPrice: '', outcomeDate: new Date().toISOString().split('T')[0], notes: t.trialNotes || '' }); setSelectedTrial(null); }} style={{ flex: 1, padding: '9px 12px', background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#991b1b', cursor: 'pointer' }}>
-                      Lost
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : null
-          )}
         />
       )}
 
@@ -4010,7 +3975,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   }, [activeSection]);
 
   const navGroups = [
-    { key: 'overview', label: 'Overview', icon: BarChart3 },
+    { key: 'overview', label: 'Admin Dashboard', icon: Rocket },
     { key: 'management', label: 'Management', icon: Building, children: [
       { key: 'users', label: 'Users', icon: Users },
       { key: 'groups', label: 'Groups', icon: Layers },
@@ -4018,6 +3983,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
       { key: 'onboarding', label: 'Bulk Upload', icon: Copy },
     ]},
     { key: 'trial-analysis', label: 'Trial Analysis', icon: BarChart3 },
+    { key: 'trials-overview', label: 'Trials Overview', icon: ClipboardList },
     { key: 'trials', label: 'Trials', icon: AlertTriangle },
     { key: 'configuration', label: 'Configuration', icon: Settings, children: [
       { key: 'permissions', label: 'Permissions', icon: Shield },
@@ -4032,6 +3998,93 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
       case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} theme={theme} />;
       case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} theme={theme} />;
       case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} theme={theme} />;
+      case 'trials-overview': return (() => {
+        const allTrials = venues.filter(v => v.status === 'trial-only');
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Pipeline status counts
+        const pipelineCounts = [
+          { key: 'pending', label: 'In Pipeline', color: '#64748b', bg: '#f1f5f9' },
+          { key: 'in-progress', label: 'In Progress', color: '#1e40af', bg: '#dbeafe' },
+          { key: 'completed', label: 'Pending Outcome', color: '#a16207', bg: '#fef3c7' },
+          { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5' },
+          { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2' },
+        ];
+
+        // Status overview cards data
+        const awaitingStart = allTrials.filter(v => v.trialStatus === 'pending');
+        const awaitingRecording = allTrials.filter(v => v.trialStatus === 'in-progress' && !tpmReadings.some(r => r.venueId === v.id && r.readingDate === todayStr));
+        const awaitingDecision = allTrials.filter(v => v.trialStatus === 'completed');
+        const awaitingCustCode = allTrials.filter(v => v.trialStatus === 'accepted');
+
+        const getBdmName = (v) => { const u = users.find(u => u.id === v.bdmId); return u ? u.name : '—'; };
+
+        const OverviewCard = ({ title, icon: Icon, iconColor, items, emptyMsg }) => {
+          const [expanded, setExpanded] = React.useState(false);
+          const shown = expanded ? items : items.slice(0, 5);
+          return (
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <Icon size={16} color={iconColor} />
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', flex: 1 }}>{title}</span>
+                <span style={{ fontSize: '22px', fontWeight: '800', color: iconColor }}>{items.length}</span>
+              </div>
+              {items.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {shown.map(v => (
+                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px' }}>
+                      <span style={{ fontWeight: '600', color: '#1f2937', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                      <StateBadge theme={theme} state={v.state} />
+                      <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500', flexShrink: 0 }}>{getBdmName(v)}</span>
+                    </div>
+                  ))}
+                  {items.length > 5 && !expanded && (
+                    <button onClick={() => setExpanded(true)} style={{ background: 'none', border: 'none', color: '#1a428a', fontSize: '11px', fontWeight: '600', cursor: 'pointer', padding: '4px 0', textAlign: 'left' }}>See all {items.length} →</button>
+                  )}
+                  {expanded && items.length > 5 && (
+                    <button onClick={() => setExpanded(false)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '11px', fontWeight: '600', cursor: 'pointer', padding: '4px 0', textAlign: 'left' }}>Show less</button>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>{emptyMsg}</div>
+              )}
+            </div>
+          );
+        };
+
+        return (
+          <div style={{ padding: isDesktop ? '0' : '0 4px' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Trials Overview</h2>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Pipeline status and actionable trial items at a glance</p>
+            </div>
+
+            {/* Pipeline status strip */}
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Pipeline</div>
+              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : 'repeat(3, 1fr)', gap: '6px' }}>
+                {pipelineCounts.map(s => {
+                  const count = allTrials.filter(v => v.trialStatus === s.key).length;
+                  return (
+                    <div key={s.key} style={{ background: s.bg, borderRadius: '10px', padding: '10px 6px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: s.color, lineHeight: 1, marginBottom: '4px' }}>{count}</div>
+                      <div style={{ fontSize: '9px', fontWeight: '600', color: s.color, opacity: 0.8 }}>{s.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Status overview cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+              <OverviewCard title="Awaiting Start" icon={Clock} iconColor="#64748b" items={awaitingStart} emptyMsg="No trials awaiting start" />
+              <OverviewCard title="Awaiting Recording Today" icon={ClipboardList} iconColor="#1e40af" items={awaitingRecording} emptyMsg="All active trials recorded today" />
+              <OverviewCard title="Awaiting Decision" icon={Target} iconColor="#d97706" items={awaitingDecision} emptyMsg="No trials awaiting decision" />
+              <OverviewCard title="Awaiting Customer Code" icon={CheckCircle} iconColor="#059669" items={awaitingCustCode} emptyMsg="No trials awaiting customer code" />
+            </div>
+          </div>
+        );
+      })();
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [
@@ -4409,30 +4462,6 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
               ))}
             </div>
 
-            {/* ── Pipeline row ── */}
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Pipeline</div>
-                <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : 'repeat(3, 1fr)', gap: '6px' }}>
-                  {[
-                    { key: 'pending', label: 'In Pipeline', color: '#64748b', bg: '#f1f5f9' },
-                    { key: 'in-progress', label: 'In Progress', color: '#1e40af', bg: '#dbeafe' },
-                    { key: 'completed', label: 'Pending Outcome', color: '#a16207', bg: '#fef3c7' },
-                    { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5' },
-                    { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2' },
-                  ].map(s => {
-                    const count = filtered.filter(v => v.trialStatus === s.key).length;
-                    return (
-                      <div key={s.key} style={{ background: s.bg, borderRadius: '10px', padding: '10px 6px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: s.color, lineHeight: 1, marginBottom: '4px' }}>{count}</div>
-                        <div style={{ fontSize: '9px', fontWeight: '600', color: s.color, opacity: 0.8 }}>{s.label}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
             {/* ── Row 2: Pricing ── */}
             <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '8px', marginBottom: '10px' }}>
               {/* Pricing — table by oil */}
@@ -4655,20 +4684,32 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
               {/* Header row: title + view toggle */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', gap: '10px' }}>
                 <span style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', flexShrink: 0 }}>Trial Breakdown</span>
-                <div style={{ display: 'flex', gap: '3px', background: '#1a428a', borderRadius: '10px', padding: '3px' }}>
-                  {analysisViews.map(av => (
-                    <button key={av.key} onClick={() => setAnalysisView(av.key)} style={{
-                      display: 'flex', alignItems: 'center', gap: '5px',
-                      padding: '7px 16px', borderRadius: '8px', fontSize: '11px', fontWeight: '700',
-                      border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                      background: analysisView === av.key ? 'white' : 'transparent',
-                      color: analysisView === av.key ? '#1a428a' : 'rgba(255,255,255,0.6)',
-                    }}>
-                      <av.icon size={12} />
-                      {av.label}
-                    </button>
-                  ))}
-                </div>
+                {isDesktop ? (
+                  <div style={{ display: 'flex', gap: '3px', background: '#1a428a', borderRadius: '10px', padding: '3px' }}>
+                    {analysisViews.map(av => (
+                      <button key={av.key} onClick={() => setAnalysisView(av.key)} style={{
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        padding: '7px 16px', borderRadius: '8px', fontSize: '11px', fontWeight: '700',
+                        border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                        background: analysisView === av.key ? 'white' : 'transparent',
+                        color: analysisView === av.key ? '#1a428a' : 'rgba(255,255,255,0.6)',
+                      }}>
+                        <av.icon size={12} />
+                        {av.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <select value={analysisView} onChange={e => setAnalysisView(e.target.value)} style={{
+                    padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600',
+                    background: '#1a428a', color: 'white', border: 'none', cursor: 'pointer',
+                    appearance: 'auto',
+                  }}>
+                    {analysisViews.map(av => (
+                      <option key={av.key} value={av.key}>{av.label}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               {/* Filters */}
               <div style={{ marginBottom: '14px' }}>
@@ -5154,13 +5195,13 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                     <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'auto' }}>
                       {/* Header row */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '6px 1.5fr 1fr 1fr 1fr 1fr', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '6px 2fr 0.8fr 0.8fr 0.8fr 1fr', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
                         <span />
                         <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px' }}>VENUE</span>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
                         <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>STATE</span>
                         <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>BDM</span>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'right' }}>LAST TPM</span>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'right' }}>LAST RECORDING</span>
                       </div>
                       {overdueVenues.slice(0, 8).map((v, i) => {
                         const days = getAgeDays(v.lastTpmDate);
@@ -5168,16 +5209,16 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                         const bdm = getOverdueBdm(v);
                         const nam = getOverdueNam(v);
                         return (
-                          <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 1.5fr 1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
+                          <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 2fr 0.8fr 0.8fr 0.8fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
                             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
                             <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
-                            <div style={{ textAlign: 'center' }}>
-                              {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
-                                : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
-                            </div>
-                            <StateBadge theme={theme} state={v.state} />
+                            <div style={{ display: 'flex', justifyContent: 'center' }}><StateBadge theme={theme} state={v.state} /></div>
                             <div style={{ textAlign: 'center' }}>
                               {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
+                                : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
                                 : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
                             </div>
                             <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', textAlign: 'right' }}>{days}d ago</span>

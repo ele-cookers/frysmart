@@ -9,8 +9,8 @@ import {
   ClipboardList, Play, Trophy,
   XCircle, ChevronDown,
   ArrowUpDown, CheckCircle2,
-  Search, ArrowDown, Filter,
-  Edit3, Calendar, Save, ChevronRight, BarChart3, TrendingUp, TrendingDown, RotateCcw,
+  ArrowDown, Filter,
+  Edit3, Calendar, Save, ChevronRight, BarChart3, RotateCcw,
   Star, MessageSquare
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
@@ -752,11 +752,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [saving, setSaving] = useState(false);
   const [dashStatusFilter, setDashStatusFilter] = useState([]); // Dashboard status filter
   const [manageVenueId, setManageVenueId] = useState(null); // Manage Trial screen
-  const [manageSearch, setManageSearch] = useState('');
   const [manageStatusFilter, setManageStatusFilter] = useState([]); // Manage screen status filter pills
   // ── Column toggle state ──
   const BDM_TRIAL_COLS = [
     { key: 'name', label: 'Venue Name', locked: true },
+    { key: 'city', label: 'City' },
     { key: 'volume', label: 'Vol Bracket' },
     { key: 'competitor', label: 'Competitor' },
     { key: 'compOil', label: 'Comp. Oil' },
@@ -785,7 +785,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [newTrialForm, setNewTrialForm] = useState({
     customerCode: '', venueName: '', city: '',
     trialOilId: '', fryerCount: 1, defaultOil: '', currentPrice: '', offeredPrice: '',
-    avgLitresPerWeek: '', notes: '',
+    avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '',
   });
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
@@ -898,6 +898,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ── Column filter accessors (for table filtering — mirrors admin panel) ──
   const colAccessors = {
     name: v => v.name || '',
+    city: v => { const m = v.trialNotes?.match(/^TRL-\d+\s*\|\s*([^\n]*)/); return m ? m[1].trim() : ''; },
     state: v => v.state || '',
     volume: v => {
       const b = VOLUME_BRACKETS.find(x => x.key === v.volumeBracket);
@@ -1126,6 +1127,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         currentPricePerLitre: parseFloat(newTrialForm.currentPrice),
         offeredPricePerLitre: parseFloat(newTrialForm.offeredPrice),
         currentWeeklyAvg: parseFloat(newTrialForm.avgLitresPerWeek),
+        trialStartDate: newTrialForm.estStartDate || null,
+        trialEndDate: newTrialForm.estEndDate || null,
       };
       const dbTrial = unMapTrial(newTrialObj);
       const { data: trialRow, error: trialErr } = await supabase.from('trials').insert(dbTrial).select().single();
@@ -1140,7 +1143,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setNewTrialForm({
         customerCode: '', venueName: '', city: '',
         trialOilId: '', fryerCount: 1, defaultOil: '', currentPrice: '', offeredPrice: '',
-        avgLitresPerWeek: '', notes: '',
+        avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '',
       });
       setTrialType('new');
       setSuccessMsg(`Trial Created — ${trialId}`);
@@ -1473,6 +1476,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              {tc('city') && <FilterableTh colKey="city" label="City" options={getUniqueValues(allVenues, colAccessors.city)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {tc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
               {tc('competitor') && <FilterableTh colKey="competitor" label="Comp." options={getUniqueValues(allVenues, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {tc('compOil') && <FilterableTh colKey="compOil" label="Comp. Oil" options={getUniqueValues(allVenues, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
@@ -1502,7 +1506,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return (
                   <tr key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={{ height: '34px', cursor: 'pointer' }}>
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
-                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}{getCity(venue) && <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '10px' }}> · {getCity(venue)}</span>}</td>
+                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
+                    {tc('city') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'nowrap' }}>{getCity(venue) || '—'}</td>}
                     {tc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
                     {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
@@ -1672,6 +1677,24 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </div>
       </div>
 
+      {/* Est. Start Date + Est. End Date — side by side on desktop */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+        <div style={S.field}>
+          <label style={S.label}>EST. START DATE</label>
+          <input type="date" value={newTrialForm.estStartDate}
+            onChange={e => setNewTrialForm(f => ({ ...f, estStartDate: e.target.value }))}
+            style={inputStyle}
+            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+        </div>
+        <div style={S.field}>
+          <label style={S.label}>EST. END DATE</label>
+          <input type="date" value={newTrialForm.estEndDate}
+            onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value }))}
+            style={inputStyle}
+            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+        </div>
+      </div>
+
       {/* Notes */}
       <div style={S.field}>
         <label style={S.label}>NOTES</label>
@@ -1769,54 +1792,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const recentStarted = recentTrials.filter(v => v.trialStartDate && v.trialStartDate >= ninetyDaysAgo);
     const avgTrialsPerMonth = recentStarted.length > 0 ? Math.round(recentStarted.length / 3) : null;
 
-    // ── 30-day rolling deltas ──
-    const thirtyDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 30); return formatDate(d); })();
-    const sixtyDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 60); return formatDate(d); })();
-    const filterWindow = (start, end) => allTrials.filter(v =>
-      (v.trialStartDate && v.trialStartDate >= start && v.trialStartDate < end) ||
-      (v.outcomeDate && v.outcomeDate >= start && v.outcomeDate < end)
-    );
-    const last30 = filterWindow(thirtyDaysAgo, getTodayString() + 'z');
-    const prev30 = filterWindow(sixtyDaysAgo, thirtyDaysAgo);
-
-    // Win rate delta
-    const calcWR = (trials) => { const w = trials.filter(v => v.trialStatus === 'won').length; const d = w + trials.filter(v => v.trialStatus === 'lost').length; return d > 0 ? Math.round((w / d) * 100) : null; };
-    const last30WR = calcWR(last30);
-    const prev30WR = calcWR(prev30);
-    const deltaWR = (last30WR != null && prev30WR != null) ? last30WR - prev30WR : null;
-
-    // ATD delta
-    const calcATD = (trials) => { const dt = trials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialStartDate && v.outcomeDate); return dt.length > 0 ? Math.round(dt.reduce((s, v) => s + daysBetween(v.trialStartDate, v.outcomeDate), 0) / dt.length) : null; };
-    const last30ATD = calcATD(last30);
-    const prev30ATD = calcATD(prev30);
-    const deltaATD = (last30ATD != null && prev30ATD != null) ? last30ATD - prev30ATD : null;
-
-    // Sold price delta
-    const calcSP = (trials) => { const wp = trials.filter(v => v.trialStatus === 'won' && v.soldPricePerLitre); return wp.length > 0 ? wp.reduce((s, v) => s + parseFloat(v.soldPricePerLitre), 0) / wp.length : null; };
-    const last30SP = calcSP(last30);
-    const prev30SP = calcSP(prev30);
-    const deltaSP = (last30SP != null && prev30SP != null) ? last30SP - prev30SP : null;
-
-    // Trials count delta
-    const last30Started = last30.filter(v => v.trialStartDate && v.trialStartDate >= thirtyDaysAgo).length;
-    const prev30Started = prev30.filter(v => v.trialStartDate && v.trialStartDate >= sixtyDaysAgo && v.trialStartDate < thirtyDaysAgo).length;
-    const deltaTrials = (last30Started > 0 || prev30Started > 0) ? last30Started - prev30Started : null;
-
     const statCardStyle = {
       background: 'white', borderRadius: '10px', padding: '16px 18px',
       border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
-    };
-
-    const deltaLabel = (val, suffix, inverted) => {
-      if (val == null) return null;
-      const good = inverted ? val <= 0 : val >= 0;
-      const sign = val > 0 ? '+' : '';
-      return (
-        <div style={{ fontSize: '10px', fontWeight: '700', color: good ? '#059669' : '#dc2626', display: 'flex', alignItems: 'center', gap: '2px' }}>
-          {good ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-          {sign}{val}{suffix}
-        </div>
-      );
     };
 
     return (
@@ -1827,45 +1805,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {/* Win Rate */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Win Rate</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, lineHeight: 1 }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
-              </div>
-              {deltaLabel(deltaWR, '%', false)}
-            </div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, lineHeight: 1 }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
           </div>
           {/* Avg Time to Decision */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Time to Decision</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6', lineHeight: 1 }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
-              </div>
-              {deltaLabel(deltaATD, 'd', true)}
-            </div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6', lineHeight: 1 }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
           </div>
           {/* Avg Sold Price */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Sold $/L</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b', lineHeight: 1 }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
-              </div>
-              {deltaSP != null && (() => {
-                const good = deltaSP >= 0;
-                return <div style={{ fontSize: '10px', fontWeight: '700', color: good ? '#059669' : '#dc2626', display: 'flex', alignItems: 'center', gap: '2px' }}>{good ? <TrendingUp size={10} /> : <TrendingDown size={10} />}{deltaSP >= 0 ? '+' : ''}${deltaSP.toFixed(2)}</div>;
-              })()}
-            </div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b', lineHeight: 1 }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
           </div>
           {/* Avg Trials per Month */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Trials / Month</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
-              </div>
-              {deltaLabel(deltaTrials, '', false)}
-            </div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
           </div>
         </div>
 
@@ -2158,15 +2113,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ─────────────────────────────────────────────
   // MANAGE TABLE — desktop table for manage trial list
   // ─────────────────────────────────────────────
-  const renderManageTable = (allTrials, searchTerm) => {
-    // Apply search filter first
-    const searched = searchTerm
-      ? allTrials.filter(v => v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || v.customerCode?.toLowerCase().includes(searchTerm.toLowerCase()))
-      : allTrials;
+  const renderManageTable = (allTrials) => {
     // Apply status pill filter
     const statusFiltered = manageStatusFilter.length > 0
-      ? searched.filter(v => manageStatusFilter.includes(v.trialStatus))
-      : searched;
+      ? allTrials.filter(v => manageStatusFilter.includes(v.trialStatus))
+      : allTrials;
     // Apply column filters
     const colFiltered = colFilters.activeCount > 0 ? colFilters.applyFilters(statusFiltered, colAccessors) : statusFiltered;
     const rows = sortList(colFiltered);
@@ -2221,6 +2172,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              {mc('city') && <FilterableTh colKey="city" label="City" options={getUniqueValues(statusFiltered, colAccessors.city)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {mc('status') && <FilterableTh colKey="status" label="Status" options={getUniqueValues(statusFiltered, colAccessors.status)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
               {mc('competitor') && <FilterableTh colKey="competitor" label="Comp." options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
@@ -2235,7 +2187,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <tbody>
               {rows.length === 0 ? (
                 <tr><td colSpan={99} style={{ padding: '40px 20px', textAlign: 'center', color: COLORS.textMuted, fontSize: '13px' }}>
-                  {searchTerm ? 'No trials match your search' : 'No trials found'}
+                  No trials found
                 </td></tr>
               ) : rows.map((venue) => {
                 const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
@@ -2246,7 +2198,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return (
                   <tr key={venue.id} onClick={() => setManageVenueId(venue.id)} style={{ height: '34px', cursor: 'pointer' }}>
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
-                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}{getCity(venue) && <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '10px' }}> · {getCity(venue)}</span>}</td>
+                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
+                    {mc('city') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'nowrap' }}>{getCity(venue) || '—'}</td>}
                     {mc('status') && <td><TrialStatusBadge status={venue.trialStatus} /></td>}
                     {mc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
                     {mc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{vComp ? <CompetitorPill comp={vComp} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
@@ -2277,33 +2230,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const allTrials = myVenues.filter(v => v.trialStatus);
     const venue = manageVenueId ? myVenues.find(v => v.id === manageVenueId) : null;
 
-    // If no venue selected, show search/select UI
+    // If no venue selected, show select UI
     if (!venue) {
-      const [searchTerm, setSearchTerm] = [manageSearch, setManageSearch];
-      const filtered = searchTerm
-        ? allTrials.filter(v => v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || v.customerCode?.toLowerCase().includes(searchTerm.toLowerCase()))
-        : allTrials;
-      const sorted = [...filtered].sort((a, b) => (b.trialStartDate || '').localeCompare(a.trialStartDate || ''));
+      const sorted = [...allTrials].sort((a, b) => (b.trialStartDate || '').localeCompare(a.trialStartDate || ''));
 
       return (
         <div>
           <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 16px' }}>Manage Trial</h2>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Search for a venue to manage its trial details, edit information, or change its status.</p>
-          {/* Search bar */}
-          <div style={{ position: 'relative', marginBottom: '16px' }}>
-            <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              type="text" placeholder="Search by venue name or customer code..."
-              value={searchTerm} onChange={e => setManageSearch(e.target.value)}
-              style={{ ...inputStyle, paddingLeft: '36px', fontSize: '14px', padding: '10px 12px 10px 36px', width: '100%', maxWidth: '500px' }}
-            />
-          </div>
+          <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Select a venue to manage its trial details, edit information, or change its status.</p>
           {/* Results */}
-          {isTableView ? renderManageTable(allTrials, searchTerm) : (
+          {isTableView ? renderManageTable(allTrials) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '700px' }}>
               {sorted.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '13px' }}>
-                  {searchTerm ? 'No trials match your search' : 'No trials found'}
+                  No trials found
                 </div>
               ) : sorted.map(v => {
                 const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pending'];
@@ -2478,7 +2418,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     };
 
     return (
-      <div style={{ maxWidth: '1100px', margin: '0 auto', ...(isDesktop ? {} : { padding: '0' }) }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', ...(isDesktop ? { padding: '24px 32px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' } : { padding: '16px 12px' }) }}>
         {/* Back button + header + action buttons */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <button onClick={() => setManageVenueId(null)} style={{
@@ -2594,31 +2534,34 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {venue.updatedAt && <span>Last edited: {displayDate(venue.updatedAt.split('T')[0])}</span>}
                     </div>
                   )}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                     {[
-                      { label: 'Venue Name', value: venue.name },
-                      { label: 'Start Date', value: displayDate(venue.trialStartDate) },
-                      { label: 'End Date', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' },
-                      { label: 'Current $/L', value: venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : '—' },
-                      { label: 'Offered $/L', value: venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : '—' },
-                      { label: 'Fryers', value: venue.fryerCount || 1 },
-                      { label: 'Pre-trial weekly avg', value: preTrialAvg ? `${preTrialAvg} L` : '—' },
-                      liveTrialAvg !== null ? { label: 'Trial weekly avg', value: `${liveTrialAvg} L` } : null,
-                      (venue.customerCode && !venue.customerCode.startsWith('PRS-')) ? { label: 'Customer Code', value: venue.customerCode } : null,
-                    ].filter(Boolean).map((r, i) => (
-                      <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{r.label}</div>
-                        <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>{r.value}</div>
-                      </div>
-                    ))}
+                      [{ label: 'Venue Name', value: venue.name }, { label: 'Fryers', value: venue.fryerCount || 1 }],
+                      [{ label: 'Start Date', value: displayDate(venue.trialStartDate) || '—' }, { label: 'End Date', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' }],
+                      [{ label: 'Current $/L', value: venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : '—' }, { label: 'Offered $/L', value: venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : '—' }],
+                      [{ label: 'Pre-trial L/wk', value: preTrialAvg ? `${preTrialAvg} L` : '—' }, liveTrialAvg !== null ? { label: 'Trial L/wk', value: `${liveTrialAvg} L` } : null],
+                      [(venue.customerCode && !venue.customerCode.startsWith('PRS-')) ? { label: 'Customer Code', value: venue.customerCode } : null, null],
+                    ].map((row, i) => {
+                      const items = row.filter(Boolean);
+                      if (items.length === 0) return null;
+                      return (
+                        <div key={i} style={{ display: 'flex', gap: '16px', padding: '8px 0', borderBottom: '1px solid #f1f5f9', flexDirection: isDesktop ? 'row' : 'column' }}>
+                          {items.map((r, j) => (
+                            <div key={j} style={{ flex: 1 }}>
+                              <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{r.label}</div>
+                              <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>{r.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
                     {/* Oil comparison */}
-                    <div style={{ gridColumn: '1 / -1', padding: '8px 0', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {comp && <CompetitorPill comp={comp} />}
                       <OilBadge oil={compOil} competitors={competitors} compact />
                       <span style={{ fontSize: '12px', color: '#94a3b8' }}>vs</span>
                       <OilBadge oil={cookersOil} competitors={competitors} compact />
                     </div>
-                    {/* Notes moved to separate timeline card below */}
                   </div>
                 </div>
               ) : (
@@ -2648,6 +2591,69 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               )}
             </div>
+
+            {/* Savings table */}
+            {weekLitres !== null && (
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '16px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                      <th style={{ padding: '8px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Savings</th>
+                      <th style={{ padding: '8px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Litres</th>
+                      <th style={{ padding: '8px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Spend</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '8px 12px', fontSize: '13px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Weekly</td>
+                      <td style={{ padding: '8px 12px', fontSize: '13px', color: weekLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekLitres < 0 ? '-' : ''}{Math.abs(weekLitres)} L</td>
+                      <td style={{ padding: '8px 12px', fontSize: '13px', color: weekSpend !== null && weekSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekSpend !== null ? (weekSpend < 0 ? '-$' : '$') + Math.abs(weekSpend).toLocaleString() : '—'}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px 12px', fontSize: '13px', color: '#1f2937' }}>Annual</td>
+                      <td style={{ padding: '8px 12px', fontSize: '13px', color: annualLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualLitres < 0 ? '-' : ''}{Math.abs(annualLitres)} L</td>
+                      <td style={{ padding: '8px 12px', fontSize: '13px', color: annualSpend !== null && annualSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualSpend !== null ? (annualSpend < 0 ? '-$' : '$') + Math.abs(annualSpend).toLocaleString() : '—'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Outcome strip (for won/lost/accepted) */}
+            {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && (
+              <div style={{
+                padding: '12px 16px', borderRadius: '12px', marginBottom: '16px',
+                background: venue.trialStatus === 'lost' ? '#fef2f2' : '#f0fdf4',
+                border: `1px solid ${venue.trialStatus === 'lost' ? '#fecaca' : '#bbf7d0'}`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: venue.trialStatus === 'lost' ? '#dc2626' : '#059669' }}>
+                    {venue.trialStatus === 'lost' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
+                  </span>
+                  {venue.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span></>}
+                  {venue.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason}</span></>}
+                </div>
+                {(venue.trialStatus === 'won' || venue.trialStatus === 'accepted') && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
+                    {cookersOil && <OilBadge oil={cookersOil} competitors={competitors} compact />}
+                    {venue.soldPricePerLitre && <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '400' }}>@ ${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span>}
+                  </div>
+                )}
+                {venue.trialStatus === 'won' && venue.customerCode && (
+                  <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <CheckCircle2 size={13} color="#059669" />
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Customer Code (for accepted status) */}
+            {venue.trialStatus === 'accepted' && (
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
+                <CustomerCodeInput venueId={venue.id} onSave={handleSaveCustomerCode} />
+              </div>
+            )}
 
             {/* Notes Timeline */}
             {(() => {
@@ -2712,69 +2718,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
             })()}
-
-            {/* Savings table */}
-            {weekLitres !== null && (
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '16px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc' }}>
-                      <th style={{ padding: '8px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Savings</th>
-                      <th style={{ padding: '8px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Litres</th>
-                      <th style={{ padding: '8px 12px', fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Spend</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '8px 12px', fontSize: '13px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Weekly</td>
-                      <td style={{ padding: '8px 12px', fontSize: '13px', color: weekLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekLitres < 0 ? '-' : ''}{Math.abs(weekLitres)} L</td>
-                      <td style={{ padding: '8px 12px', fontSize: '13px', color: weekSpend !== null && weekSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekSpend !== null ? (weekSpend < 0 ? '-$' : '$') + Math.abs(weekSpend).toLocaleString() : '—'}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '8px 12px', fontSize: '13px', color: '#1f2937' }}>Annual</td>
-                      <td style={{ padding: '8px 12px', fontSize: '13px', color: annualLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualLitres < 0 ? '-' : ''}{Math.abs(annualLitres)} L</td>
-                      <td style={{ padding: '8px 12px', fontSize: '13px', color: annualSpend !== null && annualSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualSpend !== null ? (annualSpend < 0 ? '-$' : '$') + Math.abs(annualSpend).toLocaleString() : '—'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Outcome strip (for won/lost/accepted) */}
-            {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && (
-              <div style={{
-                padding: '12px 16px', borderRadius: '12px', marginBottom: '16px',
-                background: venue.trialStatus === 'lost' ? '#fef2f2' : '#f0fdf4',
-                border: `1px solid ${venue.trialStatus === 'lost' ? '#fecaca' : '#bbf7d0'}`,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: venue.trialStatus === 'lost' ? '#dc2626' : '#059669' }}>
-                    {venue.trialStatus === 'lost' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
-                  </span>
-                  {venue.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span></>}
-                  {venue.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason}</span></>}
-                </div>
-                {(venue.trialStatus === 'won' || venue.trialStatus === 'accepted') && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
-                    {cookersOil && <OilBadge oil={cookersOil} competitors={competitors} compact />}
-                    {venue.soldPricePerLitre && <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '400' }}>@ ${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span>}
-                  </div>
-                )}
-                {venue.trialStatus === 'won' && venue.customerCode && (
-                  <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <CheckCircle2 size={13} color="#059669" />
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Customer Code (for accepted status) */}
-            {venue.trialStatus === 'accepted' && (
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
-                <CustomerCodeInput venueId={venue.id} onSave={handleSaveCustomerCode} />
-              </div>
-            )}
 
           </div>
 

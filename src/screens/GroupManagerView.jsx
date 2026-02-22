@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { mapGroup, mapVenue, mapReading, mapSystemSettings } from '../lib/mappers';
+import { SummaryView, DashboardView } from './VenueStaffView';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check,
   AlertCircle, Clock, Star, Building, LogOut, BarChart3, Calendar, Eye, Droplets
@@ -1044,19 +1045,19 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 
   const today    = new Date();
   const todayStr = formatDate(today);
-  const last7days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
-  const recs7    = last7days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
+  const last30days = Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
+  const recs30    = last30days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
 
   // KPIs
-  const daysWithRecs   = last7days.filter(d => (recordings[d] || []).length > 0).length;
+  const daysWithRecs   = last30days.filter(d => (recordings[d] || []).length > 0).length;
   const complianceRate = Math.round((daysWithRecs / 7) * 100);
-  const tpmVals        = recs7.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+  const tpmVals        = recs30.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
   const avgTPM         = tpmVals.length > 0 ? (tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length).toFixed(1) : '—';
   const critCount      = tpmVals.filter(v => v >= critAt).length;
   const critRate       = tpmVals.length > 0 ? Math.round((critCount / tpmVals.length) * 100) : 0;
-  const filterable     = recs7.filter(r => r.filtered !== null && r.filtered !== undefined);
+  const filterable     = recs30.filter(r => r.filtered !== null && r.filtered !== undefined);
   const filteringRate  = filterable.length > 0 ? Math.round((filterable.filter(r => r.filtered === true).length / filterable.length) * 100) : 0;
-  const tempRecs       = recs7.filter(r => r.setTemperature && r.actualTemperature);
+  const tempRecs       = recs30.filter(r => r.setTemperature && r.actualTemperature);
   const avgTempVar     = tempRecs.length > 0 ? tempRecs.reduce((s, r) => s + calcTempVariancePct(r.setTemperature, r.actualTemperature), 0) / tempRecs.length : null;
   const todayRecs      = recordings[todayStr] || [];
 
@@ -1073,7 +1074,7 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 
   // Staff leaderboard
   const staffMap = {};
-  recs7.forEach(r => {
+  recs30.forEach(r => {
     if (!r.staffName) return;
     staffMap[r.staffName] = staffMap[r.staffName] || { count: 0, filtered: 0 };
     staffMap[r.staffName].count++;
@@ -1099,7 +1100,7 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: '700', color: COLORS.text, margin: 0 }}>{venueName}</h2>
-          <p style={{ fontSize: '13px', color: COLORS.textMuted, margin: '2px 0 0' }}>Last 7 days · {fryerCount} fryers</p>
+          <p style={{ fontSize: '13px', color: COLORS.textMuted, margin: '2px 0 0' }}>Last 30 days · {fryerCount} fryers</p>
         </div>
         <div style={{ fontSize: '13px', color: todayRecs.length > 0 ? COLORS.good : COLORS.warning, fontWeight: '600' }}>
           {todayRecs.length > 0 ? `${todayRecs.length} recorded today` : 'Nothing recorded today'}
@@ -1181,15 +1182,15 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
   const computed = useMemo(() => {
     const today    = new Date();
     const todayStr = formatDate(today);
-    const last7days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
+    const last30days = Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
     const last90   = Array.from({ length: 90 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
 
     const venueStats = venues.map(venue => {
       const recordings = recordingsByVenue[venue.id] || {};
 
-      const allRecs  = last7days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
-      const pastDays = last7days.filter(date => new Date(date) <= today).length;
-      const daysWithRecs = last7days.filter(d => (recordings[d] || []).length > 0).length;
+      const allRecs  = last30days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
+      const pastDays = last30days.filter(date => new Date(date) <= today).length;
+      const daysWithRecs = last30days.filter(d => (recordings[d] || []).length > 0).length;
       const complianceRate = pastDays > 0 ? Math.round((daysWithRecs / pastDays) * 100) : 0;
 
       const tpmValues   = allRecs.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
@@ -1334,7 +1335,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     // Flatten all readings across all venues for last 7 days
     const allGroupRecs = venueStats.flatMap(v => {
       const recs = recordingsByVenue[v.id] || {};
-      return last7days.flatMap(date => (recs[date] || []).filter(r => !r.notInUse && r.tpmValue != null).map(r => ({ ...r, date })));
+      return last30days.flatMap(date => (recs[date] || []).filter(r => !r.notInUse && r.tpmValue != null).map(r => ({ ...r, date })));
     });
     const totalGroupReadings = allGroupRecs.length;
 
@@ -1404,7 +1405,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const groupDayStats = {};
     dayNames.forEach(d => { groupDayStats[d] = { recorded: 0, total: 0 }; });
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 30; i++) {
       const d = new Date(today); d.setDate(d.getDate() - i);
       const dn = dayNames[d.getDay()];
       const ds = formatDate(d);
@@ -1478,7 +1479,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: '700', color: COLORS.text, marginBottom: '2px' }}>{groupName}</h2>
-          <p style={{ fontSize: '14px', color: COLORS.textMuted, margin: 0 }}>{totalVenues} venue{totalVenues !== 1 ? 's' : ''} · Last 7 days</p>
+          <p style={{ fontSize: '14px', color: COLORS.textMuted, margin: 0 }}>{totalVenues} venue{totalVenues !== 1 ? 's' : ''} · Last 30 days</p>
         </div>
       </div>
 
@@ -1553,7 +1554,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       {/* EXEC SUMMARY — venue staff KPIs + admin recording health at group level */}
       {groupView === 'exec' && (
         <div>
-          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 7 days</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 30 days</p>
 
           {/* Row 1: KPI cards (left) + Oil Management (right) */}
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
@@ -1770,7 +1771,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   // Navigation
   const [primaryTab, setPrimaryTab]         = useState('all-venues');
   const [groupView, setGroupView]           = useState('glance');
-  const [byVenueView, setByVenueView]      = useState('overview');
+  const [byVenueView, setByVenueView]      = useState('dashboard');
   const [calendarView, setCalendarView]     = useState('week');
   const [selectedDate, setSelectedDate]     = useState(new Date());
   const [selectedVenueId, setSelectedVenueId] = useState(null);
@@ -1844,11 +1845,12 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   const handleDrillDown = (venueId) => {
     setSelectedVenueId(venueId);
     setPrimaryTab('by-venue');
-    setByVenueView('overview');
+    setByVenueView('dashboard');
   };
 
   const selectedVenue = venues.find(v => v.id === selectedVenueId);
   const activeRecordings = selectedVenueId ? (recordingsByVenue[selectedVenueId] || {}) : {};
+  const flatReadings = useMemo(() => Object.entries(activeRecordings).flatMap(([date, recs]) => recs.map(r => ({ ...r, readingDate: r.readingDate || date }))), [activeRecordings]);
 
   const warnAt = systemSettings?.warningThreshold || 18;
   const critAt = systemSettings?.criticalThreshold || 24;
@@ -2034,25 +2036,36 @@ export default function GroupManagerView({ currentUser, onLogout }) {
                   </div>
                 </div>
               </div>
-              {/* Overview */}
+              {/* Dashboard + Summary */}
               {(() => {
                 const goToByVenue = (view, cal) => {
                   if (selectedVenueId) { setPrimaryTab('by-venue'); setByVenueView(view); if (cal) setCalendarView(cal); }
                   else if (venues.length > 0) { setSelectedVenueId(venues[0].id); setPrimaryTab('by-venue'); setByVenueView(view); if (cal) setCalendarView(cal); }
                 };
-                const overviewActive = primaryTab === 'by-venue' && byVenueView === 'overview';
-                return (
-                  <button onClick={() => goToByVenue('overview')} style={{
+                const dashActive = primaryTab === 'by-venue' && byVenueView === 'dashboard';
+                const summActive = primaryTab === 'by-venue' && byVenueView === 'summary';
+                return (<>
+                  <button onClick={() => goToByVenue('dashboard')} style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                     padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                     marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
-                    background: overviewActive ? '#e8eef6' : 'transparent',
-                    color: overviewActive ? COLORS.brand : '#1f2937',
-                    fontWeight: overviewActive ? '600' : '500', fontSize: '13px',
+                    background: dashActive ? '#e8eef6' : 'transparent',
+                    color: dashActive ? COLORS.brand : '#1f2937',
+                    fontWeight: dashActive ? '600' : '500', fontSize: '13px',
                   }}>
-                    <Eye size={15} /> Overview
+                    <Eye size={15} /> Dashboard
                   </button>
-                );
+                  <button onClick={() => goToByVenue('summary')} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                    padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                    marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
+                    background: summActive ? '#e8eef6' : 'transparent',
+                    color: summActive ? COLORS.brand : '#1f2937',
+                    fontWeight: summActive ? '600' : '500', fontSize: '13px',
+                  }}>
+                    <BarChart3 size={15} /> Summary
+                  </button>
+                </>);
               })()}
               {/* Calendar with always-visible scale sub-items */}
               <button onClick={() => {
@@ -2113,8 +2126,11 @@ export default function GroupManagerView({ currentUser, onLogout }) {
                 <p style={{ color: COLORS.textMuted, fontSize: '14px' }}>Choose a venue from the sidebar to view its details.</p>
               </div>
             )}
-            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'overview' && (
-              <VenueOverview recordings={activeRecordings} venueName={selectedVenue?.name || ''} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'dashboard' && (
+              <DashboardView readings={flatReadings} />
+            )}
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'summary' && (
+              <SummaryView readings={flatReadings} />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
               <div>
@@ -2162,7 +2178,8 @@ export default function GroupManagerView({ currentUser, onLogout }) {
             )}
             {primaryTab === 'by-venue' && (
               <div style={{ padding: '10px 16px', display: 'flex', gap: '8px', borderBottom: byVenueView === 'calendar' ? `1.5px solid ${COLORS.border}` : 'none', background: COLORS.white }}>
-                <button onClick={() => { if (selectedVenueId) setByVenueView('overview'); }} style={toggleStyle(byVenueView === 'overview', !selectedVenueId)}><Eye size={15} /> Overview</button>
+                <button onClick={() => { if (selectedVenueId) setByVenueView('dashboard'); }} style={toggleStyle(byVenueView === 'dashboard', !selectedVenueId)}><Eye size={15} /> Dashboard</button>
+                <button onClick={() => { if (selectedVenueId) setByVenueView('summary'); }} style={toggleStyle(byVenueView === 'summary', !selectedVenueId)}><BarChart3 size={15} /> Summary</button>
                 <button onClick={() => { if (selectedVenueId) setByVenueView('calendar'); }} style={toggleStyle(byVenueView === 'calendar', !selectedVenueId)}><Calendar size={15} /> Calendar</button>
               </div>
             )}
@@ -2186,8 +2203,11 @@ export default function GroupManagerView({ currentUser, onLogout }) {
                 <p style={{ color: COLORS.textMuted, fontSize: '14px' }}>Choose a venue from the dropdown above to view its details.</p>
               </div>
             )}
-            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'overview' && (
-              <VenueOverview recordings={activeRecordings} venueName={selectedVenue?.name || ''} fryerCount={selectedVenue?.fryerCount || 4} warnAt={warnAt} critAt={critAt} />
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'dashboard' && (
+              <DashboardView readings={flatReadings} />
+            )}
+            {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'summary' && (
+              <SummaryView readings={flatReadings} />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
               <>
