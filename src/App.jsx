@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from './lib/supabase';
 import { mapProfile, mapReading, mapSystemSettings, unMapReading } from './lib/mappers';
-import Login from './screens/Login';
-import FrysmartAdminPanel from './screens/FrysmartAdminPanel';
-import VenueStaffView from './screens/VenueStaffView';
-import GroupManagerView from './screens/GroupManagerView';
-import BDMTrialsView from './screens/BDMTrialsView';
+
+const Login = lazy(() => import('./screens/Login'));
+const FrysmartAdminPanel = lazy(() => import('./screens/FrysmartAdminPanel'));
+const VenueStaffView = lazy(() => import('./screens/VenueStaffView'));
+const GroupManagerView = lazy(() => import('./screens/GroupManagerView'));
+const BDMTrialsView = lazy(() => import('./screens/BDMTrialsView'));
 
 // Cookers drop pulsing loader with sequential dot animation
 const LoadingScreen = () => (
@@ -278,7 +279,7 @@ function App() {
 
   // No session → login
   if (!session) {
-    return <Login />;
+    return <Suspense fallback={<LoadingScreen />}><Login /></Suspense>;
   }
 
   // Admin previewing a venue's staff view
@@ -287,14 +288,16 @@ function App() {
       return <LoadingScreen />;
     }
     return (
-      <VenueStaffView
-        currentUser={currentUser}
-        venue={staffVenue}
-        readings={staffReadings}
-        systemSettings={staffSettings}
-        onSaveReadings={handleSaveReadings}
-        onLogout={handleExitPreview}
-      />
+      <Suspense fallback={<LoadingScreen />}>
+        <VenueStaffView
+          currentUser={currentUser}
+          venue={staffVenue}
+          readings={staffReadings}
+          systemSettings={staffSettings}
+          onSaveReadings={handleSaveReadings}
+          onLogout={handleExitPreview}
+        />
+      </Suspense>
     );
   }
 
@@ -304,29 +307,31 @@ function App() {
       return <LoadingScreen />;
     }
     return (
-      <VenueStaffView
-        currentUser={currentUser}
-        venue={staffVenue}
-        readings={staffReadings}
-        systemSettings={staffSettings}
-        onSaveReadings={handleSaveReadings}
-        onLogout={handleLogout}
-      />
+      <Suspense fallback={<LoadingScreen />}>
+        <VenueStaffView
+          currentUser={currentUser}
+          venue={staffVenue}
+          readings={staffReadings}
+          systemSettings={staffSettings}
+          onSaveReadings={handleSaveReadings}
+          onLogout={handleLogout}
+        />
+      </Suspense>
     );
   }
 
   // Group manager view
   if (currentUser?.role === 'group_viewer') {
-    return <GroupManagerView currentUser={currentUser} onLogout={handleLogout} />;
+    return <Suspense fallback={<LoadingScreen />}><GroupManagerView currentUser={currentUser} onLogout={handleLogout} /></Suspense>;
   }
 
   // BDM view — dedicated oil trials screen
   if (currentUser?.role === 'bdm') {
-    return <BDMTrialsView currentUser={currentUser} onLogout={handleLogout} />;
+    return <Suspense fallback={<LoadingScreen />}><BDMTrialsView currentUser={currentUser} onLogout={handleLogout} /></Suspense>;
   }
 
   // Authenticated → admin panel
-  return <FrysmartAdminPanel currentUser={currentUser} onPreviewVenue={handlePreviewVenue} />;
+  return <Suspense fallback={<LoadingScreen />}><FrysmartAdminPanel currentUser={currentUser} onPreviewVenue={handlePreviewVenue} /></Suspense>;
 }
 
 export default App;
