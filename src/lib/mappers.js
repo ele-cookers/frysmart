@@ -64,6 +64,8 @@ export const mapProfile = (r) => ({
   venueId: r.venue_id ?? '',
   groupId: r.group_id ?? '',
   lastActive: r.last_active,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
 });
 
 export const unMapProfile = (u) => ({
@@ -90,6 +92,8 @@ export const mapGroup = (r) => ({
   status: r.status,
   lastTpmDate: r.last_tpm_date,
   password: r.password ?? '',
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
 });
 
 export const unMapGroup = (g) => ({
@@ -208,6 +212,7 @@ export const mapReading = (r) => ({
   notes: r.notes ?? '',
   notInUse: r.not_in_use,
   staffName: r.staff_name ?? '',
+  createdAt: r.created_at,
 });
 
 export const unMapReading = (rd) => ({

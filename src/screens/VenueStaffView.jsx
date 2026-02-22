@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check, AlertTriangle, AlertCircle, Clock, Star, Settings, LogOut, Eye, ClipboardList, Calendar, BarChart3, LayoutDashboard } from 'lucide-react';
 import { HEADER_BADGE_COLORS, OIL_STATUS_COLORS, getThemeColors } from '../lib/badgeConfig';
 

@@ -88,7 +88,9 @@ create table profiles (
   password text,
   venue_id uuid,
   group_id uuid,
-  last_active date
+  last_active date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 -- ============================================================
@@ -103,7 +105,9 @@ create table groups (
   nam_id uuid references profiles(id) on delete set null,
   password text,
   status text not null default 'active' check (status in ('active', 'inactive')),
-  last_tpm_date date
+  last_tpm_date date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 -- ============================================================
@@ -172,6 +176,7 @@ create table tpm_readings (
   notes text,
   not_in_use bool not null default false,
   staff_name text,
+  created_at timestamptz not null default now(),
 
   constraint tpm_readings_venue_fryer_date_num_unique
     unique (venue_id, fryer_number, reading_date, reading_number)
@@ -190,7 +195,7 @@ alter table profiles
   foreign key (group_id) references groups(id) on delete set null;
 
 -- ============================================================
--- 10. Auto-update updated_at on competitors & trials
+-- 10. Auto-update updated_at on competitors, venues & trials
 -- ============================================================
 
 create or replace function update_updated_at()
@@ -205,12 +210,49 @@ create trigger competitors_updated_at
   before update on competitors
   for each row execute function update_updated_at();
 
+create trigger venues_updated_at
+  before update on venues
+  for each row execute function update_updated_at();
+
 create trigger trials_updated_at
   before update on trials
   for each row execute function update_updated_at();
 
+create trigger profiles_updated_at
+  before update on profiles
+  for each row execute function update_updated_at();
+
+create trigger groups_updated_at
+  before update on groups
+  for each row execute function update_updated_at();
+
 -- ============================================================
--- 11. Seed config tables
+-- 11. Indexes for query performance
+-- ============================================================
+
+-- trials: venue lookups, status filtering, date queries
+create index idx_trials_venue_id on trials(venue_id);
+create index idx_trials_status on trials(status);
+create index idx_trials_outcome_date on trials(outcome_date);
+
+-- tpm_readings: venue/trial lookups, date queries
+create index idx_tpm_readings_venue_id on tpm_readings(venue_id);
+create index idx_tpm_readings_trial_id on tpm_readings(trial_id);
+create index idx_tpm_readings_reading_date on tpm_readings(reading_date);
+
+-- venues: group/bdm lookups, status filtering
+create index idx_venues_group_id on venues(group_id);
+create index idx_venues_bdm_id on venues(bdm_id);
+create index idx_venues_status on venues(status);
+
+-- profiles: role-based queries
+create index idx_profiles_role on profiles(role);
+
+-- oil_types: competitor lookups
+create index idx_oil_types_competitor_id on oil_types(competitor_id);
+
+-- ============================================================
+-- 12. Seed config tables
 -- ============================================================
 
 insert into trial_reasons (key, label, type) values
@@ -250,7 +292,7 @@ insert into system_settings (warning_threshold, critical_threshold, default_frye
 values (18, 24, 4, 7, 'weekly', 7, array['canola','palm','sunflower','soybean','cottonseed','tallow','blend','unknown']);
 
 -- ============================================================
--- 12. Enable Row Level Security on all tables
+-- 13. Enable Row Level Security on all tables
 --     (policies will be added in a later phase)
 -- ============================================================
 
@@ -303,52 +345,5 @@ create policy "Allow update for authenticated" on system_settings
   for update to authenticated using (true) with check (true);
 
 -- ============================================================
--- 13. Migration: extract trials from venues into trials table
---     Run this on existing databases to migrate test data.
--- ============================================================
-
--- Step 1: Create trials table (already in schema above for fresh installs)
--- Step 2: Add trial_id to tpm_readings (already in schema above for fresh installs)
--- Step 3: Migrate existing trial data:
-
--- INSERT INTO trials (venue_id, status, start_date, end_date, trial_oil_id,
---   notes, current_weekly_avg, current_price_per_litre, offered_price_per_litre,
---   outcome_date, trial_reason, sold_price_per_litre)
--- SELECT id, trial_status, trial_start_date, trial_end_date, trial_oil_id,
---   trial_notes, current_weekly_avg, current_price_per_litre, offered_price_per_litre,
---   outcome_date, trial_reason, sold_price_per_litre
--- FROM venues
--- WHERE trial_status IS NOT NULL;
-
--- Step 4: Backfill trial_id on existing readings:
--- UPDATE tpm_readings r SET trial_id = t.id
--- FROM trials t
--- WHERE r.venue_id = t.venue_id
---   AND r.reading_date >= t.start_date
---   AND (t.end_date IS NULL OR r.reading_date <= t.end_date);
-
--- Step 5: Drop old trial columns from venues:
--- ALTER TABLE venues DROP COLUMN IF EXISTS trial_status;
--- ALTER TABLE venues DROP COLUMN IF EXISTS trial_start_date;
--- ALTER TABLE venues DROP COLUMN IF EXISTS trial_end_date;
--- ALTER TABLE venues DROP COLUMN IF EXISTS trial_oil_id;
--- ALTER TABLE venues DROP COLUMN IF EXISTS trial_notes;
--- ALTER TABLE venues DROP COLUMN IF EXISTS current_weekly_avg;
--- ALTER TABLE venues DROP COLUMN IF EXISTS current_price_per_litre;
--- ALTER TABLE venues DROP COLUMN IF EXISTS offered_price_per_litre;
--- ALTER TABLE venues DROP COLUMN IF EXISTS outcome_date;
--- ALTER TABLE venues DROP COLUMN IF EXISTS trial_reason;
--- ALTER TABLE venues DROP COLUMN IF EXISTS sold_price_per_litre;
-
--- ============================================================
--- 14. Migration: add performance target columns to system_settings
--- ============================================================
-
--- ALTER TABLE system_settings ADD COLUMN target_win_rate numeric NOT NULL DEFAULT 75;
--- ALTER TABLE system_settings ADD COLUMN target_avg_time_to_decision int NOT NULL DEFAULT 14;
--- ALTER TABLE system_settings ADD COLUMN target_sold_price_per_litre numeric NOT NULL DEFAULT 2.50;
--- ALTER TABLE system_settings ADD COLUMN target_trials_per_month int NOT NULL DEFAULT 12;
-
--- ============================================================
--- Done! All tables, constraints, seeds, and temp RLS created.
+-- Done! All tables, constraints, indexes, seeds & temp RLS.
 -- ============================================================

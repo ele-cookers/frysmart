@@ -12,7 +12,7 @@ import {
   mapSystemSettings, unMapSystemSettings,
   mergeTrialIntoVenue, splitTrialFromVenue, TRIAL_FIELDS,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Shield, Droplets, Archive, Filter, Copy, Layers, UserPlus, CheckCircle, BarChart3, Globe, RefreshCw, Zap, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, Palette, RotateCcw, TrendingUp } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp } from 'lucide-react';
 import {
   HEADER_BADGE_COLORS, ROLE_COLORS, STATE_BADGE_COLORS, STATE_COLOURS,
   STATUS_COLORS, OIL_TIER_COLORS, COMPETITOR_TIER_COLORS, CODE_BADGE_COLORS,

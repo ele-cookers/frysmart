@@ -7,9 +7,9 @@ import {
 } from '../lib/badgeConfig';
 import {
   Plus, X, Check, Clock, AlertTriangle, LogOut,
-  ClipboardList, Archive, Play, Trophy,
+  ClipboardList, Play, Trophy,
   XCircle, Building, ChevronUp, ChevronDown,
-  LayoutList, LayoutGrid, ArrowUpDown, CheckCircle2,
+  ArrowUpDown, CheckCircle2,
   Search, ArrowDown, Filter, Monitor, Smartphone,
   Edit3, Calendar, Save, ChevronRight, BarChart3, TrendingUp, TrendingDown, RotateCcw,
   Star, MessageSquare
