@@ -1017,9 +1017,9 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
           { label: 'Min TPM', value: tpmVals.length > 0 ? Math.min(...tpmVals) : '—', color: tpmVals.length > 0 ? (Math.min(...tpmVals) <= 14 ? '#059669' : Math.min(...tpmVals) <= 18 ? '#d97706' : '#dc2626') : '#94a3b8' },
           { label: 'Max TPM', value: tpmVals.length > 0 ? Math.max(...tpmVals) : '—', color: tpmVals.length > 0 ? (Math.max(...tpmVals) <= 14 ? '#059669' : Math.max(...tpmVals) <= 18 ? '#d97706' : '#dc2626') : '#94a3b8' },
           { label: 'Avg Set Temp', value: avg(setTempVals) != null ? `${Math.round(avg(setTempVals))}°` : '—' },
+          { label: 'Avg Act. Temp', value: avg(actTempVals) != null ? `${Math.round(avg(actTempVals))}°` : '—' },
           { label: 'Avg Temp Var.', value: avg(tempVariances) != null ? `±${avg(tempVariances).toFixed(1)}°` : '—', color: avg(tempVariances) != null ? (avg(tempVariances) <= 3 ? '#059669' : avg(tempVariances) <= 6 ? '#d97706' : '#dc2626') : '#94a3b8' },
           { label: 'Total Litres', value: litreVals.length > 0 ? Math.round(litreVals.reduce((a, b) => a + b, 0)) + 'L' : '—' },
-          { label: 'Avg Act. Temp', value: avg(actTempVals) != null ? `${Math.round(avg(actTempVals))}°` : '—' },
         ];
         // Use the actual number of days as columns — all days in one row
         const dayCount = days.length;
@@ -1453,7 +1453,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [loading, setLoading] = useState(true);
 
   // ── UI state ──
-  const [activeTab, setActiveTab] = useState('new');
+  const [activeTab, setActiveTab] = useState('dashboard');
   // archiveSubTab removed — Successful/Unsuccessful are now separate top-level tabs
   const [bdmView, setBdmView] = useState('desktop'); // 'desktop' | 'mobile'
   const [sortNewest, setSortNewest] = useState(false); // false = A-Z, true = most recent
@@ -1904,12 +1904,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   const codeBadges = (venue) => {
     const trialIdFromNotes = venue.trialNotes?.match(/^(TRL-\d+)/)?.[1] || null;
-    const isProspect = venue.customerCode?.startsWith('PRS-');
-    if (!trialIdFromNotes && !venue.customerCode) return null;
+    if (!trialIdFromNotes) return null;
     return (
       <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
-        {trialIdFromNotes && <span style={{ ...S.pill, background: '#e8eef6', color: BLUE, border: `1px solid ${BLUE}33`, fontSize: '10px' }}>{trialIdFromNotes}</span>}
-        {venue.customerCode && <span style={{ ...S.pill, background: isProspect ? '#fef3c7' : '#f0fdf4', color: isProspect ? '#92400e' : '#059669', border: `1px solid ${isProspect ? '#fde68a' : '#bbf7d0'}`, fontSize: '10px' }}>{isProspect ? 'Prospect' : 'Cust'}: {venue.customerCode}</span>}
+        <span style={{ ...S.pill, background: '#e8eef6', color: BLUE, border: `1px solid ${BLUE}33`, fontSize: '10px' }}>{trialIdFromNotes}</span>
       </div>
     );
   };
@@ -2207,7 +2205,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // -- NEW TRIAL FORM --
   const renderNewTrialForm = () => (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '600px', margin: '0 auto', background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
     <form onSubmit={handleCreateTrial}>
       <h3 style={{ fontSize: '16px', fontWeight: '700', color: COLORS.text, marginBottom: '16px', marginTop: 0 }}>Create New Trial</h3>
 
@@ -2470,7 +2468,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const targetTPM = systemSettings?.targetTrialsPerMonth;
 
     const statCardStyle = {
-      background: 'white', borderRadius: '10px', padding: '10px 14px',
+      background: 'white', borderRadius: '10px', padding: '16px 18px',
       border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
     };
 
@@ -2490,7 +2488,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* ── Stats Row ── */}
         <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Last 90 days</div>
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
           {/* Win Rate */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Win Rate</div>
@@ -3471,7 +3469,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <div style={{ background: '#f0f4fa', borderRadius: '10px', padding: '6px', marginBottom: '14px' }}>
                 {/* New Trial — prominent CTA */}
                 <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); }} style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px',
                   padding: '11px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                   marginBottom: '4px', transition: 'all 0.15s',
                   background: activeTab === 'new' ? COLORS.brand : '#f5a623',
