@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { supabase } from './lib/supabase';
 import { mapProfile, mapReading, mapSystemSettings, unMapReading } from './lib/mappers';
 
@@ -61,11 +61,15 @@ function App() {
   // Admin preview mode — lets admin view VenueStaffView for any venue
   const [previewVenueId, setPreviewVenueId] = useState(null);
 
+  // Prevent double-firing of loadProfile from getSession + onAuthStateChange race
+  const profileLoadedForRef = useRef(null);
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       if (s?.user) {
+        profileLoadedForRef.current = s.user.id;
         loadProfile(s.user);
       } else {
         setUserLoading(false);
@@ -80,9 +84,15 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       if (s?.user) {
+        // Skip if we already started loading for this exact user (from getSession)
+        if (profileLoadedForRef.current === s.user.id && _event === 'INITIAL_SESSION') {
+          return;
+        }
+        profileLoadedForRef.current = s.user.id;
         setUserLoading(true);
         loadProfile(s.user);
       } else {
+        profileLoadedForRef.current = null;
         setCurrentUser(null);
         setVenueLogin(null);
         setStaffVenue(null);
@@ -277,6 +287,7 @@ function App() {
   };
 
   const handleLogout = async () => {
+    profileLoadedForRef.current = null;
     await supabase.auth.signOut();
   };
 
