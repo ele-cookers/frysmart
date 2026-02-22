@@ -1592,6 +1592,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [dashStatusFilter, setDashStatusFilter] = useState([]); // Dashboard status filter
   const [manageVenueId, setManageVenueId] = useState(null); // Manage Trial screen
   const [manageSearch, setManageSearch] = useState('');
+  const [manageStatusFilter, setManageStatusFilter] = useState([]); // Manage screen status filter pills
   const [manageEditing, setManageEditing] = useState(false);
   const [manageSaving, setManageSaving] = useState(false);
   const [manageEditForm, setManageEditForm] = useState({});
@@ -1742,6 +1743,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const r = v.trialReason ? trialReasons.find(x => x.key === v.trialReason) : null;
       return r ? r.label : '';
     },
+    customerCode: v => v.customerCode || '',
   };
 
   // ── Sort helper (used for both views) ──
@@ -2257,12 +2259,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const renderTrialTable = (allVenues, tabType) => {
     const filtered = colFilters.activeCount > 0 ? colFilters.applyFilters(allVenues, colAccessors) : allVenues;
     const rows = sortList(filtered);
+    const isAccepted = tabType === 'accepted';
     const showStart = tabType !== 'pipeline';
-    const showEnd = tabType === 'pending' || isArchiveTab(tabType);
+    const showEnd = tabType === 'pending' || isArchiveTab(tabType) || isAccepted;
     const showClosed = isArchiveTab(tabType);
-    const showSold = isArchiveTab(tabType);
+    const showSold = isArchiveTab(tabType) || isAccepted;
     const showReason = isArchiveTab(tabType);
-    const showAction = !isArchiveTab(tabType);
+    const showAction = !isArchiveTab(tabType) && !isAccepted;
+    const showCustomerCode = isAccepted;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
@@ -2289,6 +2293,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {showEnd && <FilterableTh colKey="end" label="End" options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {showClosed && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {showReason && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+              {showCustomerCode && <FilterableTh colKey="customerCode" label="Cust Code" options={getUniqueValues(allVenues, colAccessors.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {showAction && <th style={{ textAlign: 'center', width: '100px' }}>Action</th>}
             </tr></thead>
             <tbody>
@@ -2316,6 +2321,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {showEnd && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{displayDate(venue.trialEndDate)}</td>}
                     {showClosed && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{displayDate(venue.outcomeDate)}</td>}
                     {showReason && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
+                    {showCustomerCode && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap' }}>{venue.customerCode || '—'}</td>}
                     {showAction && (
                       <td style={{ textAlign: 'center' }}>
                         {tabType === 'pipeline' && <button onClick={(e) => { e.stopPropagation(); if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{ padding: '5px 12px', background: BLUE, border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Start</button>}
@@ -2668,8 +2674,40 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         </div>
 
-        {/* ── Awaiting Recording + Awaiting Decision + Awaiting Cust Code — 3 columns ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '10px', marginBottom: '16px' }}>
+        {/* ── Awaiting Start + Awaiting Recording + Awaiting Decision + Awaiting Cust Code — 4 columns ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr 1fr' : '1fr', gap: '10px', marginBottom: '16px' }}>
+          {/* Awaiting Start */}
+          <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Play size={12} color={pipelineCount > 0 ? '#3b82f6' : '#10b981'} />
+                <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Start</span>
+              </div>
+              <span style={{
+                fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
+                background: pipelineCount > 0 ? '#dbeafe' : '#d1fae5',
+                color: pipelineCount > 0 ? '#1e40af' : '#065f46',
+              }}>{pipelineCount}</span>
+            </div>
+            {pipelineCount > 0 ? (
+              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
+                {pipelineTrials.map(v => (
+                  <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
+                    borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
+                  }}>
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
+                <Check size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />All started
+              </div>
+            )}
+          </div>
+
           {/* Awaiting Recording Today */}
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2920,6 +2958,116 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   // ─────────────────────────────────────────────
+  // MANAGE TABLE — desktop table for manage trial list
+  // ─────────────────────────────────────────────
+  const renderManageTable = (allTrials, searchTerm) => {
+    // Apply search filter first
+    const searched = searchTerm
+      ? allTrials.filter(v => v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || v.customerCode?.toLowerCase().includes(searchTerm.toLowerCase()))
+      : allTrials;
+    // Apply status pill filter
+    const statusFiltered = manageStatusFilter.length > 0
+      ? searched.filter(v => manageStatusFilter.includes(v.trialStatus))
+      : searched;
+    // Apply column filters
+    const colFiltered = colFilters.activeCount > 0 ? colFilters.applyFilters(statusFiltered, colAccessors) : statusFiltered;
+    const rows = sortList(colFiltered);
+
+    // Status counts from allTrials (pre-filter) for the pill strip
+    const statusCounts = {};
+    allTrials.forEach(v => { statusCounts[v.trialStatus] = (statusCounts[v.trialStatus] || 0) + 1; });
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        {/* Status filter pills */}
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', overflowX: 'auto' }}>
+          {[
+            { key: 'pending', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
+            { key: 'in-progress', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
+            { key: 'completed', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
+            { key: 'accepted', label: 'Accepted', color: '#9a3412', bg: '#ffedd5', activeBg: '#ea580c', activeText: 'white' },
+            { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
+            { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
+          ].map(s => {
+            const isActive = manageStatusFilter.includes(s.key);
+            const count = statusCounts[s.key] || 0;
+            return (
+              <div key={s.key} onClick={() => setManageStatusFilter(prev => prev.includes(s.key) ? prev.filter(x => x !== s.key) : [...prev, s.key])} style={{
+                flex: '1', minWidth: '56px', padding: '8px 4px', borderRadius: '8px',
+                background: isActive ? s.activeBg : s.bg, textAlign: 'center',
+                cursor: 'pointer', transition: 'all 0.2s',
+                border: isActive ? `2px solid ${s.activeBg}` : '2px solid transparent',
+                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transform: isActive ? 'scale(1.02)' : 'scale(1)',
+              }}>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: isActive ? s.activeText : s.color }}>{count}</div>
+                <div style={{ fontSize: '9px', fontWeight: '600', color: isActive ? (s.activeText === 'white' ? 'rgba(255,255,255,0.85)' : s.activeText) : s.color, opacity: isActive ? 1 : 0.8, whiteSpace: 'nowrap' }}>{s.label}</div>
+              </div>
+            );
+          })}
+        </div>
+        <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
+        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 280px)' }}>
+          <style>{`
+            .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+            .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 14px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+            .bdm-table tbody tr { transition: background 0.1s; }
+            .bdm-table tbody tr:hover { background: #eef2ff; }
+            .bdm-table tbody td { padding: 7px 14px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
+          `}</style>
+          <table className="bdm-table" style={{ width: '100%', tableLayout: 'auto' }}>
+            <thead><tr>
+              <th style={{ width: '4px', padding: 0 }}></th>
+              <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              <FilterableTh colKey="status" label="Status" options={getUniqueValues(statusFiltered, colAccessors.status)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+              <FilterableTh colKey="competitor" label="Comp." options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              <FilterableTh colKey="compOil" label="Comp. Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+              <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+              <FilterableTh colKey="currentPrice" label="Curr $/L" options={getUniqueValues(statusFiltered, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+              <FilterableTh colKey="offeredPrice" label="Off $/L" options={getUniqueValues(statusFiltered, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+              <FilterableTh colKey="start" label="Start" options={getUniqueValues(statusFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              <FilterableTh colKey="end" label="End" options={getUniqueValues(statusFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
+            </tr></thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr><td colSpan={99} style={{ padding: '40px 20px', textAlign: 'center', color: COLORS.textMuted, fontSize: '13px' }}>
+                  {searchTerm ? 'No trials match your search' : 'No trials found'}
+                </td></tr>
+              ) : rows.map((venue) => {
+                const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+                const vCompOil = oilTypes.find(o => o.id === venue.defaultOil);
+                const vCookersOil = oilTypes.find(o => o.id === venue.trialOilId);
+                const vComp = vCompOil?.competitorId ? competitors.find(c => c.id === vCompOil.competitorId) : null;
+                const compTier = vCompOil ? (COMPETITOR_TIER_COLORS[vCompOil.tier] || COMPETITOR_TIER_COLORS.standard) : null;
+                return (
+                  <tr key={venue.id} onClick={() => setManageVenueId(venue.id)} style={{ height: '34px', cursor: 'pointer' }}>
+                    <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
+                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
+                    <td><TrialStatusBadge status={venue.trialStatus} /></td>
+                    <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{vComp ? <CompetitorPill comp={vComp} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                    <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{vCompOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center', verticalAlign: 'middle' }}>{vCompOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                    <td style={{ textAlign: 'center' }}><OilBadge oil={vCookersOil} competitors={competitors} compact /></td>
+                    <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                    <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                    <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{venue.trialStartDate ? displayDate(venue.trialStartDate) : '—'}</td>
+                    <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{venue.trialEndDate ? displayDate(venue.trialEndDate) : '—'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); }} style={{ padding: '5px 12px', background: BLUE, border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Manage</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // ─────────────────────────────────────────────
   // MANAGE TRIAL — full-page trial management screen
   // ─────────────────────────────────────────────
   const renderManageTrial = () => {
@@ -2948,64 +3096,36 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             />
           </div>
           {/* Results */}
-          <div style={{ display: isTableView ? 'grid' : 'flex', gridTemplateColumns: isTableView ? 'repeat(auto-fill, minmax(320px, 1fr))' : undefined, flexDirection: isTableView ? undefined : 'column', gap: isTableView ? '10px' : '6px', maxWidth: isTableView ? undefined : '700px' }}>
-            {sorted.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '13px', gridColumn: '1 / -1' }}>
-                {searchTerm ? 'No trials match your search' : 'No trials found'}
-              </div>
-            ) : sorted.map(v => {
-              const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pending'];
-              const vCompOil = oilTypes.find(o => o.id === v.defaultOil);
-              const vCookersOil = oilTypes.find(o => o.id === v.trialOilId);
-              const vComp = vCompOil && vCompOil.competitorId ? competitors.find(c => c.id === vCompOil.competitorId) : null;
-              return isTableView ? (
-                <button key={v.id} onClick={() => setManageVenueId(v.id)} style={{
-                  display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 16px',
-                  background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
-                  cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s',
-                  borderLeft: `4px solid ${sc.accent}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#1f2937', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
-                    <TrialStatusBadge status={v.trialStatus} />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    {v.state && <StateBadge state={v.state} />}
-                    {v.volumeBracket && <VolumePill bracket={v.volumeBracket} />}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    {vComp && <CompetitorPill comp={vComp} />}
-                    <OilBadge oil={vCompOil} competitors={competitors} compact />
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>vs</span>
-                    <OilBadge oil={vCookersOil} competitors={competitors} compact />
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-                    <span>{v.trialStartDate ? displayDate(v.trialStartDate) : 'Not started'}{v.trialEndDate ? ` — ${displayDate(v.trialEndDate)}` : ''}</span>
-                    {v.currentPricePerLitre && <span>Curr: ${parseFloat(v.currentPricePerLitre).toFixed(2)}</span>}
-                    {v.offeredPricePerLitre && <span style={{ color: '#1a428a', fontWeight: '600' }}>Off: ${parseFloat(v.offeredPricePerLitre).toFixed(2)}</span>}
-                  </div>
-                </button>
-              ) : (
-                <button key={v.id} onClick={() => setManageVenueId(v.id)} style={{
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
-                  background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px',
-                  cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s',
-                  borderLeft: `4px solid ${sc.accent}`,
-                }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '2px' }}>{v.name}</div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>
-                      {v.trialStartDate ? displayDate(v.trialStartDate) : 'Not started'}
-                      {v.trialEndDate ? ` — ${displayDate(v.trialEndDate)}` : ''}
-                      {v.customerCode ? ` · ${v.customerCode}` : ''}
+          {isTableView ? renderManageTable(allTrials, searchTerm) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '700px' }}>
+              {sorted.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '13px' }}>
+                  {searchTerm ? 'No trials match your search' : 'No trials found'}
+                </div>
+              ) : sorted.map(v => {
+                const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+                return (
+                  <button key={v.id} onClick={() => setManageVenueId(v.id)} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
+                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px',
+                    cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s',
+                    borderLeft: `4px solid ${sc.accent}`,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '2px' }}>{v.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        {v.trialStartDate ? displayDate(v.trialStartDate) : 'Not started'}
+                        {v.trialEndDate ? ` — ${displayDate(v.trialEndDate)}` : ''}
+                        {v.customerCode ? ` · ${v.customerCode}` : ''}
+                      </div>
                     </div>
-                  </div>
-                  <TrialStatusBadge status={v.trialStatus} />
-                  <ChevronRight size={16} color="#94a3b8" />
-                </button>
-              );
-            })}
-          </div>
+                    <TrialStatusBadge status={v.trialStatus} />
+                    <ChevronRight size={16} color="#94a3b8" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       );
     }
@@ -3155,7 +3275,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     };
 
     return (
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px' }}>
+      <div style={isDesktop ? {} : { padding: '0' }}>
         {/* Back button + header + action buttons */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <button onClick={() => setManageVenueId(null)} style={{
@@ -3226,11 +3346,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         </div>
 
-        {/* Stacked layout — details then calendar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* 2-col on desktop, stacked on mobile */}
+        <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '20px' }}>
 
           {/* LEFT COLUMN — Trial Details + Actions */}
-          <div>
+          <div style={isDesktop ? { flex: 1, minWidth: 0 } : {}}>
             {/* Info card */}
             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px', borderLeft: `4px solid ${statusConfig.accent}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -3371,7 +3491,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
 
           {/* RIGHT COLUMN — Calendar */}
-          <div>
+          <div style={isDesktop ? { flex: 1, minWidth: 0 } : {}}>
             {calDays.length > 0 ? (
               <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                 <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
@@ -3481,9 +3601,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       case 'accepted': {
         const sorted = sortList(acceptedTrials);
         return (
-          <div>
+          <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {acceptedTrials.length === 0
               ? emptyState(ClipboardList, 'No trials awaiting codes', 'Accepted trials needing a customer code will appear here')
+              : isTableView ? renderTrialTable(acceptedTrials, 'accepted')
               : <>{renderSortBar(sorted.length, 'accepted trial')}{sorted.map(v => renderAcceptedCard(v))}</>
             }
           </div>
@@ -3622,7 +3743,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {/* Core section — New Trial + Dashboard */}
               <div style={{ background: '#f0f4fa', borderRadius: '10px', padding: '6px', marginBottom: '14px' }}>
                 {/* New Trial — prominent CTA */}
-                <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); }} style={{
+                <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px',
                   padding: '11px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                   marginBottom: '4px', transition: 'all 0.15s',
@@ -3639,7 +3760,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 {(() => {
                   const isActive = activeTab === 'dashboard';
                   return (
-                    <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); }} style={{
+                    <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
@@ -3656,7 +3777,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 {(() => {
                   const isActive = activeTab === 'manage';
                   return (
-                    <button onClick={() => { setActiveTab('manage'); colFilters.clearAll(); }} style={{
+                    <button onClick={() => { setActiveTab('manage'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '10px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '2px', transition: 'all 0.15s', textAlign: 'left',
@@ -3678,7 +3799,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   const isActive = activeTab === tab.id;
                   const activeColor = tab.color || COLORS.brand;
                   return (
-                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
+                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                       padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
@@ -3706,7 +3827,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 {ARCHIVE_ITEMS.map(tab => {
                   const isActive = activeTab === tab.id;
                   return (
-                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
+                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                       padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
@@ -3747,7 +3868,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               ...(isDesktop
                 ? { padding: '24px clamp(16px, 2vw, 32px) 40px' }
                 : { maxWidth: '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }),
-              ...(['dashboard', 'pipeline', 'active', 'pending', 'won', 'lost'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
+              ...(['dashboard', 'pipeline', 'active', 'pending', 'accepted', 'manage', 'won', 'lost'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
             }}>
               {renderTabContent()}
             </div>
@@ -3763,7 +3884,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           }}>
             <div style={{ display: 'flex', borderBottom: isTrialsTab ? '1px solid #f1f5f9' : 'none' }}>
               {/* Dashboard */}
-              <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); }} style={{
+              <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                 padding: '10px 4px 8px', border: 'none', background: 'transparent',
                 borderBottom: activeTab === 'dashboard' ? `3px solid ${BLUE}` : '3px solid transparent',
@@ -3775,7 +3896,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <span>Dashboard</span>
               </button>
               {/* Trials */}
-              <button onClick={() => { if (!isTrialsTab) setActiveTab('pipeline'); colFilters.clearAll(); }} style={{
+              <button onClick={() => { if (!isTrialsTab) setActiveTab('pipeline'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                 padding: '10px 4px 8px', border: 'none', background: 'transparent',
                 borderBottom: isTrialsTab ? `3px solid ${BLUE}` : '3px solid transparent',
@@ -3794,7 +3915,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 )}
               </button>
               {/* Manage */}
-              <button onClick={() => { setActiveTab('manage'); colFilters.clearAll(); }} style={{
+              <button onClick={() => { setActiveTab('manage'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                 padding: '10px 4px 8px', border: 'none', background: 'transparent',
                 borderBottom: activeTab === 'manage' ? `3px solid ${BLUE}` : '3px solid transparent',
@@ -3806,7 +3927,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <span>Manage</span>
               </button>
               {/* + New */}
-              <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); }} style={{
+              <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                 padding: '10px 4px 8px', border: 'none', background: 'transparent',
                 borderBottom: activeTab === 'new' ? '3px solid #f5a623' : '3px solid transparent',
@@ -3827,7 +3948,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const active = activeTab === tab.id;
                     const tabColor = tab.color || BLUE;
                     return (
-                      <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
+                      <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                         display: 'flex', alignItems: 'center', gap: '5px',
                         padding: '6px 12px', border: active ? 'none' : '1px solid #e2e8f0',
                         borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
