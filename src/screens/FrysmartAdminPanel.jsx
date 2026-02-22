@@ -3975,15 +3975,15 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   }, [activeSection]);
 
   const navGroups = [
-    { key: 'overview', label: 'Admin Dashboard', icon: Rocket },
+    { key: 'overview', label: 'Dashboard', icon: Rocket },
     { key: 'management', label: 'Management', icon: Building, children: [
       { key: 'users', label: 'Users', icon: Users },
       { key: 'groups', label: 'Groups', icon: Layers },
       { key: 'venues', label: 'Venues', icon: Building },
       { key: 'onboarding', label: 'Bulk Upload', icon: Copy },
     ]},
+    { key: 'trials-overview', label: 'Action Items', icon: ClipboardList },
     { key: 'trial-analysis', label: 'Trial Analysis', icon: BarChart3 },
-    { key: 'trials-overview', label: 'Trials Overview', icon: ClipboardList },
     { key: 'trials', label: 'Trials', icon: AlertTriangle },
     { key: 'configuration', label: 'Configuration', icon: Settings, children: [
       { key: 'permissions', label: 'Permissions', icon: Shield },
@@ -4001,15 +4001,6 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
       case 'trials-overview': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const todayStr = new Date().toISOString().split('T')[0];
-
-        // Pipeline status counts
-        const pipelineCounts = [
-          { key: 'pending', label: 'In Pipeline', color: '#64748b', bg: '#f1f5f9' },
-          { key: 'in-progress', label: 'In Progress', color: '#1e40af', bg: '#dbeafe' },
-          { key: 'completed', label: 'Pending Outcome', color: '#a16207', bg: '#fef3c7' },
-          { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5' },
-          { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2' },
-        ];
 
         // Status overview cards data
         const awaitingStart = allTrials.filter(v => v.trialStatus === 'pending');
@@ -4032,8 +4023,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
               {items.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {shown.map(v => (
-                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px' }}>
-                      <span style={{ fontWeight: '600', color: '#1f2937', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', minWidth: 0 }}>
+                      <span style={{ fontWeight: '600', color: '#1f2937', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                       <StateBadge theme={theme} state={v.state} />
                       <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500', flexShrink: 0 }}>{getBdmName(v)}</span>
                     </div>
@@ -4055,28 +4046,12 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         return (
           <div style={{ padding: isDesktop ? '0' : '0 4px' }}>
             <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Trials Overview</h2>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Pipeline status and actionable trial items at a glance</p>
-            </div>
-
-            {/* Pipeline status strip */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Pipeline</div>
-              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : 'repeat(3, 1fr)', gap: '6px' }}>
-                {pipelineCounts.map(s => {
-                  const count = allTrials.filter(v => v.trialStatus === s.key).length;
-                  return (
-                    <div key={s.key} style={{ background: s.bg, borderRadius: '10px', padding: '10px 6px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '700', color: s.color, lineHeight: 1, marginBottom: '4px' }}>{count}</div>
-                      <div style={{ fontSize: '9px', fontWeight: '600', color: s.color, opacity: 0.8 }}>{s.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Action Items</h2>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Actionable trial items at a glance</p>
             </div>
 
             {/* Status overview cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '12px' }}>
               <OverviewCard title="Awaiting Start" icon={Clock} iconColor="#64748b" items={awaitingStart} emptyMsg="No trials awaiting start" />
               <OverviewCard title="Awaiting Recording Today" icon={ClipboardList} iconColor="#1e40af" items={awaitingRecording} emptyMsg="All active trials recorded today" />
               <OverviewCard title="Awaiting Decision" icon={Target} iconColor="#d97706" items={awaitingDecision} emptyMsg="No trials awaiting decision" />
@@ -4199,6 +4174,33 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           const medIdx = Math.floor(bdmDecisionEntries.length / 2);
           const median = bdmDecisionEntries[medIdx];
           const bot2 = bdmDecisionEntries.slice(-2);
+          const seen = new Set();
+          const result = [];
+          [...top2, median, ...bot2].forEach(e => {
+            if (!seen.has(e.name)) { seen.add(e.name); result.push(e); }
+          });
+          return result;
+        })();
+
+        // BDM avg days waiting for cust code (accepted trials: outcomeDate → today)
+        const bdmCustCodeMap = {};
+        const todayDate = new Date();
+        filtered.filter(v => v.trialStatus === 'accepted' && v.outcomeDate).forEach(v => {
+          const name = v.bdmId ? getUN(v.bdmId) : 'Unassigned';
+          if (!bdmCustCodeMap[name]) bdmCustCodeMap[name] = [];
+          const days = Math.round((todayDate - new Date(v.outcomeDate + 'T00:00:00')) / 86400000);
+          if (days >= 0) bdmCustCodeMap[name].push(days);
+        });
+        const bdmCustCodeEntries = Object.entries(bdmCustCodeMap)
+          .filter(([, days]) => days.length > 0)
+          .map(([name, days]) => ({ name, avg: Math.round(days.reduce((s, d) => s + d, 0) / days.length), count: days.length }))
+          .sort((a, b) => a.avg - b.avg);
+        const bdmCustCodeDisplay = (() => {
+          if (bdmCustCodeEntries.length <= 5) return bdmCustCodeEntries;
+          const top2 = bdmCustCodeEntries.slice(0, 2);
+          const medIdx = Math.floor(bdmCustCodeEntries.length / 2);
+          const median = bdmCustCodeEntries[medIdx];
+          const bot2 = bdmCustCodeEntries.slice(-2);
           const seen = new Set();
           const result = [];
           [...top2, median, ...bot2].forEach(e => {
@@ -4330,6 +4332,14 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         const prevAvgDec = prevDecTimes.length > 0 ? Math.round(prevDecTimes.reduce((a, b) => a + b, 0) / prevDecTimes.length) : null;
         const deltaDec = recentAvgDec !== null && prevAvgDec !== null ? recentAvgDec - prevAvgDec : null;
 
+        // Avg days waiting for customer code (accepted trials: outcomeDate → today)
+        const avgCustCodeDays = (() => {
+          const today = new Date();
+          const waiting = filtered.filter(v => v.trialStatus === 'accepted' && v.outcomeDate);
+          const days = waiting.map(v => Math.round((today - new Date(v.outcomeDate + 'T00:00:00')) / 86400000));
+          return days.length > 0 ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : null;
+        })();
+
         const Delta = ({ value, invert, suffix }) => {
           if (value === null || value === undefined) return null;
           const good = invert ? value < 0 : value > 0;
@@ -4444,12 +4454,13 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             </div>
 
             {/* ── Row 1: Core metrics ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr 0.6fr 0.6fr' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
               {[
                 { label: 'Win Rate', icon: Target, iconColor: '#1a428a', value: winRate !== null ? `${winRate}%` : '—', delta: deltaWinRate, deltaSuffix: '%' },
                 { label: 'Successful', icon: Trophy, iconColor: '#10b981', value: wonTrials.length, delta: deltaWon },
                 { label: 'Unsuccessful', icon: AlertTriangle, iconColor: '#ef4444', value: lostTrials.length, delta: deltaLost, invert: true },
                 { label: 'Avg Decision', icon: Clock, iconColor: '#64748b', value: avgDecision !== null ? `${avgDecision}d` : '—', delta: deltaDec, deltaSuffix: 'd' },
+                { label: 'Avg to Cust Code', icon: CheckCircle, iconColor: '#059669', value: avgCustCodeDays !== null ? `${avgCustCodeDays}d` : '—' },
               ].map(s => (
                 <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -4561,8 +4572,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
               </div>
             </div>
 
-            {/* ── Row 2b: Top 5 Oils + Top 5 Competitors + BDM Decision Days ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '8px', marginBottom: '10px' }}>
+            {/* ── Row 2b: Top 5 Oils + Top 5 Competitors + BDM Decision Days + BDM Cust Code Days ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr 1fr' : '1fr', gap: '8px', marginBottom: '10px' }}>
               {/* Top 5 Oils Trialled Against */}
               <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Top 5 Oils Trialled Against</div>
@@ -4650,6 +4661,30 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                     {bdmDecisionDisplay.map((entry, idx) => {
                       const isFastest = bdmDecisionEntries.indexOf(entry) < 2;
                       const isSlowest = bdmDecisionEntries.indexOf(entry) >= bdmDecisionEntries.length - 2;
+                      const color = isFastest ? '#059669' : isSlowest ? '#dc2626' : '#ca8a04';
+                      const bg = isFastest ? 'rgba(5,150,105,0.08)' : isSlowest ? 'rgba(220,38,38,0.08)' : 'rgba(202,138,4,0.08)';
+                      const label = isFastest ? 'Fastest' : isSlowest ? 'Slowest' : 'Median';
+                      return (
+                        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '6px 10px', background: bg, borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                            <span style={{ fontSize: '8px', fontWeight: '700', color, textTransform: 'uppercase', flexShrink: 0 }}>{label}</span>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name}</span>
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color, flexShrink: 0 }}>{entry.avg}d</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
+              </div>
+              {/* Avg Days to Cust Code — BDMs */}
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Avg Days to Cust Code</div>
+                {bdmCustCodeDisplay.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {bdmCustCodeDisplay.map((entry, idx) => {
+                      const isFastest = bdmCustCodeEntries.indexOf(entry) < 2;
+                      const isSlowest = bdmCustCodeEntries.indexOf(entry) >= bdmCustCodeEntries.length - 2;
                       const color = isFastest ? '#059669' : isSlowest ? '#dc2626' : '#ca8a04';
                       const bg = isFastest ? 'rgba(5,150,105,0.08)' : isSlowest ? 'rgba(220,38,38,0.08)' : 'rgba(202,138,4,0.08)';
                       const label = isFastest ? 'Fastest' : isSlowest ? 'Slowest' : 'Median';
