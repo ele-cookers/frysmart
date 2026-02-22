@@ -1213,7 +1213,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         const typeConfig = {
           creation: { label: 'Trial Created', color: '#1a428a', bg: 'rgba(26,66,138,0.06)' },
           reading: { label: 'Recording Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
-          'outcome-won': { label: 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
+          'outcome-won': { label: venue.trialStatus === 'accepted' ? 'Agreed' : 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
           'outcome-lost': { label: 'Unsuccessful', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
         };
 
