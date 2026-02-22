@@ -70,6 +70,10 @@ function App() {
       } else {
         setUserLoading(false);
       }
+    }).catch((err) => {
+      console.error('getSession failed:', err);
+      setSession(null);
+      setUserLoading(false);
     });
 
     // Listen for auth changes (login, logout, token refresh)
@@ -93,81 +97,87 @@ function App() {
   }, []);
 
   const loadProfile = async (authUser) => {
-    const userId = authUser.id;
-    const authEmail = authUser.email || '';
-    const emailPrefix = authEmail.replace('@frysmart.app', '');
+    try {
+      const userId = authUser.id;
+      const authEmail = authUser.email || '';
+      const emailPrefix = authEmail.replace('@frysmart.app', '');
 
-    // 1. Check profile FIRST — admin/bdm/nam users always have a profiles row
-    let profileData = null;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (!error && data) {
-      profileData = data;
-    } else if (emailPrefix) {
-      // Fallback: match by username (handles cases where auth ID ≠ profile ID)
-      const { data: byUsername } = await supabase
+      // 1. Check profile FIRST — admin/bdm/nam users always have a profiles row
+      let profileData = null;
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .or(`username.eq.${emailPrefix},username.eq.${emailPrefix.toUpperCase()}`)
-        .limit(1)
+        .eq('id', userId)
         .single();
-      if (byUsername) profileData = byUsername;
-    }
 
-    if (profileData) {
-      const profile = mapProfile(profileData);
-      const merged = { ...profile, id: userId };
-      setCurrentUser(merged);
-      supabase.from('profiles').update({ last_active: new Date().toISOString().split('T')[0] }).eq('id', profileData.id).then(({ error }) => {
-        if (error) console.error('Failed to update last_active:', error);
-      });
-      if (merged.venueId) {
-        await loadStaffData(merged.venueId);
+      if (!error && data) {
+        profileData = data;
+      } else if (emailPrefix) {
+        // Fallback: match by username (handles cases where auth ID ≠ profile ID)
+        const { data: byUsername } = await supabase
+          .from('profiles')
+          .select('*')
+          .or(`username.eq.${emailPrefix},username.eq.${emailPrefix.toUpperCase()}`)
+          .limit(1)
+          .single();
+        if (byUsername) profileData = byUsername;
       }
+
+      if (profileData) {
+        const profile = mapProfile(profileData);
+        const merged = { ...profile, id: userId };
+        setCurrentUser(merged);
+        supabase.from('profiles').update({ last_active: new Date().toISOString().split('T')[0] }).eq('id', profileData.id).then(({ error }) => {
+          if (error) console.error('Failed to update last_active:', error);
+        });
+        if (merged.venueId) {
+          await loadStaffData(merged.venueId);
+        }
+        setUserLoading(false);
+        return;
+      }
+
+      // 2. No profile row — check venue match by customer code
+      if (emailPrefix) {
+        const prefixUpper = emailPrefix.toUpperCase();
+        const { data: venueData } = await supabase
+          .from('venues')
+          .select('id, name, fryer_count, state, customer_code')
+          .eq('customer_code', prefixUpper)
+          .single();
+
+        if (venueData) {
+          setCurrentUser({ id: userId, name: venueData.name, role: 'venue_staff', venueId: venueData.id });
+          setVenueLogin({ venueId: venueData.id, name: venueData.name });
+          await loadStaffData(venueData.id);
+          setUserLoading(false);
+          return;
+        }
+
+        // Check groups by username
+        const { data: groupData } = await supabase
+          .from('groups')
+          .select('id, name, username')
+          .or(`username.eq.${emailPrefix},username.eq.${prefixUpper}`)
+          .limit(1)
+          .single();
+
+        if (groupData) {
+          setCurrentUser({ id: userId, name: groupData.name, role: 'group_viewer', groupId: groupData.id });
+          setUserLoading(false);
+          return;
+        }
+      }
+
+      // 3. No match at all — fallback
+      console.warn('No profile or venue/group match for user:', userId, authEmail);
+      setCurrentUser({ id: userId, name: authEmail, role: 'unknown' });
       setUserLoading(false);
-      return;
+    } catch (err) {
+      console.error('loadProfile failed:', err);
+      setCurrentUser({ id: authUser.id, name: authUser.email || 'Unknown', role: 'unknown' });
+      setUserLoading(false);
     }
-
-    // 2. No profile row — check venue match by customer code
-    if (emailPrefix) {
-      const prefixUpper = emailPrefix.toUpperCase();
-      const { data: venueData } = await supabase
-        .from('venues')
-        .select('id, name, fryer_count, state, customer_code')
-        .eq('customer_code', prefixUpper)
-        .single();
-
-      if (venueData) {
-        setCurrentUser({ id: userId, name: venueData.name, role: 'venue_staff', venueId: venueData.id });
-        setVenueLogin({ venueId: venueData.id, name: venueData.name });
-        await loadStaffData(venueData.id);
-        setUserLoading(false);
-        return;
-      }
-
-      // Check groups by username
-      const { data: groupData } = await supabase
-        .from('groups')
-        .select('id, name, username')
-        .or(`username.eq.${emailPrefix},username.eq.${prefixUpper}`)
-        .limit(1)
-        .single();
-
-      if (groupData) {
-        setCurrentUser({ id: userId, name: groupData.name, role: 'group_viewer', groupId: groupData.id });
-        setUserLoading(false);
-        return;
-      }
-    }
-
-    // 3. No match at all — fallback
-    console.warn('No profile or venue/group match for user:', userId, authEmail);
-    setCurrentUser({ id: userId, name: authEmail, role: 'unknown' });
-    setUserLoading(false);
   };
 
   const loadStaffData = async (venueId) => {
