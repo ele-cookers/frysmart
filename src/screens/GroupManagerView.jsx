@@ -393,7 +393,7 @@ const DayView = ({ recordings, selectedDate, onDateChange, fryerCount = 4, warnA
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '8px', width: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', width: '100%' }}>
         {allFryers.map(fryerNum => {
           const fryerRecs   = groupedByFryer[fryerNum] || [];
           const hasData     = fryerRecs.length > 0;
@@ -1418,9 +1418,9 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       groupDayStats[dn].recorded += venuesRecorded;
     }
 
-    // 7-Day TPM Trend — group level (avg TPM across all venues per day)
-    const groupLast7 = [];
-    for (let i = 6; i >= 0; i--) {
+    // 30-Day TPM Trend — group level (avg TPM across all venues per day)
+    const groupLast30 = [];
+    for (let i = 29; i >= 0; i--) {
       const d = new Date(today); d.setDate(d.getDate() - i);
       const ds = formatDate(d);
       const dayRecs = venues.flatMap(v => {
@@ -1428,7 +1428,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
         return (recs[ds] || []).filter(r => !r.notInUse && r.tpmValue != null);
       });
       const avg = dayRecs.length > 0 ? dayRecs.reduce((s, r) => s + r.tpmValue, 0) / dayRecs.length : null;
-      groupLast7.push({ label: d.toLocaleDateString('en-AU', { weekday: 'short' }), avg, count: dayRecs.length });
+      groupLast30.push({ label: d.getDate().toString(), avg, count: dayRecs.length });
     }
 
     // TPM Recording Health — group level (like admin panel)
@@ -1598,23 +1598,6 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
             </div>
           </div>
 
-          {/* Quality Distribution */}
-          {totalGroupReadings > 0 && (
-            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Quality Distribution</h3>
-              <div style={{ display: 'flex', gap: '0', marginBottom: '6px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
-                <div style={{ flex: groupGoodCount, background: '#10b981' }} />
-                <div style={{ flex: groupWarnCount, background: '#f59e0b' }} />
-                <div style={{ flex: groupCritCount, background: '#ef4444' }} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', textAlign: 'center' }}>
-                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((groupGoodCount/totalGroupReadings)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Good ({groupGoodCount})</div></div>
-                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((groupWarnCount/totalGroupReadings)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Warning ({groupWarnCount})</div></div>
-                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{groupCritRate}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Critical ({groupCritCount})</div></div>
-              </div>
-            </div>
-          )}
-
           {/* Row 3: TPM Recording Health + Most Compliant + Needs Attention */}
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '10px' }}>
             {/* TPM Recording Health */}
@@ -1690,12 +1673,12 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
             </div>
           </div>
 
-          {/* Weekly Compliance + 7-Day TPM Trend */}
-          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginTop: '16px' }}>
+          {/* Weekly Compliance + 30-Day TPM Trend + Quality Distribution */}
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '16px', marginTop: '16px' }}>
             {/* Weekly Compliance Pattern */}
             <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
               <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Recording rate by day across all venues (last 7 days)</p>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Recording rate by day across all venues (last 30 days)</p>
               <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
                 {dayNames.map(day => {
                   const rate = groupDayStats[day].total > 0 ? Math.round((groupDayStats[day].recorded / groupDayStats[day].total) * 100) : 0;
@@ -1721,24 +1704,21 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
               </div>
             </div>
 
-            {/* 7-Day TPM Trend */}
+            {/* 30-Day TPM Trend */}
             {(() => {
-              const maxT = Math.max(...groupLast7.filter(d => d.avg != null).map(d => d.avg), 30);
+              const maxT = Math.max(...groupLast30.filter(d => d.avg != null).map(d => d.avg), 30);
               return (
                 <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>7-Day TPM Trend</h3>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>
-                    {groupLast7.map((day, i) => (
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>30-Day TPM Trend</h3>
+                  <div style={{ display: 'flex', gap: '1px', alignItems: 'flex-end', height: '100px' }}>
+                    {groupLast30.map((day, i) => (
                       <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
                         {day.avg != null ? (
-                          <>
-                            <div style={{ fontSize: '10px', fontWeight: '700', color: getTPMStatus(day.avg, warnAt, critAt).color, marginBottom: '3px' }}>{day.avg.toFixed(0)}</div>
-                            <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '4px' }} />
-                          </>
+                          <div style={{ width: '100%', borderRadius: '2px 2px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '2px' }} title={`${day.label}: ${day.avg.toFixed(0)} TPM`} />
                         ) : (
-                          <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px' }} />
+                          <div style={{ width: '100%', height: '2px', background: '#e2e8f0', borderRadius: '1px' }} />
                         )}
-                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>{day.label}</div>
+                        {i % 7 === 0 && <div style={{ fontSize: '8px', color: '#94a3b8', marginTop: '2px' }}>{day.label}</div>}
                       </div>
                     ))}
                   </div>
@@ -1749,6 +1729,23 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
                 </div>
               );
             })()}
+
+            {/* Quality Distribution */}
+            {totalGroupReadings > 0 && (
+              <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Quality Distribution</h3>
+                <div style={{ display: 'flex', gap: '0', marginBottom: '6px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
+                  <div style={{ flex: groupGoodCount, background: '#10b981' }} />
+                  <div style={{ flex: groupWarnCount, background: '#f59e0b' }} />
+                  <div style={{ flex: groupCritCount, background: '#ef4444' }} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', textAlign: 'center' }}>
+                  <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((groupGoodCount/totalGroupReadings)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Good ({groupGoodCount})</div></div>
+                  <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((groupWarnCount/totalGroupReadings)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Warning ({groupWarnCount})</div></div>
+                  <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{groupCritRate}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Critical ({groupCritCount})</div></div>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
@@ -2127,10 +2124,10 @@ export default function GroupManagerView({ currentUser, onLogout }) {
               </div>
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'dashboard' && (
-              <DashboardView readings={flatReadings} />
+              <DashboardView readings={flatReadings} isWide />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'summary' && (
-              <SummaryView readings={flatReadings} />
+              <SummaryView readings={flatReadings} isWide />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
               <div>
@@ -2204,10 +2201,10 @@ export default function GroupManagerView({ currentUser, onLogout }) {
               </div>
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'dashboard' && (
-              <DashboardView readings={flatReadings} />
+              <DashboardView readings={flatReadings} isWide />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'summary' && (
-              <SummaryView readings={flatReadings} />
+              <SummaryView readings={flatReadings} isWide />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
               <>

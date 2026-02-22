@@ -1578,7 +1578,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
 
             return (
               <div key={idx} onClick={() => hasAnyRec && setModalDate(date)} style={{
-                position: 'relative', width: '100%', paddingBottom: '280%',
+                position: 'relative', width: '100%', paddingBottom: '350%',
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                 borderBottom: '1px solid #e2e8f0'
@@ -1992,7 +1992,7 @@ const YearView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
 // ─────────────────────────────────────────────
 // Executive Summary View (ported from original)
 // ─────────────────────────────────────────────
-const SummaryView = ({ readings }) => {
+const SummaryView = ({ readings, isWide }) => {
   const grouped = groupReadingsByDate(readings);
   const today = new Date(); today.setHours(0,0,0,0);
   const thirtyDaysAgo = formatDate(new Date(today.getTime() - 30 * 864e5));
@@ -2117,13 +2117,17 @@ const SummaryView = ({ readings }) => {
     if ((grouped[formatDate(d)] || []).length > 0) dayStats[dn].recorded++;
   }
 
+  const twoCol = isWide ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' } : {};
+
   return (
     <div style={{ margin: '0 auto', padding: '16px' }}>
       <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>Executive Summary</h2>
       <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>{allActive.length} readings analyzed • Last 30 days</p>
 
+      {/* Pair 1: Top KPIs + Oil Management */}
+      <div style={twoCol}>
       {/* Top KPIs 2x2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: isWide ? 0 : '16px' }}>
         {[
           { label: 'COMPLIANCE', value: `${complianceRate}%`, color: complianceRate >= 90 ? '#10b981' : complianceRate >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
           { label: 'REACHED CRITICAL', value: `${criticalRate}%`, color: criticalRate <= 10 ? '#10b981' : criticalRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
@@ -2139,7 +2143,7 @@ const SummaryView = ({ readings }) => {
       </div>
 
       {/* Oil Management Overview */}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>Oil Management</h3>
           <div style={{ padding: '3px 8px', borderRadius: '5px', background: oilGrade.bg, color: oilGrade.color, fontSize: '11px', fontWeight: '700' }}>{oilGrade.grade}</div>
@@ -2160,9 +2164,12 @@ const SummaryView = ({ readings }) => {
         </div>
         <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '10px', fontStyle: 'italic' }}>*Proper filtering and monitoring extends oil life</div>
       </div>
+      </div>{/* end Pair 1 */}
 
+      {/* Pair 2: Weekly Compliance + TPM Trend */}
+      <div style={twoCol}>
       {/* Weekly Compliance Pattern */}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
         <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
         <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Recording rate by day of week (last 30 days)</p>
         <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
@@ -2225,7 +2232,10 @@ const SummaryView = ({ readings }) => {
           </div>
         );
       })()}
+      </div>{/* end Pair 2 */}
 
+      {/* Pair 3: Fryer Comparison + Quality Distribution */}
+      <div style={twoCol}>
       {/* Fryer Comparison */}
       {(() => {
         const fryerMap = {};
@@ -2235,7 +2245,7 @@ const SummaryView = ({ readings }) => {
         });
         if (Object.keys(fryerMap).length <= 1) return null;
         return (
-          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>Fryer Comparison</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {Object.entries(fryerMap).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([fn, data]) => {
@@ -2256,38 +2266,39 @@ const SummaryView = ({ readings }) => {
         );
       })()}
 
-      {/* Quality Distribution + Most Fried Products */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
-        <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Quality Distribution</h3>
-          <div style={{ display: 'flex', gap: '0', marginBottom: '6px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
-            <div style={{ flex: goodCount, background: '#10b981' }} />
-            <div style={{ flex: warningCount, background: '#f59e0b' }} />
-            <div style={{ flex: criticalCount, background: '#ef4444' }} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', textAlign: 'center' }}>
-            <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((goodCount/allActive.length)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Good ({goodCount})</div></div>
-            <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((warningCount/allActive.length)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Warning ({warningCount})</div></div>
-            <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{criticalRate}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Critical ({criticalCount})</div></div>
+      {/* Quality Distribution */}
+      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Quality Distribution</h3>
+        <div style={{ display: 'flex', gap: '0', marginBottom: '6px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
+          <div style={{ flex: goodCount, background: '#10b981' }} />
+          <div style={{ flex: warningCount, background: '#f59e0b' }} />
+          <div style={{ flex: criticalCount, background: '#ef4444' }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', textAlign: 'center' }}>
+          <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((goodCount/allActive.length)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Good ({goodCount})</div></div>
+          <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((warningCount/allActive.length)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Warning ({warningCount})</div></div>
+          <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{criticalRate}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Critical ({criticalCount})</div></div>
+        </div>
+      </div>
+      </div>{/* end Pair 3 */}
+
+      {/* Pair 4: Most Fried Products + Priority Actions */}
+      <div style={twoCol}>
+      {foodTypeAnalysis.length > 0 && (
+        <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Most Fried Products</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {foodTypeAnalysis.slice(0, 3).map(item => (
+              <div key={item.type} style={{ padding: '10px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', marginBottom: '4px', minHeight: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.type}</div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px', letterSpacing: '0.5px' }}>AVG TPM</div>
+                <div style={{ fontSize: '22px', fontWeight: '700', color: parseFloat(item.avgTPM) < 18 ? '#10b981' : parseFloat(item.avgTPM) < 24 ? '#f59e0b' : '#ef4444' }}>{item.avgTPM}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{item.count} readings</div>
+              </div>
+            ))}
           </div>
         </div>
-
-        {foodTypeAnalysis.length > 0 && (
-          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Most Fried Products</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-              {foodTypeAnalysis.slice(0, 3).map(item => (
-                <div key={item.type} style={{ padding: '10px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', marginBottom: '4px', minHeight: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.type}</div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px', letterSpacing: '0.5px' }}>AVG TPM</div>
-                  <div style={{ fontSize: '22px', fontWeight: '700', color: parseFloat(item.avgTPM) < 18 ? '#10b981' : parseFloat(item.avgTPM) < 24 ? '#f59e0b' : '#ef4444' }}>{item.avgTPM}</div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{item.count} readings</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Priority Actions */}
       <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '12px', padding: '16px', border: '1px solid #93c5fd' }}>
@@ -2325,6 +2336,7 @@ const SummaryView = ({ readings }) => {
           )}
         </div>
       </div>
+      </div>{/* end Pair 4 */}
     </div>
   );
 };
@@ -2332,7 +2344,7 @@ const SummaryView = ({ readings }) => {
 // ─────────────────────────────────────────────
 // Dashboard View — Gamified Stats (ported from original)
 // ─────────────────────────────────────────────
-const DashboardView = ({ readings }) => {
+const DashboardView = ({ readings, isWide }) => {
   const grouped = groupReadingsByDate(readings);
   const allActive = readings.filter(r => !r.notInUse && r.tpmValue != null);
 
@@ -2424,77 +2436,158 @@ const DashboardView = ({ readings }) => {
         </div>
       )}
 
-      {/* Gamified 2x2 stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-        <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)', borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>CURRENT STREAK</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ fontSize: '20px' }}>🔥</span>
-            <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{currentStreak}</span>
+      {isWide ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          {/* Column 1: KPI Cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)', borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>CURRENT STREAK</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>🔥</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{currentStreak}</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>days in a row</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>BEST STREAK</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>🏆</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{bestStreak}</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>personal record</div>
+            </div>
+            <div style={{ background: `linear-gradient(135deg, ${complianceRate >= 80 ? '#10b981' : complianceRate >= 60 ? '#f59e0b' : '#ef4444'} 0%, ${complianceRate >= 80 ? '#059669' : complianceRate >= 60 ? '#d97706' : '#dc2626'} 100%)`, borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>COMPLIANCE</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>✅</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{complianceRate}%</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>last 30 days</div>
+            </div>
+            <div style={{ background: `linear-gradient(135deg, ${tempAdherence >= 80 ? '#06b6d4' : tempAdherence >= 60 ? '#f59e0b' : '#ef4444'} 0%, ${tempAdherence >= 80 ? '#0891b2' : tempAdherence >= 60 ? '#d97706' : '#dc2626'} 100%)`, borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>TEMP CONTROL</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>🌡️</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{tempAdherence}%</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>within target</div>
+            </div>
           </div>
-          <div style={{ fontSize: '10px', opacity: 0.8 }}>days in a row</div>
-        </div>
-        <div style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>BEST STREAK</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ fontSize: '20px' }}>🏆</span>
-            <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{bestStreak}</span>
-          </div>
-          <div style={{ fontSize: '10px', opacity: 0.8 }}>personal record</div>
-        </div>
-        <div style={{ background: `linear-gradient(135deg, ${complianceRate >= 80 ? '#10b981' : complianceRate >= 60 ? '#f59e0b' : '#ef4444'} 0%, ${complianceRate >= 80 ? '#059669' : complianceRate >= 60 ? '#d97706' : '#dc2626'} 100%)`, borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>COMPLIANCE</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ fontSize: '20px' }}>✅</span>
-            <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{complianceRate}%</span>
-          </div>
-          <div style={{ fontSize: '10px', opacity: 0.8 }}>last 30 days</div>
-        </div>
-        <div style={{ background: `linear-gradient(135deg, ${tempAdherence >= 80 ? '#06b6d4' : tempAdherence >= 60 ? '#f59e0b' : '#ef4444'} 0%, ${tempAdherence >= 80 ? '#0891b2' : tempAdherence >= 60 ? '#d97706' : '#dc2626'} 100%)`, borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>TEMP CONTROL</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ fontSize: '20px' }}>🌡️</span>
-            <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{tempAdherence}%</span>
-          </div>
-          <div style={{ fontSize: '10px', opacity: 0.8 }}>within target</div>
-        </div>
-      </div>
 
-      {/* Secondary stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
-        <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>AVG TPM</div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{avgTPM}</div>
-          <div style={{ fontSize: '11px', color: '#64748b' }}>all readings</div>
-        </div>
-        <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>OIL HABITS</div>
-          <div style={{ fontSize: '18px', marginBottom: '2px' }}>{oilHabitsScore >= 8 ? '⭐⭐⭐' : oilHabitsScore >= 5 ? '⭐⭐☆' : oilHabitsScore >= 3 ? '⭐☆☆' : '☆☆☆'}</div>
-          <div style={{ fontSize: '11px', color: '#64748b' }}>{oilHabitsRating}</div>
-        </div>
-        <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>TOTAL</div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: '#1a428a', marginBottom: '2px' }}>{totalRecs}</div>
-          <div style={{ fontSize: '11px', color: '#64748b' }}>recordings</div>
-        </div>
-      </div>
+          {/* Column 2: Stats */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>AVG TPM</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{avgTPM}</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>all readings</div>
+            </div>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>OIL HABITS</div>
+              <div style={{ fontSize: '18px', marginBottom: '2px' }}>{oilHabitsScore >= 8 ? '⭐⭐⭐' : oilHabitsScore >= 5 ? '⭐⭐☆' : oilHabitsScore >= 3 ? '⭐☆☆' : '☆☆☆'}</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>{oilHabitsRating}</div>
+            </div>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>TOTAL</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1a428a', marginBottom: '2px' }}>{totalRecs}</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>recordings</div>
+            </div>
+          </div>
 
-      {/* Staff leaderboard */}
-      {topStaff.length > 0 && (
-        <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>🏆 Top Recorders</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {topStaff.map(([name, count], idx) => (
-              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: idx === 0 ? '#fef3c7' : idx === 1 ? '#e0e7ff' : '#f1f5f9', borderRadius: '8px' }}>
-                <div style={{ fontSize: '20px', minWidth: '26px', textAlign: 'center' }}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{name}</div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>{count} recordings</div>
+          {/* Column 3: Top Recorders */}
+          <div>
+            {topStaff.length > 0 && (
+              <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>🏆 Top Recorders</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {topStaff.map(([name, count], idx) => (
+                    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: idx === 0 ? '#fef3c7' : idx === 1 ? '#e0e7ff' : '#f1f5f9', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '20px', minWidth: '26px', textAlign: 'center' }}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{name}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>{count} recordings</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
+      ) : (
+        <>
+          {/* Gamified 2x2 stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)', borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>CURRENT STREAK</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>🔥</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{currentStreak}</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>days in a row</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>BEST STREAK</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>🏆</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{bestStreak}</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>personal record</div>
+            </div>
+            <div style={{ background: `linear-gradient(135deg, ${complianceRate >= 80 ? '#10b981' : complianceRate >= 60 ? '#f59e0b' : '#ef4444'} 0%, ${complianceRate >= 80 ? '#059669' : complianceRate >= 60 ? '#d97706' : '#dc2626'} 100%)`, borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>COMPLIANCE</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>✅</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{complianceRate}%</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>last 30 days</div>
+            </div>
+            <div style={{ background: `linear-gradient(135deg, ${tempAdherence >= 80 ? '#06b6d4' : tempAdherence >= 60 ? '#f59e0b' : '#ef4444'} 0%, ${tempAdherence >= 80 ? '#0891b2' : tempAdherence >= 60 ? '#d97706' : '#dc2626'} 100%)`, borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>TEMP CONTROL</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px' }}>🌡️</span>
+                <span style={{ fontSize: '26px', fontWeight: '700', lineHeight: '1' }}>{tempAdherence}%</span>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.8 }}>within target</div>
+            </div>
+          </div>
+
+          {/* Secondary stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>AVG TPM</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{avgTPM}</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>all readings</div>
+            </div>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>OIL HABITS</div>
+              <div style={{ fontSize: '18px', marginBottom: '2px' }}>{oilHabitsScore >= 8 ? '⭐⭐⭐' : oilHabitsScore >= 5 ? '⭐⭐☆' : oilHabitsScore >= 3 ? '⭐☆☆' : '☆☆☆'}</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>{oilHabitsRating}</div>
+            </div>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>TOTAL</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1a428a', marginBottom: '2px' }}>{totalRecs}</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>recordings</div>
+            </div>
+          </div>
+
+          {/* Staff leaderboard */}
+          {topStaff.length > 0 && (
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>🏆 Top Recorders</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {topStaff.map(([name, count], idx) => (
+                  <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: idx === 0 ? '#fef3c7' : idx === 1 ? '#e0e7ff' : '#f1f5f9', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '20px', minWidth: '26px', textAlign: 'center' }}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{name}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>{count} recordings</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

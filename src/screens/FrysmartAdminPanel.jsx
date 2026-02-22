@@ -2614,7 +2614,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
         const canSubmit = closeForm.reason && closeForm.outcomeDate && (isWon ? closeForm.soldPrice : true);
         return (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '16px' }} onClick={() => setCloseTrialModal(null)}>
-            <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
               <div style={{ padding: '14px 16px', borderLeft: `4px solid ${isWon ? '#10b981' : '#ef4444'}`, borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>{isWon ? 'Close as Won' : 'Close as Lost'}</div>
@@ -3975,7 +3975,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   }, [activeSection]);
 
   const navGroups = [
-    { key: 'overview', label: 'Admin Overview', icon: Rocket },
+    { key: 'overview', label: 'Admin Overview', icon: Target },
     { key: 'management', label: 'Management', icon: Building, children: [
       { key: 'users', label: 'Users', icon: Users },
       { key: 'groups', label: 'Groups', icon: Layers },
@@ -3983,8 +3983,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
       { key: 'onboarding', label: 'Bulk Upload', icon: Copy },
     ]},
     { key: 'trials-overview', label: 'Action Items', icon: ClipboardList },
-    { key: 'trial-analysis', label: 'Trial Analysis', icon: BarChart3 },
     { key: 'trials', label: 'Trials', icon: AlertTriangle },
+    { key: 'trial-analysis', label: 'Trial Analysis', icon: BarChart3 },
     { key: 'configuration', label: 'Configuration', icon: Settings, children: [
       { key: 'permissions', label: 'Permissions', icon: Shield },
       { key: 'competitors', label: 'Competitors', icon: Globe },
