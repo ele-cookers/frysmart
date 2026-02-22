@@ -953,7 +953,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '13px', fontWeight: '600', color: venue.trialStatus === 'lost' ? '#dc2626' : '#059669' }}>
-                  {venue.trialStatus === 'lost' ? 'Unsuccessful' : 'Successful'}
+                  {venue.trialStatus === 'lost' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
                 </span>
                 {venue.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span></>}
                 {venue.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason}</span></>}
@@ -1213,7 +1213,7 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
         const typeConfig = {
           creation: { label: 'Trial Created', color: '#1a428a', bg: 'rgba(26,66,138,0.06)' },
           reading: { label: 'Recording Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
-          'outcome-won': { label: venue.trialStatus === 'accepted' ? 'Agreed' : 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
+          'outcome-won': { label: venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
           'outcome-lost': { label: 'Unsuccessful', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
         };
 
@@ -1684,7 +1684,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   const handleCloseTrial = (venueId, outcomeData) => {
     setCloseTrialModal(null);
-    setSuccessMsg(outcomeData.trialStatus === 'accepted' ? 'Marked as Won — needs cust code' : 'Marked as Lost');
+    setSuccessMsg(outcomeData.trialStatus === 'accepted' ? 'Marked as Accepted — needs cust code' : 'Marked as Unsuccessful');
     updateVenue(venueId, outcomeData);
   };
 
@@ -1697,7 +1697,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   const handleSaveCustomerCode = async (venueId, code) => {
     await updateVenue(venueId, { customerCode: code, trialStatus: 'won' });
-    setSuccessMsg('Customer Code Saved — moved to Successful');
+    setSuccessMsg('Customer Code Saved — Successful');
   };
 
   const handlePushBack = (venueId, targetStatus) => {
@@ -2059,7 +2059,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px 12px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Check size={14} color="#059669" strokeWidth={3} />
-            <span style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>Successful</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>Accepted</span>
             {venue.soldPricePerLitre && <><span style={{ color: '#cbd5e1' }}>|</span><span style={{ fontSize: '12px', color: '#065f46' }}>${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span></>}
           </div>
           {reasonLabel && <div style={{ fontSize: '11px', color: '#065f46', marginTop: '2px' }}>{reasonLabel}</div>}
@@ -2335,7 +2335,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       { key: 'pending', label: 'Pipeline', count: pipelineCount, color: '#94a3b8' },
       { key: 'in-progress', label: 'Active', count: activeCount, color: '#3b82f6' },
       { key: 'completed', label: 'Pending', count: pendingCount, color: '#fbbf24' },
-      { key: 'accepted', label: 'Awaiting Code', count: acceptedCount, color: '#f59e0b' },
+      { key: 'accepted', label: 'Accepted', count: acceptedCount, color: '#f59e0b' },
       { key: 'won', label: 'Successful', count: wonCount, color: '#10b981' },
       { key: 'lost', label: 'Unsuccessful', count: lostCount, color: '#ef4444' },
     ];
@@ -2603,7 +2603,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             { key: 'pending', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
             { key: 'in-progress', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
             { key: 'completed', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
-            { key: 'accepted', label: 'Awaiting Code', color: '#9a3412', bg: '#ffedd5', activeBg: '#ea580c', activeText: 'white' },
+            { key: 'accepted', label: 'Accepted', color: '#9a3412', bg: '#ffedd5', activeBg: '#ea580c', activeText: 'white' },
             { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
             { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
           ].map(s => {
@@ -2652,7 +2652,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <FilterableTh colKey="soldPrice" label="Sold $" options={getUniqueValues(dashFiltered, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '52px' }} />
                   <FilterableTh colKey="start" label="Start" options={getUniqueValues(dashFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
                   <FilterableTh colKey="end" label="End" options={getUniqueValues(dashFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-                  <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Awaiting'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+                  <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
                 </tr></thead>
                 <tbody>
                   {(() => {
@@ -3194,7 +3194,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '14px', fontWeight: '600', color: venue.trialStatus === 'lost' ? '#dc2626' : '#059669' }}>
-                    {venue.trialStatus === 'lost' ? 'Unsuccessful' : 'Successful'}
+                    {venue.trialStatus === 'lost' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
                   </span>
                   {venue.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span></>}
                   {venue.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason}</span></>}
@@ -3299,7 +3299,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length },
     { id: 'active', label: 'Active', icon: Play, count: activeTrials.length },
     { id: 'pending', label: 'Pending Outcome', icon: AlertTriangle, count: pendingOutcomeTrials.length },
-    { id: 'accepted', label: 'Awaiting Code', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
+    { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
   ];
   const ARCHIVE_ITEMS = [
     { id: 'won', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#10b981' },
