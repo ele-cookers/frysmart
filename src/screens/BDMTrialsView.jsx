@@ -2420,7 +2420,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     return (
       <div style={{ ...(isDesktop ? { padding: '24px 0', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' } : { padding: '16px 0' }) }}>
         {/* Back button + header + action buttons */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'flex-start' : 'stretch', gap: isDesktop ? '12px' : '8px', marginBottom: '20px' }}>
           <button onClick={() => setManageVenueId(null)} style={{
             background: '#f1f5f9', border: 'none', borderRadius: '6px', padding: '6px 10px',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
@@ -2580,7 +2580,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <div><label style={{ ...S.label, fontSize: '10px' }}>OFFERED $/L</label><div style={{ position: 'relative' }}><span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b', pointerEvents: 'none' }}>$</span><input type="number" step="0.01" min="0" value={mEditForm.offeredPricePerLitre} onChange={e => setMEditForm(p => ({ ...p, offeredPricePerLitre: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px 8px 22px', width: '100%', boxSizing: 'border-box' }} placeholder="0.00" /></div></div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                    <div><label style={{ ...S.label, fontSize: '10px' }}>CURRENT OIL</label><select value={mEditForm.defaultOil} onChange={e => setMEditForm(p => ({ ...p, defaultOil: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option><optgroup label="Cookers Oils">{allOilOptions.cookers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>{Object.entries(allOilOptions.byCompetitor).map(([company, oils]) => (<optgroup key={company} label={company}>{oils.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>))}</select></div>
+                    <div><label style={{ ...S.label, fontSize: '10px' }}>CURRENT OIL</label><select value={mEditForm.defaultOil} onChange={e => setMEditForm(p => ({ ...p, defaultOil: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option><optgroup label="Cookers Oils">{allOilOptions.cookers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>{Object.entries(allOilOptions.compGroups).map(([company, oils]) => (<optgroup key={company} label={company}>{oils.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>))}</select></div>
                     <div><label style={{ ...S.label, fontSize: '10px' }}>TRIAL OIL</label><select value={mEditForm.trialOilId} onChange={e => setMEditForm(p => ({ ...p, trialOilId: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option>{cookerOilsList.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>

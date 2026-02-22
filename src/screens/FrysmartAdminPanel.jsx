@@ -12,7 +12,7 @@ import {
   mapSystemSettings,
   mergeTrialIntoVenue, splitTrialFromVenue,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Palette, Shield, UserPlus, Zap, Rocket, ClipboardList } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Palette, Shield, UserPlus, Zap, ClipboardList, LayoutDashboard } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
 import { TrialDetailModal } from '../components/TrialDetailModal';
@@ -2195,9 +2195,9 @@ const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTi
         <>
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1999 }} onClick={() => setOpen(false)} />
           <div style={{
-            position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 2000,
+            position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 2000,
             background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '14px', width: '280px'
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '14px', width: 'min(280px, calc(100vw - 32px))'
           }}>
             {/* Start / End indicator */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -3975,16 +3975,16 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   }, [activeSection]);
 
   const navGroups = [
-    { key: 'overview', label: 'Admin Overview', icon: Target },
+    { key: 'overview', label: 'Admin Overview', icon: LayoutDashboard },
+    { key: 'trials-overview', label: 'Action Items', icon: ClipboardList },
+    { key: 'trials', label: 'Trials', icon: AlertTriangle },
+    { key: 'trial-analysis', label: 'Trial Analysis', icon: BarChart3 },
     { key: 'management', label: 'Management', icon: Building, children: [
       { key: 'users', label: 'Users', icon: Users },
       { key: 'groups', label: 'Groups', icon: Layers },
       { key: 'venues', label: 'Venues', icon: Building },
       { key: 'onboarding', label: 'Bulk Upload', icon: Copy },
     ]},
-    { key: 'trials-overview', label: 'Action Items', icon: ClipboardList },
-    { key: 'trials', label: 'Trials', icon: AlertTriangle },
-    { key: 'trial-analysis', label: 'Trial Analysis', icon: BarChart3 },
     { key: 'configuration', label: 'Configuration', icon: Settings, children: [
       { key: 'permissions', label: 'Permissions', icon: Shield },
       { key: 'competitors', label: 'Competitors', icon: Globe },
@@ -4119,41 +4119,64 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                   {overdueVenues.length > 0 && (
                     <div style={{ marginTop: '12px' }}>
                       <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
-                      <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'auto' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '6px 2fr 1fr 1fr 1fr 1fr', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
-                          <span />
-                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px' }}>VENUE</span>
-                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>STATE</span>
-                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>BDM</span>
-                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
-                          <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'right' }}>LAST RECORDING</span>
+                      {isDesktop ? (
+                        <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'auto' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '6px 2fr 1fr 1fr 1fr 1fr', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
+                            <span />
+                            <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px' }}>VENUE</span>
+                            <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>STATE</span>
+                            <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>BDM</span>
+                            <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
+                            <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'right' }}>LAST RECORDING</span>
+                          </div>
+                          {overdueVenues.slice(0, 8).map((v, i) => {
+                            const days = getAgeDays(v.lastTpmDate);
+                            const isSevere = days >= 7;
+                            const bdm = getOverdueBdm(v);
+                            const nam = getOverdueNam(v);
+                            return (
+                              <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 2fr 1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
+                                <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
+                                <div style={{ display: 'flex', justifyContent: 'center' }}><StateBadge theme={theme} state={v.state} /></div>
+                                <div style={{ textAlign: 'center' }}>
+                                  {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
+                                    : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                  {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
+                                    : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
+                                </div>
+                                <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', textAlign: 'right' }}>{days}d ago</span>
+                              </div>
+                            );
+                          })}
+                          {overdueVenues.length > 8 && (
+                            <div style={{ padding: '6px 12px', fontSize: '11px', color: '#64748b', textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>+{overdueVenues.length - 8} more</div>
+                          )}
                         </div>
-                        {overdueVenues.slice(0, 8).map((v, i) => {
-                          const days = getAgeDays(v.lastTpmDate);
-                          const isSevere = days >= 7;
-                          const bdm = getOverdueBdm(v);
-                          const nam = getOverdueNam(v);
-                          return (
-                            <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 2fr 1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
-                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
-                              <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
-                              <div style={{ display: 'flex', justifyContent: 'center' }}><StateBadge theme={theme} state={v.state} /></div>
-                              <div style={{ textAlign: 'center' }}>
-                                {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
-                                  : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {overdueVenues.slice(0, 8).map(v => {
+                            const days = getAgeDays(v.lastTpmDate);
+                            const isSevere = days >= 7;
+                            return (
+                              <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: '#f8fafc', borderRadius: '8px', borderLeft: `3px solid ${isSevere ? '#ef4444' : '#f59e0b'}` }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</div>
+                                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
+                                    <StateBadge theme={theme} state={v.state} />
+                                  </div>
+                                </div>
+                                <div style={{ fontSize: '12px', fontWeight: '700', color: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }}>{days}d ago</div>
                               </div>
-                              <div style={{ textAlign: 'center' }}>
-                                {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
-                                  : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', textAlign: 'right' }}>{days}d ago</span>
-                            </div>
-                          );
-                        })}
-                        {overdueVenues.length > 8 && (
-                          <div style={{ padding: '6px 12px', fontSize: '11px', color: '#64748b', textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>+{overdueVenues.length - 8} more</div>
-                        )}
-                      </div>
+                            );
+                          })}
+                          {overdueVenues.length > 8 && (
+                            <div style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', padding: '4px 0' }}>+{overdueVenues.length - 8} more</div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
