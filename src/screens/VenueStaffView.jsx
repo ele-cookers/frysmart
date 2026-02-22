@@ -214,8 +214,19 @@ const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, 
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (fryer.tpmValue) {
-      const reading = {
+    if (fryer.notInUse || fryer.tpmValue) {
+      const reading = fryer.notInUse ? {
+        venueId,
+        fryerNumber: fryer.fryerNumber,
+        readingDate: date,
+        takenBy: (currentUser?.role === 'venue_staff' || currentUser?.role === 'group_viewer') ? null : (currentUser?.id || null),
+        staffName: critStaffName || null,
+        oilAge: 0, litresFilled: 0, tpmValue: 0,
+        setTemperature: null, actualTemperature: null,
+        filtered: null, foodType: null,
+        notes: fryer.notes || 'Not in operation',
+        notInUse: true,
+      } : {
         venueId,
         fryerNumber: fryer.fryerNumber,
         readingDate: date,
@@ -272,6 +283,54 @@ const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, 
         </div>
 
         <form onSubmit={handleSave} style={{ padding: '16px' }}>
+          {/* Fryer operation toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px' }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>Fryer Status</span>
+            <button type="button" onClick={() => updateFryer('notInUse', !fryer.notInUse)} style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '11px', fontWeight: '600',
+            }}>
+              <span style={{ color: fryer.notInUse ? '#94a3b8' : '#10b981', transition: 'color 0.2s' }}>
+                {fryer.notInUse ? 'Not in operation' : 'In operation'}
+              </span>
+              <div style={{
+                width: '36px', height: '20px', borderRadius: '10px',
+                background: fryer.notInUse ? '#cbd5e1' : '#10b981',
+                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              }}>
+                <div style={{
+                  width: '16px', height: '16px', borderRadius: '50%',
+                  background: 'white', position: 'absolute', top: '2px',
+                  left: fryer.notInUse ? '2px' : '18px',
+                  transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                }} />
+              </div>
+            </button>
+          </div>
+
+          {fryer.notInUse ? (
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>Reason</label>
+              <select value={fryer.notes || ''} onChange={(e) => updateFryer('notes', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '16px', outline: 'none', boxSizing: 'border-box', background: 'white' }}>
+                <option value="">Select reason...</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Not needed today">Not needed today</option>
+                <option value="Out of order">Out of order</option>
+                <option value="Seasonal shutdown">Seasonal shutdown</option>
+                <option value="Other">Other</option>
+              </select>
+              {fryer.notes === 'Other' && (
+                <textarea value={fryer.notInUseOtherReason || ''} onChange={(e) => updateFryer('notInUseOtherReason', e.target.value)}
+                  rows="1" placeholder="Specify reason..."
+                  style={{ width: '100%', marginTop: '8px', padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'none' }}
+                />
+              )}
+            </div>
+          ) : (
+          <>
           {/* Staff Name */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>
@@ -404,6 +463,8 @@ const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, 
               onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
             />
           </div>
+          </>
+          )}
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button type="button" onClick={handleSkip} style={{

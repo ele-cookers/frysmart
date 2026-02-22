@@ -319,13 +319,13 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const startIdx = initialFryer ? Math.max(0, fryerNums.indexOf(initialFryer)) : 0;
   const [currentFryerIndex, setCurrentFryerIndex] = useState(startIdx);
   const currentFryerNumber = fryerNums[currentFryerIndex];
-  const [date] = useState(initialDate || getTodayString());
+  const [date, setDate] = useState(initialDate || getTodayString());
   const [savedReadings, setSavedReadings] = useState([]);
 
   const makeFryer = (fNum) => ({
     fryerNumber: fNum, oilAge: '', litresFilled: '', tpmValue: '',
     setTemperature: '', actualTemperature: '', foodType: 'Chips/Fries',
-    filtered: null, notes: '', notInUse: false,
+    filtered: null, notes: '', notInUse: false, notInUseReason: '',
   });
   const [fryer, setFryerState] = useState(makeFryer(currentFryerNumber));
 
@@ -343,7 +343,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   };
 
   const isFreshOil = parseInt(fryer.oilAge) === 1;
-  const canSave = fryer.tpmValue && fryer.oilAge;
+  const canSave = fryer.notInUse || (fryer.tpmValue && fryer.oilAge);
 
   const inputSt = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '16px', outline: 'none', boxSizing: 'border-box' };
   const lbl = { display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' };
@@ -357,7 +357,20 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const handleSaveAndContinue = (e) => {
     e.preventDefault();
     if (!canSave) return;
-    const reading = {
+    const reading = fryer.notInUse ? {
+      venueId: venue.id,
+      trialId: venue.trialId || null,
+      fryerNumber: fryer.fryerNumber,
+      readingDate: date,
+      readingNumber: 1,
+      takenBy: currentUser?.id || null,
+      staffName: currentUser?.name || '',
+      oilAge: 0, litresFilled: 0, tpmValue: 0,
+      setTemperature: null, actualTemperature: null,
+      filtered: null, foodType: null,
+      notes: fryer.notInUseReason || 'Not in operation',
+      notInUse: true,
+    } : {
       venueId: venue.id,
       trialId: venue.trialId || null,
       fryerNumber: fryer.fryerNumber,
@@ -408,6 +421,61 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
         </div>
 
         <form onSubmit={handleSaveAndContinue} style={{ padding: '16px' }}>
+          {/* Reading Date */}
+          <div style={fld}>
+            <label style={lbl}>Reading Date</label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              max={getTodayString()} min={venue.trialStartDate || ''}
+              style={inputSt} />
+          </div>
+
+          {/* Fryer operation toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px' }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>Fryer Status</span>
+            <button type="button" onClick={() => updateFryer('notInUse', !fryer.notInUse)} style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '11px', fontWeight: '600',
+            }}>
+              <span style={{ color: fryer.notInUse ? '#94a3b8' : '#10b981', transition: 'color 0.2s' }}>
+                {fryer.notInUse ? 'Not in operation' : 'In operation'}
+              </span>
+              <div style={{
+                width: '36px', height: '20px', borderRadius: '10px',
+                background: fryer.notInUse ? '#cbd5e1' : '#10b981',
+                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              }}>
+                <div style={{
+                  width: '16px', height: '16px', borderRadius: '50%',
+                  background: 'white', position: 'absolute', top: '2px',
+                  left: fryer.notInUse ? '2px' : '18px',
+                  transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                }} />
+              </div>
+            </button>
+          </div>
+
+          {fryer.notInUse ? (
+            <div style={{ marginBottom: '16px' }}>
+              <label style={lbl}>Reason</label>
+              <select value={fryer.notInUseReason} onChange={e => updateFryer('notInUseReason', e.target.value)}
+                style={{ ...inputSt, background: 'white' }}>
+                <option value="">Select reason...</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Not needed today">Not needed today</option>
+                <option value="Out of order">Out of order</option>
+                <option value="Seasonal shutdown">Seasonal shutdown</option>
+                <option value="Other">Other</option>
+              </select>
+              {fryer.notInUseReason === 'Other' && (
+                <textarea value={fryer.notes} onChange={e => updateFryer('notes', e.target.value)}
+                  rows="1" placeholder="Specify reason..."
+                  style={{ ...inputSt, marginTop: '8px', minHeight: '40px', resize: 'none', fontFamily: 'inherit' }} />
+              )}
+            </div>
+          ) : (
+          <>
           {/* Oil Age */}
           <div style={fld}>
             <label style={lbl}>Oil Age (days)</label>
@@ -500,6 +568,8 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
               style={{ ...inputSt, minHeight: '60px', resize: 'vertical', fontFamily: 'inherit' }}
               onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
+          </>
+          )}
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -719,18 +789,13 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
 // ─────────────────────────────────────────────
 // TRIAL DETAIL MODAL — view + edit trial info
 // ─────────────────────────────────────────────
-const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, VOLUME_BRACKETS }) => {
+const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, VOLUME_BRACKETS, bdmView }) => {
   const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
   const compOil = oilTypes.find(o => o.id === venue.defaultOil);
   const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
 
-  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  const isDesktop = bdmView === 'desktop';
   const [selectedCell, setSelectedCell] = useState(null); // { dateStr, fryerNum }
-  useEffect(() => {
-    const h = () => setIsDesktop(window.innerWidth >= 768);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
 
   // Pricing & savings
   const liveTrialAvg = calcTrialWeeklyAvg(venue.id, venue.trialStartDate, readings, venue.trialEndDate);
@@ -978,6 +1043,60 @@ const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings
           {venue.trialStatus === 'accepted' && (
             <CustomerCodeInput venueId={venue.id} onSave={onSaveCustomerCode} />
           )}
+
+          {/* Notes Timeline — mobile version */}
+          {!isDesktop && (() => {
+            const notes = [];
+            if (venue.trialNotes) {
+              venue.trialNotes.split('\n').forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+                const tagMatch = trimmed.match(/^\[(Won|Lost)\s+(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
+                if (tagMatch) {
+                  notes.push({ date: tagMatch[2], type: tagMatch[1] === 'Won' ? 'outcome-won' : 'outcome-lost', text: tagMatch[3] || `Marked as ${tagMatch[1]}` });
+                } else if (trimmed.startsWith('TRL-')) {
+                  const afterId = trimmed.replace(/^TRL-\d+(\s*\|[^|]*)?/, '').trim();
+                  if (afterId) notes.push({ date: venue.trialStartDate || venue.createdAt?.slice(0, 10) || '', type: 'creation', text: afterId });
+                } else {
+                  notes.push({ date: venue.trialStartDate || '', type: 'creation', text: trimmed });
+                }
+              });
+            }
+            venueReadings.filter(r => r.notes && r.notes.trim()).forEach(r => {
+              notes.push({ date: r.readingDate, type: 'reading', text: r.notes.trim(), fryer: r.fryerNumber });
+            });
+            const typePriority = { creation: 0, reading: 1, 'outcome-won': 2, 'outcome-lost': 2 };
+            notes.sort((a, b) => (typePriority[a.type] ?? 1) - (typePriority[b.type] ?? 1) || (a.date || '').localeCompare(b.date || ''));
+            const typeConfig = {
+              creation: { label: 'Trial Created', color: '#1a428a', bg: 'rgba(26,66,138,0.06)' },
+              reading: { label: 'Recording Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
+              'outcome-won': { label: venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
+              'outcome-lost': { label: 'Unsuccessful', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
+            };
+            if (notes.length === 0) return null;
+            return (
+              <div style={{ marginBottom: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', marginBottom: '8px' }}>Notes ({notes.length})</div>
+                {notes.map((n, i) => {
+                  const cfg = typeConfig[n.type] || typeConfig.creation;
+                  return (
+                    <div key={i} style={{ marginBottom: '10px', position: 'relative', paddingLeft: '14px' }}>
+                      <div style={{ position: 'absolute', left: 0, top: '4px', width: '8px', height: '8px', borderRadius: '50%', background: cfg.color, border: '2px solid white', boxShadow: '0 0 0 1px ' + cfg.color }} />
+                      {i < notes.length - 1 && <div style={{ position: 'absolute', left: '3px', top: '14px', bottom: '-6px', width: '2px', background: '#e2e8f0' }} />}
+                      <div style={{ background: cfg.bg, borderRadius: '8px', padding: '8px 10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                          <span style={{ fontSize: '9px', fontWeight: '700', color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{cfg.label}</span>
+                          {n.date && <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '500' }}>{displayDate(n.date)}</span>}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#1f2937', lineHeight: '1.4' }}>{n.text}</div>
+                        {n.fryer && <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>Fryer {n.fryer}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Manage link — go to full manage screen */}
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', textAlign: 'center' }}>
@@ -1712,7 +1831,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   const handleStartTrial = async (venueId) => {
     await updateVenue(venueId, { trialStatus: 'in-progress', trialStartDate: getTodayString() });
-    setSuccessMsg('Trial Started');
+    // Open recording form for the first reading
+    const updatedVenue = venues.find(v => v.id === venueId);
+    if (updatedVenue) {
+      setReadingModal({ ...updatedVenue, trialStatus: 'in-progress', trialStartDate: getTodayString() });
+    }
+    setSuccessMsg('Trial Started — log your first reading');
   };
 
   const handleEndTrial = async (venueId) => {
@@ -1740,7 +1864,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   const handlePushBack = (venueId, targetStatus) => {
-    const labels = { 'pending': 'Pipeline', 'in-progress': 'Active', 'completed': 'Pending Outcome' };
+    const labels = { 'pending': 'Pipeline', 'in-progress': 'Active', 'completed': 'Pending' };
     const clearFields = targetStatus === 'completed'
       ? { trialStatus: targetStatus, outcomeDate: null, trialReason: null, soldPricePerLitre: null, customerCode: null }
       : { trialStatus: targetStatus };
@@ -2134,9 +2258,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const showReason = isArchiveTab(tabType);
     const showAction = !isArchiveTab(tabType);
     return (
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
-        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto' }}>
+        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
           <style>{`
             .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
             .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 14px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
@@ -2679,7 +2803,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           /* Desktop: full table */
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, maxHeight: '40vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div style={{ overflow: 'auto', flex: 1 }}>
               <style>{`
                 .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
@@ -2818,14 +2942,44 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             />
           </div>
           {/* Results */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '700px' }}>
+          <div style={{ display: isTableView ? 'grid' : 'flex', gridTemplateColumns: isTableView ? 'repeat(auto-fill, minmax(320px, 1fr))' : undefined, flexDirection: isTableView ? undefined : 'column', gap: isTableView ? '10px' : '6px', maxWidth: isTableView ? undefined : '700px' }}>
             {sorted.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '13px' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '13px', gridColumn: '1 / -1' }}>
                 {searchTerm ? 'No trials match your search' : 'No trials found'}
               </div>
             ) : sorted.map(v => {
               const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pending'];
-              return (
+              const vCompOil = oilTypes.find(o => o.id === v.defaultOil);
+              const vCookersOil = oilTypes.find(o => o.id === v.trialOilId);
+              const vComp = vCompOil && vCompOil.competitorId ? competitors.find(c => c.id === vCompOil.competitorId) : null;
+              return isTableView ? (
+                <button key={v.id} onClick={() => setManageVenueId(v.id)} style={{
+                  display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 16px',
+                  background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
+                  cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s',
+                  borderLeft: `4px solid ${sc.accent}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#1f2937', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
+                    <TrialStatusBadge status={v.trialStatus} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {v.state && <StateBadge state={v.state} />}
+                    {v.volumeBracket && <VolumePill bracket={v.volumeBracket} />}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {vComp && <CompetitorPill comp={vComp} />}
+                    <OilBadge oil={vCompOil} competitors={competitors} compact />
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>vs</span>
+                    <OilBadge oil={vCookersOil} competitors={competitors} compact />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                    <span>{v.trialStartDate ? displayDate(v.trialStartDate) : 'Not started'}{v.trialEndDate ? ` — ${displayDate(v.trialEndDate)}` : ''}</span>
+                    {v.currentPricePerLitre && <span>Curr: ${parseFloat(v.currentPricePerLitre).toFixed(2)}</span>}
+                    {v.offeredPricePerLitre && <span style={{ color: '#1a428a', fontWeight: '600' }}>Off: ${parseFloat(v.offeredPricePerLitre).toFixed(2)}</span>}
+                  </div>
+                </button>
+              ) : (
                 <button key={v.id} onClick={() => setManageVenueId(v.id)} style={{
                   display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
                   background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px',
@@ -3057,7 +3211,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}><RotateCcw size={10} /> Back to Active</button>
             </>)}
             {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && (
-              <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending Outcome?`)) handlePushBack(venue.id, 'completed'); }} style={{
+              <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'completed'); }} style={{
                 padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
@@ -3103,35 +3257,45 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
               {!mEditing ? (
                 /* Read-only view */
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
-                  {[
-                    { label: 'Venue Name', value: venue.name },
-                    { label: 'Start Date', value: displayDate(venue.trialStartDate) },
-                    { label: 'End Date', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' },
-                    { label: 'Current $/L', value: venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : '—' },
-                    { label: 'Offered $/L', value: venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : '—' },
-                    { label: 'Fryers', value: venue.fryerCount || 1 },
-                    { label: 'Avg L/week', value: venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : '—' },
-                    venue.customerCode ? { label: venue.customerCode.startsWith('PRS-') ? 'Prospect Code' : 'Customer Code', value: venue.customerCode } : null,
-                  ].filter(Boolean).map((r, i) => (
-                    <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{r.label}</div>
-                      <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>{r.value}</div>
-                    </div>
-                  ))}
-                  {/* Oil comparison */}
-                  <div style={{ gridColumn: '1 / -1', padding: '8px 0', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {comp && <CompetitorPill comp={comp} />}
-                    <OilBadge oil={compOil} competitors={competitors} compact />
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>vs</span>
-                    <OilBadge oil={cookersOil} competitors={competitors} compact />
-                  </div>
-                  {venue.trialNotes && (
-                    <div style={{ gridColumn: '1 / -1', padding: '8px 0', borderTop: '1px solid #f1f5f9' }}>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Notes</div>
-                      <div style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>{venue.trialNotes}</div>
+                <div>
+                  {/* Timestamps */}
+                  {(venue.createdAt || venue.updatedAt) && (
+                    <div style={{ display: 'flex', gap: '16px', marginBottom: '10px', fontSize: '11px', color: '#94a3b8' }}>
+                      {venue.createdAt && <span>Created: {displayDate(venue.createdAt.split('T')[0])}</span>}
+                      {venue.updatedAt && <span>Last edited: {displayDate(venue.updatedAt.split('T')[0])}</span>}
                     </div>
                   )}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
+                    {[
+                      { label: 'Venue Name', value: venue.name },
+                      { label: 'Start Date', value: displayDate(venue.trialStartDate) },
+                      { label: 'End Date', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' },
+                      { label: 'Current $/L', value: venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : '—' },
+                      { label: 'Offered $/L', value: venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : '—' },
+                      { label: 'Fryers', value: venue.fryerCount || 1 },
+                      { label: 'Pre-trial weekly avg', value: preTrialAvg ? `${preTrialAvg} L` : '—' },
+                      liveTrialAvg !== null ? { label: 'Trial weekly avg', value: `${liveTrialAvg} L` } : null,
+                      venue.customerCode ? { label: venue.customerCode.startsWith('PRS-') ? 'Prospect Code' : 'Customer Code', value: venue.customerCode } : null,
+                    ].filter(Boolean).map((r, i) => (
+                      <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{r.label}</div>
+                        <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>{r.value}</div>
+                      </div>
+                    ))}
+                    {/* Oil comparison */}
+                    <div style={{ gridColumn: '1 / -1', padding: '8px 0', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      {comp && <CompetitorPill comp={comp} />}
+                      <OilBadge oil={compOil} competitors={competitors} compact />
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>vs</span>
+                      <OilBadge oil={cookersOil} competitors={competitors} compact />
+                    </div>
+                    {venue.trialNotes && (
+                      <div style={{ gridColumn: '1 / -1', padding: '8px 0', borderTop: '1px solid #f1f5f9' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Notes</div>
+                        <div style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>{venue.trialNotes}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 /* Edit form */
@@ -3247,8 +3411,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </span>
                   {venue.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span></>}
                   {venue.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason}</span></>}
-                  {venue.soldPricePerLitre && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>Sold: ${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span></>}
                 </div>
+                {(venue.trialStatus === 'won' || venue.trialStatus === 'accepted') && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
+                    {cookersOil && <OilBadge oil={cookersOil} competitors={competitors} compact />}
+                    {venue.soldPricePerLitre && <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '400' }}>@ ${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span>}
+                  </div>
+                )}
+                {venue.trialStatus === 'won' && venue.customerCode && (
+                  <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <CheckCircle2 size={13} color="#059669" />
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -3264,7 +3439,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       case 'pipeline': {
         const sorted = sortList(pipelineTrials);
         return (
-          <div>
+          <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {pipelineTrials.length === 0
               ? emptyState(Clock, 'Pipeline empty', 'Create a new trial to add to your pipeline')
               : isTableView ? renderTrialTable(pipelineTrials, 'pipeline')
@@ -3276,7 +3451,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       case 'active': {
         const sorted = sortList(activeTrials);
         return (
-          <div>
+          <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {activeTrials.length === 0
               ? emptyState(Play, 'No active trials', 'Start a trial from your pipeline')
               : isTableView ? renderTrialTable(activeTrials, 'active')
@@ -3288,7 +3463,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       case 'pending': {
         const sorted = sortList(pendingOutcomeTrials);
         return (
-          <div>
+          <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {pendingOutcomeTrials.length === 0
               ? emptyState(Clock, 'No pending outcomes', 'Trials awaiting a won/lost decision will appear here')
               : isTableView ? renderTrialTable(pendingOutcomeTrials, 'pending')
@@ -3311,7 +3486,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       case 'won': {
         const sorted = sortList(wonTrials);
         return (
-          <div>
+          <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {wonTrials.length === 0
               ? emptyState(Trophy, 'No successful trials yet', 'Won trials will appear here')
               : isTableView ? renderTrialTable(wonTrials, 'won')
@@ -3323,7 +3498,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       case 'lost': {
         const sorted = sortList(lostTrials);
         return (
-          <div>
+          <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {lostTrials.length === 0
               ? emptyState(XCircle, 'No unsuccessful trials', 'Lost trials will appear here')
               : isTableView ? renderTrialTable(lostTrials, 'lost')
@@ -3347,7 +3522,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const NAV_ITEMS = [
     { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length },
     { id: 'active', label: 'Active', icon: Play, count: activeTrials.length },
-    { id: 'pending', label: 'Pending Outcome', icon: AlertTriangle, count: pendingOutcomeTrials.length },
+    { id: 'pending', label: 'Pending', icon: AlertTriangle, count: pendingOutcomeTrials.length },
     { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
   ];
   const ARCHIVE_ITEMS = [
@@ -3593,7 +3768,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               ...(bdmView === 'desktop'
                 ? { padding: '24px clamp(16px, 2vw, 32px) 40px' }
                 : { maxWidth: '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }),
-              ...(activeTab === 'dashboard' ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
+              ...(['dashboard', 'pipeline', 'active', 'pending', 'won', 'lost'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
             }}>
               {renderTabContent()}
             </div>
@@ -3605,8 +3780,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={{
             position: 'sticky', top: 0, zIndex: 100,
             transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden',
+            width: '100%', overflow: 'hidden',
           }}>
-            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: 'white', gap: '0', padding: '0 2px', overflowX: 'auto' }} className="no-scrollbar">
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderBottom: '1px solid #e2e8f0', background: 'white' }} className="no-scrollbar">
+              <div style={{ display: 'inline-flex', padding: '0 2px', minWidth: '100%' }}>
               {/* Dashboard tab */}
               <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); }} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
@@ -3648,16 +3825,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 const tabColor = tab.color || BLUE;
                 return (
                   <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                    padding: '11px 4px', border: 'none', background: 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                    padding: '11px 10px', border: 'none', background: 'transparent',
                     borderBottom: active ? `3px solid ${tabColor}` : '3px solid transparent',
-                    marginBottom: '-1px', minWidth: 0,
+                    marginBottom: '-1px', flexShrink: 0,
                     color: active ? tabColor : '#64748b',
                     fontSize: '11px', fontWeight: active ? '700' : '500',
                     cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
                   }}>
                     <tab.icon size={13} />
-                    {tab.id === 'pending' ? 'Pending' : tab.id === 'accepted' ? 'Cust Code' : tab.label}
+                    {tab.id === 'accepted' ? 'Cust Code' : tab.label}
                     {tab.count != null && tab.count > 0 && (
                       <span style={{
                         background: active ? tabColor : '#e2e8f0',
@@ -3673,10 +3850,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 const active = activeTab === tab.id;
                 return (
                   <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); }} style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                    padding: '11px 4px', border: 'none', background: 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                    padding: '11px 10px', border: 'none', background: 'transparent',
                     borderBottom: active ? `3px solid ${tab.color}` : '3px solid transparent',
-                    marginBottom: '-1px', minWidth: 0,
+                    marginBottom: '-1px', flexShrink: 0,
                     color: active ? tab.color : '#64748b',
                     fontSize: '11px', fontWeight: active ? '700' : '500',
                     cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
@@ -3693,6 +3870,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </button>
                 );
               })}
+              </div>
             </div>
           </div>
 
@@ -3751,6 +3929,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           trialReasons={trialReasons}
           readings={tpmReadings}
           VOLUME_BRACKETS={VOLUME_BRACKETS}
+          bdmView={bdmView}
           onClose={() => setSelectedTrialVenue(null)}
           onSaveCustomerCode={handleSaveCustomerCode}
           onManage={(v) => { setSelectedTrialVenue(null); setManageVenueId(v.id); setActiveTab('manage'); }}
