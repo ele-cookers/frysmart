@@ -3,9 +3,9 @@ import { supabase } from '../lib/supabase';
 import { mapGroup, mapVenue, mapReading, mapSystemSettings } from '../lib/mappers';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check,
-  AlertCircle, AlertTriangle, Clock, Star, Building, LogOut, BarChart3, Calendar, Eye, ClipboardList, Target, Droplets
+  AlertCircle, Clock, Star, Building, LogOut, BarChart3, Calendar, Eye, Droplets
 } from 'lucide-react';
-import { HEADER_BADGE_COLORS, OIL_STATUS_COLORS, TPM_COLORS, getThemeColors } from '../lib/badgeConfig';
+import { OIL_STATUS_COLORS, getThemeColors } from '../lib/badgeConfig';
 
 // ─────────────────────────────────────────────
 // DESIGN TOKENS
@@ -114,6 +114,7 @@ const S = Object.freeze({
 // PURE UTILITIES
 // ─────────────────────────────────────────────
 const formatDate = (date) => {
+  if (!date) return '';
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
@@ -141,8 +142,11 @@ const tempVarianceColor = (variance) => {
   return abs <= 3 ? COLORS.good : abs <= 7 ? COLORS.warning : COLORS.critical;
 };
 
-const calcTempVariancePct = (setTemp, actualTemp) =>
-  ((parseFloat(actualTemp) - parseFloat(setTemp)) / parseFloat(setTemp)) * 100;
+const calcTempVariancePct = (setTemp, actualTemp) => {
+  const s = parseFloat(setTemp);
+  if (!s) return 0;
+  return ((parseFloat(actualTemp) - s) / s) * 100;
+};
 
 const isFreshOil = (oilAge) => oilAge === 1 || oilAge === '1';
 
@@ -836,8 +840,9 @@ const QuarterView = ({ recordings, selectedDate, onDateChange, fryerCount = 4, w
     for (let d = 1; d < dates.length; d++) {
       const fresh = byDate[dates[d]].find(r => isFreshOil(r.oilAge));
       if (!fresh) continue;
-      const prevMax = Math.max(...byDate[dates[d - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v)));
-      if (isNaN(prevMax)) continue;
+      const prevVals = byDate[dates[d - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+      if (prevVals.length === 0) continue;
+      const prevMax = Math.max(...prevVals);
       if (prevMax >= critAt) changedLate++;
       else if (prevMax < warnAt) changedEarly++;
       else changedOnTime++;
@@ -949,8 +954,9 @@ const YearView = ({ recordings, selectedDate, onDateChange, fryerCount = 4, warn
       for (let d = 1; d < dates.length; d++) {
         const fresh = byDate[dates[d]].find(r => isFreshOil(r.oilAge));
         if (!fresh) continue;
-        const prevMax = Math.max(...byDate[dates[d - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v)));
-        if (isNaN(prevMax)) continue;
+        const prevVals2 = byDate[dates[d - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+        if (prevVals2.length === 0) continue;
+        const prevMax = Math.max(...prevVals2);
         if (prevMax >= critAt) changedLate++;
         else if (prevMax < warnAt) changedEarly++;
         else changedOnTime++;
@@ -1038,19 +1044,19 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 
   const today    = new Date();
   const todayStr = formatDate(today);
-  const last30   = Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
-  const recs30   = last30.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
+  const last7days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
+  const recs7    = last7days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
 
   // KPIs
-  const daysWithRecs   = last30.filter(d => (recordings[d] || []).length > 0).length;
-  const complianceRate = Math.round((daysWithRecs / 30) * 100);
-  const tpmVals        = recs30.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+  const daysWithRecs   = last7days.filter(d => (recordings[d] || []).length > 0).length;
+  const complianceRate = Math.round((daysWithRecs / 7) * 100);
+  const tpmVals        = recs7.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
   const avgTPM         = tpmVals.length > 0 ? (tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length).toFixed(1) : '—';
   const critCount      = tpmVals.filter(v => v >= critAt).length;
   const critRate       = tpmVals.length > 0 ? Math.round((critCount / tpmVals.length) * 100) : 0;
-  const filterable     = recs30.filter(r => r.filtered !== null && r.filtered !== undefined);
+  const filterable     = recs7.filter(r => r.filtered !== null && r.filtered !== undefined);
   const filteringRate  = filterable.length > 0 ? Math.round((filterable.filter(r => r.filtered === true).length / filterable.length) * 100) : 0;
-  const tempRecs       = recs30.filter(r => r.setTemperature && r.actualTemperature);
+  const tempRecs       = recs7.filter(r => r.setTemperature && r.actualTemperature);
   const avgTempVar     = tempRecs.length > 0 ? tempRecs.reduce((s, r) => s + calcTempVariancePct(r.setTemperature, r.actualTemperature), 0) / tempRecs.length : null;
   const todayRecs      = recordings[todayStr] || [];
 
@@ -1067,7 +1073,7 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 
   // Staff leaderboard
   const staffMap = {};
-  recs30.forEach(r => {
+  recs7.forEach(r => {
     if (!r.staffName) return;
     staffMap[r.staffName] = staffMap[r.staffName] || { count: 0, filtered: 0 };
     staffMap[r.staffName].count++;
@@ -1093,7 +1099,7 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: '700', color: COLORS.text, margin: 0 }}>{venueName}</h2>
-          <p style={{ fontSize: '13px', color: COLORS.textMuted, margin: '2px 0 0' }}>Last 30 days · {fryerCount} fryers</p>
+          <p style={{ fontSize: '13px', color: COLORS.textMuted, margin: '2px 0 0' }}>Last 7 days · {fryerCount} fryers</p>
         </div>
         <div style={{ fontSize: '13px', color: todayRecs.length > 0 ? COLORS.good : COLORS.warning, fontWeight: '600' }}>
           {todayRecs.length > 0 ? `${todayRecs.length} recorded today` : 'Nothing recorded today'}
@@ -1175,15 +1181,15 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
   const computed = useMemo(() => {
     const today    = new Date();
     const todayStr = formatDate(today);
-    const last30   = Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
+    const last7days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
     const last90   = Array.from({ length: 90 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
 
     const venueStats = venues.map(venue => {
       const recordings = recordingsByVenue[venue.id] || {};
 
-      const allRecs  = last30.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
-      const pastDays = last30.filter(date => new Date(date) <= today).length;
-      const daysWithRecs = last30.filter(d => (recordings[d] || []).length > 0).length;
+      const allRecs  = last7days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
+      const pastDays = last7days.filter(date => new Date(date) <= today).length;
+      const daysWithRecs = last7days.filter(d => (recordings[d] || []).length > 0).length;
       const complianceRate = pastDays > 0 ? Math.round((daysWithRecs / pastDays) * 100) : 0;
 
       const tpmValues   = allRecs.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
@@ -1219,7 +1225,9 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
           const fresh = fryerDates[sorted[i]].find(r => isFreshOil(r.oilAge));
           if (!fresh) continue;
           const prevRecs = fryerDates[sorted[i - 1]];
-          const prevMax  = Math.max(...prevRecs.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v)));
+          const prevVals = prevRecs.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+          if (prevVals.length === 0) continue;
+          const prevMax  = Math.max(...prevVals);
           if (prevMax >= critAt) changedLate++;
           else if (prevMax < warnAt) changedEarly++;
         }
@@ -1301,7 +1309,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       if (v.complianceRate < 70) alerts.push({ venue: v.name, id: v.id, type: 'critical', msg: `Compliance at ${v.complianceRate}% — well below 90% target` });
       if (v.criticalRate > 25) alerts.push({ venue: v.name, id: v.id, type: 'critical', msg: `${v.criticalRate}% of readings are critical — investigate oil change schedule` });
       if (v.filteringRate < 40) alerts.push({ venue: v.name, id: v.id, type: 'warning', msg: `Only ${v.filteringRate}% filtering rate — daily filtering extends oil life by 50%` });
-      if (v.changedLate > 3) alerts.push({ venue: v.name, id: v.id, type: 'warning', msg: `${v.changedLate} late oil changes in the last 30 days` });
+      if (v.changedLate > 3) alerts.push({ venue: v.name, id: v.id, type: 'warning', msg: `${v.changedLate} late oil changes in the last 7 days` });
     });
     alerts.sort((a, b) => (a.type === 'critical' ? 0 : 1) - (b.type === 'critical' ? 0 : 1));
 
@@ -1316,17 +1324,17 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     const bestPerformers = [...scored].sort((a, b) => b.score - a.score).slice(0, 3);
     const worstPerformers = [...scored].sort((a, b) => a.score - b.score).slice(0, 3);
 
-    // Total oil changes in 30 days
+    // Total oil changes in 7 days
     const totalChanges = venueStats.reduce((s, v) => s + v.changedLate + v.changedEarly, 0);
     const totalLateChanges = venueStats.reduce((s, v) => s + v.changedLate, 0);
     const totalEarlyChanges = venueStats.reduce((s, v) => s + v.changedEarly, 0);
 
     // ── Exec Summary extras — group-level aggregates from all venue readings ──
 
-    // Flatten all readings across all venues for last 30 days
+    // Flatten all readings across all venues for last 7 days
     const allGroupRecs = venueStats.flatMap(v => {
       const recs = recordingsByVenue[v.id] || {};
-      return last30.flatMap(date => (recs[date] || []).filter(r => !r.notInUse && r.tpmValue != null).map(r => ({ ...r, date })));
+      return last7days.flatMap(date => (recs[date] || []).filter(r => !r.notInUse && r.tpmValue != null).map(r => ({ ...r, date })));
     });
     const totalGroupReadings = allGroupRecs.length;
 
@@ -1355,8 +1363,9 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
         for (let i = 1; i < sorted.length; i++) {
           const fresh = fryerDates[sorted[i]].find(r => isFreshOil(r.oilAge));
           if (!fresh) continue;
-          const prevMax = Math.max(...fryerDates[sorted[i - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v)));
-          if (prevMax < warnAt) count++;
+          const pv = fryerDates[sorted[i - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+          if (pv.length === 0) continue;
+          if (Math.max(...pv) < warnAt) count++;
         }
       });
       return count;
@@ -1375,8 +1384,9 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
         for (let i = 1; i < sorted.length; i++) {
           const fresh = fryerDates[sorted[i]].find(r => isFreshOil(r.oilAge));
           if (!fresh) continue;
-          const prevMax = Math.max(...fryerDates[sorted[i - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v)));
-          if (prevMax >= critAt) count++;
+          const pv2 = fryerDates[sorted[i - 1]].map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+          if (pv2.length === 0) continue;
+          if (Math.max(...pv2) >= critAt) count++;
         }
       });
       return count;
@@ -1390,11 +1400,11 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     const groupTempControlRate = groupTempRecs.length > 0 ? Math.round((groupGoodTempControl / groupTempRecs.length) * 100) : 0;
     const groupAvgSignedTempVariance = groupSignedTempVariances.length > 0 ? (groupSignedTempVariances.reduce((a, b) => a + b, 0) / groupSignedTempVariances.length) : 0;
 
-    // Weekly compliance pattern — group level (avg across venues)
+    // Weekly compliance pattern — group level (last 7 days)
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const groupDayStats = {};
     dayNames.forEach(d => { groupDayStats[d] = { recorded: 0, total: 0 }; });
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date(today); d.setDate(d.getDate() - i);
       const dn = dayNames[d.getDay()];
       const ds = formatDate(d);
@@ -1468,7 +1478,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: '700', color: COLORS.text, marginBottom: '2px' }}>{groupName}</h2>
-          <p style={{ fontSize: '14px', color: COLORS.textMuted, margin: 0 }}>{totalVenues} venue{totalVenues !== 1 ? 's' : ''} · Last 30 days</p>
+          <p style={{ fontSize: '14px', color: COLORS.textMuted, margin: 0 }}>{totalVenues} venue{totalVenues !== 1 ? 's' : ''} · Last 7 days</p>
         </div>
       </div>
 
@@ -1497,15 +1507,15 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
               <thead>
                 <tr>
                   <th style={{ width: '4px', padding: 0 }}></th>
-                  <th>Venue</th>
-                  <th style={{ textAlign: 'center' }}>Fryers</th>
-                  <th style={{ textAlign: 'center' }}>Compliance</th>
-                  <th style={{ textAlign: 'center' }}>Changed Late</th>
-                  <th style={{ textAlign: 'center' }}>Changed Early</th>
-                  <th style={{ textAlign: 'center' }}>Oil Filtered</th>
-                  <th style={{ textAlign: 'center' }}>Oil Mgt Rating</th>
-                  <th style={{ textAlign: 'center' }}>Today</th>
-                  <th style={{ width: '32px' }}></th>
+                  <th style={{ width: '18%' }}>Venue</th>
+                  <th style={{ textAlign: 'center', width: '8%' }}>Fryers</th>
+                  <th style={{ textAlign: 'center', width: '11%' }}>Compliance</th>
+                  <th style={{ textAlign: 'center', width: '11%' }}>Changed Late</th>
+                  <th style={{ textAlign: 'center', width: '11%' }}>Changed Early</th>
+                  <th style={{ textAlign: 'center', width: '11%' }}>Oil Filtered</th>
+                  <th style={{ textAlign: 'center', width: '13%' }}>Oil Mgt Rating</th>
+                  <th style={{ textAlign: 'center', width: '7%' }}>Today</th>
+                  <th style={{ width: '24px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -1543,7 +1553,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       {/* EXEC SUMMARY — venue staff KPIs + admin recording health at group level */}
       {groupView === 'exec' && (
         <div>
-          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 30 days</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 7 days</p>
 
           {/* Row 1: KPI cards (left) + Oil Management (right) */}
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
@@ -1585,67 +1595,6 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
               </div>
               <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '10px', fontStyle: 'italic' }}>*Proper filtering and monitoring extends oil life</div>
             </div>
-          </div>
-
-          {/* Row 2: Weekly Compliance + 7-Day TPM Trend side by side */}
-          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
-            {/* Weekly Compliance Pattern */}
-            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Avg recording rate by day of week across all venues (last 30 days)</p>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                {dayNames.map(day => {
-                  const rate = groupDayStats[day].total > 0 ? Math.round((groupDayStats[day].recorded / groupDayStats[day].total) * 100) : 0;
-                  const col = rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#ef4444';
-                  return (
-                    <div key={day} style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>{day}</div>
-                      <div style={{ height: '50px', background: '#f3f4f6', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${rate}%`, background: col, transition: 'height 0.3s' }} />
-                      </div>
-                      <div style={{ fontSize: '11px', fontWeight: '700', color: col, marginTop: '4px' }}>{rate}%</div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', fontStyle: 'italic' }}>
-                {(() => {
-                  const rates = dayNames.map(d => ({ day: d, rate: groupDayStats[d].total > 0 ? Math.round((groupDayStats[d].recorded / groupDayStats[d].total) * 100) : 0 }));
-                  const lowest = rates.reduce((m, c) => c.rate < m.rate ? c : m);
-                  const highest = rates.reduce((m, c) => c.rate > m.rate ? c : m);
-                  return lowest.rate < 50 ? `${lowest.day} is commonly missed • ${highest.day} has best compliance` : 'Great consistency across all days!';
-                })()}
-              </div>
-            </div>
-
-            {/* 7-Day TPM Trend */}
-            {(() => {
-              const maxT = Math.max(...groupLast7.filter(d => d.avg != null).map(d => d.avg), 30);
-              return (
-                <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>7-Day TPM Trend</h3>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>
-                    {groupLast7.map((day, i) => (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                        {day.avg != null ? (
-                          <>
-                            <div style={{ fontSize: '10px', fontWeight: '700', color: getTPMStatus(day.avg, warnAt, critAt).color, marginBottom: '3px' }}>{day.avg.toFixed(0)}</div>
-                            <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '4px' }} />
-                          </>
-                        ) : (
-                          <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px' }} />
-                        )}
-                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>{day.label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({warnAt})</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({critAt})</div>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
 
           {/* Quality Distribution */}
@@ -1738,6 +1687,67 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Weekly Compliance + 7-Day TPM Trend */}
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginTop: '16px' }}>
+            {/* Weekly Compliance Pattern */}
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Recording rate by day across all venues (last 7 days)</p>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                {dayNames.map(day => {
+                  const rate = groupDayStats[day].total > 0 ? Math.round((groupDayStats[day].recorded / groupDayStats[day].total) * 100) : 0;
+                  const col = rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#ef4444';
+                  return (
+                    <div key={day} style={{ flex: 1, textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>{day}</div>
+                      <div style={{ height: '50px', background: '#f3f4f6', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${rate}%`, background: col, transition: 'height 0.3s' }} />
+                      </div>
+                      <div style={{ fontSize: '11px', fontWeight: '700', color: col, marginTop: '4px' }}>{rate}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: '10px', color: '#64748b', textAlign: 'center', fontStyle: 'italic' }}>
+                {(() => {
+                  const rates = dayNames.map(d => ({ day: d, rate: groupDayStats[d].total > 0 ? Math.round((groupDayStats[d].recorded / groupDayStats[d].total) * 100) : 0 }));
+                  const lowest = rates.reduce((m, c) => c.rate < m.rate ? c : m);
+                  const highest = rates.reduce((m, c) => c.rate > m.rate ? c : m);
+                  return lowest.rate < 50 ? `${lowest.day} is commonly missed • ${highest.day} has best compliance` : 'Great consistency across all days!';
+                })()}
+              </div>
+            </div>
+
+            {/* 7-Day TPM Trend */}
+            {(() => {
+              const maxT = Math.max(...groupLast7.filter(d => d.avg != null).map(d => d.avg), 30);
+              return (
+                <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>7-Day TPM Trend</h3>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>
+                    {groupLast7.map((day, i) => (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                        {day.avg != null ? (
+                          <>
+                            <div style={{ fontSize: '10px', fontWeight: '700', color: getTPMStatus(day.avg, warnAt, critAt).color, marginBottom: '3px' }}>{day.avg.toFixed(0)}</div>
+                            <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '4px' }} />
+                          </>
+                        ) : (
+                          <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px' }} />
+                        )}
+                        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>{day.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({warnAt})</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({critAt})</div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
         </div>
@@ -1920,7 +1930,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
     }}>
     <style>{`
-      .gm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+      .gm-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
       .gm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
       .gm-table tbody tr { transition: background 0.1s; cursor: pointer; }
       .gm-table tbody tr:hover { background: #eef2ff; }

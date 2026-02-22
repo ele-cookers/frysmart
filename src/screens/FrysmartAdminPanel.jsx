@@ -9,10 +9,13 @@ import {
   mapTrial, unMapTrial,
   mapReading, unMapReading,
   mapTrialReason, mapVolumeBracket,
-  mapSystemSettings, unMapSystemSettings,
-  mergeTrialIntoVenue, splitTrialFromVenue, TRIAL_FIELDS,
+  mapSystemSettings,
+  mergeTrialIntoVenue, splitTrialFromVenue,
 } from '../lib/mappers';
 import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Palette, Shield, UserPlus, Zap } from 'lucide-react';
+import { FilterableTh } from '../components/FilterableTh';
+import { ColumnToggle } from '../components/ColumnToggle';
+import { TrialDetailModal } from '../components/TrialDetailModal';
 import {
   HEADER_BADGE_COLORS, ROLE_COLORS, STATE_BADGE_COLORS, STATE_COLOURS,
   STATUS_COLORS, OIL_TIER_COLORS, COMPETITOR_TIER_COLORS, CODE_BADGE_COLORS,
@@ -63,19 +66,6 @@ const relativeDate = (d) => {
 // Calculates the live trial weekly average from logged oil fills.
 // Formula: total litres filled across all fryers ÷ days elapsed × 7
 // Returns null if no fills have been logged yet.
-const calcTrialWeeklyAvg = (venueId, trialStartDate, readings, trialEndDate) => {
-  if (!venueId || !trialStartDate || !readings) return null;
-  const fills = readings.filter(r => r.venueId === venueId && r.oilAge === 1 && r.litresFilled > 0);
-  if (fills.length === 0) return null;
-  const totalLitres = fills.reduce((sum, r) => sum + r.litresFilled, 0);
-  const start = new Date(trialStartDate + 'T00:00:00');
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  // Cap at trial end date for completed/won/lost trials so avg doesn't shrink over time
-  const cap = trialEndDate ? new Date(Math.min(today.getTime(), new Date(trialEndDate + 'T00:00:00').getTime())) : today;
-  const daysElapsed = Math.max(1, Math.floor((cap - start) / 86400000));
-  return Math.round((totalLitres / daysElapsed) * 7 * 10) / 10;
-};
-
 const makeGetUserName = (users, firstOnly = false) => (id) => {
   const u = users.find(u => u.id === id);
   if (!u) return '—';
@@ -209,61 +199,7 @@ const VolumePill = ({ bracket, brackets }) => {
   );
 };
 
-const ColumnToggle = ({ columns, visible, setVisible }) => {
-  const [open, setOpen] = useState(false);
-  const allVisible = columns.every(c => visible.includes(c.key));
-  return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <button onClick={() => setOpen(!open)} style={{
-        display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px',
-        background: open ? '#1a428a' : '#f1f5f9', color: open ? 'white' : '#64748b',
-        border: '1.5px solid', borderColor: open ? '#1a428a' : '#e2e8f0',
-        borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-        whiteSpace: 'nowrap', transition: 'all 0.15s'
-      }}>
-        <Settings size={12} /> Columns
-      </button>
-      {open && (
-        <>
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1999 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 2000,
-            background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '8px 0', minWidth: '200px',
-            maxHeight: '320px', overflowY: 'auto'
-          }}>
-            <div style={{ padding: '4px 12px 8px', borderBottom: '1px solid #f1f5f9' }}>
-              <button onClick={() => setVisible(allVisible ? columns.filter(c => c.locked).map(c => c.key) : columns.map(c => c.key))} style={{
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px',
-                fontWeight: '600', color: '#1a428a', padding: '2px 0'
-              }}>{allVisible ? 'Hide optional' : 'Show all'}</button>
-            </div>
-            {columns.map(col => (
-              <label key={col.key} style={{
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px',
-                cursor: col.locked ? 'default' : 'pointer', fontSize: '12px', color: '#1f2937',
-                opacity: col.locked ? 0.5 : 1
-              }}>
-                <input
-                  type="checkbox"
-                  checked={visible.includes(col.key)}
-                  disabled={col.locked}
-                  onChange={() => {
-                    if (col.locked) return;
-                    setVisible(prev => prev.includes(col.key) ? prev.filter(k => k !== col.key) : [...prev, col.key]);
-                  }}
-                  style={{ accentColor: '#1a428a', width: '14px', height: '14px' }}
-                />
-                <span style={{ fontWeight: '500' }}>{col.label}</span>
-                {col.locked && <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '600' }}>REQUIRED</span>}
-              </label>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
+// ColumnToggle imported from ../components/ColumnToggle
 
 // ==================== COLUMN FILTER HOOK & COMPONENT ====================
 const useColumnFilters = () => {
@@ -290,129 +226,7 @@ const useColumnFilters = () => {
   return { filters, setFilter, clearAll, activeCount, applyFilters };
 };
 
-const FilterableTh = ({ colKey, label, options, filters, setFilter, style = {}, children }) => {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [draft, setDraft] = useState(null);
-
-  const activeVal = filters[colKey] || null;
-  const hasFilter = !!activeVal;
-  const allOptions = options.map(opt => ({ value: String(typeof opt === 'object' ? opt.value : opt), label: String(typeof opt === 'object' ? opt.label : opt) }));
-  const allValues = allOptions.map(o => o.value);
-
-  const currentDraft = draft !== null ? draft : (hasFilter ? new Set(Array.isArray(activeVal) ? activeVal : [activeVal]) : new Set(allValues));
-  const draftAllSelected = currentDraft.size >= allValues.length;
-  const filteredOpts = search ? allOptions.filter(o => o.label.toLowerCase().includes(search.toLowerCase())) : allOptions;
-
-  const openDropdown = () => {
-    const initial = hasFilter ? new Set(Array.isArray(activeVal) ? activeVal : [activeVal]) : new Set(allValues);
-    setDraft(initial);
-    setSearch('');
-    setOpen(true);
-  };
-
-  const toggle = (val) => {
-    const next = new Set(currentDraft);
-    if (next.has(val)) { next.delete(val); } else { next.add(val); }
-    setDraft(next);
-  };
-  const draftSelectAll = () => setDraft(new Set(allValues));
-  const draftDeselectAll = () => setDraft(new Set());
-
-  const applyAndClose = () => {
-    if (search) {
-      // When search is active, only keep items that are both in the filtered view AND checked
-      const visibleValues = new Set(filteredOpts.map(o => o.value));
-      const selected = [...currentDraft].filter(v => visibleValues.has(v));
-      if (selected.length === 0 || selected.length >= allValues.length) { setFilter(colKey, '__all__'); }
-      else { setFilter(colKey, selected); }
-    } else {
-      if (currentDraft.size >= allValues.length) { setFilter(colKey, '__all__'); }
-      else { setFilter(colKey, [...currentDraft]); }
-    }
-    setDraft(null); setSearch(''); setOpen(false);
-  };
-  const cancelAndClose = () => { setDraft(null); setOpen(false); };
-
-  return (
-    <th style={{ ...style, position: 'sticky', top: 0, zIndex: open ? 30 : 20, background: '#f8fafc', cursor: 'pointer', userSelect: 'none' }} onClick={() => { if (!open) openDropdown(); }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: style.textAlign === 'center' ? 'center' : 'flex-start' }}>
-        {children || label}
-        <ChevronDown size={10} color={hasFilter ? '#1a428a' : '#94a3b8'} style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-        {hasFilter && <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#1a428a', flexShrink: 0 }} />}
-      </div>
-      {open && (
-        <>
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1999 }} onClick={e => { e.stopPropagation(); cancelAndClose(); }} />
-          <div onClick={e => e.stopPropagation()} style={{
-            position: 'absolute', top: '100%', left: 0, marginTop: '2px', zIndex: 2000,
-            background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '200px',
-            display: 'flex', flexDirection: 'column', overflow: 'hidden'
-          }}>
-            <div style={{ padding: '8px 8px 4px' }}>
-              <input type="text" placeholder="Search..." value={search}
-                onChange={e => setSearch(e.target.value)} onClick={e => e.stopPropagation()}
-                style={{ width: '100%', padding: '5px 8px', fontSize: '11px', border: '1.5px solid #e2e8f0', borderRadius: '6px', outline: 'none', background: '#f8fafc', color: '#1f2937' }}
-              />
-            </div>
-            <div style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <div onClick={() => draftAllSelected ? draftDeselectAll() : draftSelectAll()} style={{
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px',
-                cursor: 'pointer', fontSize: '11px', fontWeight: '600', color: '#1f2937', textTransform: 'none', letterSpacing: '0'
-              }}>
-                <div style={{
-                  width: '14px', height: '14px', borderRadius: '3px', flexShrink: 0,
-                  border: draftAllSelected ? '1.5px solid #1a428a' : '1.5px solid #cbd5e1',
-                  background: draftAllSelected ? '#1a428a' : 'white',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  {draftAllSelected && <Check size={9} color="white" strokeWidth={3} />}
-                </div>
-                <span>(Select All)</span>
-              </div>
-            </div>
-            <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '4px 0' }}>
-              {filteredOpts.map(opt => {
-                const isChecked = currentDraft.has(opt.value);
-                return (
-                  <div key={opt.value} onClick={() => toggle(opt.value)} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 10px',
-                    cursor: 'pointer', fontSize: '11px', color: '#1f2937', fontWeight: isChecked ? '600' : '400',
-                    background: isChecked && !draftAllSelected ? '#f0f5ff' : 'transparent', textTransform: 'none', letterSpacing: '0'
-                  }}>
-                    <div style={{
-                      width: '14px', height: '14px', borderRadius: '3px', flexShrink: 0,
-                      border: isChecked ? '1.5px solid #1a428a' : '1.5px solid #cbd5e1',
-                      background: isChecked ? '#1a428a' : 'white',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
-                      {isChecked && <Check size={9} color="white" strokeWidth={3} />}
-                    </div>
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opt.label || '\u2014'}</span>
-                  </div>
-                );
-              })}
-              {filteredOpts.length === 0 && (
-                <div style={{ padding: '10px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>No matches</div>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: '6px', padding: '8px', borderTop: '1.5px solid #e2e8f0' }}>
-              <button onClick={applyAndClose} style={{
-                flex: 1, padding: '6px', fontSize: '11px', fontWeight: '600', color: 'white',
-                background: '#1a428a', border: 'none', borderRadius: '6px', cursor: 'pointer'
-              }}>OK</button>
-              <button onClick={cancelAndClose} style={{
-                flex: 1, padding: '6px', fontSize: '11px', fontWeight: '600', color: '#64748b',
-                background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer'
-              }}>Cancel</button>
-            </div>
-          </div>
-        </>
-      )}
-    </th>
-  );
-};
+// FilterableTh imported from ../components/FilterableTh
 
 const ActiveFilterBar = ({ filters, setFilter, clearAll }) => {
   const entries = Object.entries(filters);
@@ -1241,7 +1055,12 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
     try {
       if (editing) {
         const venueRow = unMapVenue({ ...cleaned, groupId: cleaned.groupId || null });
-        const { error: updateErr } = await supabase.from('venues').update(venueRow).eq('id', editing);
+        let { error: updateErr } = await supabase.from('venues').update(venueRow).eq('id', editing);
+        // Retry without updated_at fields if DB schema is out of sync
+        if (updateErr && updateErr.message?.includes('updated_at')) {
+          const { updated_at, ...rowWithout } = venueRow;
+          ({ error: updateErr } = await supabase.from('venues').update(rowWithout).eq('id', editing));
+        }
         if (updateErr) throw new Error('Failed to update venue: ' + updateErr.message);
         setVenues(prev => prev.map(v => v.id === editing ? { ...v, ...cleaned, groupId: cleaned.groupId || null } : v));
       } else {
@@ -1311,68 +1130,112 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
 
       <ActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
 
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ overflow: 'auto', flex: 1 }}>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-                  {colVis('code') && <FilterableTh colKey="code" label="Cust Code" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('group') && <FilterableTh colKey="group" label="Group Name" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.groupId ? (groups.find(g => g.id === v.groupId)?.name || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('groupCode') && <FilterableTh colKey="groupCode" label="Group Code" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.groupId ? (groups.find(g => g.id === v.groupId)?.groupCode || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('bdm') && <FilterableTh colKey="bdm" label="BDM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.bdmId ? getUserName(v.bdmId) : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('nam') && <FilterableTh colKey="nam" label="NAM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => getGroupNam(v.groupId))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('state') && <FilterableTh colKey="state" label="State" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.state)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('oil') && <FilterableTh colKey="oil" label="Main Oil" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => oilTypes.find(o => o.id === v.defaultOil)?.name || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({value:b.label,label:b.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('fryers') && <FilterableTh colKey="fryers" label="Fryers" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => String(v.fryerCount))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('tpm') && <FilterableTh colKey="tpm" label="Last TPM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => relativeDate(v.lastTpmDate))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  <th style={{ width: '60px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={99} style={{ padding: '40px 20px', textAlign: 'center' }}>
-                    {venues.filter(v => v.status !== 'trial-only').length === 0 ? (
-                      <div>
-                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏪</div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No venues yet</div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>Click "Add Venue" to add your first venue.</div>
-                      </div>
-                    ) : (
-                      <span style={{ color: '#64748b', fontSize: '13px' }}>No venues match your filters</span>
-                    )}
-                  </td></tr>
-                ) : filtered.map(venue => {
-                  const grp = venue.groupId ? groups.find(g => g.id === venue.groupId) : null;
-                  return (
-                  <tr key={venue.id} className={venue.status === 'inactive' ? 'inactive-row' : ''} onClick={() => setSelectedVenue(venue)} style={{ cursor: 'pointer', height: '36px' }}>
-                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.name}>{venue.name}</td>
-                    {colVis('code') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={venue.customerCode} minWidth="70px" />}</td>}
-                    {colVis('group') && <td style={{ color: '#1f2937', fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={grp ? grp.name : 'STREET'}>{grp ? grp.name : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '400' }}>STREET</span>}</td>}
-                    {colVis('groupCode') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={grp?.groupCode} variant="charcoal" />}</td>}
-                    {colVis('bdm') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.bdmId ? getUserName(venue.bdmId) : ''}>{venue.bdmId ? getUserName(venue.bdmId) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {colVis('nam') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={getGroupNam(venue.groupId)}>{getGroupNam(venue.groupId) || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
-                    {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={oilTypes.find(o => o.id === venue.defaultOil)} competitors={competitors} compact /></td>}
-                    {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} /></td>}
-                    {colVis('fryers') && <td style={{ textAlign: 'center', fontWeight: '600' }}>{venue.fryerCount}</td>}
-                    {colVis('tpm') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(venue.lastTpmDate) || '—'}</td>}
-                    <td>
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <button onClick={(e) => { e.stopPropagation(); handleEdit(venue); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Edit venue"><Edit3 size={13} color="#64748b" /></button>
-                        {onPreviewVenue && <button onClick={(e) => { e.stopPropagation(); onPreviewVenue(venue.id); }} style={{ padding: '6px', background: '#eff6ff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Preview as venue staff"><Eye size={13} color="#3b82f6" /></button>}
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteVenue(venue); }} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete venue"><Trash2 size={13} color="#ef4444" /></button>
-                        <ChevronDown size={14} color="#94a3b8" style={{ transform: 'rotate(-90deg)' }} />
-                      </div>
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {filtered.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '40px 20px', textAlign: 'center' }}>
+            {venues.filter(v => v.status !== 'trial-only').length === 0 ? (
+              <div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏪</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No venues yet</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>Click "Add Venue" to add your first venue.</div>
+              </div>
+            ) : (
+              <span style={{ color: '#64748b', fontSize: '13px' }}>No venues match your filters</span>
+            )}
           </div>
-        </div>
+        ) : !isDesktop ? (
+          /* Mobile card view */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {filtered.map(venue => {
+              const grp = venue.groupId ? groups.find(g => g.id === venue.groupId) : null;
+              const oil = oilTypes.find(o => o.id === venue.defaultOil);
+              return (
+                <div key={venue.id} onClick={() => setSelectedVenue(venue)} style={{
+                  background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0',
+                  padding: '10px 12px', cursor: 'pointer',
+                  opacity: venue.status === 'inactive' ? 0.5 : 1,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                        {grp ? grp.name : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Street</span>}
+                        {venue.state ? ` · ${venue.state}` : ''}
+                      </div>
+                    </div>
+                    {venue.customerCode && <CodeBadge code={venue.customerCode} minWidth="60px" />}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '4px' }}>
+                    {oil && <OilBadge theme={theme} oil={oil} competitors={competitors} compact />}
+                    {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
+                    {venue.fryerCount && <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{venue.fryerCount} fryer{venue.fryerCount > 1 ? 's' : ''}</span>}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                      {venue.bdmId ? getUserName(venue.bdmId) : ''}
+                      {venue.lastTpmDate ? ` · TPM ${relativeDate(venue.lastTpmDate)}` : ''}
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(venue); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}><Edit3 size={13} color="#64748b" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteVenue(venue); }} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}><Trash2 size={13} color="#ef4444" /></button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Desktop table view */
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ overflow: 'auto', flex: 1 }}>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+                    {colVis('code') && <FilterableTh colKey="code" label="Cust Code" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('group') && <FilterableTh colKey="group" label="Group Name" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.groupId ? (groups.find(g => g.id === v.groupId)?.name || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('groupCode') && <FilterableTh colKey="groupCode" label="Group Code" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.groupId ? (groups.find(g => g.id === v.groupId)?.groupCode || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('bdm') && <FilterableTh colKey="bdm" label="BDM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.bdmId ? getUserName(v.bdmId) : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('nam') && <FilterableTh colKey="nam" label="NAM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => getGroupNam(v.groupId))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('state') && <FilterableTh colKey="state" label="State" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => v.state)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('oil') && <FilterableTh colKey="oil" label="Main Oil" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => oilTypes.find(o => o.id === v.defaultOil)?.name || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({value:b.label,label:b.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('fryers') && <FilterableTh colKey="fryers" label="Fryers" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => String(v.fryerCount))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('tpm') && <FilterableTh colKey="tpm" label="Last TPM" options={getUniqueValues(venues.filter(v => v.status !== 'trial-only'), v => relativeDate(v.lastTpmDate))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    <th style={{ width: '60px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(venue => {
+                    const grp = venue.groupId ? groups.find(g => g.id === venue.groupId) : null;
+                    return (
+                    <tr key={venue.id} className={venue.status === 'inactive' ? 'inactive-row' : ''} onClick={() => setSelectedVenue(venue)} style={{ cursor: 'pointer', height: '36px' }}>
+                      <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.name}>{venue.name}</td>
+                      {colVis('code') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={venue.customerCode} minWidth="70px" />}</td>}
+                      {colVis('group') && <td style={{ color: '#1f2937', fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={grp ? grp.name : 'STREET'}>{grp ? grp.name : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '400' }}>STREET</span>}</td>}
+                      {colVis('groupCode') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={grp?.groupCode} variant="charcoal" />}</td>}
+                      {colVis('bdm') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.bdmId ? getUserName(venue.bdmId) : ''}>{venue.bdmId ? getUserName(venue.bdmId) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                      {colVis('nam') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={getGroupNam(venue.groupId)}>{getGroupNam(venue.groupId) || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                      {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
+                      {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={oilTypes.find(o => o.id === venue.defaultOil)} competitors={competitors} compact /></td>}
+                      {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} /></td>}
+                      {colVis('fryers') && <td style={{ textAlign: 'center', fontWeight: '600' }}>{venue.fryerCount}</td>}
+                      {colVis('tpm') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(venue.lastTpmDate) || '—'}</td>}
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(venue); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Edit venue"><Edit3 size={13} color="#64748b" /></button>
+                          {onPreviewVenue && <button onClick={(e) => { e.stopPropagation(); onPreviewVenue(venue.id); }} style={{ padding: '6px', background: '#eff6ff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Preview as venue staff"><Eye size={13} color="#3b82f6" /></button>}
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteVenue(venue); }} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete venue"><Trash2 size={13} color="#ef4444" /></button>
+                          <ChevronDown size={14} color="#94a3b8" style={{ transform: 'rotate(-90deg)' }} />
+                        </div>
+                      </td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       {/* Venue Detail Popup */}
       {selectedVenue && (
@@ -1437,21 +1300,6 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
               })()}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <button onClick={() => { const v = selectedVenue; setSelectedVenue(null); handleEdit(v); }} style={{
-                flex: 1, padding: '14px', background: '#1a428a', color: 'white',
-                border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
-              }}>Edit Venue</button>
-              {onPreviewVenue && <button onClick={() => { onPreviewVenue(selectedVenue.id); setSelectedVenue(null); }} style={{
-                flex: 1, padding: '14px', background: '#eff6ff', color: '#3b82f6',
-                border: '1.5px solid #bfdbfe', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-              }}><Eye size={15} /> Staff View</button>}
-              <button onClick={() => setSelectedVenue(null)} style={{
-                flex: 1, padding: '14px', background: 'white', color: '#64748b',
-                border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
-              }}>Close</button>
-            </div>
           </div>
         </div>
       )}
@@ -1911,7 +1759,7 @@ const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, u
 };
 
 // ==================== USER MANAGEMENT ====================
-const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentUser, autoOpenForm, clearAutoOpen, theme }) => {
+const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentUser, autoOpenForm, clearAutoOpen, isDesktop, theme }) => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -2097,53 +1945,87 @@ const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentU
 
       <ActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
 
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ overflow: 'auto', flex: 1 }}>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <FilterableTh colKey="name" label="Name" options={getUniqueValues(users, u => u.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-                  {colVis('role') && <FilterableTh colKey="role" label="Role" options={getUniqueValues(users, u => ROLE_LABELS[u.role] || u.role)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('username') && <FilterableTh colKey="username" label="Username" options={getUniqueValues(users, u => u.username)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('region') && <FilterableTh colKey="region" label="State" options={getUniqueValues(users, u => u.region)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('repCode') && <FilterableTh colKey="repCode" label="Rep Code" options={getUniqueValues(users, u => u.repCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('permissions') && <FilterableTh colKey="permissions" label="Permissions" options={getUniqueValues(users, u => ROLE_PERMISSIONS[u.role] || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('lastActive') && <FilterableTh colKey="lastActive" label="Last Active" options={getUniqueValues(users, u => relativeDate(u.lastActive))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  <th style={{ width: '70px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={99} style={{ padding: '40px 20px', textAlign: 'center' }}>
-                    {users.length === 0 ? (
-                      <div>
-                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>👤</div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No users yet</div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>Add BDMs, NAMs, and admins here. Click "Add User" to create the first account.</div>
-                      </div>
-                    ) : (
-                      <span style={{ color: '#64748b', fontSize: '13px' }}>No users match your filters</span>
-                    )}
-                  </td></tr>
-                ) : filtered.map(user => (
-                  <tr key={user.id} className={user.status === 'inactive' ? 'inactive-row' : ''} style={{ height: '36px' }}>
-                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={user.name}>{user.name}</td>
-                    {colVis('role') && <td style={{ textAlign: "center" }}><RoleBadge theme={theme} role={user.role} /></td>}
-                    {colVis('username') && <td style={{ fontSize: '12px', color: '#64748b' }}>{user.username ? user.username.toLowerCase() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {colVis('region') && <td><StateBadge theme={theme} state={user.region} /></td>}
-                    {colVis('repCode') && <td style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{user.repCode || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {colVis('permissions') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'normal', maxWidth: '220px', lineHeight: '1.4' }}>{ROLE_PERMISSIONS[user.role] || '—'}</td>}
-                    {colVis('lastActive') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(user.lastActive) || '—'}</td>}
-                    <td style={{ display: 'flex', gap: '4px' }}>
-                      <button onClick={() => handleEdit(user)} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
-                      <button onClick={() => handleDelete(user)} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={13} color="#ef4444" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {filtered.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '40px 20px', textAlign: 'center' }}>
+            {users.length === 0 ? (
+              <div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>👤</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No users yet</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>Add BDMs, NAMs, and admins here. Click "Add User" to create the first account.</div>
+              </div>
+            ) : (
+              <span style={{ color: '#64748b', fontSize: '13px' }}>No users match your filters</span>
+            )}
           </div>
-        </div>
+        ) : !isDesktop ? (
+          /* Mobile card view */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {filtered.map(user => (
+              <div key={user.id} style={{
+                background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0',
+                padding: '10px 12px', opacity: user.status === 'inactive' ? 0.5 : 1,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{user.name}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                      {user.username ? user.username.toLowerCase() : ''}
+                      {user.repCode ? ` · ${user.repCode}` : ''}
+                    </div>
+                  </div>
+                  <RoleBadge theme={theme} role={user.role} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#64748b' }}>
+                    {user.region && <StateBadge theme={theme} state={user.region} />}
+                    {user.lastActive && <span>{relativeDate(user.lastActive)}</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button onClick={() => handleEdit(user)} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}><Edit3 size={13} color="#64748b" /></button>
+                    <button onClick={() => handleDelete(user)} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}><Trash2 size={13} color="#ef4444" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Desktop table view */
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ overflow: 'auto', flex: 1 }}>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <FilterableTh colKey="name" label="Name" options={getUniqueValues(users, u => u.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+                    {colVis('role') && <FilterableTh colKey="role" label="Role" options={getUniqueValues(users, u => ROLE_LABELS[u.role] || u.role)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('username') && <FilterableTh colKey="username" label="Username" options={getUniqueValues(users, u => u.username)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('region') && <FilterableTh colKey="region" label="State" options={getUniqueValues(users, u => u.region)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('repCode') && <FilterableTh colKey="repCode" label="Rep Code" options={getUniqueValues(users, u => u.repCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('permissions') && <FilterableTh colKey="permissions" label="Permissions" options={getUniqueValues(users, u => ROLE_PERMISSIONS[u.role] || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('lastActive') && <FilterableTh colKey="lastActive" label="Last Active" options={getUniqueValues(users, u => relativeDate(u.lastActive))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    <th style={{ width: '70px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(user => (
+                    <tr key={user.id} className={user.status === 'inactive' ? 'inactive-row' : ''} style={{ height: '36px' }}>
+                      <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={user.name}>{user.name}</td>
+                      {colVis('role') && <td style={{ textAlign: "center" }}><RoleBadge theme={theme} role={user.role} /></td>}
+                      {colVis('username') && <td style={{ fontSize: '12px', color: '#64748b' }}>{user.username ? user.username.toLowerCase() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                      {colVis('region') && <td><StateBadge theme={theme} state={user.region} /></td>}
+                      {colVis('repCode') && <td style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{user.repCode || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                      {colVis('permissions') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'normal', maxWidth: '220px', lineHeight: '1.4' }}>{ROLE_PERMISSIONS[user.role] || '—'}</td>}
+                      {colVis('lastActive') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(user.lastActive) || '—'}</td>}
+                      <td style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => handleEdit(user)} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
+                        <button onClick={() => handleDelete(user)} style={{ padding: '6px', background: '#fef2f2', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={13} color="#ef4444" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       {/* Add/Edit Modal */}
       {showForm && (
@@ -2369,7 +2251,6 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
   const [search, setSearch] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
   const [selectedTrial, setSelectedTrial] = useState(null);
-  const [expandedFryers, setExpandedFryers] = useState([1]);
   const [closeTrialModal, setCloseTrialModal] = useState(null);
   const [closeForm, setCloseForm] = useState({ reason: '', soldPrice: '', outcomeDate: new Date().toISOString().split('T')[0], notes: '' });
   const [addReadingModal, setAddReadingModal] = useState(null);
@@ -2424,9 +2305,6 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
   const getUserName = makeGetUserName(users, true);
   const getGroupName = makeGetGroupName(groups);
 
-  // Get unique states and BDMs from trial data
-  const trialStates = [...new Set(trials.map(v => v.state))].sort();
-  
   // BDMs filtered by selected state
   const stateFilteredTrials = trials;
   const filteredBdmIds = [...new Set(stateFilteredTrials.map(v => v.bdmId).filter(Boolean))];
@@ -2584,420 +2462,182 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
 
       <ActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
 
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ overflow: 'auto', flex: 1 }}>
-            <table className="admin-table trials-compact" style={{ minWidth: '800px' }}>
-              <thead>
-                <tr>
-                  <th style={{ width: '4px', padding: '0' }}></th>
-                  <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(trials, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-                  {colVis('group') && <FilterableTh colKey="group" label="Group Name" options={getUniqueValues(trials, v => v.groupId ? (groups.find(g => g.id === v.groupId)?.name || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('state') && <FilterableTh colKey="state" label="State" options={getUniqueValues(trials, v => v.state)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('bdm') && <FilterableTh colKey="bdm" label="BDM" options={getUniqueValues(trials, v => v.bdmId ? (users.find(u => u.id === v.bdmId)?.name || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({value:b.label,label:b.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('competitor') && <FilterableTh colKey="competitor" label="Comp." options={getUniqueValues(trials, v => { const oil = oilTypes.find(o => o.id === v.defaultOil); return oil?.competitorId ? (competitors.find(c => c.id === oil.competitorId)?.name || '') : ''; })} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('compOil') && <FilterableTh colKey="compOil" label="Comp. Oil" options={getUniqueValues(trials, v => { const oil = oilTypes.find(o => o.id === v.defaultOil); return oil ? oil.name : ''; })} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(trials, v => { const oil = oilTypes.find(o => o.id === v.trialOilId); return oil ? oil.name : ''; })} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('currentPrice') && <FilterableTh colKey="currentPrice" label="Curr $/L" options={getUniqueValues(trials, v => v.currentPricePerLitre ? `$${v.currentPricePerLitre.toFixed(2)}` : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '58px' }} />}
-                  {colVis('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Off $/L" options={getUniqueValues(trials, v => v.offeredPricePerLitre ? `$${v.offeredPricePerLitre.toFixed(2)}` : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '58px' }} />}
-                  {colVis('soldPrice') && <FilterableTh colKey="soldPrice" label="Sold $/L" options={getUniqueValues(trials, v => v.soldPricePerLitre ? `$${v.soldPricePerLitre.toFixed(2)}` : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(trials, v => v.trialStartDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(trials, v => v.trialEndDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('closedDate') && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(trials, v => v.outcomeDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  {colVis('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Awaiting'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-                  {colVis('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => trials.some(v => v.trialReason === r.key)).map(r => ({value:r.key,label:r.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                  <th style={{ width: '30px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={99} style={{ padding: '40px 20px', textAlign: 'center' }}>
-                    {venues.filter(v => v.trialStatus).length === 0 ? (
-                      <div>
-                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🧪</div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No trials yet</div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>Trials are created from the Venues section when a prospect is added with a trial oil.</div>
-                      </div>
-                    ) : (
-                      <span style={{ color: '#64748b', fontSize: '13px' }}>No trials match your filters</span>
-                    )}
-                  </td></tr>
-                ) : filtered.map(venue => {
-                  const compOil = oilTypes.find(o => o.id === venue.defaultOil);
-                  const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
-                  const comp = compOil?.competitorId ? competitors.find(c => c.id === compOil.competitorId) : null;
-                  const compTier = compOil ? (COMPETITOR_TIER_COLORS[compOil.tier] || COMPETITOR_TIER_COLORS.standard) : null;
-                  const statusConf = TRIAL_STATUS_CONFIGS[venue.trialStatus] || TRIAL_STATUS_CONFIGS['pending'];
-                  const reasonObj = venue.trialReason ? trialReasons.find(r => r.key === venue.trialReason) : null;
-                  return (
-                    <tr key={venue.id} onClick={() => { setSelectedTrial(venue); setExpandedFryers([1]); }} style={{ cursor: 'pointer', height: '34px' }}>
-                      <td style={{ width: '4px', padding: '0', background: statusConf.accent }}></td>
-                      <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
-                      {colVis('group') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.groupId ? getGroupName(venue.groupId) : 'STREET'}>{venue.groupId ? getGroupName(venue.groupId) : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>STREET</span>}</td>}
-                      {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
-                      {colVis('bdm') && <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>{getUserName(venue.bdmId)}</td>}
-                      {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} brackets={volumeBrackets} /></td>}
-                      {colVis('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                      {colVis('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                      {colVis('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact /></td>}
-                      {colVis('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${venue.currentPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
-                      {colVis('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${venue.offeredPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
-                      {colVis('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${venue.soldPricePerLitre.toFixed(2)}` : '—'}</td>}
-                      {colVis('start') && <td style={{ color: (venue.trialStartDate && venue.trialStartDate > new Date().toISOString().split('T')[0] && ['pending', 'in-progress'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialStartDate)}</td>}
-                      {colVis('end') && <td style={{ color: (venue.trialEndDate && venue.trialEndDate > new Date().toISOString().split('T')[0] && ['pending', 'in-progress'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialEndDate)}</td>}
-                      {colVis('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.outcomeDate)}</td>}
-                      {colVis('status') && <td style={{ textAlign: "center" }}><TrialStatusBadge status={venue.trialStatus} /></td>}
-                      {colVis('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
-                      <td><ChevronDown size={12} color="#94a3b8" style={{ transform: 'rotate(-90deg)' }} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {filtered.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '40px 20px', textAlign: 'center' }}>
+            {venues.filter(v => v.trialStatus).length === 0 ? (
+              <div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🧪</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>No trials yet</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>Trials are created from the Venues section when a prospect is added with a trial oil.</div>
+              </div>
+            ) : (
+              <span style={{ color: '#64748b', fontSize: '13px' }}>No trials match your filters</span>
+            )}
           </div>
-        </div>
-
-      {/* Trial Detail Popup */}
-      {selectedTrial && (() => {
-        const t = selectedTrial;
-        const compOil = oilTypes.find(o => o.id === t.defaultOil);
-        const cookersOil = oilTypes.find(o => o.id === t.trialOilId);
-        const bdm = users.find(u => u.id === t.bdmId);
-        const group = t.groupId ? groups.find(g => g.id === t.groupId) : null;
-        const nam = group?.namId ? users.find(u => u.id === group.namId) : null;
-        const statusConfig = TRIAL_STATUS_CONFIGS[t.trialStatus] || TRIAL_STATUS_CONFIGS['pending'];
-        const isFutureStart = t.trialStartDate && new Date(t.trialStartDate + 'T00:00:00') > new Date() && ['pending', 'in-progress'].includes(t.trialStatus);
-        const isFutureEnd = t.trialEndDate && new Date(t.trialEndDate + 'T00:00:00') > new Date() && ['pending', 'in-progress'].includes(t.trialStatus);
-
-        return (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '16px',
-            overflowY: 'auto', WebkitOverflowScrolling: 'touch'
-          }} onClick={() => setSelectedTrial(null)}>
-            <div style={{
-              background: 'white', borderRadius: '16px', width: '100%', maxWidth: '600px',
-              maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch'
-            }} onClick={e => e.stopPropagation()}>
-
-              {/* Header — compact with left accent */}
-              <div style={{
-                padding: '12px 16px', borderLeft: `4px solid ${statusConfig.accent}`,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                borderBottom: '1px solid #f1f5f9'
-              }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>{t.name}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      <StateBadge theme={theme} state={t.state} /> · {group ? group.name : 'Street venue'}{t.volumeBracket && <> · <VolumePill bracket={t.volumeBracket} brackets={VOLUME_BRACKETS} /></>}
+        ) : !isDesktop ? (
+          /* Mobile card view */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {filtered.map(venue => {
+              const compOil = oilTypes.find(o => o.id === venue.defaultOil);
+              const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
+              const statusConf = TRIAL_STATUS_CONFIGS[venue.trialStatus] || TRIAL_STATUS_CONFIGS['pending'];
+              return (
+                <div key={venue.id} onClick={() => setSelectedTrial(venue)} style={{
+                  background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0',
+                  borderLeft: `4px solid ${statusConf.accent}`, padding: '10px 12px', cursor: 'pointer',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                        {getUserName(venue.bdmId)}{venue.state ? ` · ${venue.state}` : ''}
+                      </div>
                     </div>
-                    <TrialStatusBadge status={t.trialStatus} />
+                    <div style={{ flexShrink: 0, marginLeft: '8px' }}>
+                      <TrialStatusBadge status={venue.trialStatus} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '6px' }}>
+                    <OilBadge theme={theme} oil={compOil} competitors={competitors} compact />
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>vs</span>
+                    <OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact />
+                    {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} brackets={volumeBrackets} />}
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: '#64748b', flexWrap: 'wrap' }}>
+                    {venue.trialStartDate && <span>{formatDate(venue.trialStartDate)}{venue.trialEndDate ? ` — ${formatDate(venue.trialEndDate)}` : ''}</span>}
+                    {venue.offeredPricePerLitre && <span style={{ color: '#1a428a', fontWeight: '600' }}>${venue.offeredPricePerLitre.toFixed(2)}/L</span>}
+                    {venue.soldPricePerLitre && <span style={{ color: '#065f46', fontWeight: '600' }}>Sold ${venue.soldPricePerLitre.toFixed(2)}/L</span>}
                   </div>
                 </div>
-                <button onClick={() => setSelectedTrial(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>
-                  <X size={18} color="#94a3b8" />
-                </button>
-              </div>
-
-              <div style={{ padding: '12px 16px' }}>
-
-                {/* 1. Start / End / BDM / Fryers */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px', marginBottom: '12px' }}>
-                  {[
-                    { label: 'Start', value: formatDate(t.trialStartDate), light: isFutureStart },
-                    { label: 'End', value: t.trialEndDate ? formatDate(t.trialEndDate) : '—', light: isFutureEnd },
-                    { label: 'BDM', value: bdm ? bdm.name : '—' },
-                    ...(nam ? [{ label: 'NAM', value: nam.name }] : []),
-                    { label: 'Fryers', value: t.fryerCount || '—' },
-                  ].map((row, i) => (
-                    <div key={i} style={{ padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{row.label}</div>
-                      <div style={{ fontSize: '13px', color: row.light ? '#94a3b8' : '#1f2937' }}>{row.value}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 2. Competitor vs trial oil */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '12px', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-                  {(() => {
-                    const comp = compOil && competitors ? competitors.find(c => c.id === compOil?.competitorId) : null;
-                    return <>
-                      {comp && <CompetitorPill comp={comp} />}
-                      {comp && <span style={{ color: '#e2e8f0', margin: '0 2px' }}>·</span>}
-                      <OilBadge theme={theme} oil={compOil} competitors={competitors} compact />
-                      <span style={{ fontSize: '12px', color: '#94a3b8', margin: '0 4px' }}>vs</span>
-                      <OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact />
-                    </>;
-                  })()}
-                </div>
-
-                {/* 3. Prices + volumes, then savings table */}
-                {(t.currentWeeklyAvg || t.currentPricePerLitre || t.offeredPricePerLitre) && (() => {
-                  const liveTrialAvg = calcTrialWeeklyAvg(t.id, t.trialStartDate, tpmReadings, t.trialEndDate);
-                  const weekLitres = t.currentWeeklyAvg && liveTrialAvg ? Math.round(t.currentWeeklyAvg - liveTrialAvg) : null;
-                  const annualLitres = weekLitres !== null ? Math.round(weekLitres * 52) : null;
-                  const trialPrice = t.offeredPricePerLitre || t.currentPricePerLitre;
-                  const weekSpend = weekLitres !== null && trialPrice ? Math.round(weekLitres * trialPrice) : null;
-                  const annualSpend = weekSpend !== null ? Math.round(weekSpend * 52) : null;
-                  const hasSavings = weekLitres !== null;
-
-                  return (<>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px', marginBottom: '12px' }}>
-                      {[
-                        t.currentPricePerLitre ? { label: 'Current price/L', value: `$${t.currentPricePerLitre.toFixed(2)}` } : null,
-                        t.offeredPricePerLitre ? { label: 'Offered price/L', value: `$${t.offeredPricePerLitre.toFixed(2)}` } : null,
-                        t.currentWeeklyAvg ? { label: 'Pre-trial weekly avg', value: `${t.currentWeeklyAvg} L` } : null,
-                        liveTrialAvg !== null ? { label: 'Trial weekly avg', value: `${liveTrialAvg} L` } : null,
-                      ].filter(Boolean).map((row, i) => (
-                        <div key={i} style={{ padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{row.label}</div>
-                          <div style={{ fontSize: '13px', color: '#1f2937' }}>{row.value}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                  </>);
-                })()}
-
-                {/* TPM Readings Calendar */}
-                {t.trialStartDate && t.trialEndDate && t.trialStatus !== 'pending' && (() => {
-                  const start = new Date(t.trialStartDate + 'T00:00:00');
-                  const end = new Date(t.trialEndDate + 'T00:00:00');
-                  const today = new Date(); today.setHours(0,0,0,0);
-                  const days = [];
-                  const d = new Date(start);
-                  while (d <= end) {
-                    days.push(new Date(d));
-                    d.setDate(d.getDate() + 1);
-                  }
-                  const fryerCount = t.fryerCount || 1;
-
-                  // Look up real readings from tpmReadings state
-                  const getReadingsForFryer = (fryerNum) => {
-                    const result = {};
-                    (tpmReadings || []).filter(r => r.venueId === t.id && r.fryerNumber === fryerNum).forEach(r => {
-                      result[r.readingDate] = r.tpmValue;
-                    });
-                    return result;
-                  };
-
-                  const pastDays = days.filter(d => d <= today).length;
-
-                  const FryerCalendar = ({ fryerNum, readings }) => {
-                    const readingCount = Object.keys(readings).length;
+              );
+            })}
+          </div>
+        ) : (
+          /* Desktop table view */
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ overflow: 'auto', flex: 1 }}>
+              <table className="admin-table trials-compact" style={{ minWidth: '800px' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '4px', padding: '0' }}></th>
+                    <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(trials, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+                    {colVis('group') && <FilterableTh colKey="group" label="Group Name" options={getUniqueValues(trials, v => v.groupId ? (groups.find(g => g.id === v.groupId)?.name || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('state') && <FilterableTh colKey="state" label="State" options={getUniqueValues(trials, v => v.state)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('bdm') && <FilterableTh colKey="bdm" label="BDM" options={getUniqueValues(trials, v => v.bdmId ? (users.find(u => u.id === v.bdmId)?.name || '') : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({value:b.label,label:b.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('competitor') && <FilterableTh colKey="competitor" label="Comp." options={getUniqueValues(trials, v => { const oil = oilTypes.find(o => o.id === v.defaultOil); return oil?.competitorId ? (competitors.find(c => c.id === oil.competitorId)?.name || '') : ''; })} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('compOil') && <FilterableTh colKey="compOil" label="Comp. Oil" options={getUniqueValues(trials, v => { const oil = oilTypes.find(o => o.id === v.defaultOil); return oil ? oil.name : ''; })} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(trials, v => { const oil = oilTypes.find(o => o.id === v.trialOilId); return oil ? oil.name : ''; })} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('currentPrice') && <FilterableTh colKey="currentPrice" label="Curr $/L" options={getUniqueValues(trials, v => v.currentPricePerLitre ? `$${v.currentPricePerLitre.toFixed(2)}` : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '58px' }} />}
+                    {colVis('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Off $/L" options={getUniqueValues(trials, v => v.offeredPricePerLitre ? `$${v.offeredPricePerLitre.toFixed(2)}` : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '58px' }} />}
+                    {colVis('soldPrice') && <FilterableTh colKey="soldPrice" label="Sold $/L" options={getUniqueValues(trials, v => v.soldPricePerLitre ? `$${v.soldPricePerLitre.toFixed(2)}` : '')} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(trials, v => v.trialStartDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(trials, v => v.trialEndDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('closedDate') && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(trials, v => v.outcomeDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    {colVis('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Awaiting'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => trials.some(v => v.trialReason === r.key)).map(r => ({value:r.key,label:r.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+                    <th style={{ width: '30px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(venue => {
+                    const compOil = oilTypes.find(o => o.id === venue.defaultOil);
+                    const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
+                    const comp = compOil?.competitorId ? competitors.find(c => c.id === compOil.competitorId) : null;
+                    const compTier = compOil ? (COMPETITOR_TIER_COLORS[compOil.tier] || COMPETITOR_TIER_COLORS.standard) : null;
+                    const statusConf = TRIAL_STATUS_CONFIGS[venue.trialStatus] || TRIAL_STATUS_CONFIGS['pending'];
+                    const reasonObj = venue.trialReason ? trialReasons.find(r => r.key === venue.trialReason) : null;
                     return (
-                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${days.length}, 1fr)`, gap: '2px' }}>
-                        {days.map((day, i) => {
-                          const dateStr = day.toISOString().split('T')[0];
-                          const reading = readings[dateStr];
-                          const isFuture = day > today;
-                          const isToday = day.getTime() === today.getTime();
-                          const dayLabel = day.toLocaleDateString('en-AU', { weekday: 'narrow' });
-                          const dateLabel = day.getDate();
-
-                          let bg = '#f1f5f9'; let color = '#cbd5e1';
-                          if (isFuture) { bg = '#fafafa'; color = '#e2e8f0'; }
-                          else if (reading !== undefined) {
-                            if (reading <= 14) { bg = '#d1fae5'; color = '#065f46'; }
-                            else if (reading <= 18) { bg = '#fef3c7'; color = '#92400e'; }
-                            else { bg = '#fee2e2'; color = '#991b1b'; }
-                          }
-
-                          return (
-                            <div key={i} style={{
-                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px'
-                            }}>
-                              {fryerNum === (expandedFryers[0] || 1) && (
-                                <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '500' }}>{dayLabel}</span>
-                              )}
-                              <div style={{
-                                width: '100%', height: '22px', borderRadius: '5px',
-                                background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                border: isToday ? '2px solid #1a428a' : '1px solid transparent',
-                              }}>
-                                {reading !== undefined ? (
-                                  <span style={{ fontSize: '10px', fontWeight: '600', color }}>{reading}</span>
-                                ) : !isFuture ? (
-                                  <span style={{ color: '#cbd5e1' }}>—</span>
-                                ) : null}
-                              </div>
-                              {fryerNum === (expandedFryers[expandedFryers.length - 1] || 1) && (
-                                <span style={{ fontSize: '9px', color: '#64748b' }}>{dateLabel}</span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <tr key={venue.id} onClick={() => setSelectedTrial(venue)} style={{ cursor: 'pointer', height: '34px' }}>
+                        <td style={{ width: '4px', padding: '0', background: statusConf.accent }}></td>
+                        <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
+                        {colVis('group') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.groupId ? getGroupName(venue.groupId) : 'STREET'}>{venue.groupId ? getGroupName(venue.groupId) : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>STREET</span>}</td>}
+                        {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
+                        {colVis('bdm') && <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>{getUserName(venue.bdmId)}</td>}
+                        {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} brackets={volumeBrackets} /></td>}
+                        {colVis('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                        {colVis('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                        {colVis('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact /></td>}
+                        {colVis('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${venue.currentPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
+                        {colVis('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${venue.offeredPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
+                        {colVis('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${venue.soldPricePerLitre.toFixed(2)}` : '—'}</td>}
+                        {colVis('start') && <td style={{ color: (venue.trialStartDate && venue.trialStartDate > new Date().toISOString().split('T')[0] && ['pending', 'in-progress'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialStartDate)}</td>}
+                        {colVis('end') && <td style={{ color: (venue.trialEndDate && venue.trialEndDate > new Date().toISOString().split('T')[0] && ['pending', 'in-progress'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialEndDate)}</td>}
+                        {colVis('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.outcomeDate)}</td>}
+                        {colVis('status') && <td style={{ textAlign: "center" }}><TrialStatusBadge status={venue.trialStatus} /></td>}
+                        {colVis('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
+                        <td><ChevronDown size={12} color="#94a3b8" style={{ transform: 'rotate(-90deg)' }} /></td>
+                      </tr>
                     );
-                  };
-
-                  return (
-                    <div style={{ marginBottom: '8px', marginTop: '4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase' }}>TPM Readings</div>
-                        {fryerCount > 1 && (
-                          <button onClick={() => setExpandedFryers(prev => prev.length > 1 ? [1] : Array.from({ length: fryerCount }, (_, i) => i + 1))} style={{
-                            background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '6px'
-                          }}>
-                            <span style={{ fontSize: '11px', color: '#1a428a', fontWeight: '500' }}>{expandedFryers.length > 1 ? 'Hide' : 'Show'} all {fryerCount} fryers</span>
-                            <span style={{ fontSize: '10px', color: '#1a428a', transform: expandedFryers.length > 1 ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
-                          </button>
-                        )}
-                      </div>
-                      {Array.from({ length: fryerCount }, (_, i) => i + 1).filter(f => expandedFryers.includes(f)).map(fryerNum => {
-                        const readings = getReadingsForFryer(fryerNum);
-                        const readingCount = Object.keys(readings).length;
-
-                        return (
-                          <div key={fryerNum} style={{ marginBottom: '4px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                              <span style={{ fontSize: '12px', color: '#1f2937' }}>Fryer {fryerNum}</span>
-                              <span style={{ fontSize: '11px', color: '#64748b' }}>{readingCount}/{pastDays}</span>
-                            </div>
-                            <FryerCalendar fryerNum={fryerNum} readings={readings} />
-                          </div>
-                        );
-                      })}
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '6px', justifyContent: 'flex-end' }}>
-                        {[
-                          { bg: '#d1fae5', label: '≤14' },
-                          { bg: '#fef3c7', label: '15-18' },
-                          { bg: '#fee2e2', label: '19+' },
-                          { bg: '#f1f5f9', label: 'Missed' },
-                        ].map(l => (
-                          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: l.bg }} />
-                            <span style={{ fontSize: '10px', color: '#64748b' }}>{l.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* 4. Savings table */}
-                {(t.currentWeeklyAvg || t.currentPricePerLitre || t.offeredPricePerLitre) && (() => {
-                  const liveTrialAvg = calcTrialWeeklyAvg(t.id, t.trialStartDate, tpmReadings, t.trialEndDate);
-                  const weekLitres = t.currentWeeklyAvg && liveTrialAvg ? Math.round(t.currentWeeklyAvg - liveTrialAvg) : null;
-                  if (weekLitres === null) return null;
-                  const annualLitres = Math.round(weekLitres * 52);
-                  const trialPrice = t.offeredPricePerLitre || t.currentPricePerLitre;
-                  const weekSpend = trialPrice ? Math.round(weekLitres * trialPrice) : null;
-                  const annualSpend = weekSpend !== null ? Math.round(weekSpend * 52) : null;
-                  return (
-                    <div style={{ marginBottom: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Savings</th>
-                            <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Litres</th>
-                            <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Spend</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Weekly</td>
-                            <td style={{ padding: '6px 10px', fontSize: '12px', color: weekLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekLitres < 0 ? '-' : ''}{Math.abs(weekLitres)} L</td>
-                            <td style={{ padding: '6px 10px', fontSize: '12px', color: weekSpend !== null && weekSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekSpend !== null ? (weekSpend < 0 ? '-$' : '$') + Math.abs(weekSpend).toLocaleString() : '—'}</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937' }}>Annual</td>
-                            <td style={{ padding: '6px 10px', fontSize: '12px', color: annualLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualLitres < 0 ? '-' : ''}{Math.abs(annualLitres)} L</td>
-                            <td style={{ padding: '6px 10px', fontSize: '12px', color: annualSpend !== null && annualSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualSpend !== null ? (annualSpend < 0 ? '-' : '') + '$' + Math.abs(annualSpend).toLocaleString() : '—'}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })()}
-
-                {/* Outcome strip */}
-                {(t.trialStatus === 'won' || t.trialStatus === 'lost') && (
-                  <div style={{
-                    marginTop: '8px', padding: '8px 12px', borderRadius: '8px',
-                    background: t.trialStatus === 'won' ? '#f0fdf4' : '#fef2f2',
-                    border: `1px solid ${t.trialStatus === 'won' ? '#bbf7d0' : '#fecaca'}`,
-                    display: 'flex', flexDirection: 'column', gap: '6px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: t.trialStatus === 'won' ? '#059669' : '#dc2626' }}>
-                        {t.trialStatus === 'won' ? 'Successful' : 'Unsuccessful'}
-                      </span>
-                      {t.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{formatDate(t.outcomeDate)}</span></>}
-                      {t.trialStatus === 'won' && t.customerCode && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{t.customerCode}</span></>}
-                      {(t.trialStatus === 'lost' || t.trialStatus === 'won') && t.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === t.trialReason)?.label || t.trialReason}</span></>}
-                    </div>
-                    {t.trialStatus === 'won' && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                        {cookersOil && <OilBadge theme={theme} oil={cookersOil} competitors={competitors} />}
-                        {t.soldPricePerLitre && <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '400' }}>@ ${t.soldPricePerLitre.toFixed(2)}/L</span>}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                {['in-progress', 'completed', 'pending'].includes(t.trialStatus) && (
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-
-                    {/* Pending — Start Trial kicks it to in-progress and opens the reading modal */}
-                    {t.trialStatus === 'pending' && (
-                      <button onClick={async () => {
-                        const today = new Date().toISOString().split('T')[0];
-                        const trialUpdates = { trialStatus: 'in-progress', trialStartDate: t.trialStartDate || today };
-                        rawSetVenues(prev => prev.map(v => v.id === t.id ? { ...v, ...trialUpdates } : v));
-                        if (t.trialId) {
-                          const dbTrial = unMapTrial({ ...splitTrialFromVenue(t), ...trialUpdates });
-                          await supabase.from('trials').update(dbTrial).eq('id', t.trialId);
-                        }
-                        setAddReadingModal({ ...t, ...trialUpdates });
-                        const fc2 = (t.fryerCount || 1);
-                        const initFryers2 = {};
-                        for (let i = 1; i <= fc2; i++) initFryers2[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
-                        setReadingForm({ date: today, fryers: initFryers2 });
-                        setActiveFryerTab(1);
-                        setSelectedTrial(null);
-                      }} style={{ flex: 1, padding: '9px 12px', background: '#1a428a', border: '1.5px solid #1a428a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                        Start Trial
-                      </button>
-                    )}
-
-                    {/* Active — log a reading */}
-                    {t.trialStatus === 'in-progress' && (
-                      <button onClick={() => {
-                        setAddReadingModal(t);
-                        const fcLR = (t.fryerCount || 1);
-                        const initFryersLR = {};
-                        for (let i = 1; i <= fcLR; i++) initFryersLR[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
-                        setReadingForm({ date: new Date().toISOString().split('T')[0], fryers: initFryersLR });
-                        setActiveFryerTab(1);
-                        setSelectedTrial(null);
-                      }} style={{ flex: 1, padding: '9px 12px', background: '#e8eef6', border: '1.5px solid #1a428a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
-                        Log Reading
-                      </button>
-                    )}
-
-                    {/* Active or completed — close as won/lost */}
-                    {['in-progress', 'completed'].includes(t.trialStatus) && (
-                      <>
-                        <button onClick={() => { setCloseTrialModal({ venue: t, outcome: 'won' }); setCloseForm({ reason: '', soldPrice: t.offeredPricePerLitre ? t.offeredPricePerLitre.toFixed(2) : '', outcomeDate: new Date().toISOString().split('T')[0], notes: t.trialNotes || '' }); setSelectedTrial(null); }} style={{ flex: 1, padding: '9px 12px', background: '#d1fae5', border: '1.5px solid #6ee7b7', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#065f46', cursor: 'pointer' }}>
-                          Won
-                        </button>
-                        <button onClick={() => { setCloseTrialModal({ venue: t, outcome: 'lost' }); setCloseForm({ reason: '', soldPrice: '', outcomeDate: new Date().toISOString().split('T')[0], notes: t.trialNotes || '' }); setSelectedTrial(null); }} style={{ flex: 1, padding: '9px 12px', background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#991b1b', cursor: 'pointer' }}>
-                          Lost
-                        </button>
-                      </>
-                    )}
-
-                  </div>
-                )}
-
-              </div>
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
-        );
-      })()}
+        )}
+
+      {/* Trial Detail Popup — shared modal */}
+      {selectedTrial && (
+        <TrialDetailModal
+          venue={selectedTrial}
+          oilTypes={oilTypes}
+          competitors={competitors}
+          trialReasons={trialReasons}
+          readings={tpmReadings}
+          onClose={() => setSelectedTrial(null)}
+          bdmName={users.find(u => u.id === selectedTrial.bdmId)?.name}
+          namName={(() => { const g = selectedTrial.groupId ? groups.find(gr => gr.id === selectedTrial.groupId) : null; return g?.namId ? users.find(u => u.id === g.namId)?.name : null; })()}
+          renderActions={(t) => (
+            ['in-progress', 'completed', 'pending'].includes(t.trialStatus) ? (
+              <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                {t.trialStatus === 'pending' && (
+                  <button onClick={async () => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const trialUpdates = { trialStatus: 'in-progress', trialStartDate: t.trialStartDate || today };
+                    rawSetVenues(prev => prev.map(v => v.id === t.id ? { ...v, ...trialUpdates } : v));
+                    if (t.trialId) {
+                      const dbTrial = unMapTrial({ ...splitTrialFromVenue(t), ...trialUpdates });
+                      await supabase.from('trials').update(dbTrial).eq('id', t.trialId);
+                    }
+                    setAddReadingModal({ ...t, ...trialUpdates });
+                    const fc2 = (t.fryerCount || 1);
+                    const initFryers2 = {};
+                    for (let i = 1; i <= fc2; i++) initFryers2[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
+                    setReadingForm({ date: today, fryers: initFryers2 });
+                    setActiveFryerTab(1);
+                    setSelectedTrial(null);
+                  }} style={{ flex: 1, padding: '9px 12px', background: '#1a428a', border: '1.5px solid #1a428a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                    Start Trial
+                  </button>
+                )}
+                {t.trialStatus === 'in-progress' && (
+                  <button onClick={() => {
+                    setAddReadingModal(t);
+                    const fcLR = (t.fryerCount || 1);
+                    const initFryersLR = {};
+                    for (let i = 1; i <= fcLR; i++) initFryersLR[i] = { oilAge: '', litresFilled: '0', tpmValue: '', setTemperature: '', actualTemperature: '', filtered: null, foodType: '', notes: '', notInUse: false, staffName: '' };
+                    setReadingForm({ date: new Date().toISOString().split('T')[0], fryers: initFryersLR });
+                    setActiveFryerTab(1);
+                    setSelectedTrial(null);
+                  }} style={{ flex: 1, padding: '9px 12px', background: '#e8eef6', border: '1.5px solid #1a428a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
+                    Log Reading
+                  </button>
+                )}
+                {['in-progress', 'completed'].includes(t.trialStatus) && (
+                  <>
+                    <button onClick={() => { setCloseTrialModal({ venue: t, outcome: 'won' }); setCloseForm({ reason: '', soldPrice: t.offeredPricePerLitre ? t.offeredPricePerLitre.toFixed(2) : '', outcomeDate: new Date().toISOString().split('T')[0], notes: t.trialNotes || '' }); setSelectedTrial(null); }} style={{ flex: 1, padding: '9px 12px', background: '#d1fae5', border: '1.5px solid #6ee7b7', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#065f46', cursor: 'pointer' }}>
+                      Won
+                    </button>
+                    <button onClick={() => { setCloseTrialModal({ venue: t, outcome: 'lost' }); setCloseForm({ reason: '', soldPrice: '', outcomeDate: new Date().toISOString().split('T')[0], notes: t.trialNotes || '' }); setSelectedTrial(null); }} style={{ flex: 1, padding: '9px 12px', background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#991b1b', cursor: 'pointer' }}>
+                      Lost
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : null
+          )}
+        />
+      )}
 
       {/* ── Close Trial Modal ── */}
       {closeTrialModal && (() => {
@@ -4115,36 +3755,6 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
 
 
 
-const TRIAL_REASONS = [
-  // Successful reasons
-  { key: 'oil-lasted-longer', label: 'Oil Lasted Longer', type: 'successful' },
-  { key: 'better-food-quality', label: 'Better Food Quality', type: 'successful' },
-  { key: 'cost-savings', label: 'Cost Savings on Oil Usage', type: 'successful' },
-  { key: 'cleaner-frying', label: 'Cleaner Frying / Less Residue', type: 'successful' },
-  { key: 'bdm-relationship', label: 'BDM Relationship / Service', type: 'successful' },
-  { key: 'healthier-oil', label: 'Healthier Oil Option', type: 'successful' },
-  { key: 'easier-to-manage', label: 'Easier to Manage', type: 'successful' },
-  { key: 'consistent-results', label: 'Consistent Frying Results', type: 'successful' },
-  { key: 'better-value', label: 'Better Value for Money', type: 'successful' },
-  { key: 'recommended', label: 'Recommended by Others', type: 'successful' },
-  { key: 'trial-results', label: 'Trial Results Spoke for Themselves', type: 'successful' },
-  { key: 'reduced-oil-smell', label: 'Reduced Oil Smell', type: 'successful' },
-  // Unsuccessful reasons
-  { key: 'no-savings', label: 'No Savings Found', type: 'unsuccessful' },
-  { key: 'price-too-high', label: 'Price Too High', type: 'unsuccessful' },
-  { key: 'preferred-current', label: 'Preferred Current Supplier', type: 'unsuccessful' },
-  { key: 'quality-concern', label: 'Oil Quality Concerns', type: 'unsuccessful' },
-  { key: 'staff-resistance', label: 'Staff Resistance to Change', type: 'unsuccessful' },
-  { key: 'contract-locked', label: 'Locked Into Existing Contract', type: 'unsuccessful' },
-  { key: 'ownership-change', label: 'Ownership / Management Change', type: 'unsuccessful' },
-  { key: 'venue-closed', label: 'Venue Closed', type: 'unsuccessful' },
-  { key: 'chose-competitor', label: 'Chose Competitor', type: 'unsuccessful' },
-  { key: 'owner-not-interested', label: 'Owner Not Interested', type: 'unsuccessful' },
-  { key: 'no-response', label: 'No Response / Ghosted', type: 'unsuccessful' },
-  { key: 'other-unsuccessful', label: 'Other', type: 'unsuccessful' },
-  { key: 'other-successful', label: 'Other', type: 'successful' },
-];
-
 // ==================== MAIN ADMIN PANEL ====================
 export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   const [activeSection, setActiveSection] = useState('overview');
@@ -4388,7 +3998,6 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   // NOTE: 'state_manager' intentionally matches the role key used in user records
   // so the two can be compared directly when role-based views are built out.
   const [currentView, setCurrentView] = useState('admin');
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -4479,44 +4088,11 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         const compData = buildMap(v => { const oil = oilTypes.find(o => o.id === v.defaultOil); return oil?.competitorId ? getCN(oil.competitorId) : 'Unknown'; });
         const bdmFiltered = overviewBdmState === 'all' ? filtered : filtered.filter(v => v.state === overviewBdmState);
         const bdmData = buildMap(v => v.bdmId ? getUN(v.bdmId) : 'Unassigned', bdmFiltered);
-        const stateData = buildMap(v => v.state || 'N/A', filtered);
-        const volBracketData = buildMap(v => {
-          const b = volumeBrackets.find(vb => vb.key === v.volumeBracket);
-          return b ? b.label : v.volumeBracket || 'Unknown';
-        });
-        const fmtDisplay = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
-        const periodLabel = 'All Time';
-
         // KPIs
         const wonTrials = filtered.filter(v => v.trialStatus === 'won');
         const lostTrials = filtered.filter(v => v.trialStatus === 'lost');
         const closedTrials = [...wonTrials, ...lostTrials];
         const winRate = closedTrials.length > 0 ? Math.round((wonTrials.length / closedTrials.length) * 100) : null;
-        const activeTrials = filtered.filter(v => v.trialStatus === 'in-progress');
-        const pipelineTrials = filtered.filter(v => v.trialStatus === 'pending');
-        const awaitingTrials = filtered.filter(v => v.trialStatus === 'completed');
-
-        // Pricing
-        const withCurr = filtered.filter(v => v.currentPricePerLitre);
-        const withSold = wonTrials.filter(v => v.soldPricePerLitre);
-        const wonWithOff = wonTrials.filter(v => v.offeredPricePerLitre);
-        const avgCurr = withCurr.length > 0 ? withCurr.reduce((s, v) => s + v.currentPricePerLitre, 0) / withCurr.length : null;
-        const avgOff = wonWithOff.length > 0 ? wonWithOff.reduce((s, v) => s + v.offeredPricePerLitre, 0) / wonWithOff.length : null;
-        const avgSold = withSold.length > 0 ? withSold.reduce((s, v) => s + v.soldPricePerLitre, 0) / withSold.length : null;
-
-        // Volume — monthly avg
-        // trialWeeklyAvg is derived from oil fill readings, not stored on venue
-        const getTrialAvg = (v) => calcTrialWeeklyAvg(v.id, v.trialStartDate, tpmReadings, v.trialEndDate);
-        const trialsWithVol = filtered.filter(v => v.currentWeeklyAvg && getTrialAvg(v) !== null);
-        const avgVolRed = trialsWithVol.length > 0
-          ? Math.round(trialsWithVol.reduce((s, v) => s + ((1 - getTrialAvg(v) / v.currentWeeklyAvg) * 100), 0) / trialsWithVol.length) : null;
-        const wonPrevVol = wonTrials.reduce((s, v) => s + (v.currentWeeklyAvg || 0), 0);
-        const wonNewVol = wonTrials.reduce((s, v) => s + (getTrialAvg(v) || v.currentWeeklyAvg || 0), 0);
-        const wonMonthlyVol = Math.round(wonNewVol * 4.33);
-
-        // Revenue — monthly avg
-        const estRevenue = wonTrials.reduce((s, v) => s + ((v.soldPricePerLitre || v.offeredPricePerLitre || 0) * (getTrialAvg(v) || v.currentWeeklyAvg || 0) * 52), 0);
-        const estMonthlyRev = Math.round(estRevenue / 12);
 
         // Oil stats — competitor · oil with win/loss
         const compOilDetail = {};
@@ -5225,7 +4801,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
       })();
       case 'venues': return <VenueManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} groups={groups} competitors={competitors} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} setActiveSection={setActiveSection} isDesktop={isDesktop} autoOpenForm={quickActionForm === 'venues'} clearAutoOpen={() => setQuickActionForm(null)} onPreviewVenue={onPreviewVenue} theme={theme} />;
       case 'groups': return <GroupManagement groups={groups} setGroups={dbSetGroups} rawSetGroups={setGroups} venues={venues} setVenues={dbSetVenues} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} oilTypes={oilTypes} competitors={competitors} autoOpenForm={quickActionForm === 'groups'} clearAutoOpen={() => setQuickActionForm(null)} theme={theme} />;
-      case 'users': return <UserManagement users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} venues={venues} groups={groups} currentUser={currentUser} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} theme={theme} />;
+      case 'users': return <UserManagement users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} venues={venues} groups={groups} currentUser={currentUser} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} isDesktop={isDesktop} theme={theme} />;
       case 'permissions': return <PermissionsAccess users={users} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} theme={theme} />;
       case 'onboarding': return <OnboardingFlow oilTypes={oilTypes} venues={venues} groups={groups} users={users} setVenues={dbSetVenues} setGroups={dbSetGroups} setUsers={dbSetUsers} defaultFryerCount={systemSettings.defaultFryerCount} />;
       case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} />;
@@ -5578,12 +5154,12 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                     <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', letterSpacing: '0.3px', marginBottom: '6px' }}>OVERDUE VENUES</div>
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'auto' }}>
                       {/* Header row */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '6px 1fr 52px 1fr 1fr 80px', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '6px 1.5fr 1fr 1fr 1fr 1fr', gap: '12px', padding: '6px 12px', borderBottom: '1.5px solid #e2e8f0', minWidth: '580px' }}>
                         <span />
                         <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px' }}>VENUE</span>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
                         <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>STATE</span>
                         <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>BDM</span>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'center' }}>NAM</span>
                         <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textAlign: 'right' }}>LAST TPM</span>
                       </div>
                       {overdueVenues.slice(0, 8).map((v, i) => {
@@ -5592,16 +5168,16 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                         const bdm = getOverdueBdm(v);
                         const nam = getOverdueNam(v);
                         return (
-                          <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 1fr 52px 1fr 1fr 80px', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
+                          <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 1.5fr 1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
                             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
                             <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
+                            <div style={{ textAlign: 'center' }}>
+                              {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
+                                : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
+                            </div>
                             <StateBadge theme={theme} state={v.state} />
                             <div style={{ textAlign: 'center' }}>
                               {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
-                                : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                              {nam ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#1e40af', background: '#dbeafe', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nam}</span>
                                 : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
                             </div>
                             <span style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', textAlign: 'right' }}>{days}d ago</span>
