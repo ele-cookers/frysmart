@@ -1150,6 +1150,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setActiveTab('pipeline');
     } catch (err) {
       console.error('Create trial error:', err);
+      alert('Failed to create trial: ' + (err.message || 'Unknown error'));
     }
     setSaving(false);
   };

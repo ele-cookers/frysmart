@@ -136,7 +136,6 @@ export const unMapVenue = (v) => ({
   bdm_id: v.bdmId || null,
   last_tpm_date: v.lastTpmDate || null,
   password: v.password || null,
-  customer_code_saved_at: v.customerCodeSavedAt || null,
 });
 
 // ── trials ──
