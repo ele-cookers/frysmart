@@ -1065,15 +1065,9 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
         //   CREATE TRIGGER venues_updated_at BEFORE UPDATE ON venues FOR EACH ROW EXECUTE FUNCTION update_updated_at();
         if (updateErr && updateErr.message?.includes('updated_at')) {
           console.warn('[Frysmart] updated_at column missing on venues table. Retrying update without trigger-dependent fields. Please run the SQL migration in the admin panel comments.');
-          // Attempt to drop the trigger and retry
-          await supabase.rpc('exec_sql', { sql: 'ALTER TABLE venues ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()' }).catch(() => {});
-          // Retry the update
-          ({ error: updateErr } = await supabase.from('venues').update(venueRow).eq('id', editing));
-          // If still failing, try stripping updated_at from payload
-          if (updateErr && updateErr.message?.includes('updated_at')) {
-            const { updated_at, ...rowWithout } = venueRow;
-            ({ error: updateErr } = await supabase.from('venues').update(rowWithout).eq('id', editing));
-          }
+          // Strip updated_at from payload and retry (column is managed by trigger)
+          const { updated_at, ...rowWithout } = venueRow;
+          ({ error: updateErr } = await supabase.from('venues').update(rowWithout).eq('id', editing));
         }
         if (updateErr) throw new Error('Failed to update venue: ' + updateErr.message);
         setVenues(prev => prev.map(v => v.id === editing ? { ...v, ...cleaned, groupId: cleaned.groupId || null } : v));

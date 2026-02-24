@@ -6,9 +6,10 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+const ALLOWED_ORIGIN = process.env.URL || 'https://frysmart.netlify.app';
 const headers = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -71,7 +72,7 @@ export default async (req) => {
       }
       const found = data.users.find(u => u.email === email);
       if (!found) {
-        return new Response(JSON.stringify({ error: 'No auth user found with that email.', users: data.users.map(u => ({ id: u.id, email: u.email, confirmed: !!u.email_confirmed_at })) }), { status: 404, headers });
+        return new Response(JSON.stringify({ error: 'No auth user found with that email.' }), { status: 404, headers });
       }
       return new Response(JSON.stringify({ id: found.id, email: found.email, confirmed: !!found.email_confirmed_at, created: found.created_at }), { status: 200, headers });
     }
