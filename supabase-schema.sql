@@ -293,7 +293,6 @@ values (18, 24, 4, 7, 'weekly', 7, array['canola','palm','sunflower','soybean','
 
 -- ============================================================
 -- 13. Enable Row Level Security on all tables
---     (policies will be added in a later phase)
 -- ============================================================
 
 alter table competitors enable row level security;
@@ -307,43 +306,321 @@ alter table trial_reasons enable row level security;
 alter table volume_brackets enable row level security;
 alter table system_settings enable row level security;
 
--- Temporary permissive policies so the app works before
--- role-based RLS is implemented in Phase 3.
--- These allow all authenticated users full access.
+-- ============================================================
+-- 14. user_roles — shadow table (NO RLS) to break circular dependency
+--
+--     Helper functions need to know the caller's role, but querying
+--     'profiles' from within profiles' own RLS policies creates an
+--     infinite loop. This table mirrors id/role/region from profiles,
+--     has NO RLS enabled, and is kept in sync via trigger.
+-- ============================================================
 
-create policy "Allow all for authenticated" on competitors
-  for all to authenticated using (true) with check (true);
+create table user_roles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  role text not null,
+  region text
+);
 
-create policy "Allow all for authenticated" on oil_types
-  for all to authenticated using (true) with check (true);
+-- No RLS on user_roles — this is intentional.
+-- Only authenticated users can SELECT (granted below), and writes
+-- happen exclusively via the sync trigger (SECURITY DEFINER).
 
-create policy "Allow all for authenticated" on profiles
-  for all to authenticated using (true) with check (true);
+grant select on user_roles to authenticated;
 
-create policy "Allow all for authenticated" on groups
-  for all to authenticated using (true) with check (true);
+-- Sync trigger: keeps user_roles in sync with profiles
+create or replace function sync_user_roles()
+returns trigger language plpgsql security definer as $$
+begin
+  if (tg_op = 'DELETE') then
+    delete from user_roles where id = old.id;
+    return old;
+  end if;
+  insert into user_roles (id, role, region)
+    values (new.id, new.role, new.region)
+    on conflict (id) do update set role = excluded.role, region = excluded.region;
+  return new;
+end;
+$$;
 
-create policy "Allow all for authenticated" on venues
-  for all to authenticated using (true) with check (true);
+create trigger trg_sync_user_roles
+  after insert or update of role, region or delete on profiles
+  for each row execute function sync_user_roles();
 
-create policy "Allow all for authenticated" on trials
-  for all to authenticated using (true) with check (true);
-
-create policy "Allow all for authenticated" on tpm_readings
-  for all to authenticated using (true) with check (true);
-
-create policy "Allow read for authenticated" on trial_reasons
-  for select to authenticated using (true);
-
-create policy "Allow read for authenticated" on volume_brackets
-  for select to authenticated using (true);
-
-create policy "Allow read for authenticated" on system_settings
-  for select to authenticated using (true);
-
-create policy "Allow update for authenticated" on system_settings
-  for update to authenticated using (true) with check (true);
+-- Backfill existing profiles into user_roles
+insert into user_roles (id, role, region)
+  select id, role, region from profiles
+  on conflict (id) do update set role = excluded.role, region = excluded.region;
 
 -- ============================================================
--- Done! All tables, constraints, indexes, seeds & temp RLS.
+-- 15. RLS helper functions
+--     STABLE SECURITY DEFINER — cached per-statement.
+--     All role lookups query user_roles (no RLS) to avoid circular deps.
+-- ============================================================
+
+create or replace function auth_email_prefix()
+returns text language sql stable security definer as $$
+  select split_part(auth.jwt() ->> 'email', '@', 1);
+$$;
+
+create or replace function get_my_role()
+returns text language sql stable security definer as $$
+  select coalesce(
+    (select role from user_roles where id = auth.uid()),
+    (select 'venue_staff' from venues where customer_code = upper(auth_email_prefix()) limit 1),
+    (select 'group_viewer' from groups where lower(username) = lower(auth_email_prefix()) limit 1),
+    'none'
+  );
+$$;
+
+create or replace function get_my_region()
+returns text language sql stable security definer as $$
+  select region from user_roles where id = auth.uid();
+$$;
+
+create or replace function get_my_profile_id()
+returns uuid language sql stable security definer as $$
+  select id from user_roles where id = auth.uid();
+$$;
+
+create or replace function get_my_venue_id()
+returns uuid language sql stable security definer as $$
+  select id from venues where customer_code = upper(auth_email_prefix()) limit 1;
+$$;
+
+create or replace function get_my_group_id()
+returns uuid language sql stable security definer as $$
+  select id from groups where lower(username) = lower(auth_email_prefix()) limit 1;
+$$;
+
+create or replace function is_admin_or_mgt()
+returns boolean language sql stable security definer as $$
+  select exists (select 1 from user_roles where id = auth.uid() and role in ('admin', 'mgt'));
+$$;
+
+create or replace function is_admin()
+returns boolean language sql stable security definer as $$
+  select exists (select 1 from user_roles where id = auth.uid() and role = 'admin');
+$$;
+
+-- ============================================================
+-- 16. RLS indexes (support helper function & policy performance)
+-- ============================================================
+
+create index if not exists idx_venues_customer_code on venues(customer_code);
+create index if not exists idx_groups_username_lower on groups(lower(username));
+create index if not exists idx_venues_state on venues(state);
+create index if not exists idx_groups_nam_id on groups(nam_id);
+
+-- ============================================================
+-- 17. RLS policies — role-based access control
+--
+-- Access matrix:
+--   admin/mgt:       full CRUD on all tables
+--   state_manager:   SELECT on data in their region
+--   nam:             SELECT on their assigned groups + child data
+--   bdm:             CRUD on their assigned venues + trials + readings
+--   venue_staff:     SELECT/INSERT/UPDATE on own venue + readings
+--   group_viewer:    SELECT on own group + venues + readings
+-- ============================================================
+
+-- ── config tables (read-only for all, write for admin) ──
+
+create policy "trial_reasons_select" on trial_reasons
+  for select to authenticated using (true);
+
+create policy "volume_brackets_select" on volume_brackets
+  for select to authenticated using (true);
+
+create policy "system_settings_select" on system_settings
+  for select to authenticated using (true);
+
+create policy "system_settings_update_admin" on system_settings
+  for update to authenticated using (is_admin()) with check (is_admin());
+
+-- ── competitors (read all, write admin/mgt) ──
+
+create policy "competitors_select" on competitors
+  for select to authenticated using (true);
+
+create policy "competitors_insert_admin" on competitors
+  for insert to authenticated with check (is_admin_or_mgt());
+
+create policy "competitors_update_admin" on competitors
+  for update to authenticated using (is_admin_or_mgt()) with check (is_admin_or_mgt());
+
+create policy "competitors_delete_admin" on competitors
+  for delete to authenticated using (is_admin_or_mgt());
+
+-- ── oil_types (read all, write admin/mgt) ──
+
+create policy "oil_types_select" on oil_types
+  for select to authenticated using (true);
+
+create policy "oil_types_insert_admin" on oil_types
+  for insert to authenticated with check (is_admin_or_mgt());
+
+create policy "oil_types_update_admin" on oil_types
+  for update to authenticated using (is_admin_or_mgt()) with check (is_admin_or_mgt());
+
+create policy "oil_types_delete_admin" on oil_types
+  for delete to authenticated using (is_admin_or_mgt());
+
+-- ── profiles ──
+--     SELECT: any user with a row in user_roles can see all profiles
+--     (no circular reference — uses user_roles, not profiles itself)
+
+create policy "profiles_select" on profiles
+  for select to authenticated
+  using (exists (select 1 from user_roles ur where ur.id = auth.uid()));
+
+create policy "profiles_insert_admin" on profiles
+  for insert to authenticated with check (is_admin_or_mgt());
+
+create policy "profiles_update" on profiles
+  for update to authenticated
+  using (is_admin_or_mgt() or id = auth.uid())
+  with check (is_admin_or_mgt() or id = auth.uid());
+
+create policy "profiles_delete_admin" on profiles
+  for delete to authenticated using (is_admin_or_mgt());
+
+-- ── groups ──
+
+create policy "groups_select" on groups
+  for select to authenticated using (
+    is_admin_or_mgt()
+    or (get_my_role() = 'state_manager'
+        and exists (select 1 from venues v where v.group_id = groups.id and v.state = get_my_region()))
+    or (get_my_role() = 'nam' and nam_id = get_my_profile_id())
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.group_id = groups.id and v.bdm_id = get_my_profile_id()))
+    or (get_my_role() = 'group_viewer' and id = get_my_group_id())
+  );
+
+create policy "groups_insert_admin" on groups
+  for insert to authenticated with check (is_admin_or_mgt());
+
+create policy "groups_update_admin" on groups
+  for update to authenticated using (is_admin_or_mgt()) with check (is_admin_or_mgt());
+
+create policy "groups_delete_admin" on groups
+  for delete to authenticated using (is_admin_or_mgt());
+
+-- ── venues ──
+
+create policy "venues_select" on venues
+  for select to authenticated using (
+    is_admin_or_mgt()
+    or (get_my_role() = 'state_manager' and state = get_my_region())
+    or (get_my_role() = 'nam'
+        and exists (select 1 from groups g where g.id = venues.group_id and g.nam_id = get_my_profile_id()))
+    or (get_my_role() = 'bdm' and bdm_id = get_my_profile_id())
+    or (get_my_role() = 'venue_staff' and id = get_my_venue_id())
+    or (get_my_role() = 'group_viewer' and group_id = get_my_group_id())
+  );
+
+create policy "venues_insert" on venues
+  for insert to authenticated with check (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm' and bdm_id = get_my_profile_id())
+  );
+
+create policy "venues_update" on venues
+  for update to authenticated
+  using (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm' and bdm_id = get_my_profile_id())
+    or (get_my_role() = 'venue_staff' and id = get_my_venue_id())
+  )
+  with check (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm' and bdm_id = get_my_profile_id())
+    or (get_my_role() = 'venue_staff' and id = get_my_venue_id())
+  );
+
+create policy "venues_delete_admin" on venues
+  for delete to authenticated using (is_admin_or_mgt());
+
+-- ── trials ──
+
+create policy "trials_select" on trials
+  for select to authenticated using (
+    is_admin_or_mgt()
+    or (get_my_role() = 'state_manager'
+        and exists (select 1 from venues v where v.id = trials.venue_id and v.state = get_my_region()))
+    or (get_my_role() = 'nam'
+        and exists (select 1 from venues v join groups g on g.id = v.group_id
+                    where v.id = trials.venue_id and g.nam_id = get_my_profile_id()))
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = trials.venue_id and v.bdm_id = get_my_profile_id()))
+  );
+
+create policy "trials_insert" on trials
+  for insert to authenticated with check (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = venue_id and v.bdm_id = get_my_profile_id()))
+  );
+
+create policy "trials_update" on trials
+  for update to authenticated
+  using (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = trials.venue_id and v.bdm_id = get_my_profile_id()))
+  )
+  with check (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = venue_id and v.bdm_id = get_my_profile_id()))
+  );
+
+create policy "trials_delete_admin" on trials
+  for delete to authenticated using (is_admin_or_mgt());
+
+-- ── tpm_readings ──
+
+create policy "tpm_readings_select" on tpm_readings
+  for select to authenticated using (
+    is_admin_or_mgt()
+    or (get_my_role() = 'state_manager'
+        and exists (select 1 from venues v where v.id = tpm_readings.venue_id and v.state = get_my_region()))
+    or (get_my_role() = 'nam'
+        and exists (select 1 from venues v join groups g on g.id = v.group_id
+                    where v.id = tpm_readings.venue_id and g.nam_id = get_my_profile_id()))
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = tpm_readings.venue_id and v.bdm_id = get_my_profile_id()))
+    or (get_my_role() = 'venue_staff' and venue_id = get_my_venue_id())
+    or (get_my_role() = 'group_viewer'
+        and exists (select 1 from venues v where v.id = tpm_readings.venue_id and v.group_id = get_my_group_id()))
+  );
+
+create policy "tpm_readings_insert" on tpm_readings
+  for insert to authenticated with check (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = venue_id and v.bdm_id = get_my_profile_id()))
+    or (get_my_role() = 'venue_staff' and venue_id = get_my_venue_id())
+  );
+
+create policy "tpm_readings_update" on tpm_readings
+  for update to authenticated
+  using (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = tpm_readings.venue_id and v.bdm_id = get_my_profile_id()))
+    or (get_my_role() = 'venue_staff' and venue_id = get_my_venue_id())
+  )
+  with check (
+    is_admin_or_mgt()
+    or (get_my_role() = 'bdm'
+        and exists (select 1 from venues v where v.id = venue_id and v.bdm_id = get_my_profile_id()))
+    or (get_my_role() = 'venue_staff' and venue_id = get_my_venue_id())
+  );
+
+create policy "tpm_readings_delete_admin" on tpm_readings
+  for delete to authenticated using (is_admin_or_mgt());
+
+-- ============================================================
+-- Done! All tables, constraints, indexes, seeds, user_roles & RLS.
 -- ============================================================
