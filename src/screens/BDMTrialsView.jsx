@@ -785,7 +785,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [newTrialForm, setNewTrialForm] = useState({
     customerCode: '', venueName: '', city: '',
     trialOilId: '', fryerCount: 1, defaultOil: '', currentPrice: '', offeredPrice: '',
-    avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '',
+    avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '', endDateManual: false,
   });
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
@@ -1143,7 +1143,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setNewTrialForm({
         customerCode: '', venueName: '', city: '',
         trialOilId: '', fryerCount: 1, defaultOil: '', currentPrice: '', offeredPrice: '',
-        avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '',
+        avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '', endDateManual: false,
       });
       setTrialType('new');
       setSuccessMsg(`Trial Created — ${trialId}`);
@@ -1683,16 +1683,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={S.field}>
           <label style={S.label}>EST. START DATE</label>
           <input type="date" value={newTrialForm.estStartDate}
-            onChange={e => setNewTrialForm(f => ({ ...f, estStartDate: e.target.value }))}
+            onChange={e => {
+              const start = e.target.value;
+              setNewTrialForm(f => {
+                const updated = { ...f, estStartDate: start };
+                if (start && !f.endDateManual) {
+                  const d = new Date(start);
+                  d.setDate(d.getDate() + (systemSettings?.trialDuration || 7));
+                  updated.estEndDate = d.toISOString().split('T')[0];
+                }
+                if (!start && !f.endDateManual) updated.estEndDate = '';
+                return updated;
+              });
+            }}
             style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
         <div style={S.field}>
           <label style={S.label}>EST. END DATE</label>
           <input type="date" value={newTrialForm.estEndDate}
-            onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value }))}
+            onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
             style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+          {newTrialForm.estEndDate && !newTrialForm.endDateManual && (
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Auto-set: {systemSettings?.trialDuration || 7}-day trial</div>
+          )}
         </div>
       </div>
 

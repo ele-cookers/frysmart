@@ -3602,16 +3602,34 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
               if (entryKey !== null) return !!themeConfig[catKey][entryKey];
               return Object.keys(themeConfig[catKey]).length > 0;
             };
-            const ColorSwatch = ({ value, onChange, label }) => (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <div style={{ fontSize: '9px', color: '#94a3b8', width: '38px', textAlign: 'right', fontWeight: '600', textTransform: 'uppercase' }}>{label}</div>
-                <input type="color" value={value && value.startsWith('#') ? value : '#000000'} onChange={e => onChange(e.target.value)}
-                  style={{ width: '24px', height: '24px', border: '1.5px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', padding: '1px' }} />
-                <input type="text" value={value || ''} onChange={e => onChange(e.target.value)}
-                  style={{ width: '110px', padding: '3px 6px', fontSize: '11px', fontFamily: 'monospace', border: '1.5px solid #e2e8f0', borderRadius: '4px', outline: 'none' }}
-                  onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-              </div>
-            );
+            const SWATCH_PRESETS = [
+              '#1a428a','#0369a1','#1e40af','#6d28d9','#7c3aed','#9d174d','#dc2626','#991b1b','#ef4444','#ea580c',
+              '#f97316','#a16207','#92400e','#eab308','#059669','#065f46','#15803d','#10b981','#64748b','#1f2937',
+              '#e2e8f0','#f1f5f9','#f8fafc','#fee2e2','#dbeafe','#d1fae5','#fef3c7','#ede9fe','#ffedd5','#fce7f3',
+            ];
+            const ColorSwatch = ({ value, onChange, label }) => {
+              const [open, setOpen] = useState(false);
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                  <div style={{ fontSize: '9px', color: '#94a3b8', width: '38px', textAlign: 'right', fontWeight: '600', textTransform: 'uppercase' }}>{label}</div>
+                  <div onClick={() => setOpen(!open)} style={{ width: '24px', height: '24px', borderRadius: '4px', background: value || '#000', border: '1.5px solid #e2e8f0', cursor: 'pointer', flexShrink: 0 }} />
+                  <input type="text" value={value || ''} onChange={e => onChange(e.target.value)}
+                    style={{ width: '80px', padding: '3px 6px', fontSize: '11px', fontFamily: 'monospace', border: '1.5px solid #e2e8f0', borderRadius: '4px', outline: 'none' }}
+                    onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                  {open && (
+                    <>
+                      <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 2999 }} />
+                      <div style={{ position: 'absolute', top: '30px', left: '38px', zIndex: 3000, background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'grid', gridTemplateColumns: 'repeat(10, 22px)', gap: '3px' }}>
+                        {SWATCH_PRESETS.map(c => (
+                          <div key={c} onClick={() => { onChange(c); setOpen(false); }}
+                            style={{ width: '22px', height: '22px', borderRadius: '50%', background: c, cursor: 'pointer', border: value === c ? '2px solid #1a428a' : '1.5px solid #e2e8f0', boxSizing: 'border-box' }} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            };
             return (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
