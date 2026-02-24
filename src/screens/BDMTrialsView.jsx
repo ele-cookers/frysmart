@@ -1856,8 +1856,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{pipelineCount}</span>
             </div>
             {pipelineCount > 0 ? (
-              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
-                {pipelineTrials.map(v => (
+              <div style={{ padding: '6px 14px 10px' }}>
+                {pipelineTrials.slice(0, 3).map(v => (
                   <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
                     display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
                     borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
@@ -1866,6 +1866,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                   </div>
                 ))}
+                {pipelineTrials.length > 3 && (
+                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', padding: '4px 0 0', textAlign: 'center' }}>+{pipelineTrials.length - 3} more</div>
+                )}
               </div>
             ) : (
               <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
@@ -1888,8 +1891,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{awaitingRecording.length}</span>
             </div>
             {awaitingRecording.length > 0 ? (
-              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
-                {awaitingRecording.map(v => {
+              <div style={{ padding: '6px 14px 10px' }}>
+                {awaitingRecording.slice(0, 3).map(v => {
                   const daysIn = v.trialStartDate ? daysBetween(v.trialStartDate, todayStr) : null;
                   return (
                     <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
@@ -1902,6 +1905,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
                   );
                 })}
+                {awaitingRecording.length > 3 && (
+                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', padding: '4px 0 0', textAlign: 'center' }}>+{awaitingRecording.length - 3} more</div>
+                )}
               </div>
             ) : (
               <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
@@ -1924,8 +1930,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{pendingCount}</span>
             </div>
             {pendingCount > 0 ? (
-              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
-                {pendingOutcomeTrials.map(v => {
+              <div style={{ padding: '6px 14px 10px' }}>
+                {pendingOutcomeTrials.slice(0, 3).map(v => {
                   const daysSinceEnd = v.trialEndDate ? daysBetween(v.trialEndDate, todayStr) : null;
                   return (
                     <div key={v.id} onClick={() => setSelectedTrialVenue(v)} style={{
@@ -1938,6 +1944,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
                   );
                 })}
+                {pendingOutcomeTrials.length > 3 && (
+                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', padding: '4px 0 0', textAlign: 'center' }}>+{pendingOutcomeTrials.length - 3} more</div>
+                )}
               </div>
             ) : (
               <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
@@ -1960,8 +1969,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>{acceptedCount}</span>
             </div>
             {acceptedCount > 0 ? (
-              <div style={{ padding: '6px 14px 10px', maxHeight: '130px', overflowY: 'auto' }}>
-                {acceptedTrials.map(v => {
+              <div style={{ padding: '6px 14px 10px' }}>
+                {acceptedTrials.slice(0, 3).map(v => {
                   const daysSinceAccepted = v.outcomeDate ? daysBetween(v.outcomeDate, todayStr) : null;
                   return (
                   <div key={v.id} onClick={() => { setManageVenueId(v.id); setActiveTab('manage'); }} style={{
@@ -1974,6 +1983,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </div>
                   );
                 })}
+                {acceptedTrials.length > 3 && (
+                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', padding: '4px 0 0', textAlign: 'center' }}>+{acceptedTrials.length - 3} more</div>
+                )}
               </div>
             ) : (
               <div style={{ padding: '12px', textAlign: 'center', fontSize: '10px', color: '#059669', fontWeight: '500' }}>
