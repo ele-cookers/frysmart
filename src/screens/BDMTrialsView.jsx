@@ -1794,58 +1794,120 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const topLostReason = topLostReasonKey ? trialReasons.find(r => r.key === topLostReasonKey) : null;
 
     const statCardStyle = {
-      background: 'white', borderRadius: '10px', padding: '16px 18px',
+      background: 'white', borderRadius: '10px', padding: '12px 14px',
       border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
     };
+    const insightCardStyle = {
+      background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '14px 16px',
+    };
+    const insightTitle = {
+      fontSize: '11px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase',
+      letterSpacing: '0.3px', marginBottom: '10px',
+    };
+    const insightRow = (isLast) => ({
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '6px 0', borderBottom: isLast ? 'none' : '1px solid #f1f5f9',
+    });
+
+    // Build sorted lists for insight tables
+    const sortedComps = Object.keys(compCounts).sort((a, b) => compCounts[b] - compCounts[a]);
+    const sortedWonReasons = Object.keys(wonReasonCounts).sort((a, b) => wonReasonCounts[b] - wonReasonCounts[a]);
+    const sortedLostReasons = Object.keys(lostReasonCounts).sort((a, b) => lostReasonCounts[b] - lostReasonCounts[a]);
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        {/* ── Stats Row ── */}
+        {/* ── Stats Row — 5 cards in one row on desktop ── */}
         <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Last 90 days</div>
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '16px' }}>
           {/* Win Rate */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Win Rate</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, lineHeight: 1 }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
+            <div style={{ fontSize: '20px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, lineHeight: 1 }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
           </div>
           {/* Avg Time to Decision */}
           <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Time to Decision</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#3b82f6', lineHeight: 1 }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Decision</div>
+            <div style={{ fontSize: '20px', fontWeight: '800', color: '#3b82f6', lineHeight: 1 }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
           </div>
           {/* Avg Sold Price */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Sold $/L</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b', lineHeight: 1 }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
+            <div style={{ fontSize: '20px', fontWeight: '800', color: '#f59e0b', lineHeight: 1 }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
           </div>
           {/* Avg Trials per Month */}
           <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Trials / Month</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Trials / Month</div>
+            <div style={{ fontSize: '20px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
           </div>
           {/* Avg Discount */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Discount</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#8b5cf6', lineHeight: 1 }}>{avgDiscount !== null ? `$${avgDiscount}` : '—'}</div>
-            <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>offered vs sold</div>
+            <div style={{ fontSize: '20px', fontWeight: '800', color: '#8b5cf6', lineHeight: 1 }}>{avgDiscount !== null ? `$${avgDiscount}` : '—'}</div>
           </div>
-          {/* Top Competitor */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Top Competitor</div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444', lineHeight: 1.2 }}>{topCompetitor || '—'}</div>
-            {topCompWL && <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>{topCompWL.won}W / {topCompWL.lost}L</div>}
+        </div>
+
+        {/* ── Insight Tables — Competitors, Win Reasons, Loss Reasons ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '8px', marginBottom: '16px' }}>
+          {/* Competitors */}
+          <div style={insightCardStyle}>
+            <div style={insightTitle}>Competitors Trialled</div>
+            {sortedComps.length === 0 ? (
+              <div style={{ fontSize: '12px', color: COLORS.textFaint, padding: '8px 0' }}>No data yet</div>
+            ) : sortedComps.map((name, i) => {
+              const wl = compWonLost[name] || { won: 0, lost: 0 };
+              return (
+                <div key={name} style={insightRow(i === sortedComps.length - 1)}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text }}>{name}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#059669' }}>{wl.won}W</span>
+                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#dc2626' }}>{wl.lost}L</span>
+                    <span style={{ fontSize: '10px', fontWeight: '700', background: '#f1f5f9', padding: '2px 8px', borderRadius: '10px', color: COLORS.text }}>{compCounts[name]}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          {/* Top Win Reason */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Top Win Reason</div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: '#10b981', lineHeight: 1.2 }}>{topWonReason?.label || '—'}</div>
-            {topWonReasonKey && <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>{wonReasonCounts[topWonReasonKey]}× across trials</div>}
+          {/* Win Reasons */}
+          <div style={insightCardStyle}>
+            <div style={insightTitle}>Win Reasons</div>
+            {sortedWonReasons.length === 0 ? (
+              <div style={{ fontSize: '12px', color: COLORS.textFaint, padding: '8px 0' }}>No data yet</div>
+            ) : sortedWonReasons.map((key, i) => {
+              const reason = trialReasons.find(r => r.key === key);
+              const count = wonReasonCounts[key];
+              const maxCount = wonReasonCounts[sortedWonReasons[0]];
+              return (
+                <div key={key} style={insightRow(i === sortedWonReasons.length - 1)}>
+                  <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.round((count / maxCount) * 100)}%`, background: '#d1fae5', borderRadius: '4px', zIndex: 0 }} />
+                    <span style={{ fontSize: '12px', fontWeight: '500', color: COLORS.text, position: 'relative', zIndex: 1, paddingLeft: '6px' }}>{reason?.label || key}</span>
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#059669', flexShrink: 0, minWidth: '24px', textAlign: 'right' }}>{count}</span>
+                </div>
+              );
+            })}
           </div>
-          {/* Top Loss Reason */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Top Loss Reason</div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444', lineHeight: 1.2 }}>{topLostReason?.label || '—'}</div>
-            {topLostReasonKey && <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>{lostReasonCounts[topLostReasonKey]}× across trials</div>}
+          {/* Loss Reasons */}
+          <div style={insightCardStyle}>
+            <div style={insightTitle}>Loss Reasons</div>
+            {sortedLostReasons.length === 0 ? (
+              <div style={{ fontSize: '12px', color: COLORS.textFaint, padding: '8px 0' }}>No data yet</div>
+            ) : sortedLostReasons.map((key, i) => {
+              const reason = trialReasons.find(r => r.key === key);
+              const count = lostReasonCounts[key];
+              const maxCount = lostReasonCounts[sortedLostReasons[0]];
+              return (
+                <div key={key} style={insightRow(i === sortedLostReasons.length - 1)}>
+                  <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.round((count / maxCount) * 100)}%`, background: '#fee2e2', borderRadius: '4px', zIndex: 0 }} />
+                    <span style={{ fontSize: '12px', fontWeight: '500', color: COLORS.text, position: 'relative', zIndex: 1, paddingLeft: '6px' }}>{reason?.label || key}</span>
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#dc2626', flexShrink: 0, minWidth: '24px', textAlign: 'right' }}>{count}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
