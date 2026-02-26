@@ -320,7 +320,7 @@ for (const def of trialDefs) {
 
   const trialRow = {
     venue_id: insertedVenue.id,
-    status: tDef.status === 'accepted' ? 'won' : tDef.status,
+    status: tDef.status,
     trial_oil_id: tDef.trial_oil,
     notes: `TRL-${String(trialDefs.indexOf(def) + 1).padStart(4, '0')} | Melbourne`,
     current_price_per_litre: tDef.currentPrice,
@@ -333,11 +333,7 @@ for (const def of trialDefs) {
     ...(tDef.soldPrice ? { sold_price_per_litre: tDef.soldPrice } : {}),
   };
 
-  // For 'accepted' status: venue has trial status as 'accepted' but trial table uses 'won'
-  // Update venue to reflect accepted status (won without customer code saved)
-  // Actually the trial status in the trials table maps differently. Let me check...
-  // The trial table status is: pending, in-progress, completed, won, lost
-  // The venue-level "accepted" is derived when status=won but no customerCodeSavedAt
+  // Trial status flow: pending → in-progress → completed → accepted (won, needs code) → won (code saved)
 
   const { data: insertedTrial, error: tErr } = await supabase.from('trials').insert(trialRow).select().single();
   if (tErr) { console.error(`  ERR trial for ${vDef.name}: ${tErr.message}`); continue; }

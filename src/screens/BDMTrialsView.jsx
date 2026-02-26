@@ -1210,81 +1210,86 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ─────────────────────────────────────────
   // HELPERS for cards
   // ─────────────────────────────────────────
-  // Oil badge helper for cards — uses same OilBadge component as tables
-  const cardOilBadge = (oilId, label) => {
-    const oil = oilTypes.find(o => o.id === oilId);
+
+  // Oil comparison row — matches trial detail modal format
+  const cardOilRow = (venue) => {
+    const compOil = oilTypes.find(o => o.id === venue.defaultOil);
+    const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
+    const comp = compOil?.competitorId ? competitors.find(c => c.id === compOil.competitorId) : null;
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-        <span style={{ color: COLORS.textMuted, flexShrink: 0 }}>{label}:</span>
-        <OilBadge oil={oil} competitors={competitors} compact />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+        {comp && <CompetitorPill comp={comp} />}
+        <OilBadge oil={compOil} competitors={competitors} compact />
+        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>vs</span>
+        <OilBadge oil={cookersOil} competitors={competitors} compact />
       </div>
     );
   };
 
-  const codeBadges = (venue) => {
-    const trialIdFromNotes = venue.trialNotes?.match(/^(TRL-\d+)/)?.[1] || null;
-    if (!trialIdFromNotes) return null;
-    return (
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
-        <span style={{ ...S.pill, background: '#e8eef6', color: BLUE, border: `1px solid ${BLUE}33`, fontSize: '10px' }}>{trialIdFromNotes}</span>
-      </div>
-    );
-  };
-
-  const pricingRow = (venue) => {
+  const pricingRow = (venue, showSold) => {
     if (!venue.currentPricePerLitre && !venue.offeredPricePerLitre) return null;
     return (
-      <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+      <div style={{ display: 'flex', gap: '14px', fontSize: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
         {venue.currentPricePerLitre && <div><span style={{ color: COLORS.textMuted }}>Curr: </span><span style={{ fontWeight: '600' }}>${parseFloat(venue.currentPricePerLitre).toFixed(2)}/L</span></div>}
         {venue.offeredPricePerLitre && <div><span style={{ color: COLORS.textMuted }}>Offer: </span><span style={{ fontWeight: '600', color: BLUE }}>${parseFloat(venue.offeredPricePerLitre).toFixed(2)}/L</span></div>}
+        {showSold && venue.soldPricePerLitre && <div><span style={{ color: COLORS.textMuted }}>Sold: </span><span style={{ fontWeight: '600', color: '#059669' }}>${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span></div>}
       </div>
     );
   };
+
+  // Date info row — inline flex instead of grid
+  const dateRow = (items) => (
+    <div style={{ display: 'flex', gap: '14px', fontSize: '11px', marginBottom: '10px', flexWrap: 'wrap' }}>
+      {items.map(([label, value]) => (
+        <div key={label}><span style={{ color: COLORS.textMuted, fontWeight: '600' }}>{label}: </span><span style={{ fontWeight: '600', color: COLORS.text }}>{value}</span></div>
+      ))}
+    </div>
+  );
+
+  // Card header — name + volume pill + status badge
+  const cardHeader = (venue, statusOverride) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: '14px', fontWeight: '700', color: COLORS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{venue.name}</div>
+        {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
+      </div>
+      {statusOverride || <TrialStatusBadge status={venue.trialStatus} />}
+    </div>
+  );
+
+  // Action button styles
+  const btnPrimary = (bg = BLUE) => ({
+    flex: 1, padding: '8px 12px', background: bg, border: 'none', borderRadius: '20px',
+    fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+  });
+  const btnSecondary = () => ({
+    flex: 1, padding: '8px 12px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '20px',
+    fontSize: '12px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+  });
+
+  // Card base style
+  const cardBase = (accent) => ({ ...S.card, borderLeft: `4px solid ${accent}`, marginBottom: '10px', cursor: 'pointer' });
 
   // -- ACTIVE TRIAL CARD --
   const renderActiveCard = (venue) => {
     const daysIn = venue.trialStartDate ? daysBetween(venue.trialStartDate, getTodayString()) : null;
     const venueReadings = tpmReadings.filter(r => r.venueId === venue.id);
-    const latestReading = venueReadings.length > 0
-      ? venueReadings.sort((a, b) => b.readingDate.localeCompare(a.readingDate))[0]
-      : null;
     const totalLitres = venueReadings.reduce((sum, r) => sum + (parseFloat(r.litresFilled) || 0), 0);
 
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={{ ...S.card, borderLeft: `4px solid ${TRIAL_STATUS_COLORS['in-progress'].accent}`, marginBottom: '12px', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.text }}>{venue.name}</div>
-          <TrialStatusBadge status="in-progress" />
-        </div>
-        {codeBadges(venue)}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          {cardOilBadge(venue.trialOilId, 'Trial')}
-          {cardOilBadge(venue.defaultOil, 'Current')}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Days</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysIn ?? '—'}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Readings</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venueReadings.length}</div></div>
-        </div>
-        {latestReading && (
-          <div style={{ background: COLORS.bg, borderRadius: '8px', padding: '10px 12px', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', fontWeight: '600', color: COLORS.textMuted }}>Latest TPM</span>
-              <span style={{ fontSize: '16px', fontWeight: '700', color: latestReading.tpmValue < 18 ? COLORS.good : latestReading.tpmValue < 24 ? COLORS.warning : COLORS.critical }}>{latestReading.tpmValue}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-              <span style={{ fontSize: '11px', color: COLORS.textFaint }}>{displayDate(latestReading.readingDate)}</span>
-              <span style={{ fontSize: '11px', color: COLORS.textFaint }}>Total: {totalLitres.toFixed(1)}L</span>
-            </div>
-          </div>
-        )}
-        <div style={{ marginBottom: '12px' }}>{pricingRow(venue)}</div>
+      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(TRIAL_STATUS_COLORS['in-progress'].accent)}>
+        {cardHeader(venue)}
+        {cardOilRow(venue)}
+        {pricingRow(venue)}
+        {dateRow([['Start', displayDate(venue.trialStartDate)], ['Days', daysIn ?? '—'], ['Readings', venueReadings.length], ['Litres', `${totalLitres.toFixed(0)}L`]])}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={{ flex: 1, padding: '10px', background: BLUE, border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-            <ClipboardList size={14} /> Log Reading
+          <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnPrimary()}>
+            <ClipboardList size={13} /> Log Reading
           </button>
-          <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: COLORS.textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-            <XCircle size={14} /> End Trial
+          <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={btnSecondary()}>
+            <XCircle size={13} /> End Trial
           </button>
         </div>
       </div>
@@ -1293,28 +1298,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // -- PIPELINE CARD --
   const renderPipelineCard = (venue) => (
-    <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={{ ...S.card, borderLeft: `4px solid ${TRIAL_STATUS_COLORS['pending'].accent}`, marginBottom: '12px', cursor: 'pointer' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-        <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.text }}>{venue.name}</div>
-        <TrialStatusBadge status="pending" />
-      </div>
-      {codeBadges(venue)}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-        {cardOilBadge(venue.trialOilId, 'Trial')}
-        {cardOilBadge(venue.defaultOil, 'Current')}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Fryers</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.fryerCount || 1}</div></div>
-        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Volume</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.volumeBracket || '—'}</div></div>
-        <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Created</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.trialCreatedAt ? displayDate(venue.trialCreatedAt.split('T')[0]) : '—'}</div></div>
-      </div>
-      <div style={{ marginBottom: '12px' }}>{pricingRow(venue)}</div>
-      <button onClick={(e) => { e.stopPropagation(); if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{
-        width: '100%', padding: '10px', background: BLUE, border: 'none', borderRadius: '8px',
-        fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-      }}>
-        <Play size={14} /> Start Trial
+    <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(TRIAL_STATUS_COLORS['pending'].accent)}>
+      {cardHeader(venue)}
+      {cardOilRow(venue)}
+      {pricingRow(venue)}
+      {dateRow([['Fryers', venue.fryerCount || 1], ['Created', venue.trialCreatedAt ? displayDate(venue.trialCreatedAt.split('T')[0]) : '—']])}
+      <button onClick={(e) => { e.stopPropagation(); if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{ ...btnPrimary(), width: '100%', flex: 'none' }}>
+        <Play size={13} /> Start Trial
       </button>
     </div>
   );
@@ -1323,25 +1313,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const renderPendingOutcomeCard = (venue) => {
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || getTodayString());
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={{ ...S.card, borderLeft: `4px solid ${COLORS.warning}`, marginBottom: '12px', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.text }}>{venue.name}</div>
-          <span style={{ ...S.pill, background: COLORS.warningBg, color: '#92400e', border: '1px solid #fde68a' }}>Pending</span>
-        </div>
-        {codeBadges(venue)}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          {cardOilBadge(venue.trialOilId, 'Trial')}
-          {cardOilBadge(venue.defaultOil, 'Current')}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Ended</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialEndDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Duration</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysRan != null ? `${daysRan}d` : '—'}</div></div>
-        </div>
-        <div style={{ marginBottom: '12px' }}>{pricingRow(venue)}</div>
+      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(COLORS.warning)}>
+        {cardHeader(venue, <span style={{ ...S.pill, background: COLORS.warningBg, color: '#92400e', border: '1px solid #fde68a' }}>Pending</span>)}
+        {cardOilRow(venue)}
+        {pricingRow(venue)}
+        {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'won' }); }} style={{ flex: 1, padding: '10px', background: '#10b981', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Trophy size={14} /> Won</button>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'lost' }); }} style={{ flex: 1, padding: '10px', background: '#ef4444', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><XCircle size={14} /> Lost</button>
+          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'won' }); }} style={btnPrimary('#10b981')}><Trophy size={13} /> Won</button>
+          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'lost' }); }} style={btnPrimary('#ef4444')}><XCircle size={13} /> Lost</button>
         </div>
       </div>
     );
@@ -1353,50 +1332,33 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={{ ...S.card, borderLeft: `4px solid ${statusCfg.accent}`, marginBottom: '12px', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.text }}>{venue.name}</div>
-          <TrialStatusBadge status={venue.trialStatus} />
-        </div>
-        {codeBadges(venue)}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          {cardOilBadge(venue.trialOilId, 'Trial')}
-          {cardOilBadge(venue.defaultOil, 'Current')}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Ended</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialEndDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Duration</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysRan != null ? `${daysRan}d` : '—'}</div></div>
-        </div>
-        <div style={{ marginBottom: '10px' }}>{pricingRow(venue)}</div>
+      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(statusCfg.accent)}>
+        {cardHeader(venue)}
+        {cardOilRow(venue)}
+        {pricingRow(venue, true)}
+        {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
         {venue.trialStatus === 'won' && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px 12px', marginBottom: '10px' }}>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px', marginBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <Check size={14} color="#059669" strokeWidth={3} />
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>Successful</span>
-              {venue.soldPricePerLitre && <><span style={{ color: '#cbd5e1' }}>|</span><span style={{ fontSize: '12px', color: '#065f46' }}>${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span></>}
+              <Check size={13} color="#059669" strokeWidth={3} />
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#059669' }}>Successful</span>
+              {reasonLabel && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '11px', color: '#065f46' }}>{reasonLabel}</span></>}
             </div>
-            {(() => { const trialOil = oilTypes.find(o => o.id === venue.trialOilId); return trialOil ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                <OilBadge oil={trialOil} competitors={competitors} compact />
-              </div>
-            ) : null; })()}
-            {reasonLabel && <div style={{ fontSize: '11px', color: '#065f46', marginTop: '2px' }}>{reasonLabel}</div>}
           </div>
         )}
         {venue.trialStatus === 'won' && venue.customerCode && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle2 size={14} color="#059669" />
-            <span style={{ fontSize: '12px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle2 size={13} color="#059669" />
+            <span style={{ fontSize: '11px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>
           </div>
         )}
         {venue.trialStatus === 'lost' && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 12px' }}>
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <X size={14} color="#dc2626" strokeWidth={3} />
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#dc2626' }}>Unsuccessful</span>
+              <X size={13} color="#dc2626" strokeWidth={3} />
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#dc2626' }}>Unsuccessful</span>
+              {reasonLabel && <><span style={{ color: '#fecaca' }}>·</span><span style={{ fontSize: '11px', color: '#991b1b' }}>{reasonLabel}</span></>}
             </div>
-            {reasonLabel && <div style={{ fontSize: '11px', color: '#991b1b', marginTop: '2px' }}>{reasonLabel}</div>}
           </div>
         )}
       </div>
@@ -1409,29 +1371,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={{ ...S.card, borderLeft: `4px solid ${statusCfg.accent}`, marginBottom: '12px', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '700', color: COLORS.text }}>{venue.name}</div>
-          <TrialStatusBadge status={venue.trialStatus} />
-        </div>
-        {codeBadges(venue)}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          {cardOilBadge(venue.trialOilId, 'Trial')}
-          {cardOilBadge(venue.defaultOil, 'Current')}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Ended</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialEndDate)}</div></div>
-          <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Duration</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysRan != null ? `${daysRan}d` : '—'}</div></div>
-        </div>
-        <div style={{ marginBottom: '10px' }}>{pricingRow(venue)}</div>
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px 12px', marginBottom: '10px' }}>
+      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(statusCfg.accent)}>
+        {cardHeader(venue)}
+        {cardOilRow(venue)}
+        {pricingRow(venue, true)}
+        {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Check size={14} color="#059669" strokeWidth={3} />
-            <span style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>Accepted</span>
-            {venue.soldPricePerLitre && <><span style={{ color: '#cbd5e1' }}>|</span><span style={{ fontSize: '12px', color: '#065f46' }}>${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span></>}
+            <Check size={13} color="#059669" strokeWidth={3} />
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#059669' }}>Accepted</span>
+            {reasonLabel && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '11px', color: '#065f46' }}>{reasonLabel}</span></>}
           </div>
-          {reasonLabel && <div style={{ fontSize: '11px', color: '#065f46', marginTop: '2px' }}>{reasonLabel}</div>}
         </div>
         <CustomerCodeInput venueId={venue.id} onSave={handleSaveCustomerCode} />
       </div>
@@ -1805,20 +1755,43 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const recentStarted = recentTrials.filter(v => v.trialStartDate && v.trialStartDate >= ninetyDaysAgo);
     const avgTrialsPerMonth = recentStarted.length > 0 ? Math.round(recentStarted.length / 3) : null;
 
-    // Pipeline Value — potential annual revenue from active trials
-    const activePipeline = allTrials.filter(v => v.trialStatus === 'pending' || v.trialStatus === 'in-progress');
-    const pipelineValue = activePipeline.reduce((sum, v) => {
-      const price = parseFloat(v.offeredPricePerLitre) || 0;
-      const weekly = parseFloat(v.currentWeeklyAvg) || 0;
-      return sum + (price * weekly * 52);
-    }, 0);
+    // Avg Discount — average difference between offered and sold price
+    const wonWithBothPrices = allTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'accepted') && v.offeredPricePerLitre && v.soldPricePerLitre);
+    const avgDiscount = wonWithBothPrices.length > 0
+      ? (wonWithBothPrices.reduce((sum, v) => sum + (parseFloat(v.offeredPricePerLitre) - parseFloat(v.soldPricePerLitre)), 0) / wonWithBothPrices.length).toFixed(2)
+      : null;
 
-    // Active Compliance — % of in-progress trials with a TPM reading in last 7 days
-    const sevenDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 7); return formatDate(d); })();
-    const activeWithRecentReading = activeTrials.filter(v => {
-      return tpmReadings.some(r => r.venueId === v.id && r.readingDate >= sevenDaysAgo);
+    // Most Trialled Competitor — count competitors across all trials
+    const compCounts = {};
+    const compWonLost = {};
+    allTrials.forEach(v => {
+      const oil = oilTypes.find(o => o.id === v.defaultOil);
+      if (!oil?.competitorId) return;
+      const comp = competitors.find(c => c.id === oil.competitorId);
+      if (!comp) return;
+      compCounts[comp.name] = (compCounts[comp.name] || 0) + 1;
+      if (!compWonLost[comp.name]) compWonLost[comp.name] = { won: 0, lost: 0 };
+      if (v.trialStatus === 'won' || v.trialStatus === 'accepted') compWonLost[comp.name].won++;
+      if (v.trialStatus === 'lost') compWonLost[comp.name].lost++;
     });
-    const activeCompliance = activeCount > 0 ? Math.round((activeWithRecentReading.length / activeCount) * 100) : null;
+    const topCompetitor = Object.keys(compCounts).sort((a, b) => compCounts[b] - compCounts[a])[0] || null;
+    const topCompWL = topCompetitor ? compWonLost[topCompetitor] : null;
+
+    // Top Successful Reason
+    const wonReasonCounts = {};
+    allTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'accepted') && v.trialReason).forEach(v => {
+      wonReasonCounts[v.trialReason] = (wonReasonCounts[v.trialReason] || 0) + 1;
+    });
+    const topWonReasonKey = Object.keys(wonReasonCounts).sort((a, b) => wonReasonCounts[b] - wonReasonCounts[a])[0] || null;
+    const topWonReason = topWonReasonKey ? trialReasons.find(r => r.key === topWonReasonKey) : null;
+
+    // Top Unsuccessful Reason
+    const lostReasonCounts = {};
+    allTrials.filter(v => v.trialStatus === 'lost' && v.trialReason).forEach(v => {
+      lostReasonCounts[v.trialReason] = (lostReasonCounts[v.trialReason] || 0) + 1;
+    });
+    const topLostReasonKey = Object.keys(lostReasonCounts).sort((a, b) => lostReasonCounts[b] - lostReasonCounts[a])[0] || null;
+    const topLostReason = topLostReasonKey ? trialReasons.find(r => r.key === topLostReasonKey) : null;
 
     const statCardStyle = {
       background: 'white', borderRadius: '10px', padding: '16px 18px',
@@ -1850,17 +1823,29 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Trials / Month</div>
             <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
           </div>
-          {/* Pipeline Value */}
+          {/* Avg Discount */}
           <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Pipeline Value</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#8b5cf6', lineHeight: 1 }}>{pipelineValue > 0 ? `$${(pipelineValue / 1000).toFixed(1)}k` : '—'}</div>
-            <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>annual est.</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Discount</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: '#8b5cf6', lineHeight: 1 }}>{avgDiscount !== null ? `$${avgDiscount}` : '—'}</div>
+            <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>offered vs sold</div>
           </div>
-          {/* Active Compliance */}
+          {/* Top Competitor */}
           <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Active Compliance</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: activeCompliance !== null ? (activeCompliance >= 80 ? '#10b981' : activeCompliance >= 50 ? '#f59e0b' : '#ef4444') : COLORS.textFaint, lineHeight: 1 }}>{activeCompliance !== null ? `${activeCompliance}%` : '—'}</div>
-            <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>readings last 7d</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Top Competitor</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444', lineHeight: 1.2 }}>{topCompetitor || '—'}</div>
+            {topCompWL && <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>{topCompWL.won}W / {topCompWL.lost}L</div>}
+          </div>
+          {/* Top Win Reason */}
+          <div style={statCardStyle}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Top Win Reason</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#10b981', lineHeight: 1.2 }}>{topWonReason?.label || '—'}</div>
+            {topWonReasonKey && <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>{wonReasonCounts[topWonReasonKey]}× across trials</div>}
+          </div>
+          {/* Top Loss Reason */}
+          <div style={statCardStyle}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Top Loss Reason</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#ef4444', lineHeight: 1.2 }}>{topLostReason?.label || '—'}</div>
+            {topLostReasonKey && <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>{lostReasonCounts[topLostReasonKey]}× across trials</div>}
           </div>
         </div>
 

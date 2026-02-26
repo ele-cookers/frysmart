@@ -148,7 +148,7 @@ export default function Login() {
           textAlign: 'center', fontSize: '12px', color: '#94a3b8',
           marginTop: '20px', marginBottom: 0,
         }}>
-          Forgot your password? Contact your Cookers representative.
+          Forgot your password?<br />Contact your Cookers representative.
         </p>
       </div>
     </div>
