@@ -31,7 +31,6 @@ create table system_settings (
   report_frequency text not null default 'weekly',
   reminder_days int not null default 7,
   oil_type_options text[] not null default array['canola','palm','sunflower','soybean','cottonseed','tallow','blend','unknown'],
-  theme_config jsonb not null default '{}'::jsonb,
   permissions_config jsonb not null default '{}'::jsonb,
   target_win_rate numeric not null default 75,
   target_avg_time_to_decision int not null default 14,
@@ -127,6 +126,7 @@ create table venues (
   bdm_id uuid references profiles(id) on delete set null,
   last_tpm_date date,
   password text,
+  customer_code_saved_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

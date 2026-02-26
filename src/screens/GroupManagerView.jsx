@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check,
   AlertCircle, Clock, Star, Building, LogOut, BarChart3, Calendar, Eye, Droplets
 } from 'lucide-react';
-import { OIL_STATUS_COLORS, getThemeColors } from '../lib/badgeConfig';
+import { HEADER_BADGE_COLORS, OIL_STATUS_COLORS } from '../lib/badgeConfig';
 
 // ─────────────────────────────────────────────
 // DESIGN TOKENS
@@ -151,7 +151,7 @@ const calcTempVariancePct = (setTemp, actualTemp) => {
 
 const isFreshOil = (oilAge) => oilAge === 1 || oilAge === '1';
 
-// Oil status label based on oil age — colors from badgeConfig (or merged theme)
+// Oil status label based on oil age — colors from badgeConfig
 const getOilStatus = (oilAge, notInUse, colors = OIL_STATUS_COLORS) => {
   if (notInUse) return colors.not_in_operation;
   if (oilAge === 1 || oilAge === '1') return colors.fresh;
@@ -1168,6 +1168,7 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 // ─────────────────────────────────────────────
 const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings, onDrillDown, groupView = 'glance' }) => {
   const [healthFilter, setHealthFilter] = useState('all');
+  const [tpmRange, setTpmRange] = useState(30);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
 
   useEffect(() => {
@@ -1418,18 +1419,23 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       groupDayStats[dn].recorded += venuesRecorded;
     }
 
-    // 30-Day TPM Trend — group level (avg TPM across all venues per day)
-    const groupLast30 = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const ds = formatDate(d);
-      const dayRecs = venues.flatMap(v => {
-        const recs = recordingsByVenue[v.id] || {};
-        return (recs[ds] || []).filter(r => !r.notInUse && r.tpmValue != null);
-      });
-      const avg = dayRecs.length > 0 ? dayRecs.reduce((s, r) => s + r.tpmValue, 0) / dayRecs.length : null;
-      groupLast30.push({ label: d.getDate().toString(), avg, count: dayRecs.length });
-    }
+    // TPM Trend — group level (avg TPM across all venues per day)
+    const buildGroupTrend = (days) => {
+      const result = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const ds = formatDate(d);
+        const dayRecs = venues.flatMap(v => {
+          const recs = recordingsByVenue[v.id] || {};
+          return (recs[ds] || []).filter(r => !r.notInUse && r.tpmValue != null);
+        });
+        const avg = dayRecs.length > 0 ? dayRecs.reduce((s, r) => s + r.tpmValue, 0) / dayRecs.length : null;
+        result.push({ label: d.getDate().toString(), avg, count: dayRecs.length });
+      }
+      return result;
+    };
+    const groupLast30 = buildGroupTrend(30);
+    const groupLast7 = buildGroupTrend(7);
 
     // TPM Recording Health — group level (like admin panel)
     const getAgeDays = (dateStr) => {
@@ -1450,10 +1456,10 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     const tpmHealthIsHealthy = tpmHealthCompliancePct >= 80;
     const overdueVenueList = venueLastTpm.filter(v => getAgeDays(v.lastTpmDate) >= 2).sort((a, b) => getAgeDays(b.lastTpmDate) - getAgeDays(a.lastTpmDate));
 
-    return { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList };
+    return { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList };
   }, [venues, recordingsByVenue, warnAt, critAt]);
 
-  const { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList } = computed;
+  const { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList } = computed;
 
   if (venues.length === 0) {
     return (
@@ -1502,53 +1508,95 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
           })}
         </div>
 
-        <div style={{ background: COLORS.white, borderRadius: '12px', border: `1px solid ${COLORS.border}`, overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="gm-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '4px', padding: 0 }}></th>
-                  <th style={{ width: '18%' }}>Venue</th>
-                  <th style={{ textAlign: 'center', width: '8%' }}>Fryers</th>
-                  <th style={{ textAlign: 'center', width: '11%' }}>Compliance</th>
-                  <th style={{ textAlign: 'center', width: '11%' }}>Changed Late</th>
-                  <th style={{ textAlign: 'center', width: '11%' }}>Changed Early</th>
-                  <th style={{ textAlign: 'center', width: '11%' }}>Oil Filtered</th>
-                  <th style={{ textAlign: 'center', width: '13%' }}>Oil Mgt Rating</th>
-                  <th style={{ textAlign: 'center', width: '7%' }}>Today</th>
-                  <th style={{ width: '24px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredVenues.map(venue => {
-                  const compColor  = complianceColor(venue.complianceRate);
-                  const filtColor  = venue.filteringRate >= 80 ? COLORS.good : venue.filteringRate >= 60 ? COLORS.warning : COLORS.critical;
-                  const todayColor = venue.todayRecordings > 0 ? COLORS.good : COLORS.critical;
-                  const lateColor  = venue.changedLate  > 0 ? COLORS.critical : COLORS.textFaint;
-                  const earlyColor = venue.changedEarly > 0 ? COLORS.warning  : COLORS.textFaint;
-                  return (
-                    <tr key={venue.id} onClick={() => onDrillDown(venue.id)}>
-                      <td style={{ padding: 0, width: '4px', background: venue.todayRecordings > 0 ? COLORS.good : COLORS.critical }}></td>
-                      <td style={{ fontWeight: '600', fontSize: '13px' }}>{venue.name}</td>
-                      <td style={{ textAlign: 'center', color: COLORS.textMuted }}>{venue.fryerCount || 4}</td>
-                      <td style={{ textAlign: 'center', fontWeight: '700', color: compColor }}>{venue.complianceRate}%</td>
-                      <td style={{ textAlign: 'center', fontWeight: '600', color: lateColor }}>{venue.changedLate === 0 ? '0' : venue.changedLate}</td>
-                      <td style={{ textAlign: 'center', fontWeight: '600', color: earlyColor }}>{venue.changedEarly === 0 ? '0' : venue.changedEarly}</td>
-                      <td style={{ textAlign: 'center', fontWeight: '700', color: filtColor }}>{venue.filteringRate}%</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', background: venue.oilRating.bg, color: venue.oilRating.color }}>{venue.oilRating.label}</span>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: todayColor, margin: '0 auto' }} title={venue.todayRecordings > 0 ? 'Recorded today' : 'Not recorded today'} />
-                      </td>
-                      <td><ChevronRight size={14} color={COLORS.textFaint} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {isDesktop ? (
+          <div style={{ background: COLORS.white, borderRadius: '12px', border: `1px solid ${COLORS.border}`, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="gm-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '4px', padding: 0 }}></th>
+                    <th style={{ width: '18%' }}>Venue</th>
+                    <th style={{ textAlign: 'center', width: '8%' }}>Fryers</th>
+                    <th style={{ textAlign: 'center', width: '11%' }}>Compliance</th>
+                    <th style={{ textAlign: 'center', width: '11%' }}>Changed Late</th>
+                    <th style={{ textAlign: 'center', width: '11%' }}>Changed Early</th>
+                    <th style={{ textAlign: 'center', width: '11%' }}>Oil Filtered</th>
+                    <th style={{ textAlign: 'center', width: '13%' }}>Oil Mgt Rating</th>
+                    <th style={{ textAlign: 'center', width: '7%' }}>Today</th>
+                    <th style={{ width: '24px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredVenues.map(venue => {
+                    const compColor  = complianceColor(venue.complianceRate);
+                    const filtColor  = venue.filteringRate >= 80 ? COLORS.good : venue.filteringRate >= 60 ? COLORS.warning : COLORS.critical;
+                    const todayColor = venue.todayRecordings > 0 ? COLORS.good : COLORS.critical;
+                    const lateColor  = venue.changedLate  > 0 ? COLORS.critical : COLORS.textFaint;
+                    const earlyColor = venue.changedEarly > 0 ? COLORS.warning  : COLORS.textFaint;
+                    return (
+                      <tr key={venue.id} onClick={() => onDrillDown(venue.id)}>
+                        <td style={{ padding: 0, width: '4px', background: venue.todayRecordings > 0 ? COLORS.good : COLORS.critical }}></td>
+                        <td style={{ fontWeight: '600', fontSize: '13px' }}>{venue.name}</td>
+                        <td style={{ textAlign: 'center', color: COLORS.textMuted }}>{venue.fryerCount || 4}</td>
+                        <td style={{ textAlign: 'center', fontWeight: '700', color: compColor }}>{venue.complianceRate}%</td>
+                        <td style={{ textAlign: 'center', fontWeight: '600', color: lateColor }}>{venue.changedLate === 0 ? '0' : venue.changedLate}</td>
+                        <td style={{ textAlign: 'center', fontWeight: '600', color: earlyColor }}>{venue.changedEarly === 0 ? '0' : venue.changedEarly}</td>
+                        <td style={{ textAlign: 'center', fontWeight: '700', color: filtColor }}>{venue.filteringRate}%</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', background: venue.oilRating.bg, color: venue.oilRating.color }}>{venue.oilRating.label}</span>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: todayColor, margin: '0 auto' }} title={venue.todayRecordings > 0 ? 'Recorded today' : 'Not recorded today'} />
+                        </td>
+                        <td><ChevronRight size={14} color={COLORS.textFaint} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {filteredVenues.map(venue => {
+              const compColor  = complianceColor(venue.complianceRate);
+              const filtColor  = venue.filteringRate >= 80 ? COLORS.good : venue.filteringRate >= 60 ? COLORS.warning : COLORS.critical;
+              const todayColor = venue.todayRecordings > 0 ? COLORS.good : COLORS.critical;
+              return (
+                <div key={venue.id} onClick={() => onDrillDown(venue.id)} style={{
+                  background: COLORS.white, borderRadius: '10px', border: `1px solid ${COLORS.border}`,
+                  padding: '14px', cursor: 'pointer', borderLeft: `4px solid ${todayColor}`,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: COLORS.text }}>{venue.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', background: venue.oilRating.bg, color: venue.oilRating.color }}>{venue.oilRating.label}</span>
+                      <ChevronRight size={14} color={COLORS.textFaint} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Compliance</div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: compColor }}>{venue.complianceRate}%</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Filtered</div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: filtColor }}>{venue.filteringRate}%</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Late</div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: venue.changedLate > 0 ? COLORS.critical : COLORS.textFaint }}>{venue.changedLate}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Fryers</div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: COLORS.textMuted }}>{venue.fryerCount || 4}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </>)}
 
       {/* EXEC SUMMARY — venue staff KPIs + admin recording health at group level */}
@@ -1558,14 +1606,20 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
 
           {/* Row 1: KPI cards (left) + Oil Management (right) */}
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
-            {/* Top KPIs 2x2 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {[
-                { label: 'COMPLIANCE', value: `${avgCompliance}%`, color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
-                { label: 'REACHED CRITICAL', value: `${groupCritRate}%`, color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
-                { label: 'AVG TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
-                { label: 'FILTERING', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' }
-              ].map(kpi => (
+            {/* Top KPIs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
+              {(() => {
+                const tpmScore = overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? 100 : overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < critAt ? 50 : 0;
+                const healthScore = Math.round(avgCompliance * 0.4 + tpmScore * 0.3 + tpmHealthCompliancePct * 0.3);
+                const healthColor = healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444';
+                return [
+                  { label: 'HEALTH SCORE', value: `${healthScore}%`, color: healthColor, target: '80%+' },
+                  { label: 'COMPLIANCE', value: `${avgCompliance}%`, color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
+                  { label: 'REACHED CRITICAL', value: `${groupCritRate}%`, color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
+                  { label: 'AVG TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
+                  { label: 'FILTERING', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' },
+                ];
+              })().map(kpi => (
                 <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
                   <div style={{ fontSize: '26px', fontWeight: '700', color: kpi.color, lineHeight: '1', marginBottom: '6px' }}>{kpi.value}</div>
@@ -1704,21 +1758,36 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
               </div>
             </div>
 
-            {/* 30-Day TPM Trend */}
+            {/* TPM Trend with 7/30 toggle */}
             {(() => {
-              const maxT = Math.max(...groupLast30.filter(d => d.avg != null).map(d => d.avg), 30);
+              const trendData = tpmRange === 7 ? groupLast7 : groupLast30;
+              const maxT = Math.max(...trendData.filter(d => d.avg != null).map(d => d.avg), 30);
               return (
                 <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>30-Day TPM Trend</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>TPM Trend</h3>
+                    <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '6px', padding: '2px' }}>
+                      {[7, 30].map(d => (
+                        <button key={d} onClick={() => setTpmRange(d)} style={{
+                          padding: '4px 10px', border: 'none', borderRadius: '5px', cursor: 'pointer',
+                          fontSize: '11px', fontWeight: '600',
+                          background: tpmRange === d ? 'white' : 'transparent',
+                          color: tpmRange === d ? '#1f2937' : '#64748b',
+                          boxShadow: tpmRange === d ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                          transition: 'all 0.15s',
+                        }}>{d}d</button>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{ display: 'flex', gap: '1px', alignItems: 'flex-end', height: '100px' }}>
-                    {groupLast30.map((day, i) => (
+                    {trendData.map((day, i) => (
                       <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
                         {day.avg != null ? (
                           <div style={{ width: '100%', borderRadius: '2px 2px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '2px' }} title={`${day.label}: ${day.avg.toFixed(0)} TPM`} />
                         ) : (
                           <div style={{ width: '100%', height: '2px', background: '#e2e8f0', borderRadius: '1px' }} />
                         )}
-                        {i % 7 === 0 && <div style={{ fontSize: '8px', color: '#94a3b8', marginTop: '2px' }}>{day.label}</div>}
+                        {(tpmRange === 7 || i % 7 === 0) && <div style={{ fontSize: '8px', color: '#94a3b8', marginTop: '2px' }}>{day.label}</div>}
                       </div>
                     ))}
                   </div>
@@ -1763,8 +1832,6 @@ export default function GroupManagerView({ currentUser, onLogout }) {
   const [venues, setVenues]             = useState([]);
   const [recordingsByVenue, setRecordingsByVenue] = useState({});
   const [systemSettings, setSystemSettings]     = useState(null);
-  const theme = getThemeColors(systemSettings?.themeConfig);
-
   // Navigation
   const [primaryTab, setPrimaryTab]         = useState('all-venues');
   const [groupView, setGroupView]           = useState('glance');
@@ -1943,7 +2010,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
               <img src="/images/App header.png" alt="Frysmart" style={{ height: '65px' }} />
               <span style={{
                 padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
-                background: theme.HEADER_BADGE_COLORS.group_manager.bg, color: theme.HEADER_BADGE_COLORS.group_manager.color, border: `1px solid ${theme.HEADER_BADGE_COLORS.group_manager.border}`,
+                background: HEADER_BADGE_COLORS.group_manager.bg, color: HEADER_BADGE_COLORS.group_manager.color, border: `1px solid ${HEADER_BADGE_COLORS.group_manager.border}`,
                 letterSpacing: '0.5px'
               }}>GROUP MANAGER</span>
             </div>
@@ -1960,7 +2027,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
                   padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
-                  background: theme.HEADER_BADGE_COLORS.group_manager.bg, color: theme.HEADER_BADGE_COLORS.group_manager.color, border: `1px solid ${theme.HEADER_BADGE_COLORS.group_manager.border}`,
+                  background: HEADER_BADGE_COLORS.group_manager.bg, color: HEADER_BADGE_COLORS.group_manager.color, border: `1px solid ${HEADER_BADGE_COLORS.group_manager.border}`,
                   letterSpacing: '0.5px'
                 }}>GROUP MANAGER</span>
                 <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
@@ -2201,10 +2268,10 @@ export default function GroupManagerView({ currentUser, onLogout }) {
               </div>
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'dashboard' && (
-              <DashboardView readings={flatReadings} isWide />
+              <DashboardView readings={flatReadings} />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'summary' && (
-              <SummaryView readings={flatReadings} isWide />
+              <SummaryView readings={flatReadings} />
             )}
             {primaryTab === 'by-venue' && selectedVenueId && byVenueView === 'calendar' && (
               <>

@@ -1,8 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Env var fallbacks — accept both VITE_ prefixed and non-prefixed names
+const SB_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SB_ANON = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const SB_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+console.log('[admin-user] env check:', { url: !!SB_URL, anon: !!SB_ANON, service: !!SB_SERVICE });
+
 const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SB_URL,
+  SB_SERVICE,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
@@ -16,14 +23,29 @@ const headers = {
 
 // Verify the caller is an authenticated admin
 async function verifyAdmin(authHeader) {
-  if (!authHeader) return null;
+  if (!authHeader) {
+    console.log('[verifyAdmin] no auth header');
+    return null;
+  }
   const token = authHeader.replace('Bearer ', '');
-  const anonClient = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
+  const anonClient = createClient(SB_URL, SB_ANON);
   const { data: { user }, error } = await anonClient.auth.getUser(token);
-  if (error || !user) return null;
+  if (error || !user) {
+    console.log('[verifyAdmin] getUser failed:', error?.message || 'no user');
+    return null;
+  }
+  console.log('[verifyAdmin] user:', user.id, user.email);
   // Check profile role
-  const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single();
-  if (!profile || profile.role !== 'admin') return null;
+  const { data: profile, error: profileErr } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single();
+  if (profileErr) {
+    console.log('[verifyAdmin] profile lookup failed:', profileErr.message);
+    return null;
+  }
+  if (!profile || profile.role !== 'admin') {
+    console.log('[verifyAdmin] role check failed — got:', profile?.role);
+    return null;
+  }
+  console.log('[verifyAdmin] OK — admin confirmed');
   return user;
 }
 
@@ -35,7 +57,7 @@ export default async (req) => {
   try {
     const admin = await verifyAdmin(req.headers.get('authorization'));
     if (!admin) {
-      return new Response(JSON.stringify({ error: 'Unauthorized. Admin access required.' }), { status: 401, headers });
+      return new Response(JSON.stringify({ error: 'Admin verification failed. Check Netlify function logs for details.' }), { status: 401, headers });
     }
 
     const body = await req.json();
@@ -155,6 +177,7 @@ export default async (req) => {
 
     return new Response(JSON.stringify({ error: 'Unknown action.' }), { status: 400, headers });
   } catch (err) {
+    console.error('[admin-user] unhandled error:', err.message);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
   }
 };

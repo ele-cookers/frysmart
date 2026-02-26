@@ -1261,7 +1261,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {cardOilBadge(venue.trialOilId, 'Trial')}
           {cardOilBadge(venue.defaultOil, 'Current')}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Days</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysIn ?? '—'}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Readings</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venueReadings.length}</div></div>
@@ -1303,7 +1303,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {cardOilBadge(venue.trialOilId, 'Trial')}
         {cardOilBadge(venue.defaultOil, 'Current')}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
         <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Fryers</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.fryerCount || 1}</div></div>
         <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Volume</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.volumeBracket || '—'}</div></div>
         <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Created</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{venue.trialCreatedAt ? displayDate(venue.trialCreatedAt.split('T')[0]) : '—'}</div></div>
@@ -1333,7 +1333,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {cardOilBadge(venue.trialOilId, 'Trial')}
           {cardOilBadge(venue.defaultOil, 'Current')}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Ended</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialEndDate)}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Duration</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysRan != null ? `${daysRan}d` : '—'}</div></div>
@@ -1363,7 +1363,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {cardOilBadge(venue.trialOilId, 'Trial')}
           {cardOilBadge(venue.defaultOil, 'Current')}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Ended</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialEndDate)}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Duration</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysRan != null ? `${daysRan}d` : '—'}</div></div>
@@ -1419,7 +1419,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {cardOilBadge(venue.trialOilId, 'Trial')}
           {cardOilBadge(venue.defaultOil, 'Current')}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginBottom: '10px' }}>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Started</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialStartDate)}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Ended</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{displayDate(venue.trialEndDate)}</div></div>
           <div><div style={{ fontSize: '10px', fontWeight: '600', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Duration</div><div style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, marginTop: '2px' }}>{daysRan != null ? `${daysRan}d` : '—'}</div></div>
@@ -1546,35 +1546,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // -- NEW TRIAL FORM --
   const renderNewTrialForm = () => (
-    <div style={{ maxWidth: '600px', margin: '0 auto', background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-    <form onSubmit={handleCreateTrial}>
-      <h3 style={{ fontSize: '16px', fontWeight: '700', color: COLORS.text, marginBottom: '16px', marginTop: 0 }}>Create New Trial</h3>
+    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+      <h3 style={{ fontSize: '18px', fontWeight: '700', color: COLORS.text, marginBottom: '16px', marginTop: 0 }}>Create New Trial</h3>
 
-      {/* Trial Type Tabs — folder/file style */}
-      <div style={{ display: 'flex', marginBottom: '0' }}>
+      {/* Trial Type — segmented control */}
+      <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px', marginBottom: '16px' }}>
         {[{ val: 'existing', label: 'Existing Customer' }, { val: 'new', label: 'New Prospect' }].map(opt => {
           const isActive = trialType === opt.val;
           return (
             <button key={opt.val} type="button" onClick={() => setTrialType(opt.val)} style={{
-              flex: 1, padding: '10px 16px', fontWeight: '600', cursor: 'pointer',
+              flex: 1, padding: '9px 16px', fontWeight: '600', cursor: 'pointer',
               transition: 'all 0.15s',
-              borderRadius: '8px 8px 0 0',
-              border: isActive ? '1.5px solid #cbd5e1' : '1.5px solid transparent',
-              borderBottom: isActive ? '1.5px solid white' : '1.5px solid #cbd5e1',
-              background: isActive ? 'white' : '#e8eef6',
-              color: isActive ? BLUE : '#94a3b8',
-              fontSize: isActive ? '13px' : '12px',
-              boxShadow: isActive ? '0 -2px 6px rgba(0,0,0,0.06)' : 'none',
-              marginBottom: '-1.5px',
-              position: 'relative',
-              zIndex: isActive ? 1 : 0,
+              borderRadius: '8px', border: 'none',
+              background: isActive ? 'white' : 'transparent',
+              color: isActive ? BLUE : '#64748b',
+              fontSize: '13px',
+              boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
             }}>
               {opt.label}
             </button>
           );
         })}
       </div>
-      <div style={{ borderTop: '1.5px solid #e2e8f0', paddingTop: '20px' }}></div>
+
+    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+    <form onSubmit={handleCreateTrial}>
 
       {/* Customer code — only for existing */}
       {trialType === 'existing' && (
@@ -1730,6 +1726,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </button>
     </form>
     </div>
+    </div>
   );
 
   // ─────────────────────────────────────────
@@ -1808,6 +1805,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const recentStarted = recentTrials.filter(v => v.trialStartDate && v.trialStartDate >= ninetyDaysAgo);
     const avgTrialsPerMonth = recentStarted.length > 0 ? Math.round(recentStarted.length / 3) : null;
 
+    // Pipeline Value — potential annual revenue from active trials
+    const activePipeline = allTrials.filter(v => v.trialStatus === 'pending' || v.trialStatus === 'in-progress');
+    const pipelineValue = activePipeline.reduce((sum, v) => {
+      const price = parseFloat(v.offeredPricePerLitre) || 0;
+      const weekly = parseFloat(v.currentWeeklyAvg) || 0;
+      return sum + (price * weekly * 52);
+    }, 0);
+
+    // Active Compliance — % of in-progress trials with a TPM reading in last 7 days
+    const sevenDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 7); return formatDate(d); })();
+    const activeWithRecentReading = activeTrials.filter(v => {
+      return tpmReadings.some(r => r.venueId === v.id && r.readingDate >= sevenDaysAgo);
+    });
+    const activeCompliance = activeCount > 0 ? Math.round((activeWithRecentReading.length / activeCount) * 100) : null;
+
     const statCardStyle = {
       background: 'white', borderRadius: '10px', padding: '16px 18px',
       border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
@@ -1817,7 +1829,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* ── Stats Row ── */}
         <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Last 90 days</div>
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
           {/* Win Rate */}
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Win Rate</div>
@@ -1837,6 +1849,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={statCardStyle}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Trials / Month</div>
             <div style={{ fontSize: '24px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
+          </div>
+          {/* Pipeline Value */}
+          <div style={statCardStyle}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Pipeline Value</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: '#8b5cf6', lineHeight: 1 }}>{pipelineValue > 0 ? `$${(pipelineValue / 1000).toFixed(1)}k` : '—'}</div>
+            <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>annual est.</div>
+          </div>
+          {/* Active Compliance */}
+          <div style={statCardStyle}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Active Compliance</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color: activeCompliance !== null ? (activeCompliance >= 80 ? '#10b981' : activeCompliance >= 50 ? '#f59e0b' : '#ef4444') : COLORS.textFaint, lineHeight: 1 }}>{activeCompliance !== null ? `${activeCompliance}%` : '—'}</div>
+            <div style={{ fontSize: '9px', color: COLORS.textFaint, marginTop: '2px' }}>readings last 7d</div>
           </div>
         </div>
 
@@ -3114,6 +3138,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             width: '100%', background: 'white', borderBottom: isTrialsTab ? 'none' : '1px solid #e2e8f0',
           }}>
             <div style={{ display: 'flex', borderBottom: isTrialsTab ? '1px solid #f1f5f9' : 'none' }}>
+              {/* + New */}
+              <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '10px 4px 8px', border: 'none', background: 'transparent',
+                borderBottom: activeTab === 'new' ? '3px solid #f5a623' : '3px solid transparent',
+                color: activeTab === 'new' ? '#f5a623' : '#94a3b8',
+                fontSize: '10px', fontWeight: activeTab === 'new' ? '700' : '500',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}>
+                <Plus size={18} strokeWidth={2.5} />
+                <span>New</span>
+              </button>
               {/* Dashboard */}
               <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
@@ -3156,18 +3192,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>
                 <Edit3 size={18} />
                 <span>Manage</span>
-              </button>
-              {/* + New */}
-              <button onClick={() => { setActiveTab('new'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
-                padding: '10px 4px 8px', border: 'none', background: 'transparent',
-                borderBottom: activeTab === 'new' ? '3px solid #f5a623' : '3px solid transparent',
-                color: activeTab === 'new' ? '#f5a623' : '#94a3b8',
-                fontSize: '10px', fontWeight: activeTab === 'new' ? '700' : '500',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}>
-                <Plus size={18} strokeWidth={2.5} />
-                <span>New</span>
               </button>
             </div>
 

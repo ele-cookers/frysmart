@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check, AlertTriangle, AlertCircle, Clock, Star, Settings, LogOut, Eye, ClipboardList, Calendar, BarChart3, LayoutDashboard } from 'lucide-react';
-import { HEADER_BADGE_COLORS, OIL_STATUS_COLORS, getThemeColors } from '../lib/badgeConfig';
+import { HEADER_BADGE_COLORS, OIL_STATUS_COLORS } from '../lib/badgeConfig';
 
 // ─────────────────────────────────────────────
 // Utility functions
@@ -21,7 +21,7 @@ const getTPMStatus = (tpm, warningThreshold = 18, criticalThreshold = 24) => {
   return { color: '#ef4444', text: 'Must change oil', bg: '#fee2e2', level: 'critical', icon: 'x' };
 };
 
-// Oil status label based on oil age — colors from badgeConfig (or merged theme)
+// Oil status label based on oil age — colors from badgeConfig
 const getOilStatus = (oilAge, notInUse, colors = OIL_STATUS_COLORS) => {
   if (notInUse) return colors.not_in_operation;
   if (oilAge === 1 || oilAge === '1') return colors.fresh;
@@ -1578,15 +1578,14 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
 
             return (
               <div key={idx} onClick={() => hasAnyRec && setModalDate(date)} style={{
-                position: 'relative', width: '100%', paddingBottom: '350%',
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
-                borderBottom: '1px solid #e2e8f0'
+                borderBottom: '1px solid #e2e8f0',
+                minHeight: window.innerWidth >= 768 ? '110px' : '80px',
               }}>
                 <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                   padding: '4px 3px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  background: cellBg,
+                  background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
                 }}>
                   <div style={{ fontSize: 'clamp(11px, 3vw, 13px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', marginBottom: '1px' }}>{date.getDate()}</div>
@@ -2702,8 +2701,6 @@ export default function VenueStaffView({
     criticalThreshold: 24,
     ...systemSettings
   };
-  const theme = getThemeColors(systemSettings?.themeConfig);
-
   const fryerCount = venue?.fryerCount || 4;
 
   // Responsive breakpoint
@@ -2842,7 +2839,7 @@ export default function VenueStaffView({
               <img src="/images/App header.png" alt="Frysmart" style={{ height: '65px' }} />
               <span style={{
                 padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
-                background: theme.HEADER_BADGE_COLORS.venue.bg, color: theme.HEADER_BADGE_COLORS.venue.color, border: `1px solid ${theme.HEADER_BADGE_COLORS.venue.border}`,
+                background: HEADER_BADGE_COLORS.venue.bg, color: HEADER_BADGE_COLORS.venue.color, border: `1px solid ${HEADER_BADGE_COLORS.venue.border}`,
                 letterSpacing: '0.5px'
               }}>VENUE</span>
             </div>
@@ -2859,7 +2856,7 @@ export default function VenueStaffView({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{
                   padding: '3px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
-                  background: theme.HEADER_BADGE_COLORS.venue.bg, color: theme.HEADER_BADGE_COLORS.venue.color, border: `1px solid ${theme.HEADER_BADGE_COLORS.venue.border}`,
+                  background: HEADER_BADGE_COLORS.venue.bg, color: HEADER_BADGE_COLORS.venue.color, border: `1px solid ${HEADER_BADGE_COLORS.venue.border}`,
                   letterSpacing: '0.5px'
                 }}>VENUE</span>
                 {venue?.name && (

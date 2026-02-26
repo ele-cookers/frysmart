@@ -12,15 +12,19 @@ import {
   mapSystemSettings,
   mergeTrialIntoVenue, splitTrialFromVenue,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Palette, Shield, UserPlus, Zap, ClipboardList, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Shield, UserPlus, Zap, ClipboardList, LayoutDashboard } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
 import { TrialDetailModal } from '../components/TrialDetailModal';
 import {
-  HEADER_BADGE_COLORS, ROLE_COLORS, STATE_BADGE_COLORS, STATE_COLOURS,
-  STATUS_COLORS, OIL_TIER_COLORS, COMPETITOR_TIER_COLORS, CODE_BADGE_COLORS,
+  OilBadge, StateBadge, StatusBadge, RoleBadge, CodeBadge,
+  VolumePill, CompetitorPill, TrialStatusBadge,
+  VOLUME_BRACKETS, ROLE_LABELS,
+} from '../components/badges';
+import {
+  HEADER_BADGE_COLORS, STATE_BADGE_COLORS, STATE_COLOURS,
+  OIL_TIER_COLORS, COMPETITOR_TIER_COLORS,
   TRIAL_STATUS_COLORS, VOLUME_BRACKET_COLORS,
-  getThemeColors, THEME_CATEGORIES, getEntryLabel,
 } from '../lib/badgeConfig';
 
 const hideScrollbarCSS = `
@@ -76,13 +80,6 @@ const makeGetGroupName = (groups) => (id) => groups.find(g => g.id === id)?.name
 // Role keys used throughout: 'admin' | 'bdm' | 'nam' | 'state_manager' | 'mgt'
 // These are the canonical values stored on user records AND used as currentView IDs
 // in the role switcher — keep them identical in both places to avoid mapping bugs.
-const ROLE_LABELS = {
-  bdm: 'BDM',
-  nam: 'NAM',
-  state_manager: 'STATE MGR',
-  mgt: 'MGT',
-  admin: 'ADMIN',
-};
 
 const ROLE_PERMISSIONS = {
   bdm: 'Own assigned venues & trials',
@@ -107,97 +104,6 @@ const FOOD_TYPES = [
   'Plain Proteins', 'Pastries/Donuts', 'High Starch', 'Mixed Service',
 ];
 
-const VOLUME_BRACKETS = VOLUME_BRACKET_COLORS;
-
-const OilBadge = ({ oil, competitors, compact, theme }) => {
-  if (!oil) return <span style={{ fontSize: '11px', color: '#cbd5e1' }}>—</span>;
-  const isCompetitor = oil.category === 'competitor';
-  const tierSrc = theme || {};
-  const s = isCompetitor
-    ? (tierSrc.COMPETITOR_TIER_COLORS?.[oil.tier] || COMPETITOR_TIER_COLORS[oil.tier] || COMPETITOR_TIER_COLORS.standard)
-    : (tierSrc.OIL_TIER_COLORS?.[oil.tier] || OIL_TIER_COLORS[oil.tier] || OIL_TIER_COLORS.standard);
-  const comp = isCompetitor && competitors ? competitors.find(c => c.id === oil.competitorId) : null;
-  if (compact) {
-    // Table cell — single pill, oil name only
-    return (
-      <span style={{
-        padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
-        background: s.bg, color: s.text, border: `1px solid ${s.border}`,
-        whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center'
-      }}>{oil.name}</span>
-    );
-  }
-  // Full — competitor name above, oil name pill below
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-      {comp && <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{comp.name}</span>}
-      <span style={{
-        padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
-        background: s.bg, color: s.text, border: `1px solid ${s.border}`,
-        whiteSpace: 'nowrap', display: 'inline-block', alignSelf: 'flex-start'
-      }}>{oil.name}</span>
-    </div>
-  );
-};
-
-const StatusBadge = ({ status, theme }) => {
-  const c = (theme?.STATUS_COLORS?.[status]) || STATUS_COLORS[status] || STATUS_COLORS.active;
-  return (
-    <span style={{
-      padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
-      background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: '0.3px',
-      whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center'
-    }}>{getEntryLabel(null, 'STATUS_COLORS', status)}</span>
-  );
-};
-
-const RoleBadge = ({ role, theme }) => {
-  const c = (theme?.ROLE_COLORS?.[role]) || ROLE_COLORS[role] || ROLE_COLORS.staff;
-  return (
-    <span style={{
-      padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
-      background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: '0.3px',
-      whiteSpace: 'nowrap', display: 'inline-block', minWidth: '90px', textAlign: 'center'
-    }}>{getEntryLabel(null, 'ROLE_COLORS', role)}</span>
-  );
-};
-
-const CodeBadge = ({ code, minWidth = '42px', variant = 'default' }) => {
-  if (!code) return <span style={{ color: '#cbd5e1' }}>—</span>;
-  const c = CODE_BADGE_COLORS[variant] || CODE_BADGE_COLORS.default;
-  return (
-    <span style={{
-      fontSize: '11px', fontWeight: '600', color: c.color, background: c.background,
-      padding: '2px 0', borderRadius: '8px', whiteSpace: 'nowrap',
-      display: 'inline-block', minWidth, textAlign: 'center'
-    }}>{code}</span>
-  );
-};
-
-const StateBadge = ({ state, theme }) => {
-  if (!state) return <span style={{ color: '#cbd5e1' }}>—</span>;
-  const c = (theme?.STATE_BADGE_COLORS?.[state]) || STATE_BADGE_COLORS[state] || { color: '#64748b', bg: '#f1f5f9' };
-  return (
-    <span style={{
-      fontSize: '10px', fontWeight: '700', color: c.color, background: c.bg,
-      padding: '2px 0', borderRadius: '6px', whiteSpace: 'nowrap',
-      display: 'inline-block', width: '42px', textAlign: 'center', letterSpacing: '0.3px'
-    }}>{state}</span>
-  );
-};
-
-const VolumePill = ({ bracket, brackets }) => {
-  const b = (brackets || VOLUME_BRACKETS).find(v => v.key === bracket);
-  if (!b) return <span style={{ color: '#cbd5e1' }}>—</span>;
-  return (
-    <span style={{
-      padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
-      background: `${b.color}18`, color: b.color, border: `1px solid ${b.color}40`,
-      letterSpacing: '0.3px', whiteSpace: 'nowrap',
-      display: 'inline-block', width: '82px', textAlign: 'center'
-    }}>{b.label}</span>
-  );
-};
 
 // ColumnToggle imported from ../components/ColumnToggle
 
@@ -329,28 +235,8 @@ const inputStyle = {
 const selectStyle = { ...inputStyle, appearance: 'none', WebkitAppearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '32px' };
 
 // ==================== OIL TYPE CONFIGURATION ====================
-const CompetitorPill = ({ comp, table }) => {
-  if (!comp) return null;
-  const color = comp.color || '#64748b';
-  const hex = color.replace('#', '');
-  const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
-  const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
-  const bgColor = `rgba(${r},${g},${b},0.15)`;
-  const textColor = luminance > 0.75 ? '#1f2937' : color;
-  return (
-    <span style={{
-      display: 'inline-block', padding: '2px 8px', borderRadius: '6px',
-      background: bgColor, color: textColor,
-      fontSize: '11px', fontWeight: '600', letterSpacing: '0.2px',
-      ...(table ? {
-        width: '68px', whiteSpace: 'nowrap', overflow: 'hidden',
-        textOverflow: 'ellipsis', textAlign: 'center'
-      } : { whiteSpace: 'nowrap' })
-    }} title={comp.name}>{comp.name}</span>
-  );
-};
 
-const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions, theme }) => {
+const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions }) => {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -441,7 +327,7 @@ const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions, the
                     </td>
                     <td style={{ textAlign: 'center', color: '#64748b', textTransform: 'uppercase' }}>{oil.oilType || <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                     <td style={{ textAlign: 'center', color: '#64748b' }}>{oil.packSize ? (PACK_SIZES.find(p => p.key === oil.packSize)?.label || oil.packSize) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                    <td style={{ textAlign: 'center' }}><StatusBadge theme={theme} status={oil.status} /></td>
+                    <td style={{ textAlign: 'center' }}><StatusBadge status={oil.status} /></td>
                     <td>
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                         <button onClick={() => handleEdit(oil)} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
@@ -559,7 +445,7 @@ const OilTypeConfig = ({ oilTypes, setOilTypes, competitors, oilTypeOptions, the
 };
 
 // ==================== COMPETITOR MANAGEMENT ====================
-const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTypes, oilTypeOptions, theme }) => {
+const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTypes, oilTypeOptions }) => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', status: 'active', type: 'direct', states: [], color: '' });
@@ -718,7 +604,7 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
                   </div>
                 </td>}
                 {colVis('oils') && <td style={{ textAlign: 'center', fontWeight: '600', color: '#1f2937' }}>{compOils.length}</td>}
-                {colVis('status') && <td style={{ textAlign: 'center' }}><StatusBadge theme={theme} status={comp.status} /></td>}
+                {colVis('status') && <td style={{ textAlign: 'center' }}><StatusBadge status={comp.status} /></td>}
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <button onClick={(e) => { e.stopPropagation(); startEdit(comp); }} style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={13} color="#64748b" /></button>
@@ -758,7 +644,7 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
                                 </td>
                                 <td style={{ padding: '7px 10px', textAlign: 'center', color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' }}>{oil.oilType || <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                                 <td style={{ padding: '7px 10px', textAlign: 'center', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>{oil.packSize ? (PACK_SIZES.find(p => p.key === oil.packSize)?.label || oil.packSize) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                                <td style={{ padding: '7px 10px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><StatusBadge theme={theme} status={oil.status} /></td>
+                                <td style={{ padding: '7px 10px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><StatusBadge status={oil.status} /></td>
                                 <td style={{ padding: '7px 6px', borderBottom: '1px solid #f1f5f9' }}>
                                   <button onClick={() => startOilEdit(oil)} style={{ background: '#f1f5f9', border: 'none', cursor: 'pointer', padding: '5px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={12} color="#94a3b8" /></button>
                                 </td>
@@ -836,7 +722,7 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
               <div style={{ display: 'flex', gap: '6px' }}>
                 {ALL_STATES.map(st => {
                   const selected = form.states.includes(st);
-                  const sc = theme?.STATE_BADGE_COLORS?.[st] || STATE_BADGE_COLORS[st] || { color: '#64748b', bg: '#f1f5f9' };
+                  const sc = STATE_BADGE_COLORS[st] || { color: '#64748b', bg: '#f1f5f9' };
                   return (
                     <button key={st} onClick={() => toggleState(st)} style={{
                       flex: 1, padding: '6px 0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', textAlign: 'center',
@@ -961,7 +847,7 @@ const CompetitorManagement = ({ competitors, setCompetitors, oilTypes, setOilTyp
 };
 
 // ==================== VENUE MANAGEMENT ====================
-const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, competitors, users, setUsers, rawSetUsers, setActiveSection, isDesktop, autoOpenForm, clearAutoOpen, onPreviewVenue, theme }) => {
+const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, competitors, users, setUsers, rawSetUsers, setActiveSection, isDesktop, autoOpenForm, clearAutoOpen, onPreviewVenue }) => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -1173,7 +1059,7 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
                     {venue.customerCode && <CodeBadge code={venue.customerCode} minWidth="60px" />}
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '4px' }}>
-                    {oil && <OilBadge theme={theme} oil={oil} competitors={competitors} compact />}
+                    {oil && <OilBadge oil={oil} competitors={competitors} compact />}
                     {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
                     {venue.fryerCount && <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{venue.fryerCount} fryer{venue.fryerCount > 1 ? 's' : ''}</span>}
                   </div>
@@ -1223,8 +1109,8 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
                       {colVis('groupCode') && <td style={{ textAlign: 'center' }}>{<CodeBadge code={grp?.groupCode} variant="charcoal" />}</td>}
                       {colVis('bdm') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.bdmId ? getUserName(venue.bdmId) : ''}>{venue.bdmId ? getUserName(venue.bdmId) : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                       {colVis('nam') && <td style={{ fontSize: '11px', color: '#1f2937', whiteSpace: 'nowrap', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={getGroupNam(venue.groupId)}>{getGroupNam(venue.groupId) || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                      {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
-                      {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={oilTypes.find(o => o.id === venue.defaultOil)} competitors={competitors} compact /></td>}
+                      {colVis('state') && <td><StateBadge state={venue.state} /></td>}
+                      {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge oil={oilTypes.find(o => o.id === venue.defaultOil)} competitors={competitors} compact /></td>}
                       {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} /></td>}
                       {colVis('fryers') && <td style={{ textAlign: 'center', fontWeight: '600' }}>{venue.fryerCount}</td>}
                       {colVis('tpm') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(venue.lastTpmDate) || '—'}</td>}
@@ -1285,7 +1171,7 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
               <span style={{ fontSize: '13px', color: '#64748b' }}>Oil</span>
-              <OilBadge theme={theme} oil={oilTypes.find(o => o.id === selectedVenue.defaultOil)} competitors={competitors} />
+              <OilBadge oil={oilTypes.find(o => o.id === selectedVenue.defaultOil)} competitors={competitors} />
             </div>
 
             <div style={{ marginTop: '16px' }}>
@@ -1301,7 +1187,7 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
                 if (people.length === 0) return <div style={{ fontSize: '13px', color: '#64748b', padding: '8px 0' }}>No assigned personnel</div>;
                 return people.map((p, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <RoleBadge theme={theme} role={p.role} />
+                    <RoleBadge role={p.role} />
                     <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{p.name}</span>
                   </div>
                 ));
@@ -1418,7 +1304,7 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
 };
 
 // ==================== GROUP MANAGEMENT ====================
-const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, users, setUsers, rawSetUsers, oilTypes, competitors, autoOpenForm, clearAutoOpen, theme }) => {
+const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, users, setUsers, rawSetUsers, oilTypes, competitors, autoOpenForm, clearAutoOpen }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [sortByActive, setSortByActive] = useState(false);
@@ -1626,7 +1512,7 @@ const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, u
                       </td>}
                       {colVis('venues') && <td style={{ textAlign: 'center', fontWeight: '600' }}>{activeVenues.length}</td>}
                       {colVis('nam') && <td style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>{getUserName(group.namId)}</td>}
-                      {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={getPrimaryOil(group.id)} competitors={competitors} compact /></td>}
+                      {colVis('oil') && <td style={{ textAlign: 'center' }}><OilBadge oil={getPrimaryOil(group.id)} competitors={competitors} compact /></td>}
                       {colVis('tpm') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(group.lastTpmDate) || '—'}</td>}
                       <td>
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -1671,7 +1557,7 @@ const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, u
                 {group.username && <span>Login: <strong style={{ color: '#64748b' }}>{group.username}</strong></span>}
                 <span>NAM: <strong style={{ color: '#1f2937' }}>{getUserName(group.namId)}</strong></span>
                 <span>Venues: <strong style={{ color: '#1f2937' }}>{gVenues.filter(v => v.status !== 'trial-only').length}</strong></span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>Main Oil: <OilBadge theme={theme} oil={getPrimaryOil(group.id)} competitors={competitors} /></span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>Main Oil: <OilBadge oil={getPrimaryOil(group.id)} competitors={competitors} /></span>
               </div>
 
               {/* Linked Venues */}
@@ -1685,7 +1571,7 @@ const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, u
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>{v.name}</span>
-                          <StateBadge theme={theme} state={v.state} />
+                          <StateBadge state={v.state} />
                         </div>
                         {v.customerCode && <CodeBadge code={v.customerCode} minWidth="76px" />}
                       </div>
@@ -1767,7 +1653,7 @@ const GroupManagement = ({ groups, setGroups, rawSetGroups, venues, setVenues, u
 };
 
 // ==================== USER MANAGEMENT ====================
-const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentUser, autoOpenForm, clearAutoOpen, isDesktop, theme }) => {
+const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentUser, autoOpenForm, clearAutoOpen, isDesktop }) => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -1981,11 +1867,11 @@ const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentU
                       {user.repCode ? ` · ${user.repCode}` : ''}
                     </div>
                   </div>
-                  <RoleBadge theme={theme} role={user.role} />
+                  <RoleBadge role={user.role} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#64748b' }}>
-                    {user.region && <StateBadge theme={theme} state={user.region} />}
+                    {user.region && <StateBadge state={user.region} />}
                     {user.lastActive && <span>{relativeDate(user.lastActive)}</span>}
                   </div>
                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -2017,9 +1903,9 @@ const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentU
                   {filtered.map(user => (
                     <tr key={user.id} className={user.status === 'inactive' ? 'inactive-row' : ''} style={{ height: '36px' }}>
                       <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={user.name}>{user.name}</td>
-                      {colVis('role') && <td style={{ textAlign: "center" }}><RoleBadge theme={theme} role={user.role} /></td>}
+                      {colVis('role') && <td style={{ textAlign: "center" }}><RoleBadge role={user.role} /></td>}
                       {colVis('username') && <td style={{ fontSize: '12px', color: '#64748b' }}>{user.username ? user.username.toLowerCase() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                      {colVis('region') && <td><StateBadge theme={theme} state={user.region} /></td>}
+                      {colVis('region') && <td><StateBadge state={user.region} /></td>}
                       {colVis('repCode') && <td style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{user.repCode || <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                       {colVis('permissions') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'normal', maxWidth: '220px', lineHeight: '1.4' }}>{ROLE_PERMISSIONS[user.role] || '—'}</td>}
                       {colVis('lastActive') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{relativeDate(user.lastActive) || '—'}</td>}
@@ -2116,17 +2002,6 @@ const UserManagement = ({ users, setUsers, rawSetUsers, venues, groups, currentU
 // ==================== PERMISSIONS & ACCESS ====================
 
 const TRIAL_STATUS_CONFIGS = TRIAL_STATUS_COLORS; // from badgeConfig
-
-const TrialStatusBadge = ({ status }) => {
-  const c = TRIAL_STATUS_CONFIGS[status] || TRIAL_STATUS_CONFIGS['pending'];
-  return (
-    <span style={{
-      padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
-      background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: '0.3px', whiteSpace: 'nowrap',
-      display: 'inline-block', width: '82px', textAlign: 'center'
-    }}>{c.label}</span>
-  );
-};
 
 // ==================== CALENDAR ICON PICKER ====================
 const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTime, externalLabel }) => {
@@ -2254,11 +2129,20 @@ const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTi
   );
 };
 
-const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, theme }) => {
+const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, pendingTrialId, clearPendingTrialId }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [search, setSearch] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
   const [selectedTrial, setSelectedTrial] = useState(null);
+
+  // Auto-open trial detail when navigated from action items
+  useEffect(() => {
+    if (pendingTrialId) {
+      const venue = venues.find(v => v.id === pendingTrialId);
+      if (venue) setSelectedTrial(venue);
+      clearPendingTrialId();
+    }
+  }, [pendingTrialId]);
   const [closeTrialModal, setCloseTrialModal] = useState(null);
   const [closeForm, setCloseForm] = useState({ reason: '', soldPrice: '', outcomeDate: new Date().toISOString().split('T')[0], notes: '' });
   const [addReadingModal, setAddReadingModal] = useState(null);
@@ -2506,9 +2390,9 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '6px' }}>
-                    <OilBadge theme={theme} oil={compOil} competitors={competitors} compact />
+                    <OilBadge oil={compOil} competitors={competitors} compact />
                     <span style={{ fontSize: '11px', color: '#94a3b8' }}>vs</span>
-                    <OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact />
+                    <OilBadge oil={cookersOil} competitors={competitors} compact />
                     {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} brackets={volumeBrackets} />}
                   </div>
                   <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: '#64748b', flexWrap: 'wrap' }}>
@@ -2560,12 +2444,12 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                         <td style={{ width: '4px', padding: '0', background: statusConf.accent }}></td>
                         <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                         {colVis('group') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venue.groupId ? getGroupName(venue.groupId) : 'STREET'}>{venue.groupId ? getGroupName(venue.groupId) : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>STREET</span>}</td>}
-                        {colVis('state') && <td><StateBadge theme={theme} state={venue.state} /></td>}
+                        {colVis('state') && <td><StateBadge state={venue.state} /></td>}
                         {colVis('bdm') && <td style={{ fontWeight: '600', whiteSpace: 'nowrap' }}>{getUserName(venue.bdmId)}</td>}
                         {colVis('volume') && <td style={{ textAlign: "center" }}><VolumePill bracket={venue.volumeBracket} brackets={volumeBrackets} /></td>}
                         {colVis('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                         {colVis('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                        {colVis('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge theme={theme} oil={cookersOil} competitors={competitors} compact /></td>}
+                        {colVis('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge oil={cookersOil} competitors={competitors} compact /></td>}
                         {colVis('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${venue.currentPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
                         {colVis('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${venue.offeredPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
                         {colVis('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${venue.soldPricePerLitre.toFixed(2)}` : '—'}</td>}
@@ -2922,7 +2806,7 @@ const DEFAULT_ROLE_CAPABILITIES = {
   admin:         ALL_CAPABILITY_KEYS,
 };
 
-const PermissionsAccess = ({ users, systemSettings, setSystemSettings, theme }) => {
+const PermissionsAccess = ({ users, systemSettings, setSystemSettings }) => {
   const saved = systemSettings?.permissionsConfig || {};
 
   const getCapabilities = (role) => saved[role] || DEFAULT_ROLE_CAPABILITIES[role] || [];
@@ -2976,7 +2860,7 @@ const PermissionsAccess = ({ users, systemSettings, setSystemSettings, theme }) 
                 {ROLES_ORDER.map(role => (
                   <th key={role} style={{ ...thStyle, minWidth: '80px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                      <RoleBadge theme={theme} role={role} />
+                      <RoleBadge role={role} />
                       <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>{roleCounts[role] || 0}</span>
                     </div>
                   </th>
@@ -3014,7 +2898,7 @@ const PermissionsAccess = ({ users, systemSettings, setSystemSettings, theme }) 
       <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
         {ROLES_ORDER.filter(role => !!saved[role]).map(role => (
           <button key={role} onClick={() => resetRole(role)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: '600', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <RotateCcw size={10} /> Reset <RoleBadge theme={theme} role={role} /> to default
+            <RotateCcw size={10} /> Reset <RoleBadge role={role} /> to default
           </button>
         ))}
       </div>
@@ -3302,24 +3186,6 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
   const [newBracket, setNewBracket] = useState({ label: '', color: '#64748b' });
   const [newOilType, setNewOilType] = useState('');
 
-  // ── Theme config — derived from systemSettings, persisted directly ──
-  const themeConfig = systemSettings.themeConfig || {};
-  const [themeSaved, setThemeSaved] = useState(false);
-  const dbSetThemeConfig = useCallback(async (next) => {
-    setSystemSettings(prev => ({ ...prev, themeConfig: next }));
-    const { error } = await supabase.from('system_settings').update({ theme_config: next }).eq('id', 1);
-    if (error) {
-      console.error('Failed to save theme config:', error.message);
-      return;
-    }
-    setThemeSaved(true);
-    setTimeout(() => setThemeSaved(false), 2000);
-  }, [setSystemSettings]);
-
-  // Theme accordion — all categories expanded by default
-  const [openCats, setOpenCats] = useState(() => THEME_CATEGORIES.map(c => c.key));
-  const toggleCat = (key) => setOpenCats(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-
   const addReason = () => {
     if (!newReason.trim()) return;
     const key = newReason.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -3354,7 +3220,6 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
     { key: 'tpm',      label: 'TPM Thresholds',    icon: AlertCircle, group: 'System' },
     { key: 'fryers',   label: 'Default Fryers',    icon: Settings,    group: 'System' },
     { key: 'reporting',label: 'Reporting',         icon: RefreshCw,   group: 'System' },
-    { key: 'theme',    label: 'Theme & Colors',    icon: Palette,     group: 'System' },
   ];
 
   return (
@@ -3575,197 +3440,6 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
             </div>
           )}
 
-          {activeTab === 'theme' && (() => {
-            const merged = getThemeColors(themeConfig);
-            const updateColor = (catKey, entryKey, prop, value) => {
-              const next = { ...themeConfig };
-              if (!next[catKey]) next[catKey] = {};
-              if (entryKey !== null) {
-                if (!next[catKey][entryKey]) next[catKey][entryKey] = {};
-                next[catKey][entryKey][prop] = value;
-              } else {
-                next[catKey][prop] = value;
-              }
-              dbSetThemeConfig(next);
-            };
-            const resetEntry = (catKey, entryKey) => {
-              const next = { ...themeConfig };
-              if (next[catKey]) {
-                if (entryKey !== null) { delete next[catKey][entryKey]; if (Object.keys(next[catKey]).length === 0) delete next[catKey]; }
-                else delete next[catKey];
-              }
-              dbSetThemeConfig(next);
-            };
-            const resetAll = () => dbSetThemeConfig({});
-            const isOverridden = (catKey, entryKey) => {
-              if (!themeConfig[catKey]) return false;
-              if (entryKey !== null) return !!themeConfig[catKey][entryKey];
-              return Object.keys(themeConfig[catKey]).length > 0;
-            };
-            const SWATCH_PRESETS = [
-              '#1a428a','#0369a1','#1e40af','#6d28d9','#7c3aed','#9d174d','#dc2626','#991b1b','#ef4444','#ea580c',
-              '#f97316','#a16207','#92400e','#eab308','#059669','#065f46','#15803d','#10b981','#64748b','#1f2937',
-              '#e2e8f0','#f1f5f9','#f8fafc','#fee2e2','#dbeafe','#d1fae5','#fef3c7','#ede9fe','#ffedd5','#fce7f3',
-            ];
-            const COLOR_BUNDLES = [
-              { bg: '#dbeafe', text: '#1e40af', color: '#1e40af', border: '#93c5fd' },
-              { bg: '#d1fae5', text: '#065f46', color: '#065f46', border: '#6ee7b7' },
-              { bg: '#fee2e2', text: '#991b1b', color: '#991b1b', border: '#fca5a5' },
-              { bg: '#fef3c7', text: '#92400e', color: '#92400e', border: '#fcd34d' },
-              { bg: '#ede9fe', text: '#6d28d9', color: '#6d28d9', border: '#c4b5fd' },
-              { bg: '#fce7f3', text: '#9d174d', color: '#9d174d', border: '#f9a8d4' },
-              { bg: '#ffedd5', text: '#9a3412', color: '#9a3412', border: '#fdba74' },
-              { bg: '#e0f2fe', text: '#0369a1', color: '#0369a1', border: '#7dd3fc' },
-              { bg: '#ecfdf5', text: '#059669', color: '#059669', border: '#6ee7b7' },
-              { bg: '#f5f3ff', text: '#7c3aed', color: '#7c3aed', border: '#a78bfa' },
-              { bg: '#f1f5f9', text: '#1f2937', color: '#1f2937', border: '#cbd5e1' },
-              { bg: '#fff1f2', text: '#e11d48', color: '#e11d48', border: '#fda4af' },
-            ];
-            const ColorSwatch = ({ value, onChange, label }) => {
-              const [open, setOpen] = useState(false);
-              const swatchRef = React.useRef(null);
-              const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
-              const handleOpen = () => {
-                if (!open && swatchRef.current) {
-                  const rect = swatchRef.current.getBoundingClientRect();
-                  const popupH = 90;
-                  const below = window.innerHeight - rect.bottom;
-                  setPopupPos({ top: below < popupH ? rect.top - popupH - 4 : rect.bottom + 4, left: rect.left });
-                }
-                setOpen(!open);
-              };
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-                  <div style={{ fontSize: '9px', color: '#94a3b8', width: '38px', textAlign: 'right', fontWeight: '600', textTransform: 'uppercase' }}>{label}</div>
-                  <div ref={swatchRef} onClick={handleOpen} style={{ width: '24px', height: '24px', borderRadius: '4px', background: value || '#000', border: '1.5px solid #e2e8f0', cursor: 'pointer', flexShrink: 0 }} />
-                  <input type="text" value={value || ''} onChange={e => onChange(e.target.value)}
-                    style={{ width: '80px', padding: '3px 6px', fontSize: '11px', fontFamily: 'monospace', border: '1.5px solid #e2e8f0', borderRadius: '4px', outline: 'none' }}
-                    onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-                  {open && (
-                    <>
-                      <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 2999 }} />
-                      <div style={{ position: 'fixed', top: popupPos.top, left: popupPos.left, zIndex: 3000, background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'grid', gridTemplateColumns: 'repeat(10, 22px)', gap: '3px' }}>
-                        {SWATCH_PRESETS.map(c => (
-                          <div key={c} onClick={() => { onChange(c); setOpen(false); }}
-                            style={{ width: '22px', height: '22px', borderRadius: '50%', background: c, cursor: 'pointer', border: value === c ? '2px solid #1a428a' : '1.5px solid #e2e8f0', boxSizing: 'border-box' }} />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            };
-            return (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>Customise badge and pill colors across the app.</span>
-                    <span style={{ fontSize: '11px', fontWeight: '600', color: themeSaved ? '#059669' : '#94a3b8', background: themeSaved ? '#d1fae5' : '#f1f5f9', padding: '2px 10px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.3s' }}>
-                      <Check size={12} /> {themeSaved ? 'Saved' : 'Auto-saves'}
-                    </span>
-                  </div>
-                  {Object.keys(themeConfig).length > 0 && (
-                    <button onClick={resetAll} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}>
-                      <RotateCcw size={12} /> Reset All
-                    </button>
-                  )}
-                </div>
-                {THEME_CATEGORIES.map(cat => {
-                  const defaults = merged[cat.key];
-                  if (!defaults || Array.isArray(defaults)) return null;
-                  const entries = cat.flat ? null : Object.entries(defaults);
-                  return (
-                    <div key={cat.key} style={{ marginBottom: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                      <div onClick={() => toggleCat(cat.key)} style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#1f2937', background: '#fafbfc', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none' }}>
-                        <ChevronDown size={14} style={{ transform: openCats.includes(cat.key) ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }} />
-                        <span style={{ flex: 1 }}>{cat.label}</span>
-                        <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '400' }}>{cat.desc}</span>
-                        {themeConfig[cat.key] && Object.keys(themeConfig[cat.key]).length > 0 && (
-                          <span style={{ fontSize: '9px', color: '#1a428a', background: '#e8eef6', padding: '1px 6px', borderRadius: '4px', fontWeight: '600' }}>CUSTOMISED</span>
-                        )}
-                      </div>
-                      {openCats.includes(cat.key) && <div style={{ padding: '12px 14px', background: 'white' }}>
-                        {cat.flat ? (
-                          /* Flat key-value (THEME) */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {Object.entries(defaults).map(([propKey, propVal]) => (
-                              <div key={propKey} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', width: '90px' }}>{propKey}</div>
-                                <ColorSwatch value={merged[cat.key][propKey]} label="" onChange={v => updateColor(cat.key, null, propKey, v)} />
-                                {themeConfig[cat.key]?.[propKey] && (
-                                  <button onClick={() => { const next = { ...themeConfig }; delete next[cat.key][propKey]; if (Object.keys(next[cat.key]).length === 0) delete next[cat.key]; dbSetThemeConfig(next); }}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }} title="Reset to default"><RotateCcw size={12} /></button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          /* Nested entries (ROLE_COLORS etc.) */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                            {entries.map(([entryKey, entryVal]) => (
-                              <div key={entryKey} style={{ display: 'grid', gridTemplateColumns: '120px 90px 1fr 28px', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                                {/* Editable label */}
-                                <input
-                                  type="text"
-                                  value={getEntryLabel(themeConfig, cat.key, entryKey)}
-                                  onChange={e => {
-                                    const next = { ...themeConfig };
-                                    if (!next._labels) next._labels = {};
-                                    if (!next._labels[cat.key]) next._labels[cat.key] = {};
-                                    next._labels[cat.key][entryKey] = e.target.value;
-                                    dbSetThemeConfig(next);
-                                  }}
-                                  style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', border: '1px solid transparent', borderRadius: '4px', padding: '2px 4px', background: 'transparent', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-                                  onFocus={e => e.target.style.borderColor = '#1a428a'}
-                                  onBlur={e => e.target.style.borderColor = 'transparent'}
-                                />
-                                {/* Live preview */}
-                                <span style={{
-                                  padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.3px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                                  background: entryVal.bg || entryVal.background || 'transparent',
-                                  color: entryVal.text || entryVal.color || '#000',
-                                  border: entryVal.border ? `1px solid ${entryVal.border}` : 'none',
-                                }}>{getEntryLabel(themeConfig, cat.key, entryKey)}</span>
-                                {/* Bundle presets + individual color swatches */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                  <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
-                                    {COLOR_BUNDLES.map((b, i) => (
-                                      <div key={i} onClick={() => {
-                                        cat.props.forEach(prop => {
-                                          const val = b[prop] || '';
-                                          if (val) updateColor(cat.key, entryKey, prop, val);
-                                        });
-                                      }}
-                                      style={{ width: '18px', height: '18px', borderRadius: '50%', background: b.bg,
-                                        border: `1.5px solid ${b.border}`, cursor: 'pointer', boxSizing: 'border-box',
-                                        outline: (merged[cat.key][entryKey]?.bg === b.bg && (merged[cat.key][entryKey]?.text === b.text || merged[cat.key][entryKey]?.color === b.color)) ? '2px solid #1a428a' : 'none',
-                                        outlineOffset: '1px',
-                                      }}
-                                      title={`${b.bg} / ${b.text} / ${b.border}`} />
-                                    ))}
-                                  </div>
-                                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cat.props.length}, 180px)`, gap: '6px' }}>
-                                    {cat.props.map(prop => (
-                                      <ColorSwatch key={prop} label={prop} value={merged[cat.key][entryKey]?.[prop] || ''} onChange={v => updateColor(cat.key, entryKey, prop, v)} />
-                                    ))}
-                                  </div>
-                                </div>
-                                {/* Reset */}
-                                {isOverridden(cat.key, entryKey) ? (
-                                  <button onClick={() => resetEntry(cat.key, entryKey)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }} title="Reset to default"><RotateCcw size={12} /></button>
-                                ) : <div />}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
 
         </div>
       </div>
@@ -3778,6 +3452,7 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
 // ==================== MAIN ADMIN PANEL ====================
 export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
   const [activeSection, setActiveSection] = useState('overview');
+  const [pendingTrialId, setPendingTrialId] = useState(null);
   const [overviewBdmState, setOverviewBdmState] = useState('all');
   const [matrixSort, setMatrixSort] = useState({ col: null, asc: false });
   const [analysisView, setAnalysisView] = useState('bdm');
@@ -4008,9 +3683,6 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
     }
   }, []);
 
-  // Merged theme from system settings — flows into all badge components
-  const theme = getThemeColors(systemSettings.themeConfig);
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
   // currentView controls which role interface is shown in the role switcher.
@@ -4031,8 +3703,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
 
   const navGroups = [
     { key: 'overview', label: 'Admin Overview', icon: LayoutDashboard },
-    { key: 'trials', label: 'Trials', icon: AlertTriangle },
     { key: 'trial-analysis', label: 'Trial Analysis', icon: BarChart3 },
+    { key: 'trials', label: 'Trials', icon: AlertTriangle },
     { key: 'management', label: 'Management', icon: Building, children: [
       { key: 'users', label: 'Users', icon: Users },
       { key: 'groups', label: 'Groups', icon: Layers },
@@ -4049,9 +3721,9 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} theme={theme} />;
-      case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} theme={theme} />;
-      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} theme={theme} />;
+      case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} />;
+      case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} />;
+      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} pendingTrialId={pendingTrialId} clearPendingTrialId={() => setPendingTrialId(null)} />;
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [
@@ -4867,10 +4539,10 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           </div>
         );
       })();
-      case 'venues': return <VenueManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} groups={groups} competitors={competitors} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} setActiveSection={setActiveSection} isDesktop={isDesktop} autoOpenForm={quickActionForm === 'venues'} clearAutoOpen={() => setQuickActionForm(null)} onPreviewVenue={onPreviewVenue} theme={theme} />;
-      case 'groups': return <GroupManagement groups={groups} setGroups={dbSetGroups} rawSetGroups={setGroups} venues={venues} setVenues={dbSetVenues} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} oilTypes={oilTypes} competitors={competitors} autoOpenForm={quickActionForm === 'groups'} clearAutoOpen={() => setQuickActionForm(null)} theme={theme} />;
-      case 'users': return <UserManagement users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} venues={venues} groups={groups} currentUser={currentUser} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} isDesktop={isDesktop} theme={theme} />;
-      case 'permissions': return <PermissionsAccess users={users} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} theme={theme} />;
+      case 'venues': return <VenueManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} groups={groups} competitors={competitors} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} setActiveSection={setActiveSection} isDesktop={isDesktop} autoOpenForm={quickActionForm === 'venues'} clearAutoOpen={() => setQuickActionForm(null)} onPreviewVenue={onPreviewVenue} />;
+      case 'groups': return <GroupManagement groups={groups} setGroups={dbSetGroups} rawSetGroups={setGroups} venues={venues} setVenues={dbSetVenues} users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} oilTypes={oilTypes} competitors={competitors} autoOpenForm={quickActionForm === 'groups'} clearAutoOpen={() => setQuickActionForm(null)} />;
+      case 'users': return <UserManagement users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} venues={venues} groups={groups} currentUser={currentUser} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} isDesktop={isDesktop} />;
+      case 'permissions': return <PermissionsAccess users={users} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} />;
       case 'onboarding': return <OnboardingFlow oilTypes={oilTypes} venues={venues} groups={groups} users={users} setVenues={dbSetVenues} setGroups={dbSetGroups} setUsers={dbSetUsers} defaultFryerCount={systemSettings.defaultFryerCount} />;
       case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} />;
       default: return (
@@ -5178,9 +4850,9 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                   {items.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {shown.map(v => (
-                        <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', minWidth: 0 }}>
+                        <div key={v.id} onClick={() => { setPendingTrialId(v.id); setActiveSection('trials'); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', minWidth: 0, cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#e8eef6'} onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
                           <span style={{ fontWeight: '600', color: '#1f2937', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
-                          <StateBadge theme={theme} state={v.state} />
+                          <StateBadge state={v.state} />
                           <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500', flexShrink: 0 }}>{getBdmName(v)}</span>
                         </div>
                       ))}
@@ -5201,7 +4873,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             return (
               <>
                 <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', marginBottom: '8px', marginTop: '10px' }}>ACTION ITEMS</div>
-                <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '12px', marginBottom: '16px' }}>
                   <OverviewCard title="Awaiting Start" icon={Clock} iconColor="#64748b" items={awaitingStart} emptyMsg="No trials awaiting start" />
                   <OverviewCard title="Awaiting Recording Today" icon={ClipboardList} iconColor="#1e40af" items={awaitingRecording} emptyMsg="All active trials recorded today" />
                   <OverviewCard title="Awaiting Decision" icon={Target} iconColor="#d97706" items={awaitingDecision} emptyMsg="No trials awaiting decision" />
@@ -5260,7 +4932,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                           <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', marginTop: '2px' }}>COMPLIANT</div>
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '6px' }}>
                         {barData.map(b => (
                           <div key={b.label} style={{ background: b.bg, borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
                             <div style={{ fontSize: '20px', fontWeight: '700', color: b.color, lineHeight: 1 }}>{b.count}</div>
@@ -5290,7 +4962,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                                   <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '6px 2fr 1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'center', padding: '7px 12px', borderBottom: i < Math.min(overdueVenues.length, 8) - 1 ? '1px solid #f1f5f9' : 'none', minWidth: '580px' }}>
                                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
                                     <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
-                                    <div style={{ display: 'flex', justifyContent: 'center' }}><StateBadge theme={theme} state={v.state} /></div>
+                                    <div style={{ display: 'flex', justifyContent: 'center' }}><StateBadge state={v.state} /></div>
                                     <div style={{ textAlign: 'center' }}>
                                       {bdm ? <span style={{ fontSize: '10px', fontWeight: '600', color: '#065f46', background: '#d1fae5', padding: '2px 0', borderRadius: '4px', display: 'inline-block', width: '72px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bdm}</span>
                                         : <span style={{ fontSize: '10px', color: '#cbd5e1' }}>—</span>}
@@ -5317,7 +4989,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</div>
                                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
-                                        <StateBadge theme={theme} state={v.state} />
+                                        <StateBadge state={v.state} />
                                       </div>
                                     </div>
                                     <div style={{ fontSize: '12px', fontWeight: '700', color: isSevere ? '#ef4444' : '#f59e0b', flexShrink: 0 }}>{days}d ago</div>
@@ -5507,7 +5179,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             </div>
           </div>
           {/* Main content — scrollable */}
-          <div style={{ flex: 1, padding: '24px clamp(16px, 2vw, 32px)', minWidth: 0, overflowY: 'auto' }}>
+          <div style={{ flex: 1, padding: '24px clamp(16px, 2vw, 32px)', paddingBottom: '60px', minWidth: 0, overflowY: 'auto' }}>
             {renderContent()}
           </div>
         </div>
@@ -5577,7 +5249,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           </div>
 
           {/* Content area */}
-          <div style={{ padding: '20px 16px' }}>
+          <div style={{ padding: '20px 16px', paddingBottom: '60px' }}>
             {renderContent()}
           </div>
 

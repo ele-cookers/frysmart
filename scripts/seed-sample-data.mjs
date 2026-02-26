@@ -1,8 +1,9 @@
 // ============================================================
-// Seed script — loads sample data across the Frysmart app
-// All records are prefixed with [SAMPLE] for easy identification
-// Uses REAL oils and competitors from the database (no fake ones)
-// Run: node scripts/seed-sample-data.mjs <username> <password>
+// Seed script — realistic trial demo data for Frysmart
+// Wipes all existing trial-only venues/trials/readings, then
+// creates fresh realistic data across all trial stages.
+//
+// Run:    node scripts/seed-sample-data.mjs <username> <password>
 // Delete: node scripts/seed-sample-data.mjs <username> <password> --delete
 // ============================================================
 
@@ -27,246 +28,352 @@ const { error: authErr } = await supabase.auth.signInWithPassword({
   password: pw,
 });
 if (authErr) {
-  console.error('❌ Auth failed:', authErr.message);
+  console.error('Auth failed:', authErr.message);
   process.exit(1);
 }
-console.log('✅ Authenticated\n');
+console.log('Authenticated\n');
 
-const PREFIX = '[SAMPLE]';
-const today = new Date().toISOString().split('T')[0];
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
 const daysAgo = (n) => {
-  const d = new Date();
+  const d = new Date(today);
   d.setDate(d.getDate() - n);
   return d.toISOString().split('T')[0];
 };
+const daysAgoTs = (n) => {
+  const d = new Date(today);
+  d.setDate(d.getDate() - n);
+  return d.toISOString();
+};
 
-// ── DELETE MODE ──
+// ══════════════════════════════════════════════
+// DELETE ALL TRIAL DATA
+// ══════════════════════════════════════════════
+console.log('Wiping all existing trial data...\n');
+
+const { data: existingTrialVenues } = await supabase
+  .from('venues').select('id').eq('status', 'trial-only');
+
+if (existingTrialVenues?.length) {
+  const ids = existingTrialVenues.map(v => v.id);
+  console.log(`  Found ${ids.length} trial-only venues to delete`);
+
+  // Delete readings
+  const { error: readErr } = await supabase.from('tpm_readings').delete().in('venue_id', ids);
+  console.log(`  tpm_readings: ${readErr ? 'ERR ' + readErr.message : 'deleted'}`);
+
+  // Delete trials
+  const { error: trialErr } = await supabase.from('trials').delete().in('venue_id', ids);
+  console.log(`  trials: ${trialErr ? 'ERR ' + trialErr.message : 'deleted'}`);
+
+  // Delete venues
+  const { error: venueErr } = await supabase.from('venues').delete().eq('status', 'trial-only');
+  console.log(`  venues: ${venueErr ? 'ERR ' + venueErr.message : 'deleted'}`);
+} else {
+  console.log('  No existing trial data found');
+}
+
 if (process.argv.includes('--delete')) {
-  console.log('🗑️  Deleting all [SAMPLE] data...\n');
-
-  // Delete readings for sample venues
-  const { data: sampleVenues } = await supabase.from('venues').select('id').like('name', `${PREFIX}%`);
-  if (sampleVenues?.length) {
-    const ids = sampleVenues.map(v => v.id);
-    const { error: readErr } = await supabase.from('tpm_readings').delete().in('venue_id', ids);
-    console.log(`  tpm_readings: ${readErr ? '❌ ' + readErr.message : '✅ deleted for ' + ids.length + ' venues'}`);
-  }
-
-  // Delete sample venues
-  const { error: venueErr } = await supabase.from('venues').delete().like('name', `${PREFIX}%`);
-  console.log(`  venues: ${venueErr ? '❌ ' + venueErr.message : '✅ deleted'}`);
-
-  // Delete sample groups
-  const { error: groupErr } = await supabase.from('groups').delete().like('name', `${PREFIX}%`);
-  console.log(`  groups: ${groupErr ? '❌ ' + groupErr.message : '✅ deleted'}`);
-
-  // NOTE: We no longer create sample competitors or oil types — we use real ones
-  console.log('\n✅ Done! All [SAMPLE] data removed.');
+  console.log('\nDone! All trial data removed.');
   process.exit(0);
 }
 
-// ── SEED MODE ──
-console.log('🌱 Seeding sample data...\n');
+// ══════════════════════════════════════════════
+// SEED REALISTIC TRIAL DATA
+// ══════════════════════════════════════════════
+console.log('\nSeeding realistic trial data...\n');
 
-// ── Look up REAL data from the database ──
-
-// 1. Find BDM user (Bob) to assign trials to
-const { data: bdmUser } = await supabase.from('profiles').select('id, region').eq('username', 'bgurovsk').single();
+// ── Look up real data ──
+const { data: bdmUser } = await supabase.from('profiles').select('id, region, name').eq('username', 'bgurovsk').single();
 const bdmId = bdmUser?.id || null;
-const bdmState = bdmUser?.region || 'VIC';
-if (bdmId) console.log(`  bdm user: ✅ found (${bdmId}), region: ${bdmState}`);
-else console.log('  bdm user: ⚠️  bgurovsk not found, trials will be unassigned');
+const bdmName = bdmUser?.name || 'Bob G.';
+const staffName = bdmName.split(' ')[0] + ' ' + (bdmName.split(' ')[1] || '').charAt(0) + '.';
+console.log(`  BDM: ${bdmName} (${bdmId ? 'found' : 'NOT FOUND'})`);
 
-// 2. Get REAL Cookers oils
-const { data: realCookerOils } = await supabase.from('oil_types')
+// Cookers oils
+const { data: cookerOils } = await supabase.from('oil_types')
   .select('id, name, code')
   .is('competitor_id', null)
   .eq('status', 'active');
-console.log(`  cookers oils: ✅ ${realCookerOils?.length || 0} found`);
+const cookerMap = {};
+cookerOils?.forEach(o => { cookerMap[o.code] = o.id; });
+const XLFRY = cookerMap['XLFRY'] || null;
+const ULTAFRY = cookerMap['ULTAFRY'] || null;
+console.log(`  Cookers oils: XLFRY=${XLFRY ? 'yes' : 'NO'}, ULTAFRY=${ULTAFRY ? 'yes' : 'NO'}`);
 
-// Map real oil IDs by code
-const cookerOilMap = {};
-realCookerOils?.forEach(o => { cookerOilMap[o.code] = o.id; });
-const XLFRY_ID = cookerOilMap['XLFRY'] || null;
-const ULTAFRY_ID = cookerOilMap['ULTAFRY'] || null;
-const CANOLA_ID = cookerOilMap['CANOLANA'] || cookerOilMap['CANOLA'] || null;
-
-// 3. Get REAL competitor oils (with competitor info)
-const { data: realCompOils } = await supabase.from('oil_types')
+// Competitor oils
+const { data: compOils } = await supabase.from('oil_types')
   .select('id, name, code, competitor_id')
   .not('competitor_id', 'is', null)
   .eq('status', 'active');
-const { data: realComps } = await supabase.from('competitors')
-  .select('id, name, code')
-  .eq('status', 'active');
-console.log(`  competitors: ✅ ${realComps?.length || 0} found`);
-console.log(`  competitor oils: ✅ ${realCompOils?.length || 0} found`);
+const compOilIds = compOils?.map(o => o.id) || [];
+const pickCompOil = () => compOilIds.length > 0 ? compOilIds[Math.floor(Math.random() * compOilIds.length)] : null;
+console.log(`  Competitor oils: ${compOilIds.length} available`);
 
-// Build lookup: competitor code → { id, name, oils: [...] }
-const compLookup = {};
-realComps?.forEach(c => {
-  if (!c.name.startsWith(PREFIX)) {
-    compLookup[c.code] = { id: c.id, name: c.name, oils: [] };
-  }
-});
-realCompOils?.forEach(o => {
-  const comp = realComps?.find(c => c.id === o.competitor_id);
-  if (comp && compLookup[comp.code]) {
-    compLookup[comp.code].oils.push({ id: o.id, name: o.name });
-  }
-});
-
-// Helper to pick a random competitor oil from a specific competitor
-const pickCompOil = (compCode) => {
-  const comp = compLookup[compCode];
-  if (!comp || comp.oils.length === 0) return null;
-  return comp.oils[Math.floor(Math.random() * comp.oils.length)].id;
-};
-
-// 4. Groups
-const groups = [
-  { name: `${PREFIX} Demo Restaurant Group`, group_code: 'DRG', username: 'demogroup', status: 'active', password: 'demo123' },
-  { name: `${PREFIX} City Eats Chain`, group_code: 'CEC', username: 'cityeats', status: 'active', password: 'demo123' },
+// ── Realistic notes pool ──
+const NOTES = [
+  'Oil looking clear, good colour',
+  'Slight foam on surface — will filter tomorrow',
+  'Customer mentioned chips are crispier than usual',
+  'Changed oil — TPM was climbing',
+  'Filtered before service, nice improvement',
+  'Owner said they\'re noticing less oil smell in the shop',
+  'Food quality noticeably better than their old oil',
+  'Temp running slightly hot, adjusted thermostat down 2 degrees',
+  'Busy lunch service, mostly frying chips and fish',
+  'End of day filter, oil still looking good for tomorrow',
+  'Owner happy with how long oil is lasting',
+  'Compared side by side with old oil — ours is clearly cleaner',
+  'Staff finding it easier to manage — less residue buildup',
+  'Took photos of oil clarity for comparison report',
+  'Great fry colour on crumbed items today',
+  'Oil still clear at day 5 — impressive for this volume',
+  'Owner asked about pricing for ongoing supply',
+  'Quick check before lunch rush — all looking good',
+  'Filtered and topped up 2L — very little wastage',
+  'Fryer running perfectly, no issues to report',
 ];
-const { data: groupData, error: groupErr } = await supabase.from('groups').insert(groups).select();
-console.log(`  groups: ${groupErr ? '❌ ' + groupErr.message : '✅ ' + groupData.length + ' inserted'}`);
-const groupIds = groupData ? groupData.reduce((m, g) => { m[g.group_code] = g.id; return m; }, {}) : {};
 
-// 5. Venues (regular + trial-only)
-// - Regular venues use real Cookers oils as default_oil
-// - Trial venues: ALL in Bob's state (VIC), use REAL Cookers oils for trial,
-//   REAL competitor oils for current oil
-// - Pricing: current_price (competitor) is LOWER, offered_price (Cookers) is HIGHER
-//   Cookers oil costs more per litre but lasts longer = overall savings
-const venues = [
-  // Regular venues — spread across states, using real Cookers oils
-  { name: `${PREFIX} The Golden Fryer`, status: 'active', customer_code: 'SAMPGF01', state: 'VIC', fryer_count: 3, volume_bracket: '100-150', default_oil: XLFRY_ID, group_id: groupIds.DRG || null },
-  { name: `${PREFIX} Crispy Corner`, status: 'active', customer_code: 'SAMPCC01', state: 'NSW', fryer_count: 2, volume_bracket: 'under-60', default_oil: ULTAFRY_ID, group_id: groupIds.DRG || null },
-  { name: `${PREFIX} Ocean Fish Bar`, status: 'active', customer_code: 'SAMPOF01', state: 'QLD', fryer_count: 4, volume_bracket: '150-plus', default_oil: XLFRY_ID, group_id: groupIds.CEC || null },
-  { name: `${PREFIX} Burger Boulevard`, status: 'active', customer_code: 'SAMPBB01', state: 'VIC', fryer_count: 2, volume_bracket: '60-100', default_oil: ULTAFRY_ID },
-  { name: `${PREFIX} Harbour Kitchen`, status: 'active', customer_code: 'SAMPHK01', state: 'SA', fryer_count: 1, volume_bracket: 'under-60', default_oil: XLFRY_ID, group_id: groupIds.CEC || null },
+const FOOD_TYPES = ['Chips/Fries', 'Crumbed Items', 'Battered Items', 'Mixed Service'];
 
-  // Trial-only venues — ALL in Bob's state (VIC)
-  // Trial oil = Cookers XLFRY or ULTAFRY (what we're proving)
-  // Current oil = competitor oil (what they currently use)
-  // Current price (competitor) < Offered price (Cookers) — Cookers costs more per litre
-  {
-    name: `${PREFIX} Trial — Seaview Cafe`,
-    status: 'trial-only',
-    state: bdmState,       // Bob's state
-    fryer_count: 2,
-    trial_status: 'in-progress',
-    trial_start_date: daysAgo(5),
-    trial_oil_id: XLFRY_ID,                    // Trialling Cookers XLFRY
-    default_oil: pickCompOil('OIL2'),           // Currently using OIL2U oil
-    current_price_per_litre: 2.40,              // Competitor price (lower)
-    offered_price_per_litre: 3.20,              // Cookers price (higher, but lasts longer)
-    current_weekly_avg: 40,
-    bdm_id: bdmId,
-  },
-  {
-    name: `${PREFIX} Trial — Mountview Grill`,
-    status: 'trial-only',
-    state: bdmState,       // Bob's state
-    fryer_count: 1,
-    trial_status: 'pending',
-    trial_oil_id: ULTAFRY_ID,                   // Will trial Cookers ULTAFRY
-    default_oil: pickCompOil('CFM'),            // Currently using CFM oil
-    current_price_per_litre: 2.10,              // Competitor price (lower)
-    offered_price_per_litre: 2.85,              // Cookers price (higher, but lasts longer)
-    bdm_id: bdmId,
-  },
-  {
-    name: `${PREFIX} Trial — Eastside Takeaway`,
-    status: 'trial-only',
-    state: bdmState,       // Bob's state
-    fryer_count: 3,
-    trial_status: 'completed',
-    trial_start_date: daysAgo(8),
-    trial_end_date: daysAgo(1),
-    trial_oil_id: XLFRY_ID,                    // Trialled Cookers XLFRY
-    default_oil: pickCompOil('TROJ'),           // Was using TROJAN oil
-    current_price_per_litre: 2.30,              // Competitor price (lower)
-    offered_price_per_litre: 3.10,              // Cookers price (higher, but lasts longer)
-    current_weekly_avg: 55,
-    bdm_id: bdmId,
-  },
+// ── TPM progression model ──
+// Cookers oil: slower degradation (the whole selling point)
+const cookersTpmByDay = [
+  [4, 7],   // day 1 fresh
+  [6, 9],   // day 2
+  [8, 12],  // day 3
+  [10, 14], // day 4
+  [12, 16], // day 5
+  [14, 18], // day 6
+  [16, 20], // day 7
+  [18, 22], // day 8+
 ];
-const { data: venueData, error: venueErr } = await supabase.from('venues').insert(venues).select();
-console.log(`  venues: ${venueErr ? '❌ ' + venueErr.message : '✅ ' + venueData.length + ' inserted'}`);
 
-// 6. TPM Readings — for the regular venues (past 5 days)
-const readings = [];
-const regularVenues = venueData ? venueData.filter(v => v.status === 'active') : [];
-const trialVenues = venueData ? venueData.filter(v => v.status === 'trial-only') : [];
+const randBetween = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+const randFloat = (min, max) => +(min + Math.random() * (max - min)).toFixed(2);
+const maybeNote = (pct = 0.3) => Math.random() < pct ? NOTES[Math.floor(Math.random() * NOTES.length)] : null;
 
-for (const venue of regularVenues) {
-  const fc = venue.fryer_count || 2;
-  for (let day = 0; day < 5; day++) {
-    const readDate = daysAgo(day);
-    for (let fryer = 1; fryer <= fc; fryer++) {
-      const oilAge = Math.min(day + 1 + Math.floor(Math.random() * 3), 7);
-      const tpm = 8 + Math.floor(Math.random() * 18); // 8-25
-      const litres = oilAge === 1 ? (10 + Math.floor(Math.random() * 10)) : Math.floor(Math.random() * 5);
+// ── Generate readings for a trial ──
+function generateReadings(venueId, trialId, fryerCount, startDate, endDate, trialOilCode) {
+  const readings = [];
+  const start = new Date(startDate + 'T00:00:00');
+  const end = endDate ? new Date(endDate + 'T00:00:00') : new Date(today);
+  const tpmTable = cookersTpmByDay; // Cookers oil = slower progression
+
+  for (let fryer = 1; fryer <= fryerCount; fryer++) {
+    let oilAge = 1;
+    let cur = new Date(start);
+
+    while (cur <= end) {
+      const dateStr = cur.toISOString().split('T')[0];
+
+      // Oil change cycle: change oil when oilAge hits 6-8 days (Cookers lasts longer)
+      const changeThreshold = randBetween(6, 8);
+      if (oilAge > changeThreshold) {
+        oilAge = 1; // Fresh oil change
+      }
+
+      const dayIdx = Math.min(oilAge - 1, tpmTable.length - 1);
+      const [tpmMin, tpmMax] = tpmTable[dayIdx];
+      const tpmValue = randBetween(tpmMin, tpmMax);
+
+      const setTemp = [170, 175, 180][Math.floor(Math.random() * 3)];
+      const actualTemp = setTemp + randBetween(-3, 3);
+
+      const isFresh = oilAge === 1;
+      const litresFilled = isFresh
+        ? randBetween(12, 20)
+        : (Math.random() < 0.3 ? randBetween(1, 4) : 0);
+
+      const filtered = isFresh ? true : Math.random() < 0.7;
+
+      // More notes on day 1 (oil change) and later days (observations)
+      const notePct = isFresh ? 0.6 : oilAge >= 5 ? 0.4 : 0.25;
+
       readings.push({
-        venue_id: venue.id,
+        venue_id: venueId,
+        trial_id: trialId,
         fryer_number: fryer,
-        reading_date: readDate,
+        reading_date: dateStr,
         reading_number: 1,
         oil_age: oilAge,
-        litres_filled: litres,
-        tpm_value: tpm,
-        set_temperature: 170 + Math.floor(Math.random() * 3) * 5,
-        actual_temperature: 168 + Math.floor(Math.random() * 10),
-        filtered: Math.random() > 0.3,
-        food_type: ['Chips/Fries', 'Crumbed Items', 'Battered Items', 'Mixed Service'][Math.floor(Math.random() * 4)],
-        staff_name: `${PREFIX} Staff`,
+        litres_filled: litresFilled,
+        tpm_value: tpmValue,
+        set_temperature: setTemp,
+        actual_temperature: actualTemp,
+        filtered,
+        food_type: FOOD_TYPES[Math.floor(Math.random() * FOOD_TYPES.length)],
+        staff_name: staffName,
         not_in_use: false,
+        notes: maybeNote(notePct),
       });
+
+      oilAge++;
+      cur.setDate(cur.getDate() + 1);
     }
   }
+
+  return readings;
 }
 
-// Trial readings — Cookers oil performs BETTER (lower TPM, lasts longer)
-for (const venue of trialVenues.filter(v => v.trial_status === 'in-progress' || v.trial_status === 'completed')) {
-  const fc = venue.fryer_count || 1;
-  const startDate = venue.trial_start_date || daysAgo(14);
-  const daysToSeed = Math.min(10, Math.ceil((new Date() - new Date(startDate)) / 86400000));
-  for (let day = 0; day < daysToSeed; day++) {
-    const readDate = daysAgo(day);
-    if (readDate < startDate) continue;
-    for (let fryer = 1; fryer <= fc; fryer++) {
-      const oilAge = Math.min(day + 1, 5);
-      // Cookers trial oil: lower TPM (6-19) = better performance
-      const tpm = 6 + Math.floor(Math.random() * 14);
-      readings.push({
-        venue_id: venue.id,
-        fryer_number: fryer,
-        reading_date: readDate,
-        reading_number: 1,
-        oil_age: oilAge,
-        litres_filled: oilAge === 1 ? (8 + Math.floor(Math.random() * 8)) : Math.floor(Math.random() * 3),
-        tpm_value: tpm,
-        set_temperature: 175,
-        actual_temperature: 172 + Math.floor(Math.random() * 6),
-        filtered: true,
-        food_type: 'Chips/Fries',
-        staff_name: `${PREFIX} BDM`,
-        not_in_use: false,
-      });
+// ══════════════════════════════════════════════
+// DEFINE 13 TRIAL VENUES
+// ══════════════════════════════════════════════
+
+const trialDefs = [
+  // ── PENDING (2) — created but not started yet ──
+  {
+    venue: { name: 'Bayside Fish & Chips', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 75 },
+    trial: { status: 'pending', trial_oil: XLFRY, currentPrice: 2.35, offeredPrice: 3.10, createdDaysAgo: 2 },
+  },
+  {
+    venue: { name: 'Doncaster Takeaway', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 120 },
+    trial: { status: 'pending', trial_oil: ULTAFRY, currentPrice: 2.20, offeredPrice: 2.95, createdDaysAgo: 1 },
+  },
+
+  // ── IN-PROGRESS (3) — actively running ──
+  {
+    venue: { name: 'Richmond Takeaway', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 80 },
+    trial: { status: 'in-progress', trial_oil: XLFRY, currentPrice: 2.40, offeredPrice: 3.20, startDaysAgo: 3 },
+  },
+  {
+    venue: { name: 'South Yarra Grill', fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 180 },
+    trial: { status: 'in-progress', trial_oil: XLFRY, currentPrice: 2.55, offeredPrice: 3.35, startDaysAgo: 6 },
+  },
+  {
+    venue: { name: 'Brunswick Street Fryer', fryer_count: 1, volume_bracket: 'under-60', current_weekly_avg: 45 },
+    trial: { status: 'in-progress', trial_oil: ULTAFRY, currentPrice: 2.15, offeredPrice: 2.85, startDaysAgo: 8 },
+  },
+
+  // ── COMPLETED (2) — ended, awaiting decision ──
+  {
+    venue: { name: 'St Kilda Seafood Bar', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 110 },
+    trial: { status: 'completed', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.25, startDaysAgo: 12, durationDays: 8 },
+  },
+  {
+    venue: { name: 'Fitzroy Chicken Shop', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 70 },
+    trial: { status: 'completed', trial_oil: XLFRY, currentPrice: 2.30, offeredPrice: 3.05, startDaysAgo: 10, durationDays: 7 },
+  },
+
+  // ── ACCEPTED (1) — won but awaiting customer code ──
+  {
+    venue: { name: 'Preston Fish Bar', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 85 },
+    trial: { status: 'accepted', trial_oil: XLFRY, currentPrice: 2.40, offeredPrice: 3.15, startDaysAgo: 18, durationDays: 9, outcomeDaysAgo: 6, reason: 'oil-lasted-longer', soldPrice: 3.05 },
+  },
+
+  // ── WON (3) — successful trials ──
+  {
+    venue: { name: 'Hawthorn Hot Foods', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 130 },
+    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.50, offeredPrice: 3.30, startDaysAgo: 30, durationDays: 10, outcomeDaysAgo: 15, reason: 'better-food-quality', soldPrice: 3.15, custCode: 'MEL-001' },
+  },
+  {
+    venue: { name: 'Coburg Kebab & Chips', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 90 },
+    trial: { status: 'won', trial_oil: ULTAFRY, currentPrice: 2.25, offeredPrice: 2.90, startDaysAgo: 25, durationDays: 7, outcomeDaysAgo: 12, reason: 'cost-savings', soldPrice: 2.80, custCode: 'MEL-002' },
+  },
+  {
+    venue: { name: 'Footscray Golden Fry', fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 160 },
+    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.60, offeredPrice: 3.40, startDaysAgo: 35, durationDays: 9, outcomeDaysAgo: 20, reason: 'oil-lasted-longer', soldPrice: 3.25, custCode: 'MEL-003' },
+  },
+
+  // ── LOST (2) — unsuccessful trials ──
+  {
+    venue: { name: 'Dandenong Quick Eats', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 65 },
+    trial: { status: 'lost', trial_oil: XLFRY, currentPrice: 2.10, offeredPrice: 3.00, startDaysAgo: 22, durationDays: 8, outcomeDaysAgo: 10, reason: 'price-too-high' },
+  },
+  {
+    venue: { name: 'Frankston Fish House', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 100 },
+    trial: { status: 'lost', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.20, startDaysAgo: 28, durationDays: 10, outcomeDaysAgo: 14, reason: 'contract-locked' },
+  },
+];
+
+// ══════════════════════════════════════════════
+// INSERT VENUES + TRIALS + READINGS
+// ══════════════════════════════════════════════
+let totalReadings = 0;
+
+for (const def of trialDefs) {
+  const { venue: vDef, trial: tDef } = def;
+
+  // Prospect code
+  const prospectCode = `PRS-${String(trialDefs.indexOf(def) + 1).padStart(4, '0')}`;
+
+  // Insert venue
+  const venueRow = {
+    name: vDef.name,
+    status: 'trial-only',
+    state: 'VIC',
+    fryer_count: vDef.fryer_count,
+    volume_bracket: vDef.volume_bracket,
+    default_oil: pickCompOil(),
+    bdm_id: bdmId,
+    customer_code: tDef.custCode || prospectCode,
+    ...(tDef.custCode ? { customer_code_saved_at: daysAgoTs(tDef.outcomeDaysAgo || 0) } : {}),
+  };
+
+  const { data: insertedVenue, error: vErr } = await supabase.from('venues').insert(venueRow).select().single();
+  if (vErr) { console.error(`  ERR venue ${vDef.name}: ${vErr.message}`); continue; }
+
+  // Build trial row
+  const startDate = tDef.startDaysAgo ? daysAgo(tDef.startDaysAgo) : null;
+  const endDate = tDef.durationDays && startDate ? daysAgo(tDef.startDaysAgo - tDef.durationDays) : null;
+  const outcomeDate = tDef.outcomeDaysAgo ? daysAgo(tDef.outcomeDaysAgo) : null;
+
+  const trialRow = {
+    venue_id: insertedVenue.id,
+    status: tDef.status === 'accepted' ? 'won' : tDef.status,
+    trial_oil_id: tDef.trial_oil,
+    notes: `TRL-${String(trialDefs.indexOf(def) + 1).padStart(4, '0')} | Melbourne`,
+    current_price_per_litre: tDef.currentPrice,
+    offered_price_per_litre: tDef.offeredPrice,
+    current_weekly_avg: vDef.current_weekly_avg,
+    ...(startDate ? { start_date: startDate } : {}),
+    ...(endDate ? { end_date: endDate } : {}),
+    ...(outcomeDate ? { outcome_date: outcomeDate } : {}),
+    ...(tDef.reason ? { trial_reason: tDef.reason } : {}),
+    ...(tDef.soldPrice ? { sold_price_per_litre: tDef.soldPrice } : {}),
+  };
+
+  // For 'accepted' status: venue has trial status as 'accepted' but trial table uses 'won'
+  // Update venue to reflect accepted status (won without customer code saved)
+  // Actually the trial status in the trials table maps differently. Let me check...
+  // The trial table status is: pending, in-progress, completed, won, lost
+  // The venue-level "accepted" is derived when status=won but no customerCodeSavedAt
+
+  const { data: insertedTrial, error: tErr } = await supabase.from('trials').insert(trialRow).select().single();
+  if (tErr) { console.error(`  ERR trial for ${vDef.name}: ${tErr.message}`); continue; }
+
+  // Generate and insert readings (only for trials that have started)
+  if (startDate) {
+    const trialOilCode = tDef.trial_oil === XLFRY ? 'XLFRY' : 'ULTAFRY';
+    const readings = generateReadings(
+      insertedVenue.id,
+      insertedTrial.id,
+      vDef.fryer_count,
+      startDate,
+      endDate || todayStr,
+      trialOilCode
+    );
+
+    if (readings.length > 0) {
+      const { error: rErr } = await supabase.from('tpm_readings').insert(readings);
+      if (rErr) { console.error(`  ERR readings for ${vDef.name}: ${rErr.message}`); }
+      else { totalReadings += readings.length; }
+    }
+
+    // Update venue last_tpm_date
+    const latestDate = readings.length > 0 ? readings[readings.length - 1].reading_date : null;
+    if (latestDate) {
+      await supabase.from('venues').update({ last_tpm_date: latestDate }).eq('id', insertedVenue.id);
     }
   }
+
+  const statusIcon = { pending: 'pipeline', 'in-progress': 'active', completed: 'decision', accepted: 'accepted', won: 'WON', lost: 'LOST' }[tDef.status];
+  console.log(`  ${vDef.name} — ${statusIcon} (${vDef.fryer_count} fryers)`);
 }
 
-if (readings.length > 0) {
-  const { data: readData, error: readErr } = await supabase.from('tpm_readings').insert(readings).select();
-  console.log(`  tpm_readings: ${readErr ? '❌ ' + readErr.message : '✅ ' + readData.length + ' inserted'}`);
-} else {
-  console.log('  tpm_readings: ⏭️  no readings to insert');
-}
-
-console.log('\n✅ Done! All sample data is prefixed with [SAMPLE].');
-console.log('   Uses REAL Cookers oils (XLFRY, ULTAFRY) and REAL competitor oils (OIL2U, CFM, TROJAN).');
-console.log('   Trial venues all in ' + bdmState + ' (Bob\'s region).');
-console.log('   Pricing: competitor (current) < Cookers (offered) — Cookers costs more but lasts longer.');
-console.log('   To delete: node scripts/seed-sample-data.mjs <username> <password> --delete');
+console.log(`\nDone!`);
+console.log(`  ${trialDefs.length} trial venues created`);
+console.log(`  ${totalReadings} TPM readings generated`);
+console.log(`  All assigned to ${bdmName} in VIC`);
+console.log(`  Trial oils: mostly XLFRY, some ULTAFRY`);
+console.log(`  Status mix: 2 pending, 3 active, 2 awaiting decision, 1 accepted, 3 won, 2 lost`);

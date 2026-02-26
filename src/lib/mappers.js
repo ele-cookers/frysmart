@@ -136,6 +136,7 @@ export const unMapVenue = (v) => ({
   bdm_id: v.bdmId || null,
   last_tpm_date: v.lastTpmDate || null,
   password: v.password || null,
+  customer_code_saved_at: v.customerCodeSavedAt || null,
 });
 
 // ── trials ──
@@ -258,7 +259,6 @@ export const mapSystemSettings = (r) => ({
   reportFrequency: r.report_frequency,
   reminderDays: r.reminder_days,
   oilTypeOptions: r.oil_type_options ?? [],
-  themeConfig: r.theme_config ?? {},
   permissionsConfig: r.permissions_config ?? {},
   targetWinRate: r.target_win_rate ?? 75,
   targetAvgTimeToDecision: r.target_avg_time_to_decision ?? 14,
@@ -274,7 +274,6 @@ export const unMapSystemSettings = (s) => ({
   report_frequency: s.reportFrequency,
   reminder_days: s.reminderDays,
   oil_type_options: s.oilTypeOptions,
-  theme_config: s.themeConfig,
   permissions_config: s.permissionsConfig,
   target_win_rate: s.targetWinRate,
   target_avg_time_to_decision: s.targetAvgTimeToDecision,
