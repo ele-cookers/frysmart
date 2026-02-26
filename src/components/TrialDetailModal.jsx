@@ -87,7 +87,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
 
   return (
     <div style={overlayStyle} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '95vw' : '600px', maxHeight: '94vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: isDesktop && calendarData.hasData ? '95vw' : '600px', maxHeight: '94vh', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', display: isDesktop && calendarData.hasData ? 'flex' : 'block' }} onClick={e => e.stopPropagation()}>
 
       {/* Left column — existing content */}
       <div style={isDesktop && calendarData.hasData ? { flex: 1, minWidth: 0, overflowY: 'auto', maxHeight: '94vh' } : {}}>

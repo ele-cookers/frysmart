@@ -83,7 +83,7 @@ const FOOD_TYPES = [
 ];
 
 const inputStyle = {
-  width: '100%', padding: '10px 12px', borderRadius: '8px',
+  width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px',
   border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none',
   boxSizing: 'border-box', background: 'white', color: '#1f2937',
   fontFamily: 'inherit', fontWeight: '500',
@@ -263,7 +263,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const isFreshOil = parseInt(fryer.oilAge) === 1;
   const canSave = fryer.notInUse || (fryer.tpmValue && fryer.oilAge);
 
-  const inputSt = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '16px', outline: 'none', boxSizing: 'border-box' };
+  const inputSt = { width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '16px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: 'white', color: '#1f2937' };
   const lbl = { display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' };
   const fld = { marginBottom: '12px' };
 
@@ -318,7 +318,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
     <div style={S.overlay} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: 'white', borderRadius: '16px', maxWidth: '500px',
-        width: '100%', maxHeight: '95vh', overflow: 'auto',
+        width: '100%', maxHeight: '95vh', overflowY: 'auto', overflowX: 'hidden',
         boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
       }}>
         {/* Header */}
@@ -2277,31 +2277,25 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Select a venue to manage its trial details, edit information, or change its status.</p>
           {/* Results */}
           {isTableView ? renderManageTable(allTrials) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '700px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '700px' }}>
               {sorted.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '13px' }}>
                   No trials found
                 </div>
               ) : sorted.map(v => {
                 const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+                const isWonOrAccepted = v.trialStatus === 'won' || v.trialStatus === 'accepted';
                 return (
-                  <button key={v.id} onClick={() => setManageVenueId(v.id)} style={{
-                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
-                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px',
-                    cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s',
-                    borderLeft: `4px solid ${sc.accent}`,
-                  }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '2px' }}>{v.name}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>
-                        {v.trialStartDate ? displayDate(v.trialStartDate) : 'Not started'}
-                        {v.trialEndDate ? ` — ${displayDate(v.trialEndDate)}` : ''}
-                        {v.customerCode ? ` · ${v.customerCode}` : ''}
-                      </div>
-                    </div>
-                    <TrialStatusBadge status={v.trialStatus} />
-                    <ChevronRight size={16} color="#94a3b8" />
-                  </button>
+                  <div key={v.id} onClick={() => setManageVenueId(v.id)} style={cardBase(sc.accent)}>
+                    {cardHeader(v)}
+                    {cardOilRow(v)}
+                    {pricingRow(v, isWonOrAccepted)}
+                    {dateRow([
+                      ['Start', v.trialStartDate ? displayDate(v.trialStartDate) : '—'],
+                      ['End', v.trialEndDate ? displayDate(v.trialEndDate) : '—'],
+                      ...(v.customerCode && !v.customerCode.startsWith('PRS-') ? [['Code', v.customerCode]] : []),
+                    ])}
+                  </div>
                 );
               })}
             </div>
@@ -2582,7 +2576,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const items = row.filter(Boolean);
                       if (items.length === 0) return null;
                       return (
-                        <div key={i} style={{ display: 'flex', gap: '16px', padding: '8px 0', borderBottom: '1px solid #f1f5f9', flexDirection: isDesktop ? 'row' : 'column' }}>
+                        <div key={i} style={{ display: 'flex', gap: '16px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                           {items.map((r, j) => (
                             <div key={j} style={{ flex: 1 }}>
                               <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{r.label}</div>
@@ -2608,7 +2602,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <label style={{ ...S.label, fontSize: '10px' }}>VENUE NAME</label>
                     <input type="text" value={mEditForm.name} onChange={e => setMEditForm(p => ({ ...p, name: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '10px' }}>
                     <div><label style={{ ...S.label, fontSize: '10px' }}>START DATE</label><input type="date" value={mEditForm.trialStartDate} onChange={e => setMEditForm(p => ({ ...p, trialStartDate: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} /></div>
                     <div><label style={{ ...S.label, fontSize: '10px' }}>END DATE</label><input type="date" value={mEditForm.trialEndDate} onChange={e => setMEditForm(p => ({ ...p, trialEndDate: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} /></div>
                   </div>
