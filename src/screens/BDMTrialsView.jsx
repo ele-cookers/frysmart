@@ -10,8 +10,8 @@ import {
   XCircle, ChevronDown,
   ArrowUpDown, CheckCircle2,
   ArrowDown, Filter,
-  Edit3, Calendar, Save, ChevronRight, BarChart3, RotateCcw,
-  Star, MessageSquare
+  Edit3, Calendar, Save, ChevronLeft, ChevronRight, BarChart3, RotateCcw,
+  Star, MessageSquare, Target
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
@@ -726,6 +726,108 @@ const BdmActiveFilterBar = ({ filters, setFilter, clearAll }) => {
 };
 
 // ─────────────────────────────────────────────
+// SHARED COMPONENTS (duplicated from admin panel — future extraction to src/components/)
+// ─────────────────────────────────────────────
+const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTime, externalLabel }) => {
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => dateFrom ? new Date(dateFrom + 'T00:00:00') : new Date());
+  const [selecting, setSelecting] = useState(null);
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const monthName = viewDate.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const fmt = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  const fmtDisplay = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+  const handleDayClick = (day) => {
+    const dateStr = fmt(year, month, day);
+    setAllTime(false);
+    if (!dateFrom || selecting === 'from' || (dateFrom && dateTo)) {
+      setDateFrom(dateStr); setDateTo(''); setSelecting('to');
+    } else {
+      if (dateStr < dateFrom) { setDateTo(dateFrom); setDateFrom(dateStr); }
+      else { setDateTo(dateStr); }
+      setSelecting(null); setOpen(false);
+    }
+  };
+  const isInRange = (day) => { if (!dateFrom || !dateTo) return false; const d = fmt(year, month, day); return d >= dateFrom && d <= dateTo; };
+  const isStart = (day) => fmt(year, month, day) === dateFrom;
+  const isEnd = (day) => fmt(year, month, day) === dateTo;
+  const isToday = (day) => fmt(year, month, day) === new Date().toISOString().split('T')[0];
+  const hasRange = dateFrom || dateTo || externalLabel;
+  const rangeLabel = externalLabel || (dateFrom ? `${fmtDisplay(dateFrom)}${dateTo ? ` – ${fmtDisplay(dateTo)}` : ' – Today'}` : null);
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+      <button onClick={() => setOpen(!open)} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: '30px', height: '30px', borderRadius: '7px', border: '1.5px solid',
+        borderColor: hasRange ? '#1a428a' : '#e2e8f0',
+        background: hasRange ? '#e8eef6' : 'white',
+        color: hasRange ? '#1a428a' : '#94a3b8',
+        cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0
+      }}><Calendar size={14} /></button>
+      {hasRange && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#1a428a', whiteSpace: 'nowrap' }}>{rangeLabel}</span>
+          <span onClick={() => { setDateFrom(''); setDateTo(''); setAllTime(true); setSelecting(null); }} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#94a3b8' }}><X size={11} /></span>
+        </div>
+      )}
+      {open && (
+        <>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1999 }} onClick={() => setOpen(false)} />
+          <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 2000, background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '14px', width: 'min(280px, calc(100vw - 32px))' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <button onClick={() => setSelecting('from')} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1.5px solid', borderColor: selecting === 'from' || (!selecting && !dateFrom) ? '#1a428a' : '#e2e8f0', background: selecting === 'from' || (!selecting && !dateFrom) ? '#eef2ff' : '#f8fafc', fontSize: '11px', fontWeight: '600', cursor: 'pointer', color: selecting === 'from' || (!selecting && !dateFrom) ? '#1a428a' : '#64748b', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', fontWeight: '500', color: '#94a3b8', marginBottom: '1px' }}>Start</div>
+                {dateFrom ? fmtDisplay(dateFrom) : '—'}
+              </button>
+              <button onClick={() => setSelecting('to')} style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1.5px solid', borderColor: selecting === 'to' ? '#1a428a' : '#e2e8f0', background: selecting === 'to' ? '#eef2ff' : '#f8fafc', fontSize: '11px', fontWeight: '600', cursor: 'pointer', color: selecting === 'to' ? '#1a428a' : '#64748b', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', fontWeight: '500', color: '#94a3b8', marginBottom: '1px' }}>End</div>
+                {dateTo ? fmtDisplay(dateTo) : '—'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <button onClick={() => setViewDate(new Date(year, month - 1, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}><ChevronLeft size={16} color="#64748b" /></button>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>{monthName}</span>
+              <button onClick={() => setViewDate(new Date(year, month + 1, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex' }}><ChevronRight size={16} color="#64748b" /></button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '4px' }}>
+              {['S','M','T','W','T','F','S'].map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: '10px', fontWeight: '600', color: '#94a3b8', padding: '2px 0' }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+              {Array.from({ length: firstDay }, (_, i) => <div key={`e-${i}`} />)}
+              {Array.from({ length: daysInMonth }, (_, i) => {
+                const day = i + 1;
+                const start = isStart(day); const end = isEnd(day); const inRange = isInRange(day); const today = isToday(day);
+                return (
+                  <button key={day} onClick={() => handleDayClick(day)} style={{
+                    width: '100%', aspectRatio: '1', borderRadius: (start || end) ? '50%' : inRange ? '4px' : '50%',
+                    border: today && !start && !end && !inRange ? '1.5px solid #1a428a' : 'none',
+                    background: (start || end) ? '#1a428a' : inRange ? '#dbeafe' : 'transparent',
+                    color: (start || end) ? 'white' : inRange ? '#1e40af' : '#1f2937',
+                    fontSize: '12px', fontWeight: (start || end || today) ? '700' : '400',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>{day}</button>
+                );
+              })}
+            </div>
+            {selecting === 'to' && <div style={{ textAlign: 'center', fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Now select end date</div>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const PERIOD_LABELS = [
+  { key: 'mtd', label: 'MTD' }, { key: '1m', label: '1M' }, { key: '3m', label: '3M' },
+  { key: '6m', label: '6M' }, { key: '12m', label: '12M' }, { key: 'ytd', label: 'YTD' },
+  { key: 'all', label: 'All' },
+];
+
+// ─────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
 export default function BDMTrialsView({ currentUser, onLogout }) {
@@ -751,6 +853,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [successMsg, setSuccessMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [dashStatusFilter, setDashStatusFilter] = useState([]); // Dashboard status filter
+  const [dashPeriod, setDashPeriod] = useState('3m');
+  const [dashDateFrom, setDashDateFrom] = useState('');
+  const [dashDateTo, setDashDateTo] = useState('');
   const [manageVenueId, setManageVenueId] = useState(null); // Manage Trial screen
   const [manageStatusFilter, setManageStatusFilter] = useState([]); // Manage screen status filter pills
   // ── Column toggle state ──
@@ -1728,187 +1833,277 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       : allTrials;
     const dashRows = [...dashFiltered].sort((a, b) => (b.trialStartDate || '').localeCompare(a.trialStartDate || ''));
 
-    // ── Last 90 days filter ──
-    const ninetyDaysAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 90); return formatDate(d); })();
-    const recentTrials = allTrials.filter(v =>
-      (v.trialStartDate && v.trialStartDate >= ninetyDaysAgo) ||
-      (v.outcomeDate && v.outcomeDate >= ninetyDaysAgo)
-    );
-    const recentWon = recentTrials.filter(v => v.trialStatus === 'won');
+    // ── Period-based filtering (replaces hardcoded 90d) ──
+    const periodNow = new Date();
+    const periodCutoff = (() => {
+      if (dashPeriod === 'custom' || dashPeriod === 'all') return null;
+      const d = new Date(periodNow);
+      if (dashPeriod === 'mtd') { d.setDate(1); return d; }
+      if (dashPeriod === '1m') { d.setMonth(d.getMonth() - 1); return d; }
+      if (dashPeriod === '3m') { d.setMonth(d.getMonth() - 3); return d; }
+      if (dashPeriod === '6m') { d.setMonth(d.getMonth() - 6); return d; }
+      if (dashPeriod === '12m') { d.setFullYear(d.getFullYear() - 1); return d; }
+      if (dashPeriod === 'ytd') { d.setMonth(0); d.setDate(1); return d; }
+      return null;
+    })();
+    const periodFrom = periodCutoff ? formatDate(periodCutoff) : (dashPeriod === 'custom' && dashDateFrom ? dashDateFrom : null);
+    const periodTo = dashPeriod === 'custom' && dashDateTo ? dashDateTo : null;
+    const recentTrials = allTrials.filter(v => {
+      if (!periodFrom && !periodTo) return true;
+      const ref = v.outcomeDate || v.trialEndDate || v.trialStartDate || '';
+      if (periodFrom && ref < periodFrom) return false;
+      if (periodTo && ref > periodTo) return false;
+      return true;
+    });
+    const recentWon = recentTrials.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted');
     const recentLost = recentTrials.filter(v => v.trialStatus === 'lost');
     const recentDecidedCount = recentWon.length + recentLost.length;
     const recentWinRate = recentDecidedCount > 0 ? Math.round((recentWon.length / recentDecidedCount) * 100) : null;
 
-    // Avg time to decision (last 90 days)
-    const recentDecidedTrials = recentTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialStartDate && v.outcomeDate);
-    const avgTimeToDecision = recentDecidedTrials.length > 0
-      ? Math.round(recentDecidedTrials.reduce((sum, v) => sum + daysBetween(v.trialStartDate, v.outcomeDate), 0) / recentDecidedTrials.length)
+    // ── Delta calculations (always last 30d vs prev 30d) ──
+    const d30ago = (() => { const d = new Date(); d.setDate(d.getDate() - 30); return formatDate(d); })();
+    const d60ago = (() => { const d = new Date(); d.setDate(d.getDate() - 60); return formatDate(d); })();
+    const todayFmt = formatDate(new Date());
+    const inDeltaRange = (v, from, to) => { const s = v.outcomeDate || v.trialStartDate || ''; return s >= from && s <= to; };
+    const recent30 = allTrials.filter(v => inDeltaRange(v, d30ago, todayFmt));
+    const prev30 = allTrials.filter(v => inDeltaRange(v, d60ago, d30ago));
+    const r30Won = recent30.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted').length;
+    const p30Won = prev30.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted').length;
+    const r30Lost = recent30.filter(v => v.trialStatus === 'lost').length;
+    const p30Lost = prev30.filter(v => v.trialStatus === 'lost').length;
+    const deltaWon = r30Won - p30Won;
+    const deltaLost = r30Lost - p30Lost;
+    const r30Closed = recent30.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted' || v.trialStatus === 'lost');
+    const p30Closed = prev30.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted' || v.trialStatus === 'lost');
+    const r30WR = r30Closed.length > 0 ? Math.round((r30Won / r30Closed.length) * 100) : null;
+    const p30WR = p30Closed.length > 0 ? Math.round((p30Won / p30Closed.length) * 100) : null;
+    const deltaWinRate = r30WR !== null && p30WR !== null ? r30WR - p30WR : null;
+    const calcAvgDec = (arr) => {
+      const decided = arr.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialEndDate && v.outcomeDate);
+      if (decided.length === 0) return null;
+      return Math.round(decided.reduce((sum, v) => sum + daysBetween(v.trialEndDate, v.outcomeDate), 0) / decided.length);
+    };
+    const r30AvgDec = calcAvgDec(recent30);
+    const p30AvgDec = calcAvgDec(prev30);
+    const deltaDec = r30AvgDec !== null && p30AvgDec !== null ? r30AvgDec - p30AvgDec : null;
+
+    // ── KPI calculations ──
+    const closedInPeriod = recentTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialEndDate && v.outcomeDate);
+    const avgDecision = closedInPeriod.length > 0
+      ? Math.round(closedInPeriod.reduce((sum, v) => sum + daysBetween(v.trialEndDate, v.outcomeDate), 0) / closedInPeriod.length)
       : null;
+    const avgCustCodeDays = (() => {
+      const today = new Date();
+      const waiting = recentTrials.filter(v => v.trialStatus === 'accepted' && v.outcomeDate);
+      const days = waiting.map(v => Math.round((today - new Date(v.outcomeDate + 'T00:00:00')) / 86400000));
+      return days.length > 0 ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : null;
+    })();
+    const avgSoldXLFRY = (() => {
+      const xlfryIds = oilTypes.filter(o => (o.name && o.name.toUpperCase().includes('XLFRY')) || (o.code && o.code.toUpperCase().includes('XLFRY'))).map(o => o.id);
+      const xlfryWon = recentTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'accepted') && v.soldPricePerLitre && xlfryIds.includes(v.trialOilId));
+      return xlfryWon.length > 0 ? (xlfryWon.reduce((sum, v) => sum + parseFloat(v.soldPricePerLitre), 0) / xlfryWon.length).toFixed(2) : null;
+    })();
 
-    // Avg sold price (last 90 days)
-    const recentWonWithPrice = recentWon.filter(v => v.soldPricePerLitre);
-    const avgSoldPrice = recentWonWithPrice.length > 0
-      ? (recentWonWithPrice.reduce((sum, v) => sum + parseFloat(v.soldPricePerLitre), 0) / recentWonWithPrice.length).toFixed(2)
-      : null;
+    // Delta component
+    const Delta = ({ value, invert, suffix }) => {
+      if (value === null || value === undefined) return null;
+      const good = invert ? value < 0 : value > 0;
+      const neutral = value === 0;
+      return (
+        <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: neutral ? '#94a3b8' : good ? '#059669' : '#dc2626' }}>{value > 0 ? '+' : ''}{value}{suffix || ''}</span>
+          <span style={{ fontSize: '10px', color: '#64748b' }}>vs prev 30d</span>
+        </div>
+      );
+    };
 
-    // Avg trials per month (last 90 days ≈ 3 months)
-    const recentStarted = recentTrials.filter(v => v.trialStartDate && v.trialStartDate >= ninetyDaysAgo);
-    const avgTrialsPerMonth = recentStarted.length > 0 ? Math.round(recentStarted.length / 3) : null;
-
-    // Avg Discount — average difference between offered and sold price
-    const wonWithBothPrices = allTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'accepted') && v.offeredPricePerLitre && v.soldPricePerLitre);
-    const avgDiscount = wonWithBothPrices.length > 0
-      ? (wonWithBothPrices.reduce((sum, v) => sum + (parseFloat(v.offeredPricePerLitre) - parseFloat(v.soldPricePerLitre)), 0) / wonWithBothPrices.length).toFixed(2)
-      : null;
-
-    // Most Trialled Competitor — count competitors across all trials
-    const compCounts = {};
-    const compWonLost = {};
-    allTrials.forEach(v => {
+    // ── Competitor data (period-filtered) ──
+    const compDetail = {};
+    recentTrials.forEach(v => {
+      if (!v.defaultOil) return;
       const oil = oilTypes.find(o => o.id === v.defaultOil);
-      if (!oil?.competitorId) return;
-      const comp = competitors.find(c => c.id === oil.competitorId);
+      const comp = oil?.competitorId ? competitors.find(c => c.id === oil.competitorId) : null;
       if (!comp) return;
-      compCounts[comp.name] = (compCounts[comp.name] || 0) + 1;
-      if (!compWonLost[comp.name]) compWonLost[comp.name] = { won: 0, lost: 0 };
-      if (v.trialStatus === 'won' || v.trialStatus === 'accepted') compWonLost[comp.name].won++;
-      if (v.trialStatus === 'lost') compWonLost[comp.name].lost++;
+      if (!compDetail[comp.name]) compDetail[comp.name] = { total: 0, won: 0, lost: 0 };
+      compDetail[comp.name].total += 1;
+      if (v.trialStatus === 'won' || v.trialStatus === 'accepted') compDetail[comp.name].won += 1;
+      if (v.trialStatus === 'lost') compDetail[comp.name].lost += 1;
     });
-    const topCompetitor = Object.keys(compCounts).sort((a, b) => compCounts[b] - compCounts[a])[0] || null;
-    const topCompWL = topCompetitor ? compWonLost[topCompetitor] : null;
+    const topCompetitorData = Object.entries(compDetail).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
 
-    // Top Successful Reason
-    const wonReasonCounts = {};
-    allTrials.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'accepted') && v.trialReason).forEach(v => {
-      wonReasonCounts[v.trialReason] = (wonReasonCounts[v.trialReason] || 0) + 1;
-    });
-    const topWonReasonKey = Object.keys(wonReasonCounts).sort((a, b) => wonReasonCounts[b] - wonReasonCounts[a])[0] || null;
-    const topWonReason = topWonReasonKey ? trialReasons.find(r => r.key === topWonReasonKey) : null;
-
-    // Top Unsuccessful Reason
-    const lostReasonCounts = {};
-    allTrials.filter(v => v.trialStatus === 'lost' && v.trialReason).forEach(v => {
-      lostReasonCounts[v.trialReason] = (lostReasonCounts[v.trialReason] || 0) + 1;
-    });
-    const topLostReasonKey = Object.keys(lostReasonCounts).sort((a, b) => lostReasonCounts[b] - lostReasonCounts[a])[0] || null;
-    const topLostReason = topLostReasonKey ? trialReasons.find(r => r.key === topLostReasonKey) : null;
-
-    const statCardStyle = {
-      background: 'white', borderRadius: '10px', padding: '12px 14px',
-      border: '1px solid #e2e8f0', flex: 1, minWidth: '0',
-    };
-    const insightCardStyle = {
-      background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '14px 16px',
-    };
-    const insightTitle = {
-      fontSize: '11px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase',
-      letterSpacing: '0.3px', marginBottom: '10px',
-    };
-    const insightRow = (isLast) => ({
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '6px 0', borderBottom: isLast ? 'none' : '1px solid #f1f5f9',
-    });
-
-    // Build sorted lists for insight tables
-    const sortedComps = Object.keys(compCounts).sort((a, b) => compCounts[b] - compCounts[a]);
-    const sortedWonReasons = Object.keys(wonReasonCounts).sort((a, b) => wonReasonCounts[b] - wonReasonCounts[a]);
-    const sortedLostReasons = Object.keys(lostReasonCounts).sort((a, b) => lostReasonCounts[b] - lostReasonCounts[a]);
+    // ── Reason data (period-filtered) ──
+    const wonReasonMap = {};
+    recentWon.forEach(v => { if (v.trialReason) wonReasonMap[v.trialReason] = (wonReasonMap[v.trialReason] || 0) + 1; });
+    const wonReasonData = Object.entries(wonReasonMap).sort((a, b) => b[1] - a[1]);
+    const lostReasonMap = {};
+    recentLost.forEach(v => { if (v.trialReason) lostReasonMap[v.trialReason] = (lostReasonMap[v.trialReason] || 0) + 1; });
+    const lostReasonData = Object.entries(lostReasonMap).sort((a, b) => b[1] - a[1]);
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        {/* ── Stats Row — 5 cards in one row on desktop ── */}
-        <div style={{ fontSize: '9px', fontWeight: '600', color: COLORS.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Last 90 days</div>
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '16px' }}>
-          {/* Win Rate */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Win Rate</div>
-            <div style={{ fontSize: '20px', fontWeight: '800', color: recentWinRate !== null ? '#10b981' : COLORS.textFaint, lineHeight: 1 }}>{recentWinRate !== null ? `${recentWinRate}%` : '—'}</div>
+        {/* ── Date Range Filter ── */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px', gap: '0', flexWrap: 'wrap', rowGap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#f8fafc', borderRadius: '8px', padding: '3px', border: '1px solid #e2e8f0', flexShrink: 0 }}>
+            {PERIOD_LABELS.map(p => {
+              const isActive = dashPeriod === p.key;
+              return (
+                <button key={p.key} onClick={() => { setDashPeriod(p.key); if (p.key !== 'custom') { setDashDateFrom(''); setDashDateTo(''); } }} style={{
+                  padding: '4px 0', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+                  border: 'none', minWidth: '36px', textAlign: 'center',
+                  background: isActive ? '#1a428a' : 'transparent',
+                  color: isActive ? 'white' : '#64748b', transition: 'all 0.15s',
+                  whiteSpace: 'nowrap', lineHeight: '1.3'
+                }}>{p.label}</button>
+              );
+            })}
           </div>
-          {/* Avg Time to Decision */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Decision</div>
-            <div style={{ fontSize: '20px', fontWeight: '800', color: '#3b82f6', lineHeight: 1 }}>{avgTimeToDecision !== null ? `${avgTimeToDecision}d` : '—'}</div>
-          </div>
-          {/* Avg Sold Price */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Sold $/L</div>
-            <div style={{ fontSize: '20px', fontWeight: '800', color: '#f59e0b', lineHeight: 1 }}>{avgSoldPrice !== null ? `$${avgSoldPrice}` : '—'}</div>
-          </div>
-          {/* Avg Trials per Month */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Trials / Month</div>
-            <div style={{ fontSize: '20px', fontWeight: '800', color: '#64748b', lineHeight: 1 }}>{avgTrialsPerMonth ?? '—'}</div>
-          </div>
-          {/* Avg Discount */}
-          <div style={statCardStyle}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>Avg Discount</div>
-            <div style={{ fontSize: '20px', fontWeight: '800', color: '#8b5cf6', lineHeight: 1 }}>{avgDiscount !== null ? `$${avgDiscount}` : '—'}</div>
-          </div>
+          <div style={{ width: '1px', height: '22px', background: '#e2e8f0', margin: '0 10px', flexShrink: 0 }} />
+          {(() => {
+            const fmtShort = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+            const extLabel = dashPeriod !== 'custom' && dashPeriod !== 'all' && periodFrom
+              ? `${fmtShort(periodFrom)} – Today`
+              : null;
+            return (
+              <CalendarIconPicker
+                dateFrom={dashDateFrom}
+                dateTo={dashDateTo}
+                setDateFrom={(v) => { setDashDateFrom(v); if (v) setDashPeriod('custom'); }}
+                setDateTo={(v) => { setDashDateTo(v); if (v) setDashPeriod('custom'); }}
+                setAllTime={() => { setDashPeriod('all'); setDashDateFrom(''); setDashDateTo(''); }}
+                externalLabel={extLabel}
+              />
+            );
+          })()}
+        </div>
+
+        {/* ── KPI Cards — Row 1: Outcomes ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '8px' }}>
+          {[
+            { label: 'Win Rate', icon: Target, iconColor: '#1a428a', value: recentWinRate !== null ? `${recentWinRate}%` : '—', delta: deltaWinRate, deltaSuffix: '%' },
+            { label: 'Successful', icon: Trophy, iconColor: '#10b981', value: recentWon.length, delta: deltaWon },
+            { label: 'Unsuccessful', icon: AlertTriangle, iconColor: '#ef4444', value: recentLost.length, delta: deltaLost, invert: true },
+          ].map(s => (
+            <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <s.icon size={16} color={s.iconColor} />
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
+              <Delta value={s.delta} suffix={s.deltaSuffix} invert={s.invert} />
+            </div>
+          ))}
+        </div>
+
+        {/* ── KPI Cards — Row 2: Timing & Price ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '16px' }}>
+          {[
+            { label: 'Avg Decision', icon: Clock, iconColor: '#64748b', value: avgDecision !== null ? `${avgDecision}d` : '—', delta: deltaDec, deltaSuffix: 'd', invert: true },
+            { label: 'Avg to Cust Code', icon: CheckCircle2, iconColor: '#059669', value: avgCustCodeDays !== null ? `${avgCustCodeDays}d` : '—' },
+            { label: 'Avg Sold XLFRY $/L', icon: BarChart3, iconColor: '#f59e0b', value: avgSoldXLFRY !== null ? `$${avgSoldXLFRY}` : '—' },
+          ].map(s => (
+            <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <s.icon size={16} color={s.iconColor} />
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
+              <Delta value={s.delta} suffix={s.deltaSuffix} invert={s.invert} />
+            </div>
+          ))}
         </div>
 
         {/* ── Insight Tables — Competitors, Win Reasons, Loss Reasons ── */}
         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '8px', marginBottom: '16px' }}>
           {/* Competitors */}
-          <div style={insightCardStyle}>
-            <div style={insightTitle}>Competitors Trialled</div>
-            {sortedComps.length === 0 ? (
-              <div style={{ fontSize: '12px', color: COLORS.textFaint, padding: '8px 0' }}>No data yet</div>
-            ) : sortedComps.map((name, i) => {
-              const wl = compWonLost[name] || { won: 0, lost: 0 };
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Competitors Trialled</div>
+            {topCompetitorData.length > 0 ? (() => {
+              const maxWon = Math.max(...topCompetitorData.map(([, d]) => d.won), 1);
+              const maxLost = Math.max(...topCompetitorData.map(([, d]) => d.lost), 1);
+              const maxTotal = Math.max(...topCompetitorData.map(([, d]) => d.total), 1);
               return (
-                <div key={name} style={insightRow(i === sortedComps.length - 1)}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text }}>{name}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#059669' }}>{wl.won}W</span>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#dc2626' }}>{wl.lost}L</span>
-                    <span style={{ fontSize: '10px', fontWeight: '700', background: '#f1f5f9', padding: '2px 8px', borderRadius: '10px', color: COLORS.text }}>{compCounts[name]}</span>
-                  </div>
-                </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Competitor</th>
+                    <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
+                    <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
+                    <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
+                    <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Win %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topCompetitorData.map(([name, d]) => {
+                    const wonOp = d.won ? Math.max(0.1, (d.won / maxWon) * 0.4) : 0;
+                    const lostOp = d.lost ? Math.max(0.08, (d.lost / maxLost) * 0.35) : 0;
+                    const totalOp = Math.max(0.1, (d.total / maxTotal) * 0.35);
+                    const decided = d.won + d.lost;
+                    const wp = decided > 0 ? Math.round((d.won / decided) * 100) : null;
+                    return (
+                    <tr key={name}>
+                      <td style={{ padding: '6px 8px', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '10px', fontWeight: '700', color: '#e53e3e', background: 'rgba(229,62,62,0.08)', padding: '2px 8px', borderRadius: '20px' }}>{name}</span></td>
+                      <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.won ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.won}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                      <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.lost ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.lost}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                      <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '11px', fontWeight: '700', color: '#6d28d9', background: `rgba(139, 92, 246, ${totalOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.total}</span></td>
+                      <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{wp !== null ? <span style={{ fontSize: '11px', fontWeight: '700', color: wp >= 60 ? '#059669' : wp >= 40 ? '#ca8a04' : '#dc2626' }}>{wp}%</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
               );
-            })}
+            })() : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
           </div>
-          {/* Win Reasons */}
-          <div style={insightCardStyle}>
-            <div style={insightTitle}>Win Reasons</div>
-            {sortedWonReasons.length === 0 ? (
-              <div style={{ fontSize: '12px', color: COLORS.textFaint, padding: '8px 0' }}>No data yet</div>
-            ) : sortedWonReasons.map((key, i) => {
-              const reason = trialReasons.find(r => r.key === key);
-              const count = wonReasonCounts[key];
-              const maxCount = wonReasonCounts[sortedWonReasons[0]];
-              return (
-                <div key={key} style={insightRow(i === sortedWonReasons.length - 1)}>
-                  <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.round((count / maxCount) * 100)}%`, background: '#d1fae5', borderRadius: '4px', zIndex: 0 }} />
-                    <span style={{ fontSize: '12px', fontWeight: '500', color: COLORS.text, position: 'relative', zIndex: 1, paddingLeft: '6px' }}>{reason?.label || key}</span>
-                  </div>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#059669', flexShrink: 0, minWidth: '24px', textAlign: 'right' }}>{count}</span>
-                </div>
-              );
-            })}
+          {/* Top Successful Reasons */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
+              <Trophy size={14} color="#10b981" />
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Top Successful Reasons</span>
+            </div>
+            {wonReasonData.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {wonReasonData.slice(0, 5).map(([key, count]) => {
+                  const reason = trialReasons.find(r => r.key === key);
+                  const pct = recentWon.length > 0 ? Math.round((count / recentWon.length) * 100) : 0;
+                  const opacity = Math.max(0.12, pct / 100 * 0.6);
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{reason ? reason.label : key}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${opacity})`, padding: '4px 12px', borderRadius: '20px', flexShrink: 0, minWidth: '48px', textAlign: 'center' }}>{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
           </div>
-          {/* Loss Reasons */}
-          <div style={insightCardStyle}>
-            <div style={insightTitle}>Loss Reasons</div>
-            {sortedLostReasons.length === 0 ? (
-              <div style={{ fontSize: '12px', color: COLORS.textFaint, padding: '8px 0' }}>No data yet</div>
-            ) : sortedLostReasons.map((key, i) => {
-              const reason = trialReasons.find(r => r.key === key);
-              const count = lostReasonCounts[key];
-              const maxCount = lostReasonCounts[sortedLostReasons[0]];
-              return (
-                <div key={key} style={insightRow(i === sortedLostReasons.length - 1)}>
-                  <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.round((count / maxCount) * 100)}%`, background: '#fee2e2', borderRadius: '4px', zIndex: 0 }} />
-                    <span style={{ fontSize: '12px', fontWeight: '500', color: COLORS.text, position: 'relative', zIndex: 1, paddingLeft: '6px' }}>{reason?.label || key}</span>
-                  </div>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#dc2626', flexShrink: 0, minWidth: '24px', textAlign: 'right' }}>{count}</span>
-                </div>
-              );
-            })}
+          {/* Top Unsuccessful Reasons */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
+              <AlertTriangle size={14} color="#ef4444" />
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Top Unsuccessful Reasons</span>
+            </div>
+            {lostReasonData.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {lostReasonData.slice(0, 5).map(([key, count]) => {
+                  const reason = trialReasons.find(r => r.key === key);
+                  const pct = recentLost.length > 0 ? Math.round((count / recentLost.length) * 100) : 0;
+                  const opacity = Math.max(0.12, pct / 100 * 0.6);
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{reason ? reason.label : key}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${opacity})`, padding: '4px 12px', borderRadius: '20px', flexShrink: 0, minWidth: '48px', textAlign: 'center' }}>{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>No data yet</div>}
           </div>
+        </div>
+
+        {/* ── Action Items ── */}
+        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ClipboardList size={14} color="#64748b" />
+          Action Items
         </div>
 
         {/* ── Awaiting Start + Awaiting Recording + Awaiting Decision + Awaiting Cust Code — 4 columns ── */}
