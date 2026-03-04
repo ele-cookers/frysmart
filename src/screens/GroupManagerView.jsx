@@ -1606,20 +1606,14 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
 
           {/* Row 1: KPI cards (left) + Oil Management (right) */}
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
-            {/* Top KPIs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
-              {(() => {
-                const tpmScore = overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? 100 : overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < critAt ? 50 : 0;
-                const healthScore = Math.round(avgCompliance * 0.4 + tpmScore * 0.3 + tpmHealthCompliancePct * 0.3);
-                const healthColor = healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#f59e0b' : '#ef4444';
-                return [
-                  { label: 'HEALTH SCORE', value: `${healthScore}%`, color: healthColor, target: '80%+' },
-                  { label: 'COMPLIANCE', value: `${avgCompliance}%`, color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
-                  { label: 'REACHED CRITICAL', value: `${groupCritRate}%`, color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
-                  { label: 'AVG TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
-                  { label: 'FILTERING', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' },
-                ];
-              })().map(kpi => (
+            {/* Top KPIs — 2×2 grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {[
+                { label: 'COMPLIANCE', value: `${avgCompliance}%`, color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
+                { label: 'REACHED CRITICAL', value: `${groupCritRate}%`, color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
+                { label: 'AVG TPM', value: overallAvgTPM, color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
+                { label: 'FILTERING', value: `${groupFilteringRate}%`, color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' },
+              ].map(kpi => (
                 <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
                   <div style={{ fontSize: '26px', fontWeight: '700', color: kpi.color, lineHeight: '1', marginBottom: '6px' }}>{kpi.value}</div>
@@ -1758,43 +1752,46 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
               </div>
             </div>
 
-            {/* TPM Trend with 7/30 toggle */}
+            {/* Most Fried Products */}
             {(() => {
-              const trendData = tpmRange === 7 ? groupLast7 : groupLast30;
-              const maxT = Math.max(...trendData.filter(d => d.avg != null).map(d => d.avg), 30);
+              const byProduct = {};
+              allGroupRecs.forEach(r => {
+                if (!r.foodType) return;
+                if (!byProduct[r.foodType]) byProduct[r.foodType] = { count: 0, tpmSum: 0 };
+                byProduct[r.foodType].count++;
+                byProduct[r.foodType].tpmSum += r.tpmValue;
+              });
+              const products = Object.entries(byProduct)
+                .map(([name, d]) => ({ name, count: d.count, avgTpm: d.tpmSum / d.count }))
+                .sort((a, b) => b.count - a.count);
+              const maxCount = products[0]?.count || 1;
               return (
                 <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>TPM Trend</h3>
-                    <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '6px', padding: '2px' }}>
-                      {[7, 30].map(d => (
-                        <button key={d} onClick={() => setTpmRange(d)} style={{
-                          padding: '4px 10px', border: 'none', borderRadius: '5px', cursor: 'pointer',
-                          fontSize: '11px', fontWeight: '600',
-                          background: tpmRange === d ? 'white' : 'transparent',
-                          color: tpmRange === d ? '#1f2937' : '#64748b',
-                          boxShadow: tpmRange === d ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                          transition: 'all 0.15s',
-                        }}>{d}d</button>
-                      ))}
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Most Fried Products</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px 0' }}>By recording volume · avg TPM per product</p>
+                  {products.length === 0 ? (
+                    <p style={{ fontSize: '13px', color: '#94a3b8' }}>No food type data recorded</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {products.map(p => {
+                        const tpmCol = tpmColor(p.avgTpm, warnAt, critAt);
+                        return (
+                          <div key={p.name}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>{p.name}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>{p.count} recordings</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: tpmCol }}>avg {p.avgTpm.toFixed(1)} TPM</span>
+                              </div>
+                            </div>
+                            <div style={{ height: '6px', background: '#f3f4f6', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${(p.count / maxCount) * 100}%`, background: tpmCol, borderRadius: '3px', transition: 'width 0.3s' }} />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '1px', alignItems: 'flex-end', height: '100px' }}>
-                    {trendData.map((day, i) => (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                        {day.avg != null ? (
-                          <div style={{ width: '100%', borderRadius: '2px 2px 0 0', background: getTPMStatus(day.avg, warnAt, critAt).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '2px' }} title={`${day.label}: ${day.avg.toFixed(0)} TPM`} />
-                        ) : (
-                          <div style={{ width: '100%', height: '2px', background: '#e2e8f0', borderRadius: '1px' }} />
-                        )}
-                        {(tpmRange === 7 || i % 7 === 0) && <div style={{ fontSize: '8px', color: '#94a3b8', marginTop: '2px' }}>{day.label}</div>}
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({warnAt})</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({critAt})</div>
-                  </div>
+                  )}
                 </div>
               );
             })()}
