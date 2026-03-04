@@ -1818,18 +1818,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* ── Top 3 KPIs — Last 30 days ── */}
         <div style={{ fontSize: '9px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Last 30 days</div>
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
           {[
             { label: 'Win Rate', icon: Target, iconColor: '#1a428a', value: l30WinRate !== null ? `${l30WinRate}%` : '—', delta: deltaWinRate, deltaSuffix: '%' },
             { label: 'Successful', icon: Trophy, iconColor: '#10b981', value: l30Won.length, delta: deltaWon },
             { label: 'Unsuccessful', icon: AlertTriangle, iconColor: '#ef4444', value: l30Lost.length, delta: deltaLost, invert: true },
           ].map(s => (
-            <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <s.icon size={16} color={s.iconColor} />
-                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
+            <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: isDesktop ? '16px' : '10px 8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                <s.icon size={13} color={s.iconColor} />
+                <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
               </div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
+              <div style={{ fontSize: isDesktop ? '28px' : '22px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
               <Delta value={s.delta} suffix={s.deltaSuffix} invert={s.invert} />
             </div>
           ))}
