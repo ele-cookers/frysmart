@@ -1614,7 +1614,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
                 { label: 'AVG TPM',          value: overallAvgTPM,          color: overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < warnAt ? '#10b981' : overallAvgTPM !== '—' && parseFloat(overallAvgTPM) < critAt ? '#f59e0b' : '#ef4444', target: `<${warnAt}` },
                 { label: 'FILTERING',        value: `${groupFilteringRate}%`,color: groupFilteringRate >= 80 ? '#10b981' : groupFilteringRate >= 60 ? '#f59e0b' : '#ef4444',                                                                  target: '80%+' },
               ].map(kpi => (
-                <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+                <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
                   <div style={{ fontSize: '26px', fontWeight: '700', color: kpi.color, lineHeight: '1', marginBottom: '6px' }}>{kpi.value}</div>
                   <div style={{ fontSize: '10px', color: '#94a3b8' }}>target: {kpi.target}</div>
