@@ -3199,8 +3199,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <div style={{
               ...(isDesktop
-                ? { padding: '24px clamp(16px, 2vw, 32px) 40px' }
-                : { maxWidth: '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }),
+                ? { padding: '20px 16px 40px' }
+                : { maxWidth: '760px', margin: '0 auto', padding: '20px 16px 40px' }),
               ...(['dashboard', 'pipeline', 'active', 'pending', 'accepted', 'manage', 'won', 'lost'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
             }}>
               {renderTabContent()}

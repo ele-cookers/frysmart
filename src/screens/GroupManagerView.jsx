@@ -2179,7 +2179,7 @@ export default function GroupManagerView({ currentUser, onLogout }) {
             </div>
           </div>
           {/* Content — scrollable */}
-          <div style={{ flex: 1, minWidth: 0, padding: '24px clamp(16px, 2vw, 32px) 40px', overflowY: 'auto' }}>
+          <div style={{ flex: 1, minWidth: 0, padding: '20px 16px 40px', overflowY: 'auto' }}>
             {primaryTab === 'all-venues' && (
               <ManagerOverview venues={venues} recordingsByVenue={recordingsByVenue} groupName={group?.name || currentUser?.name || 'Group'} systemSettings={systemSettings} onDrillDown={handleDrillDown} groupView={groupView} />
             )}

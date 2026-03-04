@@ -4118,7 +4118,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             </div>
 
             {/* ── Row 1: Core metrics ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr 0.6fr 0.6fr' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(5, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
               {[
                 { label: 'Win Rate', icon: Target, iconColor: '#1a428a', value: winRate !== null ? `${winRate}%` : '—', delta: deltaWinRate, deltaSuffix: '%' },
                 { label: 'Successful', icon: Trophy, iconColor: '#10b981', value: wonTrials.length, delta: deltaWon },
@@ -5179,7 +5179,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             </div>
           </div>
           {/* Main content — scrollable */}
-          <div style={{ flex: 1, padding: '24px clamp(16px, 2vw, 32px)', paddingBottom: '60px', minWidth: 0, overflowY: 'auto' }}>
+          <div style={{ flex: 1, padding: '20px 16px', paddingBottom: '60px', minWidth: 0, overflowY: 'auto' }}>
             {renderContent()}
           </div>
         </div>
