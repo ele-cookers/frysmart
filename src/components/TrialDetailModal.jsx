@@ -38,7 +38,7 @@ const calcTrialWeeklyAvg = (venueId, trialStartDate, readings, trialEndDate) => 
 };
 
 export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, bdmName, namName, renderActions }) => {
-  const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+  const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
   const compOil = oilTypes.find(o => o.id === venue.defaultOil);
   const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
 
@@ -67,7 +67,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
 
   // Build calendar data for the right panel (desktop)
   const calendarData = useMemo(() => {
-    if (!venue.trialStartDate || venue.trialStatus === 'pending') return { days: [], readingsByDate: {}, hasData: false };
+    if (!venue.trialStartDate || venue.trialStatus === 'pipeline') return { days: [], readingsByDate: {}, hasData: false };
     const start = new Date(venue.trialStartDate + 'T00:00:00');
     const end = venue.trialEndDate ? new Date(venue.trialEndDate + 'T00:00:00') : new Date();
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -201,7 +201,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
           )}
 
           {/* TPM Readings Calendar — compact version for mobile only */}
-          {!isDesktop && venue.trialStartDate && venue.trialStatus !== 'pending' && (() => {
+          {!isDesktop && venue.trialStartDate && venue.trialStatus !== 'pipeline' && (() => {
             const start = new Date(venue.trialStartDate + 'T00:00:00');
             const end = venue.trialEndDate ? new Date(venue.trialEndDate + 'T00:00:00') : new Date();
             const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -268,26 +268,26 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
           })()}
 
           {/* Outcome strip (for won/lost/accepted) */}
-          {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && (
+          {(venue.trialStatus === 'successful' || venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted') && (
             <div style={{
               padding: '8px 12px', borderRadius: '8px', marginBottom: '12px',
-              background: venue.trialStatus === 'lost' ? '#fef2f2' : '#f0fdf4',
-              border: `1px solid ${venue.trialStatus === 'lost' ? '#fecaca' : '#bbf7d0'}`,
+              background: venue.trialStatus === 'unsuccessful' ? '#fef2f2' : '#f0fdf4',
+              border: `1px solid ${venue.trialStatus === 'unsuccessful' ? '#fecaca' : '#bbf7d0'}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', fontWeight: '600', color: venue.trialStatus === 'lost' ? '#dc2626' : '#059669' }}>
-                  {venue.trialStatus === 'lost' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
+                <span style={{ fontSize: '13px', fontWeight: '600', color: venue.trialStatus === 'unsuccessful' ? '#dc2626' : '#059669' }}>
+                  {venue.trialStatus === 'unsuccessful' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
                 </span>
                 {venue.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span></>}
                 {venue.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason}</span></>}
               </div>
-              {(venue.trialStatus === 'won' || venue.trialStatus === 'accepted') && (
+              {(venue.trialStatus === 'successful' || venue.trialStatus === 'accepted') && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
                   {cookersOil && <OilBadge oil={cookersOil} competitors={competitors} compact />}
                   {venue.soldPricePerLitre && <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '400' }}>@ ${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span>}
                 </div>
               )}
-              {venue.trialStatus === 'won' && venue.customerCode && (
+              {venue.trialStatus === 'successful' && venue.customerCode && (
                 <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <CheckCircle2 size={13} color="#059669" />
                   <span style={{ fontSize: '12px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>

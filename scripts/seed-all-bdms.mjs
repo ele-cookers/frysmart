@@ -168,24 +168,24 @@ function generateReadings(venueId, trialId, fryerCount, startDate, endDate, staf
 function buildTrialDefs(stateCode) {
   return [
     // PENDING (2)
-    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 75  }, t: { status: 'pending',     oil: XLFRY,  curPrice: 2.35, offPrice: 3.10, createdDaysAgo: 2 } },
-    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 120 }, t: { status: 'pending',     oil: ULTAFRY,curPrice: 2.20, offPrice: 2.95, createdDaysAgo: 1 } },
+    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 75  }, t: { status: 'pipeline',     oil: XLFRY,  curPrice: 2.35, offPrice: 3.10, createdDaysAgo: 2 } },
+    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 120 }, t: { status: 'pipeline',     oil: ULTAFRY,curPrice: 2.20, offPrice: 2.95, createdDaysAgo: 1 } },
     // IN-PROGRESS (3)
-    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 80  }, t: { status: 'in-progress', oil: XLFRY,  curPrice: 2.40, offPrice: 3.20, startDaysAgo: 3 } },
-    { v: { fryer_count: 4, volume_bracket: '150-plus', weekly_avg: 180 }, t: { status: 'in-progress', oil: XLFRY,  curPrice: 2.55, offPrice: 3.35, startDaysAgo: 6 } },
-    { v: { fryer_count: 1, volume_bracket: 'under-60', weekly_avg: 45  }, t: { status: 'in-progress', oil: ULTAFRY,curPrice: 2.15, offPrice: 2.85, startDaysAgo: 8 } },
+    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 80  }, t: { status: 'active', oil: XLFRY,  curPrice: 2.40, offPrice: 3.20, startDaysAgo: 3 } },
+    { v: { fryer_count: 4, volume_bracket: '150-plus', weekly_avg: 180 }, t: { status: 'active', oil: XLFRY,  curPrice: 2.55, offPrice: 3.35, startDaysAgo: 6 } },
+    { v: { fryer_count: 1, volume_bracket: 'under-60', weekly_avg: 45  }, t: { status: 'active', oil: ULTAFRY,curPrice: 2.15, offPrice: 2.85, startDaysAgo: 8 } },
     // COMPLETED (2)
-    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 110 }, t: { status: 'completed',   oil: XLFRY,  curPrice: 2.45, offPrice: 3.25, startDaysAgo: 12, durationDays: 8 } },
-    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 70  }, t: { status: 'completed',   oil: XLFRY,  curPrice: 2.30, offPrice: 3.05, startDaysAgo: 10, durationDays: 7 } },
+    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 110 }, t: { status: 'pending',   oil: XLFRY,  curPrice: 2.45, offPrice: 3.25, startDaysAgo: 12, durationDays: 8 } },
+    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 70  }, t: { status: 'pending',   oil: XLFRY,  curPrice: 2.30, offPrice: 3.05, startDaysAgo: 10, durationDays: 7 } },
     // ACCEPTED (1)
     { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 85  }, t: { status: 'accepted',    oil: XLFRY,  curPrice: 2.40, offPrice: 3.15, startDaysAgo: 18, durationDays: 9, outcomeDaysAgo: 6, reason: 'oil-lasted-longer', soldPrice: 3.05 } },
     // WON (3)
-    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 130 }, t: { status: 'won', oil: XLFRY,  curPrice: 2.50, offPrice: 3.30, startDaysAgo: 30, durationDays: 10, outcomeDaysAgo: 15, reason: 'better-food-quality', soldPrice: 3.15, custCode: `${stateCode}-001` } },
-    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 90  }, t: { status: 'won', oil: ULTAFRY,curPrice: 2.25, offPrice: 2.90, startDaysAgo: 25, durationDays:  7, outcomeDaysAgo: 12, reason: 'cost-savings',       soldPrice: 2.80, custCode: `${stateCode}-002` } },
-    { v: { fryer_count: 4, volume_bracket: '150-plus', weekly_avg: 160 }, t: { status: 'won', oil: XLFRY,  curPrice: 2.60, offPrice: 3.40, startDaysAgo: 35, durationDays:  9, outcomeDaysAgo: 20, reason: 'oil-lasted-longer',  soldPrice: 3.25, custCode: `${stateCode}-003` } },
+    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 130 }, t: { status: 'successful', oil: XLFRY,  curPrice: 2.50, offPrice: 3.30, startDaysAgo: 30, durationDays: 10, outcomeDaysAgo: 15, reason: 'better-food-quality', soldPrice: 3.15, custCode: `${stateCode}-001` } },
+    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 90  }, t: { status: 'successful', oil: ULTAFRY,curPrice: 2.25, offPrice: 2.90, startDaysAgo: 25, durationDays:  7, outcomeDaysAgo: 12, reason: 'cost-savings',       soldPrice: 2.80, custCode: `${stateCode}-002` } },
+    { v: { fryer_count: 4, volume_bracket: '150-plus', weekly_avg: 160 }, t: { status: 'successful', oil: XLFRY,  curPrice: 2.60, offPrice: 3.40, startDaysAgo: 35, durationDays:  9, outcomeDaysAgo: 20, reason: 'oil-lasted-longer',  soldPrice: 3.25, custCode: `${stateCode}-003` } },
     // LOST (2)
-    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 65  }, t: { status: 'lost', oil: XLFRY,  curPrice: 2.10, offPrice: 3.00, startDaysAgo: 22, durationDays: 8, outcomeDaysAgo: 10, reason: 'price-too-high'     } },
-    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 100 }, t: { status: 'lost', oil: XLFRY,  curPrice: 2.45, offPrice: 3.20, startDaysAgo: 28, durationDays:10, outcomeDaysAgo: 14, reason: 'contract-locked'    } },
+    { v: { fryer_count: 2, volume_bracket: '60-100',   weekly_avg: 65  }, t: { status: 'unsuccessful', oil: XLFRY,  curPrice: 2.10, offPrice: 3.00, startDaysAgo: 22, durationDays: 8, outcomeDaysAgo: 10, reason: 'price-too-high'     } },
+    { v: { fryer_count: 3, volume_bracket: '100-150',  weekly_avg: 100 }, t: { status: 'unsuccessful', oil: XLFRY,  curPrice: 2.45, offPrice: 3.20, startDaysAgo: 28, durationDays:10, outcomeDaysAgo: 14, reason: 'contract-locked'    } },
   ];
 }
 
@@ -275,7 +275,7 @@ for (const bdm of bdmProfiles) {
       }
     }
 
-    const label = { pending:'PENDING','in-progress':'ACTIVE',completed:'DECISION',accepted:'ACCEPTED',won:'WON',lost:'LOST' }[tDef.status];
+    const label = { pipeline:'PENDING','active':'ACTIVE',completed:'DECISION',accepted:'ACCEPTED',won:'WON',lost:'LOST' }[tDef.status];
     console.log(`  [${label}] ${venueName}`);
   }
 

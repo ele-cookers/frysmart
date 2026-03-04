@@ -2210,12 +2210,12 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
 
   const statusCounts = {
     all: baseFiltered.length,
+    pipeline: baseFiltered.filter(v => v.trialStatus === 'pipeline').length,
+    'active': baseFiltered.filter(v => v.trialStatus === 'active').length,
     pending: baseFiltered.filter(v => v.trialStatus === 'pending').length,
-    'in-progress': baseFiltered.filter(v => v.trialStatus === 'in-progress').length,
-    completed: baseFiltered.filter(v => v.trialStatus === 'completed').length,
     accepted: baseFiltered.filter(v => v.trialStatus === 'accepted').length,
-    won: baseFiltered.filter(v => v.trialStatus === 'won').length,
-    lost: baseFiltered.filter(v => v.trialStatus === 'lost').length,
+    successful: baseFiltered.filter(v => v.trialStatus === 'successful').length,
+    unsuccessful: baseFiltered.filter(v => v.trialStatus === 'unsuccessful').length,
   };
 
   const filtered = (() => {
@@ -2256,12 +2256,12 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
       {/* Summary count strip - tappable as primary filter */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', overflowX: 'auto' }}>
         {[
-          { key: 'pending', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
-          { key: 'in-progress', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
-          { key: 'completed', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
+          { key: 'pipeline', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
+          { key: 'active', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
+          { key: 'pending', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
           { key: 'accepted', label: 'Awaiting Code', color: '#9a3412', bg: '#ffedd5', activeBg: '#ea580c', activeText: 'white' },
-          { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
-          { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
+          { key: 'successful', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
+          { key: 'unsuccessful', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
         ].map(s => {
           const isActive = statusFilters.includes(s.key);
           return (
@@ -2372,7 +2372,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
             {filtered.map(venue => {
               const compOil = oilTypes.find(o => o.id === venue.defaultOil);
               const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
-              const statusConf = TRIAL_STATUS_CONFIGS[venue.trialStatus] || TRIAL_STATUS_CONFIGS['pending'];
+              const statusConf = TRIAL_STATUS_CONFIGS[venue.trialStatus] || TRIAL_STATUS_CONFIGS['pipeline'];
               return (
                 <div key={venue.id} onClick={() => setSelectedTrial(venue)} style={{
                   background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0',
@@ -2426,7 +2426,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                     {colVis('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(trials, v => v.trialStartDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                     {colVis('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(trials, v => v.trialEndDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                     {colVis('closedDate') && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(trials, v => v.outcomeDate || '')} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-                    {colVis('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Awaiting'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+                    {colVis('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Awaiting'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
                     {colVis('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => trials.some(v => v.trialReason === r.key)).map(r => ({value:r.key,label:r.label}))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
                     <th style={{ width: '30px' }}></th>
                   </tr>
@@ -2437,7 +2437,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                     const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
                     const comp = compOil?.competitorId ? competitors.find(c => c.id === compOil.competitorId) : null;
                     const compTier = compOil ? (COMPETITOR_TIER_COLORS[compOil.tier] || COMPETITOR_TIER_COLORS.standard) : null;
-                    const statusConf = TRIAL_STATUS_CONFIGS[venue.trialStatus] || TRIAL_STATUS_CONFIGS['pending'];
+                    const statusConf = TRIAL_STATUS_CONFIGS[venue.trialStatus] || TRIAL_STATUS_CONFIGS['pipeline'];
                     const reasonObj = venue.trialReason ? trialReasons.find(r => r.key === venue.trialReason) : null;
                     return (
                       <tr key={venue.id} onClick={() => setSelectedTrial(venue)} style={{ cursor: 'pointer', height: '34px' }}>
@@ -2453,8 +2453,8 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                         {colVis('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${venue.currentPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
                         {colVis('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${venue.offeredPricePerLitre.toFixed(2)}` : <span style={{color:'#cbd5e1'}}>—</span>}</td>}
                         {colVis('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${venue.soldPricePerLitre.toFixed(2)}` : '—'}</td>}
-                        {colVis('start') && <td style={{ color: (venue.trialStartDate && venue.trialStartDate > new Date().toISOString().split('T')[0] && ['pending', 'in-progress'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialStartDate)}</td>}
-                        {colVis('end') && <td style={{ color: (venue.trialEndDate && venue.trialEndDate > new Date().toISOString().split('T')[0] && ['pending', 'in-progress'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialEndDate)}</td>}
+                        {colVis('start') && <td style={{ color: (venue.trialStartDate && venue.trialStartDate > new Date().toISOString().split('T')[0] && ['pipeline', 'active'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialStartDate)}</td>}
+                        {colVis('end') && <td style={{ color: (venue.trialEndDate && venue.trialEndDate > new Date().toISOString().split('T')[0] && ['pipeline', 'active'].includes(venue.trialStatus)) ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.trialEndDate)}</td>}
                         {colVis('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(venue.outcomeDate)}</td>}
                         {colVis('status') && <td style={{ textAlign: "center" }}><TrialStatusBadge status={venue.trialStatus} /></td>}
                         {colVis('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
@@ -2485,7 +2485,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
       {/* ── Close Trial Modal ── */}
       {closeTrialModal && (() => {
         const { venue: t, outcome } = closeTrialModal;
-        const isWon = outcome === 'won';
+        const isWon = outcome === 'successful';
         const successReasons = trialReasons.filter(r => r.type === 'successful');
         const failReasons = trialReasons.filter(r => r.type === 'unsuccessful');
         const reasons = isWon ? successReasons : failReasons;
@@ -3450,7 +3450,7 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
 
 
 // ==================== MAIN ADMIN PANEL ====================
-export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
+export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMode = 'admin' }) {
   const [activeSection, setActiveSection] = useState('overview');
   const [pendingTrialId, setPendingTrialId] = useState(null);
   const [overviewBdmState, setOverviewBdmState] = useState('all');
@@ -3727,11 +3727,11 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [
-          { key: 'pending', label: 'Pipeline', shortLabel: 'Pipeline' },
-          { key: 'in-progress', label: 'Active', shortLabel: 'Active' },
-          { key: 'completed', label: 'Pending', shortLabel: 'Pending' },
-          { key: 'won', label: 'Successful', shortLabel: 'Won' },
-          { key: 'lost', label: 'Unsuccessful', shortLabel: 'Lost' },
+          { key: 'pipeline', label: 'Pipeline', shortLabel: 'Pipeline' },
+          { key: 'active', label: 'Active', shortLabel: 'Active' },
+          { key: 'pending', label: 'Pending', shortLabel: 'Pending' },
+          { key: 'successful', label: 'Successful', shortLabel: 'Won' },
+          { key: 'unsuccessful', label: 'Unsuccessful', shortLabel: 'Lost' },
         ];
         // Period-based filtering
         const periodNow = new Date();
@@ -3771,7 +3771,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           const map = {};
           (dataset || filtered).forEach(v => {
             const name = keyFn(v);
-            if (!map[name]) map[name] = { pending: 0, 'in-progress': 0, completed: 0, won: 0, lost: 0, total: 0 };
+            if (!map[name]) map[name] = { pipeline: 0, 'active': 0, pending: 0, successful: 0, unsuccessful: 0, total: 0 };
             map[name][v.trialStatus] = (map[name][v.trialStatus] || 0) + 1;
             map[name].total += 1;
           });
@@ -3781,8 +3781,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         const bdmFiltered = overviewBdmState === 'all' ? filtered : filtered.filter(v => v.state === overviewBdmState);
         const bdmData = buildMap(v => v.bdmId ? getUN(v.bdmId) : 'Unassigned', bdmFiltered);
         // KPIs
-        const wonTrials = filtered.filter(v => v.trialStatus === 'won');
-        const lostTrials = filtered.filter(v => v.trialStatus === 'lost');
+        const wonTrials = filtered.filter(v => v.trialStatus === 'successful');
+        const lostTrials = filtered.filter(v => v.trialStatus === 'unsuccessful');
         const closedTrials = [...wonTrials, ...lostTrials];
         const winRate = closedTrials.length > 0 ? Math.round((wonTrials.length / closedTrials.length) * 100) : null;
 
@@ -3795,10 +3795,10 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             const comp = oil?.competitorId ? competitors.find(c => c.id === oil.competitorId) : null;
             const compName = comp ? comp.name : 'Unknown';
             const key = `${compName} · ${oilName}`;
-            if (!compOilDetail[key]) compOilDetail[key] = { compName, oilName, total: 0, won: 0, lost: 0, other: 0 };
+            if (!compOilDetail[key]) compOilDetail[key] = { compName, oilName, total: 0, successful: 0, unsuccessful: 0, other: 0 };
             compOilDetail[key].total += 1;
-            if (v.trialStatus === 'won') compOilDetail[key].won += 1;
-            else if (v.trialStatus === 'lost') compOilDetail[key].lost += 1;
+            if (v.trialStatus === 'successful') compOilDetail[key].successful += 1;
+            else if (v.trialStatus === 'unsuccessful') compOilDetail[key].unsuccessful += 1;
             else compOilDetail[key].other += 1;
           }
         });
@@ -3811,17 +3811,17 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             const oil = oilTypes.find(o => o.id === v.defaultOil);
             const comp = oil?.competitorId ? competitors.find(c => c.id === oil.competitorId) : null;
             const compName = comp ? comp.name : 'Unknown';
-            if (!compDetail[compName]) compDetail[compName] = { total: 0, won: 0, lost: 0 };
+            if (!compDetail[compName]) compDetail[compName] = { total: 0, successful: 0, unsuccessful: 0 };
             compDetail[compName].total += 1;
-            if (v.trialStatus === 'won') compDetail[compName].won += 1;
-            else if (v.trialStatus === 'lost') compDetail[compName].lost += 1;
+            if (v.trialStatus === 'successful') compDetail[compName].successful += 1;
+            else if (v.trialStatus === 'unsuccessful') compDetail[compName].unsuccessful += 1;
           }
         });
         const topCompetitorData = Object.entries(compDetail).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
 
         // BDM avg days to decision (trialEndDate → outcomeDate)
         const bdmDecisionMap = {};
-        filtered.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialEndDate && v.outcomeDate).forEach(v => {
+        filtered.filter(v => (v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful') && v.trialEndDate && v.outcomeDate).forEach(v => {
           const name = v.bdmId ? getUN(v.bdmId) : 'Unassigned';
           if (!bdmDecisionMap[name]) bdmDecisionMap[name] = [];
           const days = Math.round((new Date(v.outcomeDate) - new Date(v.trialEndDate)) / 86400000);
@@ -3911,15 +3911,15 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         const bdmTrialCounts = {};
         filtered.forEach(v => {
           const name = v.bdmId ? getUN(v.bdmId) : 'Unassigned';
-          if (!bdmTrialCounts[name]) bdmTrialCounts[name] = { pending: 0, 'in-progress': 0, completed: 0, won: 0, lost: 0, total: 0 };
+          if (!bdmTrialCounts[name]) bdmTrialCounts[name] = { pipeline: 0, 'active': 0, pending: 0, successful: 0, unsuccessful: 0, total: 0 };
           bdmTrialCounts[name][v.trialStatus] = (bdmTrialCounts[name][v.trialStatus] || 0) + 1;
           bdmTrialCounts[name].total += 1;
         });
         const bdmEntries = Object.entries(bdmTrialCounts);
-        const topWon = [...bdmEntries].sort((a, b) => b[1].won - a[1].won).filter(([, c]) => c.won > 0).slice(0, 5);
-        const topLost = [...bdmEntries].sort((a, b) => b[1].lost - a[1].lost).filter(([, c]) => c.lost > 0).slice(0, 5);
-        const topPending = [...bdmEntries].sort((a, b) => b[1].pending - a[1].pending).filter(([, c]) => c.pending > 0).slice(0, 5);
-        const topActive = [...bdmEntries].sort((a, b) => b[1]['in-progress'] - a[1]['in-progress']).filter(([, c]) => c['in-progress'] > 0).slice(0, 5);
+        const topWon = [...bdmEntries].sort((a, b) => b[1].successful - a[1].successful).filter(([, c]) => c.won > 0).slice(0, 5);
+        const topLost = [...bdmEntries].sort((a, b) => b[1].unsuccessful - a[1].unsuccessful).filter(([, c]) => c.lost > 0).slice(0, 5);
+        const topPipeline = [...bdmEntries].sort((a, b) => b[1].pipeline - a[1].pipeline).filter(([, c]) => c.pipeline > 0).slice(0, 5);
+        const topActive = [...bdmEntries].sort((a, b) => b[1]['active'] - a[1]['active']).filter(([, c]) => c['active'] > 0).slice(0, 5);
 
         const LeaderCol = ({ title, icon: Icon, iconColor, entries, statKey, statusKey }) => {
           const maxVal = entries.length > 0 ? entries[0][1][statKey] : 1;
@@ -3966,12 +3966,12 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         };
         const recent = allTrials.filter(v => inRange(v, fmt(d30ago), fmt(now)));
         const prev = allTrials.filter(v => inRange(v, fmt(d60ago), fmt(d30ago)));
-        const recentWon = recent.filter(v => v.trialStatus === 'won').length;
-        const prevWon = prev.filter(v => v.trialStatus === 'won').length;
-        const recentLost = recent.filter(v => v.trialStatus === 'lost').length;
-        const prevLost = prev.filter(v => v.trialStatus === 'lost').length;
-        const recentDurs = recent.filter(v => v.trialStartDate && v.trialEndDate && (v.trialStatus === 'won' || v.trialStatus === 'lost')).map(v => (new Date(v.trialEndDate + 'T00:00:00') - new Date(v.trialStartDate + 'T00:00:00')) / 86400000);
-        const prevDurs = prev.filter(v => v.trialStartDate && v.trialEndDate && (v.trialStatus === 'won' || v.trialStatus === 'lost')).map(v => (new Date(v.trialEndDate + 'T00:00:00') - new Date(v.trialStartDate + 'T00:00:00')) / 86400000);
+        const recentWon = recent.filter(v => v.trialStatus === 'successful').length;
+        const prevWon = prev.filter(v => v.trialStatus === 'successful').length;
+        const recentLost = recent.filter(v => v.trialStatus === 'unsuccessful').length;
+        const prevLost = prev.filter(v => v.trialStatus === 'unsuccessful').length;
+        const recentDurs = recent.filter(v => v.trialStartDate && v.trialEndDate && (v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful')).map(v => (new Date(v.trialEndDate + 'T00:00:00') - new Date(v.trialStartDate + 'T00:00:00')) / 86400000);
+        const prevDurs = prev.filter(v => v.trialStartDate && v.trialEndDate && (v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful')).map(v => (new Date(v.trialEndDate + 'T00:00:00') - new Date(v.trialStartDate + 'T00:00:00')) / 86400000);
         const recentAvgDur = recentDurs.length > 0 ? Math.round(recentDurs.reduce((a, b) => a + b, 0) / recentDurs.length) : null;
         const prevAvgDur = prevDurs.length > 0 ? Math.round(prevDurs.reduce((a, b) => a + b, 0) / prevDurs.length) : null;
         const deltaWon = recentWon - prevWon;
@@ -3979,8 +3979,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
         const deltaDur = recentAvgDur !== null && prevAvgDur !== null ? recentAvgDur - prevAvgDur : null;
 
         // Win rate delta
-        const recentClosed = recent.filter(v => v.trialStatus === 'won' || v.trialStatus === 'lost');
-        const prevClosed = prev.filter(v => v.trialStatus === 'won' || v.trialStatus === 'lost');
+        const recentClosed = recent.filter(v => v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful');
+        const prevClosed = prev.filter(v => v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful');
         const recentWinRate = recentClosed.length > 0 ? Math.round((recentWon / recentClosed.length) * 100) : null;
         const prevWinRate = prevClosed.length > 0 ? Math.round((prevWon / prevClosed.length) * 100) : null;
         const deltaWinRate = recentWinRate !== null && prevWinRate !== null ? recentWinRate - prevWinRate : null;
@@ -3990,8 +3990,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           const dt = closedTrials.filter(v => v.trialEndDate && v.outcomeDate).map(v => Math.round((new Date(v.outcomeDate + 'T00:00:00') - new Date(v.trialEndDate + 'T00:00:00')) / 86400000));
           return dt.length > 0 ? Math.round(dt.reduce((a, b) => a + b, 0) / dt.length) : null;
         })();
-        const recentDecTimes = recent.filter(v => v.trialEndDate && v.outcomeDate && (v.trialStatus === 'won' || v.trialStatus === 'lost')).map(v => Math.round((new Date(v.outcomeDate + 'T00:00:00') - new Date(v.trialEndDate + 'T00:00:00')) / 86400000));
-        const prevDecTimes = prev.filter(v => v.trialEndDate && v.outcomeDate && (v.trialStatus === 'won' || v.trialStatus === 'lost')).map(v => Math.round((new Date(v.outcomeDate + 'T00:00:00') - new Date(v.trialEndDate + 'T00:00:00')) / 86400000));
+        const recentDecTimes = recent.filter(v => v.trialEndDate && v.outcomeDate && (v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful')).map(v => Math.round((new Date(v.outcomeDate + 'T00:00:00') - new Date(v.trialEndDate + 'T00:00:00')) / 86400000));
+        const prevDecTimes = prev.filter(v => v.trialEndDate && v.outcomeDate && (v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful')).map(v => Math.round((new Date(v.outcomeDate + 'T00:00:00') - new Date(v.trialEndDate + 'T00:00:00')) / 86400000));
         const recentAvgDec = recentDecTimes.length > 0 ? Math.round(recentDecTimes.reduce((a, b) => a + b, 0) / recentDecTimes.length) : null;
         const prevAvgDec = prevDecTimes.length > 0 ? Math.round(prevDecTimes.reduce((a, b) => a + b, 0) / prevDecTimes.length) : null;
         const deltaDec = recentAvgDec !== null && prevAvgDec !== null ? recentAvgDec - prevAvgDec : null;
@@ -4054,7 +4054,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           const map = {};
           (dataset || analysisFiltered).forEach(v => {
             const name = keyFn(v);
-            if (!map[name]) map[name] = { pending: 0, 'in-progress': 0, completed: 0, won: 0, lost: 0, total: 0 };
+            if (!map[name]) map[name] = { pipeline: 0, 'active': 0, pending: 0, successful: 0, unsuccessful: 0, total: 0 };
             map[name][v.trialStatus] = (map[name][v.trialStatus] || 0) + 1;
             map[name].total += 1;
           });
@@ -4070,8 +4070,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           }
         })();
         const analysisWinRate = (() => {
-          const w = analysisFiltered.filter(v => v.trialStatus === 'won').length;
-          const l = analysisFiltered.filter(v => v.trialStatus === 'lost').length;
+          const w = analysisFiltered.filter(v => v.trialStatus === 'successful').length;
+          const l = analysisFiltered.filter(v => v.trialStatus === 'unsuccessful').length;
           return (w + l) > 0 ? Math.round((w / (w + l)) * 100) : null;
         })();
 
@@ -4158,7 +4158,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
                     const tierColors = OIL_TIER_COLORS[oil.tier] || OIL_TIER_COLORS.standard;
                     const wCurr = grpTrials.filter(v => v.currentPricePerLitre);
                     const wOff = grpTrials.filter(v => v.offeredPricePerLitre);
-                    const wSold = grpTrials.filter(v => v.soldPricePerLitre && v.trialStatus === 'won');
+                    const wSold = grpTrials.filter(v => v.soldPricePerLitre && v.trialStatus === 'successful');
                     return {
                       oil, tierColors,
                       their: wCurr.length > 0 ? (wCurr.reduce((s, v) => s + v.currentPricePerLitre, 0) / wCurr.length).toFixed(2) : null,
@@ -4371,10 +4371,10 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             <div style={{ background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', padding: isDesktop ? '20px 24px' : '14px', marginBottom: '10px' }}>
               <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Top 5 BDMs</div>
               <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '8px' }}>
-                <LeaderCol title="Successful" icon={Trophy} iconColor="#10b981" entries={topWon} statKey="won" statusKey="won" />
-                <LeaderCol title="Unsuccessful" icon={AlertTriangle} iconColor="#ef4444" entries={topLost} statKey="lost" statusKey="lost" />
-                <LeaderCol title="In Progress" icon={Zap} iconColor="#3b82f6" entries={topActive} statKey="in-progress" statusKey="in-progress" />
-                <LeaderCol title="In Pipeline" icon={Clock} iconColor="#94a3b8" entries={topPending} statKey="pending" statusKey="pending" />
+                <LeaderCol title="Successful" icon={Trophy} iconColor="#10b981" entries={topWon} statKey="successful" statusKey="successful" />
+                <LeaderCol title="Unsuccessful" icon={AlertTriangle} iconColor="#ef4444" entries={topLost} statKey="unsuccessful" statusKey="unsuccessful" />
+                <LeaderCol title="In Progress" icon={Zap} iconColor="#3b82f6" entries={topActive} statKey="active" statusKey="active" />
+                <LeaderCol title="In Pipeline" icon={Clock} iconColor="#94a3b8" entries={topPipeline} statKey="pipeline" statusKey="pipeline" />
               </div>
             </div>
 
@@ -4593,7 +4593,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
             {[
               { label: 'Active Calendars', value: venues.filter(v => v.status === 'active').length, color: '#10b981', icon: Building },
-              { label: 'Active Trials', value: venues.filter(v => v.status === 'trial-only' && v.trialStatus !== 'won' && v.trialStatus !== 'lost').length, color: '#f59e0b', icon: AlertTriangle },
+              { label: 'Active Trials', value: venues.filter(v => v.status === 'trial-only' && v.trialStatus !== 'successful' && v.trialStatus !== 'unsuccessful').length, color: '#f59e0b', icon: AlertTriangle },
               { label: 'Customer Groups', value: groups.filter(g => g.status === 'active').length, color: '#3b82f6', icon: Layers },
               { label: 'Active Users', value: users.filter(u => u.lastActive).length, color: '#8b5cf6', icon: Users },
             ].map(s => (
@@ -4617,9 +4617,9 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           {(() => {
             const activeVenues = venues.filter(v => v.status === 'active');
             const allTrials = venues.filter(v => v.status === 'trial-only');
-            const pipelineCount = allTrials.filter(v => v.trialStatus === 'pending').length;
-            const inProgressCount = allTrials.filter(v => v.trialStatus === 'in-progress').length;
-            const awaitingCount = allTrials.filter(v => v.trialStatus === 'completed').length;
+            const pipelineCount = allTrials.filter(v => v.trialStatus === 'pipeline').length;
+            const inProgressCount = allTrials.filter(v => v.trialStatus === 'active').length;
+            const awaitingCount = allTrials.filter(v => v.trialStatus === 'pending').length;
             const totalActive = pipelineCount + inProgressCount + awaitingCount;
             const totalForDonut = activeVenues.length + totalActive;
             const calPct = totalForDonut > 0 ? (activeVenues.length / totalForDonut) * 100 : 0;
@@ -4729,7 +4729,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
             const getCompName = (id) => { const c = competitors.find(c => c.id === id); return c ? c.name : '—'; };
 
             const calVenues = venues.filter(v => v.status === 'active');
-            const trialVenues = venues.filter(v => v.status === 'trial-only' && v.trialStatus !== 'won' && v.trialStatus !== 'lost');
+            const trialVenues = venues.filter(v => v.status === 'trial-only' && v.trialStatus !== 'successful' && v.trialStatus !== 'unsuccessful');
 
             // Calendars by State
             const calByState = {};
@@ -4832,9 +4832,9 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
           {(() => {
             const allTrials = venues.filter(v => v.status === 'trial-only');
             const todayStr = new Date().toISOString().split('T')[0];
-            const awaitingStart = allTrials.filter(v => v.trialStatus === 'pending');
-            const awaitingRecording = allTrials.filter(v => v.trialStatus === 'in-progress' && !tpmReadings.some(r => r.venueId === v.id && r.readingDate === todayStr));
-            const awaitingDecision = allTrials.filter(v => v.trialStatus === 'completed');
+            const awaitingStart = allTrials.filter(v => v.trialStatus === 'pipeline');
+            const awaitingRecording = allTrials.filter(v => v.trialStatus === 'active' && !tpmReadings.some(r => r.venueId === v.id && r.readingDate === todayStr));
+            const awaitingDecision = allTrials.filter(v => v.trialStatus === 'pending');
             const getBdmName = (v) => { const u = users.find(u => u.id === v.bdmId); return u ? u.name : '—'; };
 
             const OverviewCard = ({ title, icon: Icon, iconColor, items, emptyMsg }) => {
@@ -5109,7 +5109,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue }) {
               {navGroups.filter(g => !g.children).map(group => {
                 const isActive = activeSection === group.key;
                 const isTrials = group.key === 'trials';
-                const trialCount = isTrials ? venues.filter(v => v.status === 'trial-only' && ['pending', 'in-progress', 'completed'].includes(v.trialStatus)).length : 0;
+                const trialCount = isTrials ? venues.filter(v => v.status === 'trial-only' && ['pipeline', 'active', 'pending'].includes(v.trialStatus)).length : 0;
                 return (
                   <button key={group.key} onClick={() => setActiveSection(group.key)} style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',

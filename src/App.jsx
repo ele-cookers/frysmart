@@ -4,6 +4,8 @@ import { mapProfile, mapReading, mapSystemSettings, unMapReading } from './lib/m
 
 const Login = lazy(() => import('./screens/Login'));
 const FrysmartAdminPanel = lazy(() => import('./screens/FrysmartAdminPanel'));
+const MGTView = lazy(() => import('./screens/MGTView'));
+const NAMView = lazy(() => import('./screens/NAMView'));
 const VenueStaffView = lazy(() => import('./screens/VenueStaffView'));
 const GroupManagerView = lazy(() => import('./screens/GroupManagerView'));
 const BDMTrialsView = lazy(() => import('./screens/BDMTrialsView'));
@@ -349,7 +351,17 @@ function App() {
     return <Suspense fallback={<LoadingScreen />}><BDMTrialsView currentUser={currentUser} onLogout={handleLogout} /></Suspense>;
   }
 
-  // Authenticated → admin panel
+  // MGT view — management / NSM (full access now, restrict via viewMode later)
+  if (currentUser?.role === 'mgt') {
+    return <Suspense fallback={<LoadingScreen />}><MGTView currentUser={currentUser} onPreviewVenue={handlePreviewVenue} /></Suspense>;
+  }
+
+  // NAM view — national account manager (full access now, restrict via viewMode later)
+  if (currentUser?.role === 'nam') {
+    return <Suspense fallback={<LoadingScreen />}><NAMView currentUser={currentUser} onPreviewVenue={handlePreviewVenue} /></Suspense>;
+  }
+
+  // Authenticated → admin panel (admin role + any unrecognised roles)
   return <Suspense fallback={<LoadingScreen />}><FrysmartAdminPanel currentUser={currentUser} onPreviewVenue={handlePreviewVenue} /></Suspense>;
 }
 

@@ -2126,14 +2126,14 @@ const SummaryView = ({ readings, isWide }) => {
       {/* Pair 1: Top KPIs + Oil Management */}
       <div style={twoCol}>
       {/* Top KPIs 2x2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: isWide ? 0 : '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '10px', marginBottom: isWide ? 0 : '16px', height: isWide ? '100%' : 'auto' }}>
         {[
           { label: 'COMPLIANCE', value: `${complianceRate}%`, color: complianceRate >= 90 ? '#10b981' : complianceRate >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
           { label: 'REACHED CRITICAL', value: `${criticalRate}%`, color: criticalRate <= 10 ? '#10b981' : criticalRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
           { label: 'AVG TPM', value: avgTPM, color: avgTPM < 18 ? '#10b981' : avgTPM < 24 ? '#f59e0b' : '#ef4444', target: '<18' },
           { label: 'FILTERING', value: `${filteringRate}%`, color: filteringRate >= 80 ? '#10b981' : filteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' }
         ].map(kpi => (
-          <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+          <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
             <div style={{ fontSize: '26px', fontWeight: '700', color: kpi.color, lineHeight: '1', marginBottom: '6px' }}>{kpi.value}</div>
             <div style={{ fontSize: '10px', color: '#94a3b8' }}>target: {kpi.target}</div>
@@ -2168,17 +2168,17 @@ const SummaryView = ({ readings, isWide }) => {
       {/* Pair 2: Weekly Compliance + TPM Trend */}
       <div style={twoCol}>
       {/* Weekly Compliance Pattern */}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
+      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px', display: 'flex', flexDirection: 'column' }}>
         <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>Weekly Compliance</h3>
         <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Recording rate by day of week (last 30 days)</p>
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+        <div style={{ flex: 1, display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'flex-end' }}>
           {dayNames.map(day => {
             const rate = dayStats[day].total > 0 ? Math.round((dayStats[day].recorded / dayStats[day].total) * 100) : 0;
             const col = rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#ef4444';
             return (
               <div key={day} style={{ flex: 1, textAlign: 'center' }}>
                 <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>{day}</div>
-                <div style={{ height: '50px', background: '#f3f4f6', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ height: '70px', background: '#f3f4f6', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${rate}%`, background: col, transition: 'height 0.3s' }} />
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: col, marginTop: '4px' }}>{rate}%</div>
@@ -2207,9 +2207,10 @@ const SummaryView = ({ readings, isWide }) => {
         }
         const maxT = Math.max(...last7.filter(d => d.avg != null).map(d => d.avg), 30);
         return (
-          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>7-Day TPM Trend</h3>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px', display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>7-Day TPM Trend</h3>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Average TPM per day (last 7 days)</p>
+            <div style={{ flex: 1, display: 'flex', gap: '4px', alignItems: 'flex-end', minHeight: '70px' }}>
               {last7.map((day, i) => (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
                   {day.avg != null ? (
@@ -2436,9 +2437,9 @@ const DashboardView = ({ readings, isWide }) => {
       )}
 
       {isWide ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-          {/* Column 1: KPI Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div>
+          {/* Row 1: 4 stat cards across */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
             <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)', borderRadius: '10px', padding: '16px 14px', color: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
               <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>CURRENT STREAK</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -2473,27 +2474,23 @@ const DashboardView = ({ readings, isWide }) => {
             </div>
           </div>
 
-          {/* Column 2: Stats */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>AVG TPM</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{avgTPM}</div>
+          {/* Row 2: secondary stats + top recorders across */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr', gap: '12px' }}>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '6px', letterSpacing: '0.5px' }}>AVG TPM</div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937', marginBottom: '4px' }}>{avgTPM}</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>all readings</div>
             </div>
-            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>OIL HABITS</div>
-              <div style={{ fontSize: '18px', marginBottom: '2px' }}>{oilHabitsScore >= 8 ? '⭐⭐⭐' : oilHabitsScore >= 5 ? '⭐⭐☆' : oilHabitsScore >= 3 ? '⭐☆☆' : '☆☆☆'}</div>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '6px', letterSpacing: '0.5px' }}>OIL HABITS</div>
+              <div style={{ fontSize: '22px', marginBottom: '4px' }}>{oilHabitsScore >= 8 ? '⭐⭐⭐' : oilHabitsScore >= 5 ? '⭐⭐☆' : oilHabitsScore >= 3 ? '⭐☆☆' : '☆☆☆'}</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>{oilHabitsRating}</div>
             </div>
-            <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>TOTAL</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1a428a', marginBottom: '2px' }}>{totalRecs}</div>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '6px', letterSpacing: '0.5px' }}>TOTAL</div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a428a', marginBottom: '4px' }}>{totalRecs}</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>recordings</div>
             </div>
-          </div>
-
-          {/* Column 3: Top Recorders */}
-          <div>
             {topStaff.length > 0 && (
               <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>🏆 Top Recorders</h3>

@@ -224,35 +224,35 @@ const trialDefs = [
   // ── PENDING (2) — created but not started yet ──
   {
     venue: { name: 'Bayside Fish & Chips', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 75 },
-    trial: { status: 'pending', trial_oil: XLFRY, currentPrice: 2.35, offeredPrice: 3.10, createdDaysAgo: 2 },
+    trial: { status: 'pipeline', trial_oil: XLFRY, currentPrice: 2.35, offeredPrice: 3.10, createdDaysAgo: 2 },
   },
   {
     venue: { name: 'Doncaster Takeaway', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 120 },
-    trial: { status: 'pending', trial_oil: ULTAFRY, currentPrice: 2.20, offeredPrice: 2.95, createdDaysAgo: 1 },
+    trial: { status: 'pipeline', trial_oil: ULTAFRY, currentPrice: 2.20, offeredPrice: 2.95, createdDaysAgo: 1 },
   },
 
   // ── IN-PROGRESS (3) — actively running ──
   {
     venue: { name: 'Richmond Takeaway', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 80 },
-    trial: { status: 'in-progress', trial_oil: XLFRY, currentPrice: 2.40, offeredPrice: 3.20, startDaysAgo: 3 },
+    trial: { status: 'active', trial_oil: XLFRY, currentPrice: 2.40, offeredPrice: 3.20, startDaysAgo: 3 },
   },
   {
     venue: { name: 'South Yarra Grill', fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 180 },
-    trial: { status: 'in-progress', trial_oil: XLFRY, currentPrice: 2.55, offeredPrice: 3.35, startDaysAgo: 6 },
+    trial: { status: 'active', trial_oil: XLFRY, currentPrice: 2.55, offeredPrice: 3.35, startDaysAgo: 6 },
   },
   {
     venue: { name: 'Brunswick Street Fryer', fryer_count: 1, volume_bracket: 'under-60', current_weekly_avg: 45 },
-    trial: { status: 'in-progress', trial_oil: ULTAFRY, currentPrice: 2.15, offeredPrice: 2.85, startDaysAgo: 8 },
+    trial: { status: 'active', trial_oil: ULTAFRY, currentPrice: 2.15, offeredPrice: 2.85, startDaysAgo: 8 },
   },
 
   // ── COMPLETED (2) — ended, awaiting decision ──
   {
     venue: { name: 'St Kilda Seafood Bar', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 110 },
-    trial: { status: 'completed', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.25, startDaysAgo: 12, durationDays: 8 },
+    trial: { status: 'pending', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.25, startDaysAgo: 12, durationDays: 8 },
   },
   {
     venue: { name: 'Fitzroy Chicken Shop', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 70 },
-    trial: { status: 'completed', trial_oil: XLFRY, currentPrice: 2.30, offeredPrice: 3.05, startDaysAgo: 10, durationDays: 7 },
+    trial: { status: 'pending', trial_oil: XLFRY, currentPrice: 2.30, offeredPrice: 3.05, startDaysAgo: 10, durationDays: 7 },
   },
 
   // ── ACCEPTED (1) — won but awaiting customer code ──
@@ -264,25 +264,25 @@ const trialDefs = [
   // ── WON (3) — successful trials ──
   {
     venue: { name: 'Hawthorn Hot Foods', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 130 },
-    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.50, offeredPrice: 3.30, startDaysAgo: 30, durationDays: 10, outcomeDaysAgo: 15, reason: 'better-food-quality', soldPrice: 3.15, custCode: 'MEL-001' },
+    trial: { status: 'successful', trial_oil: XLFRY, currentPrice: 2.50, offeredPrice: 3.30, startDaysAgo: 30, durationDays: 10, outcomeDaysAgo: 15, reason: 'better-food-quality', soldPrice: 3.15, custCode: 'MEL-001' },
   },
   {
     venue: { name: 'Coburg Kebab & Chips', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 90 },
-    trial: { status: 'won', trial_oil: ULTAFRY, currentPrice: 2.25, offeredPrice: 2.90, startDaysAgo: 25, durationDays: 7, outcomeDaysAgo: 12, reason: 'cost-savings', soldPrice: 2.80, custCode: 'MEL-002' },
+    trial: { status: 'successful', trial_oil: ULTAFRY, currentPrice: 2.25, offeredPrice: 2.90, startDaysAgo: 25, durationDays: 7, outcomeDaysAgo: 12, reason: 'cost-savings', soldPrice: 2.80, custCode: 'MEL-002' },
   },
   {
     venue: { name: 'Footscray Golden Fry', fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 160 },
-    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.60, offeredPrice: 3.40, startDaysAgo: 35, durationDays: 9, outcomeDaysAgo: 20, reason: 'oil-lasted-longer', soldPrice: 3.25, custCode: 'MEL-003' },
+    trial: { status: 'successful', trial_oil: XLFRY, currentPrice: 2.60, offeredPrice: 3.40, startDaysAgo: 35, durationDays: 9, outcomeDaysAgo: 20, reason: 'oil-lasted-longer', soldPrice: 3.25, custCode: 'MEL-003' },
   },
 
   // ── LOST (2) — unsuccessful trials ──
   {
     venue: { name: 'Dandenong Quick Eats', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 65 },
-    trial: { status: 'lost', trial_oil: XLFRY, currentPrice: 2.10, offeredPrice: 3.00, startDaysAgo: 22, durationDays: 8, outcomeDaysAgo: 10, reason: 'price-too-high' },
+    trial: { status: 'unsuccessful', trial_oil: XLFRY, currentPrice: 2.10, offeredPrice: 3.00, startDaysAgo: 22, durationDays: 8, outcomeDaysAgo: 10, reason: 'price-too-high' },
   },
   {
     venue: { name: 'Frankston Fish House', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 100 },
-    trial: { status: 'lost', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.20, startDaysAgo: 28, durationDays: 10, outcomeDaysAgo: 14, reason: 'contract-locked' },
+    trial: { status: 'unsuccessful', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.20, startDaysAgo: 28, durationDays: 10, outcomeDaysAgo: 14, reason: 'contract-locked' },
   },
 ];
 
@@ -363,7 +363,7 @@ for (const def of trialDefs) {
     }
   }
 
-  const statusIcon = { pending: 'pipeline', 'in-progress': 'active', completed: 'decision', accepted: 'accepted', won: 'WON', lost: 'LOST' }[tDef.status];
+  const statusIcon = { pipeline: 'pipeline', 'active': 'active', pending: 'decision', accepted: 'accepted', successful: 'WON', unsuccessful: 'LOST' }[tDef.status];
   console.log(`  ${vDef.name} — ${statusIcon} (${vDef.fryer_count} fryers)`);
 }
 

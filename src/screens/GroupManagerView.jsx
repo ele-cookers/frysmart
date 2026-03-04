@@ -1045,19 +1045,19 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 
   const today    = new Date();
   const todayStr = formatDate(today);
-  const last30days = Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
-  const recs30    = last30days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
+  const last7days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
+  const recs7     = last7days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
 
   // KPIs
-  const daysWithRecs   = last30days.filter(d => (recordings[d] || []).length > 0).length;
+  const daysWithRecs   = last7days.filter(d => (recordings[d] || []).length > 0).length;
   const complianceRate = Math.round((daysWithRecs / 7) * 100);
-  const tpmVals        = recs30.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
+  const tpmVals        = recs7.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
   const avgTPM         = tpmVals.length > 0 ? (tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length).toFixed(1) : '—';
   const critCount      = tpmVals.filter(v => v >= critAt).length;
   const critRate       = tpmVals.length > 0 ? Math.round((critCount / tpmVals.length) * 100) : 0;
-  const filterable     = recs30.filter(r => r.filtered !== null && r.filtered !== undefined);
+  const filterable     = recs7.filter(r => r.filtered !== null && r.filtered !== undefined);
   const filteringRate  = filterable.length > 0 ? Math.round((filterable.filter(r => r.filtered === true).length / filterable.length) * 100) : 0;
-  const tempRecs       = recs30.filter(r => r.setTemperature && r.actualTemperature);
+  const tempRecs       = recs7.filter(r => r.setTemperature && r.actualTemperature);
   const avgTempVar     = tempRecs.length > 0 ? tempRecs.reduce((s, r) => s + calcTempVariancePct(r.setTemperature, r.actualTemperature), 0) / tempRecs.length : null;
   const todayRecs      = recordings[todayStr] || [];
 
@@ -1074,7 +1074,7 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
 
   // Staff leaderboard
   const staffMap = {};
-  recs30.forEach(r => {
+  recs7.forEach(r => {
     if (!r.staffName) return;
     staffMap[r.staffName] = staffMap[r.staffName] || { count: 0, filtered: 0 };
     staffMap[r.staffName].count++;
@@ -1100,7 +1100,7 @@ const VenueOverview = ({ recordings, venueName, fryerCount, warnAt = 18, critAt 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: '700', color: COLORS.text, margin: 0 }}>{venueName}</h2>
-          <p style={{ fontSize: '13px', color: COLORS.textMuted, margin: '2px 0 0' }}>Last 30 days · {fryerCount} fryers</p>
+          <p style={{ fontSize: '13px', color: COLORS.textMuted, margin: '2px 0 0' }}>Last 7 days · {fryerCount} fryers</p>
         </div>
         <div style={{ fontSize: '13px', color: todayRecs.length > 0 ? COLORS.good : COLORS.warning, fontWeight: '600' }}>
           {todayRecs.length > 0 ? `${todayRecs.length} recorded today` : 'Nothing recorded today'}
@@ -1183,15 +1183,15 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
   const computed = useMemo(() => {
     const today    = new Date();
     const todayStr = formatDate(today);
-    const last30days = Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
+    const last7days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
     const last90   = Array.from({ length: 90 }, (_, i) => { const d = new Date(today); d.setDate(d.getDate() - i); return formatDate(d); });
 
     const venueStats = venues.map(venue => {
       const recordings = recordingsByVenue[venue.id] || {};
 
-      const allRecs  = last30days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
-      const pastDays = last30days.filter(date => new Date(date) <= today).length;
-      const daysWithRecs = last30days.filter(d => (recordings[d] || []).length > 0).length;
+      const allRecs  = last7days.flatMap(date => (recordings[date] || []).filter(r => !r.notInUse).map(r => ({ ...r, date })));
+      const pastDays = last7days.filter(date => new Date(date) <= today).length;
+      const daysWithRecs = last7days.filter(d => (recordings[d] || []).length > 0).length;
       const complianceRate = pastDays > 0 ? Math.round((daysWithRecs / pastDays) * 100) : 0;
 
       const tpmValues   = allRecs.map(r => parseFloat(r.tpmValue)).filter(v => !isNaN(v));
@@ -1336,7 +1336,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     // Flatten all readings across all venues for last 7 days
     const allGroupRecs = venueStats.flatMap(v => {
       const recs = recordingsByVenue[v.id] || {};
-      return last30days.flatMap(date => (recs[date] || []).filter(r => !r.notInUse && r.tpmValue != null).map(r => ({ ...r, date })));
+      return last7days.flatMap(date => (recs[date] || []).filter(r => !r.notInUse && r.tpmValue != null).map(r => ({ ...r, date })));
     });
     const totalGroupReadings = allGroupRecs.length;
 
@@ -1402,6 +1402,18 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     const groupTempControlRate = groupTempRecs.length > 0 ? Math.round((groupGoodTempControl / groupTempRecs.length) * 100) : 0;
     const groupAvgSignedTempVariance = groupSignedTempVariances.length > 0 ? (groupSignedTempVariances.reduce((a, b) => a + b, 0) / groupSignedTempVariances.length) : 0;
 
+    // Food type analysis — group level
+    const groupFoodTypeData = {};
+    allGroupRecs.forEach(r => {
+      if (!r.foodType) return;
+      if (!groupFoodTypeData[r.foodType]) groupFoodTypeData[r.foodType] = { count: 0, totalTPM: 0 };
+      groupFoodTypeData[r.foodType].count++;
+      groupFoodTypeData[r.foodType].totalTPM += parseFloat(r.tpmValue) || 0;
+    });
+    const groupFoodTypeAnalysis = Object.entries(groupFoodTypeData).map(([type, d]) => ({
+      type, count: d.count, avgTPM: (d.totalTPM / d.count).toFixed(1),
+    })).sort((a, b) => b.count - a.count);
+
     // Weekly compliance pattern — group level (last 7 days)
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const groupDayStats = {};
@@ -1456,10 +1468,10 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
     const tpmHealthIsHealthy = tpmHealthCompliancePct >= 80;
     const overdueVenueList = venueLastTpm.filter(v => getAgeDays(v.lastTpmDate) >= 2).sort((a, b) => getAgeDays(b.lastTpmDate) - getAgeDays(a.lastTpmDate));
 
-    return { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList };
+    return { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList, groupFoodTypeAnalysis };
   }, [venues, recordingsByVenue, warnAt, critAt]);
 
-  const { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList } = computed;
+  const { venueStats, totalVenues, healthyVenues, warningVenues, criticalVenues, avgCompliance, overallAvgTPM, groupAvgTempVariance, totalFryers, oilGrade, topCritical, mostCompliant90, leastCompliant30, groupFilteringRate, recordedToday, notRecordedToday, notRecordedNames, alerts, bestPerformers, worstPerformers, totalChanges, totalLateChanges, totalEarlyChanges, totalGroupReadings, groupCritCount, groupWarnCount, groupGoodCount, groupCritRate, groupAvgOilAge, groupChangedTooEarly, groupChangedTooLate, groupTempControlRate, groupAvgSignedTempVariance, groupDayStats, dayNames, groupLast30, groupLast7, tpmHealthToday, tpmHealthYesterday, tpmHealthOverdue2, tpmHealthOverdue7, tpmHealthCompliancePct, tpmHealthIsHealthy, overdueVenueList, groupFoodTypeAnalysis } = computed;
 
   if (venues.length === 0) {
     return (
@@ -1485,7 +1497,7 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: '700', color: COLORS.text, marginBottom: '2px' }}>{groupName}</h2>
-          <p style={{ fontSize: '14px', color: COLORS.textMuted, margin: 0 }}>{totalVenues} venue{totalVenues !== 1 ? 's' : ''} · Last 30 days</p>
+          <p style={{ fontSize: '14px', color: COLORS.textMuted, margin: 0 }}>{totalVenues} venue{totalVenues !== 1 ? 's' : ''} · Last 7 days</p>
         </div>
       </div>
 
@@ -1602,12 +1614,12 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
       {/* EXEC SUMMARY — group-level SummaryView + TPM Recording Health */}
       {groupView === 'exec' && (
         <div>
-          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 30 days</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>{totalGroupReadings} readings analyzed across {totalVenues} venues • Last 7 days</p>
 
           {/* Pair 1: 4 KPI cards + Oil Management */}
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
             {/* KPIs 2x2 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '10px', height: '100%' }}>
               {[
                 { label: 'COMPLIANCE',       value: `${avgCompliance}%`,    color: avgCompliance >= 90 ? '#10b981' : avgCompliance >= 70 ? '#f59e0b' : '#ef4444',                                                                              target: '90%+' },
                 { label: 'REACHED CRITICAL', value: `${groupCritRate}%`,    color: groupCritRate <= 10 ? '#10b981' : groupCritRate <= 25 ? '#f59e0b' : '#ef4444',                                                                              target: '<10%' },
@@ -1707,60 +1719,77 @@ const ManagerOverview = ({ venues, recordingsByVenue, groupName, systemSettings,
             })()}
           </div>
 
-          {/* Pair 3: Quality Distribution + Priority Actions */}
+          {/* Pair 3: Quality Distribution + Most Fried Products */}
           <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
             {/* Quality Distribution */}
             {totalGroupReadings > 0 && (
-              <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Quality Distribution</h3>
-                <div style={{ display: 'flex', gap: '0', marginBottom: '6px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
+              <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>Quality Distribution</h3>
+                <div style={{ display: 'flex', gap: '0', marginBottom: '10px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
                   <div style={{ flex: groupGoodCount, background: '#10b981' }} />
                   <div style={{ flex: groupWarnCount, background: '#f59e0b' }} />
                   <div style={{ flex: groupCritCount, background: '#ef4444' }} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', textAlign: 'center' }}>
-                  <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((groupGoodCount / totalGroupReadings) * 100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Good ({groupGoodCount})</div></div>
-                  <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((groupWarnCount / totalGroupReadings) * 100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Warning ({groupWarnCount})</div></div>
-                  <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{groupCritRate}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Critical ({groupCritCount})</div></div>
+                  <div style={{ padding: '8px', background: '#f0fdf4', borderRadius: '8px' }}><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((groupGoodCount / totalGroupReadings) * 100)}%</div><div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Good ({groupGoodCount})</div></div>
+                  <div style={{ padding: '8px', background: '#fffbeb', borderRadius: '8px' }}><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((groupWarnCount / totalGroupReadings) * 100)}%</div><div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Warning ({groupWarnCount})</div></div>
+                  <div style={{ padding: '8px', background: '#fef2f2', borderRadius: '8px' }}><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{groupCritRate}%</div><div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Critical ({groupCritCount})</div></div>
                 </div>
               </div>
             )}
 
-            {/* Priority Actions */}
-            <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '12px', padding: '16px', border: '1px solid #93c5fd' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1e40af', margin: '0 0 8px 0' }}>Priority Actions</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {avgCompliance < 80 && (
-                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>Recording Consistency</div>
-                    <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>Group compliance is {avgCompliance}%. Implement daily reminders or assign to shift leaders.</div>
-                  </div>
-                )}
-                {groupCritRate > 15 && (
-                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>High Critical Rate</div>
-                    <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>{groupCritRate}% of readings reached critical TPM. Review oil change procedures across venues.</div>
-                  </div>
-                )}
-                {groupFilteringRate < 70 && (
-                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #f59e0b' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>Increase Filtering</div>
-                    <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>Only {groupFilteringRate}% filtered across venues. Daily filtering can extend oil life by 50%.</div>
-                  </div>
-                )}
-                {groupTempControlRate < 80 && (
-                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #f59e0b' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>Temperature Control</div>
-                    <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>{100 - groupTempControlRate}% of readings outside temp range. Review thermostat calibration across venues.</div>
-                  </div>
-                )}
-                {avgCompliance >= 80 && groupCritRate <= 15 && groupFilteringRate >= 70 && groupTempControlRate >= 80 && (
-                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #10b981' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#059669', marginBottom: '2px' }}>Great Group Performance!</div>
-                    <div style={{ fontSize: '11px', color: '#065f46', lineHeight: '1.5' }}>All group metrics within target. Keep up the excellent work across all venues.</div>
-                  </div>
-                )}
+            {/* Most Fried Products */}
+            {groupFoodTypeAnalysis.length > 0 && (
+              <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 10px 0' }}>Most Fried Products</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {groupFoodTypeAnalysis.slice(0, 3).map(item => (
+                    <div key={item.type} style={{ padding: '10px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', marginBottom: '4px', minHeight: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.type}</div>
+                      <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px', letterSpacing: '0.5px' }}>AVG TPM</div>
+                      <div style={{ fontSize: '22px', fontWeight: '700', color: parseFloat(item.avgTPM) < warnAt ? '#10b981' : parseFloat(item.avgTPM) < critAt ? '#f59e0b' : '#ef4444' }}>{item.avgTPM}</div>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{item.count} readings</div>
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Priority Actions — full width */}
+          <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '12px', padding: '16px', border: '1px solid #93c5fd', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1e40af', margin: '0 0 8px 0' }}>Priority Actions</h3>
+            <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '8px', flexWrap: 'wrap' }}>
+              {avgCompliance < 80 && (
+                <div style={{ flex: 1, minWidth: '200px', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>Recording Consistency</div>
+                  <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>Group compliance is {avgCompliance}%. Implement daily reminders or assign to shift leaders.</div>
+                </div>
+              )}
+              {groupCritRate > 15 && (
+                <div style={{ flex: 1, minWidth: '200px', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>High Critical Rate</div>
+                  <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>{groupCritRate}% of readings reached critical TPM. Review oil change procedures across venues.</div>
+                </div>
+              )}
+              {groupFilteringRate < 70 && (
+                <div style={{ flex: 1, minWidth: '200px', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #f59e0b' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>Increase Filtering</div>
+                  <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>Only {groupFilteringRate}% filtered across venues. Daily filtering can extend oil life by 50%.</div>
+                </div>
+              )}
+              {groupTempControlRate < 80 && (
+                <div style={{ flex: 1, minWidth: '200px', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #f59e0b' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e40af', marginBottom: '2px' }}>Temperature Control</div>
+                  <div style={{ fontSize: '11px', color: '#1e3a8a', lineHeight: '1.5' }}>{100 - groupTempControlRate}% of readings outside temp range. Review thermostat calibration across venues.</div>
+                </div>
+              )}
+              {avgCompliance >= 80 && groupCritRate <= 15 && groupFilteringRate >= 70 && groupTempControlRate >= 80 && (
+                <div style={{ flex: 1, minWidth: '200px', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px', borderLeft: '3px solid #10b981' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#059669', marginBottom: '2px' }}>Great Group Performance!</div>
+                  <div style={{ fontSize: '11px', color: '#065f46', lineHeight: '1.5' }}>All group metrics within target. Keep up the excellent work across all venues.</div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -513,7 +513,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
 // CLOSE TRIAL MODAL (Won / Lost)
 // ─────────────────────────────────────────────
 const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
-  const isWon = outcome === 'won';
+  const isWon = outcome === 'successful';
   const reasons = trialReasons.filter(r => r.type === (isWon ? 'successful' : 'unsuccessful'));
   const [form, setForm] = useState({ reason: '', outcomeDate: getTodayString(), soldPrice: '', notes: '' });
   const canSubmit = form.reason && form.outcomeDate && (isWon ? form.soldPrice : true);
@@ -561,10 +561,10 @@ const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
             <button disabled={!canSubmit} onClick={() => onSave({
-              trialStatus: outcome === 'won' ? 'accepted' : outcome,
+              trialStatus: outcome === 'successful' ? 'accepted' : outcome,
               trialReason: form.reason,
               outcomeDate: form.outcomeDate,
-              trialNotes: [venue.trialNotes, form.notes ? `[${outcome === 'won' ? 'Won' : 'Lost'} ${form.outcomeDate}] ${form.notes}` : ''].filter(Boolean).join('\n'),
+              trialNotes: [venue.trialNotes, form.notes ? `[${outcome === 'successful' ? 'Successful' : 'Unsuccessful'} ${form.outcomeDate}] ${form.notes}` : ''].filter(Boolean).join('\n'),
               ...(isWon ? { soldPricePerLitre: parseFloat(form.soldPrice) } : {}),
             })} style={{ flex: 1, padding: '10px', background: canSubmit ? (isWon ? '#10b981' : '#ef4444') : '#94a3b8', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
               {isWon ? 'Mark as Won' : 'Mark as Lost'}
@@ -884,15 +884,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // ── Derived venue lists ──
   const myVenues = useMemo(() => venues.filter(v => v.bdmId === currentUser.id), [venues, currentUser.id]);
-  const activeTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'in-progress'), [myVenues]);
-  const pipelineTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'pending'), [myVenues]);
+  const activeTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'active'), [myVenues]);
+  const pipelineTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'pipeline'), [myVenues]);
   // Pending outcome = trial ended but no won/lost decision yet
-  const pendingOutcomeTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'completed'), [myVenues]);
+  const pendingOutcomeTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'pending'), [myVenues]);
   // Accepted: marked as won but awaiting customer code
   const acceptedTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'accepted'), [myVenues]);
   // Archive: won and lost
-  const wonTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'won'), [myVenues]);
-  const lostTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'lost'), [myVenues]);
+  const wonTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'successful'), [myVenues]);
+  const lostTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'unsuccessful'), [myVenues]);
   // archiveCount removed — tabs are separate now
 
   // ── Column filter accessors (for table filtering — mirrors admin panel) ──
@@ -1021,7 +1021,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   const handleEndTrial = async (venueId) => {
-    await updateVenue(venueId, { trialStatus: 'completed', trialEndDate: getTodayString() });
+    await updateVenue(venueId, { trialStatus: 'pending', trialEndDate: getTodayString() });
     setEndTrialModal(null);
     setSuccessMsg('Trial Ended');
   };
@@ -1040,15 +1040,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   const handleSaveCustomerCode = async (venueId, code) => {
-    await updateVenue(venueId, { customerCode: code, customerCodeSavedAt: new Date().toISOString(), trialStatus: 'won' });
+    await updateVenue(venueId, { customerCode: code, customerCodeSavedAt: new Date().toISOString(), trialStatus: 'successful' });
     setSuccessMsg('Customer Code Saved — Successful');
   };
 
   const handlePushBack = (venueId, targetStatus) => {
-    const labels = { 'pending': 'Pipeline', 'in-progress': 'Active', 'completed': 'Pending' };
-    const clearFields = targetStatus === 'completed'
+    const labels = { 'pipeline': 'Pipeline', 'active': 'Active', 'pending': 'Pending' };
+    const clearFields = targetStatus === 'pending'
       ? { trialStatus: targetStatus, outcomeDate: null, trialReason: null, soldPricePerLitre: null, customerCode: null }
-      : targetStatus === 'in-progress'
+      : targetStatus === 'active'
       ? { trialStatus: targetStatus, trialEndDate: null, outcomeDate: null, trialReason: null, soldPricePerLitre: null, customerCode: null }
       : { trialStatus: targetStatus };
     setSelectedTrialVenue(null);
@@ -1066,7 +1066,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     // If this was a "Start Trial" reading, move trial to active
     if (wasStartingTrial && startVenueId) {
-      await updateVenue(startVenueId, { trialStatus: 'in-progress', trialStartDate: getTodayString() });
+      await updateVenue(startVenueId, { trialStatus: 'active', trialStartDate: getTodayString() });
       setSuccessMsg('Trial Started');
     } else {
       setSuccessMsg('Reading Saved');
@@ -1121,7 +1121,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       // 2. Insert trial linked to that venue
       const newTrialObj = {
         venueId: venueRow.id,
-        trialStatus: 'pending',
+        trialStatus: 'pipeline',
         trialOilId: newTrialForm.trialOilId,
         trialNotes: `${trialId}${newTrialForm.city ? ` | ${newTrialForm.city.trim()}` : ''}${newTrialForm.notes ? `\n${newTrialForm.notes}` : ''}`,
         currentPricePerLitre: parseFloat(newTrialForm.currentPrice),
@@ -1279,7 +1279,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const totalLitres = venueReadings.reduce((sum, r) => sum + (parseFloat(r.litresFilled) || 0), 0);
 
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(TRIAL_STATUS_COLORS['in-progress'].accent)}>
+      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(TRIAL_STATUS_COLORS['active'].accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue)}
@@ -1298,7 +1298,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // -- PIPELINE CARD --
   const renderPipelineCard = (venue) => (
-    <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(TRIAL_STATUS_COLORS['pending'].accent)}>
+    <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(TRIAL_STATUS_COLORS['pipeline'].accent)}>
       {cardHeader(venue)}
       {cardOilRow(venue)}
       {pricingRow(venue)}
@@ -1319,8 +1319,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {pricingRow(venue)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'won' }); }} style={btnPrimary('#10b981')}><Trophy size={13} /> Won</button>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'lost' }); }} style={btnPrimary('#ef4444')}><XCircle size={13} /> Lost</button>
+          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={btnPrimary('#10b981')}><Trophy size={13} /> Won</button>
+          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={btnPrimary('#ef4444')}><XCircle size={13} /> Lost</button>
         </div>
       </div>
     );
@@ -1328,7 +1328,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // -- ARCHIVE CARD (for won/lost) --
   const renderArchiveCard = (venue) => {
-    const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['completed'];
+    const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
@@ -1337,7 +1337,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
-        {venue.trialStatus === 'won' && (
+        {venue.trialStatus === 'successful' && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px', marginBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               <Check size={13} color="#059669" strokeWidth={3} />
@@ -1346,13 +1346,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             </div>
           </div>
         )}
-        {venue.trialStatus === 'won' && venue.customerCode && (
+        {venue.trialStatus === 'successful' && venue.customerCode && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <CheckCircle2 size={13} color="#059669" />
             <span style={{ fontSize: '11px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>
           </div>
         )}
-        {venue.trialStatus === 'lost' && (
+        {venue.trialStatus === 'unsuccessful' && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <X size={13} color="#dc2626" strokeWidth={3} />
@@ -1367,7 +1367,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // ── Accepted card (Awaiting Cust Code) ──
   const renderAcceptedCard = (venue) => {
-    const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['completed'];
+    const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
@@ -1392,7 +1392,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ADMIN-PANEL STYLE TABLE — all columns filterable, matching admin panel exactly
   // (No BDM/NAM since we know who the BDM is, Action column instead of Status)
   // ─────────────────────────────────────────
-  const isArchiveTab = (t) => t === 'won' || t === 'lost';
+  const isArchiveTab = (t) => t === 'successful' || t === 'unsuccessful';
 
   // Extract city from trialNotes (format: "TRL-XXXX | CityName\nnotes...")
   const getCity = (v) => { const m = v.trialNotes?.match(/^TRL-\d+\s*\|\s*([^\n]*)/); return m ? m[1].trim() : ''; };
@@ -1448,7 +1448,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {rows.length === 0 ? (
                 <tr><td colSpan={99} style={{ padding: '40px 20px', textAlign: 'center', color: COLORS.textMuted, fontSize: '13px' }}>No trials found</td></tr>
               ) : rows.map((venue) => {
-                const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+                const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
                 const compOil = oilTypes.find(o => o.id === venue.defaultOil);
                 const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
                 const comp = compOil?.competitorId ? competitors.find(c => c.id === compOil.competitorId) : null;
@@ -1481,7 +1481,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       <td style={{ textAlign: 'center' }}>
                         {tabType === 'pipeline' && <button onClick={(e) => { e.stopPropagation(); handleStartTrial(venue.id); }} style={{ padding: '5px 12px', background: BLUE, border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Start</button>}
                         {tabType === 'active' && <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}><button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={{ padding: '5px 10px', background: BLUE, border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Log</button><button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={{ padding: '5px 10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: COLORS.textMuted, cursor: 'pointer' }}>End</button></div>}
-                        {tabType === 'pending' && <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}><button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'won' }); }} style={{ padding: '5px 10px', background: '#10b981', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Won</button><button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'lost' }); }} style={{ padding: '5px 10px', background: '#ef4444', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Lost</button></div>}
+                        {tabType === 'pending' && <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}><button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={{ padding: '5px 10px', background: '#10b981', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Won</button><button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={{ padding: '5px 10px', background: '#ef4444', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Lost</button></div>}
                       </td>
                     )}
                   </tr>
@@ -1708,12 +1708,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     // Status breakdown for visual bar
     const statusBreakdown = [
-      { key: 'pending', label: 'Pipeline', count: pipelineCount, color: '#94a3b8' },
-      { key: 'in-progress', label: 'Active', count: activeCount, color: '#3b82f6' },
-      { key: 'completed', label: 'Pending', count: pendingCount, color: '#fbbf24' },
+      { key: 'pipeline', label: 'Pipeline', count: pipelineCount, color: '#94a3b8' },
+      { key: 'active', label: 'Active', count: activeCount, color: '#3b82f6' },
+      { key: 'pending', label: 'Pending', count: pendingCount, color: '#fbbf24' },
       { key: 'accepted', label: 'Accepted', count: acceptedCount, color: '#f59e0b' },
-      { key: 'won', label: 'Successful', count: wonCount, color: '#10b981' },
-      { key: 'lost', label: 'Unsuccessful', count: lostCount, color: '#ef4444' },
+      { key: 'successful', label: 'Successful', count: wonCount, color: '#10b981' },
+      { key: 'unsuccessful', label: 'Unsuccessful', count: lostCount, color: '#ef4444' },
     ];
 
     // Awaiting recording today — active trials where no reading has been logged today
@@ -1737,27 +1737,27 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const last30 = allTrials.filter(v => inRange(v, d30ago));
     const last90 = allTrials.filter(v => inRange(v, d90ago));
 
-    const l30Won = last30.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted');
-    const l30Lost = last30.filter(v => v.trialStatus === 'lost');
+    const l30Won = last30.filter(v => v.trialStatus === 'successful' || v.trialStatus === 'accepted');
+    const l30Lost = last30.filter(v => v.trialStatus === 'unsuccessful');
     const l30Decided = l30Won.length + l30Lost.length;
     const l30WinRate = l30Decided > 0 ? Math.round((l30Won.length / l30Decided) * 100) : null;
 
     // ── Delta calculations (last 30d vs prev 30d) ──
     const inDeltaRange = (v, from, to) => { const s = v.outcomeDate || v.trialStartDate || ''; return s >= from && s <= to; };
     const prev30 = allTrials.filter(v => inDeltaRange(v, d60ago, d30ago));
-    const p30Won = prev30.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted').length;
-    const p30Lost = prev30.filter(v => v.trialStatus === 'lost').length;
+    const p30Won = prev30.filter(v => v.trialStatus === 'successful' || v.trialStatus === 'accepted').length;
+    const p30Lost = prev30.filter(v => v.trialStatus === 'unsuccessful').length;
     const deltaWon = l30Won.length - p30Won;
     const deltaLost = l30Lost.length - p30Lost;
-    const p30Closed = prev30.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted' || v.trialStatus === 'lost');
+    const p30Closed = prev30.filter(v => v.trialStatus === 'successful' || v.trialStatus === 'accepted' || v.trialStatus === 'unsuccessful');
     const p30WR = p30Closed.length > 0 ? Math.round((p30Won / p30Closed.length) * 100) : null;
     const deltaWinRate = l30WinRate !== null && p30WR !== null ? l30WinRate - p30WR : null;
 
     // ── Last 90 days KPIs ──
-    const l90Won = last90.filter(v => v.trialStatus === 'won' || v.trialStatus === 'accepted');
-    const l90Lost = last90.filter(v => v.trialStatus === 'lost');
+    const l90Won = last90.filter(v => v.trialStatus === 'successful' || v.trialStatus === 'accepted');
+    const l90Lost = last90.filter(v => v.trialStatus === 'unsuccessful');
     const calcAvgDec = (arr) => {
-      const decided = arr.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'lost') && v.trialEndDate && v.outcomeDate);
+      const decided = arr.filter(v => (v.trialStatus === 'successful' || v.trialStatus === 'unsuccessful') && v.trialEndDate && v.outcomeDate);
       if (decided.length === 0) return null;
       return Math.round(decided.reduce((sum, v) => sum + daysBetween(v.trialEndDate, v.outcomeDate), 0) / decided.length);
     };
@@ -1770,7 +1770,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     })();
     const avgSoldXLFRY = (() => {
       const xlfryIds = oilTypes.filter(o => (o.name && o.name.toUpperCase().includes('XLFRY')) || (o.code && o.code.toUpperCase().includes('XLFRY'))).map(o => o.id);
-      const xlfryWon = last90.filter(v => (v.trialStatus === 'won' || v.trialStatus === 'accepted') && v.soldPricePerLitre && xlfryIds.includes(v.trialOilId));
+      const xlfryWon = last90.filter(v => (v.trialStatus === 'successful' || v.trialStatus === 'accepted') && v.soldPricePerLitre && xlfryIds.includes(v.trialOilId));
       return xlfryWon.length > 0 ? (xlfryWon.reduce((sum, v) => sum + parseFloat(v.soldPricePerLitre), 0) / xlfryWon.length).toFixed(2) : null;
     })();
 
@@ -1799,10 +1799,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const oil = oilTypes.find(o => o.id === v.defaultOil);
       const comp = oil?.competitorId ? competitors.find(c => c.id === oil.competitorId) : null;
       if (!comp) return;
-      if (!compDetail[comp.name]) compDetail[comp.name] = { total: 0, won: 0, lost: 0 };
+      if (!compDetail[comp.name]) compDetail[comp.name] = { total: 0, successful: 0, unsuccessful: 0 };
       compDetail[comp.name].total += 1;
-      if (v.trialStatus === 'won' || v.trialStatus === 'accepted') compDetail[comp.name].won += 1;
-      if (v.trialStatus === 'lost') compDetail[comp.name].lost += 1;
+      if (v.trialStatus === 'successful' || v.trialStatus === 'accepted') compDetail[comp.name].successful += 1;
+      if (v.trialStatus === 'unsuccessful') compDetail[comp.name].unsuccessful += 1;
     });
     const topCompetitorData = Object.entries(compDetail).sort((a, b) => b[1].total - a[1].total).slice(0, 3);
 
@@ -2106,12 +2106,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {/* ── Status Filter Strip (admin-panel style) ── */}
         <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', overflowX: 'auto' }}>
           {[
-            { key: 'pending', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
-            { key: 'in-progress', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
-            { key: 'completed', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
+            { key: 'pipeline', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
+            { key: 'active', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
+            { key: 'pending', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
             { key: 'accepted', label: 'Accepted', color: '#9a3412', bg: '#ffedd5', activeBg: '#ea580c', activeText: 'white' },
-            { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
-            { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
+            { key: 'successful', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
+            { key: 'unsuccessful', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
           ].map(s => {
             const isActive = dashStatusFilter.includes(s.key);
             const count = statusBreakdown.find(b => b.key === s.key)?.count || 0;
@@ -2158,7 +2158,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <FilterableTh colKey="soldPrice" label="Sold $" options={getUniqueValues(dashFiltered, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '52px' }} />
                   <FilterableTh colKey="start" label="Start" options={getUniqueValues(dashFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
                   <FilterableTh colKey="end" label="End" options={getUniqueValues(dashFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-                  <FilterableTh colKey="status" label="Status" options={[{value:'pending',label:'Pipeline'},{value:'in-progress',label:'Active'},{value:'completed',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'won',label:'Successful'},{value:'lost',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
+                  <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
                 </tr></thead>
                 <tbody>
                   {(() => {
@@ -2167,7 +2167,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     return rows.length === 0 ? (
                       <tr><td colSpan={99} style={{ padding: '40px 20px', textAlign: 'center', color: COLORS.textMuted, fontSize: '13px' }}>No trials found</td></tr>
                     ) : rows.map(venue => {
-                      const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+                      const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
                       const compOilObj = oilTypes.find(o => o.id === venue.defaultOil);
                       const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
                       const comp = compOilObj?.competitorId ? competitors.find(c => c.id === compOilObj.competitorId) : null;
@@ -2204,7 +2204,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               return rows.length === 0 ? (
                 <div style={{ padding: '40px 20px', textAlign: 'center', color: COLORS.textMuted, fontSize: '13px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>No trials found</div>
               ) : rows.map(venue => {
-                const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+                const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
                 const compOilObj = oilTypes.find(o => o.id === venue.defaultOil);
                 const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
                 const comp = compOilObj?.competitorId ? competitors.find(c => c.id === compOilObj.competitorId) : null;
@@ -2267,12 +2267,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {/* Status filter pills */}
         <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', overflowX: 'auto' }}>
           {[
-            { key: 'pending', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
-            { key: 'in-progress', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
-            { key: 'completed', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
+            { key: 'pipeline', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
+            { key: 'active', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
+            { key: 'pending', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
             { key: 'accepted', label: 'Accepted', color: '#9a3412', bg: '#ffedd5', activeBg: '#ea580c', activeText: 'white' },
-            { key: 'won', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
-            { key: 'lost', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
+            { key: 'successful', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
+            { key: 'unsuccessful', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
           ].map(s => {
             const isActive = manageStatusFilter.includes(s.key);
             const count = statusCounts[s.key] || 0;
@@ -2326,7 +2326,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   No trials found
                 </td></tr>
               ) : rows.map((venue) => {
-                const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+                const statusCfg = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
                 const vCompOil = oilTypes.find(o => o.id === venue.defaultOil);
                 const vCookersOil = oilTypes.find(o => o.id === venue.trialOilId);
                 const vComp = vCompOil?.competitorId ? competitors.find(c => c.id === vCompOil.competitorId) : null;
@@ -2382,8 +2382,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   No trials found
                 </div>
               ) : sorted.map(v => {
-                const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pending'];
-                const isWonOrAccepted = v.trialStatus === 'won' || v.trialStatus === 'accepted';
+                const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
+                const isWonOrAccepted = v.trialStatus === 'successful' || v.trialStatus === 'accepted';
                 return (
                   <div key={v.id} onClick={() => setManageVenueId(v.id)} style={cardBase(sc.accent)}>
                     {cardHeader(v)}
@@ -2404,7 +2404,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     }
 
     // ── Venue selected — show full management screen ──
-    const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pending'];
+    const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
     const compOil = oilTypes.find(o => o.id === venue.defaultOil);
     const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
     const comp = compOil && compOil.competitorId ? competitors.find(c => c.id === compOil.competitorId) : null;
@@ -2419,11 +2419,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const currentPrice = venue.currentPricePerLitre;
     const weekSpend = weekLitres !== null && currentPrice && trialPrice ? Math.round((preTrialAvg * currentPrice - liveTrialAvg * trialPrice) * 100) / 100 : null;
     const annualSpend = weekSpend !== null ? Math.round(weekSpend * 52) : null;
-    const isReadOnly = venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted';
+    const isReadOnly = venue.trialStatus === 'successful' || venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted';
 
     // Build calendar data
     const calDays = (() => {
-      if (!venue.trialStartDate || venue.trialStatus === 'pending') return [];
+      if (!venue.trialStartDate || venue.trialStatus === 'pipeline') return [];
       const start = new Date(venue.trialStartDate + 'T00:00:00');
       const end = venue.trialEndDate ? new Date(venue.trialEndDate + 'T00:00:00') : new Date();
       const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -2568,14 +2568,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
           {/* Inline action buttons */}
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
-            {venue.trialStatus === 'pending' && (
+            {venue.trialStatus === 'pipeline' && (
               <button onClick={() => { if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{
                 padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><Play size={12} /> Start</button>
             )}
-            {venue.trialStatus === 'in-progress' && (<>
+            {venue.trialStatus === 'active' && (<>
               <button onClick={() => setReadingModal(venue)} style={{
                 padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
@@ -2586,31 +2586,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 fontSize: '11px', fontWeight: '600', color: '#475569', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><Check size={12} /> End</button>
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) handlePushBack(venue.id, 'pending'); }} style={{
+              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) handlePushBack(venue.id, 'pipeline'); }} style={{
                 padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><RotateCcw size={10} /> Back to Pipeline</button>
             </>)}
-            {venue.trialStatus === 'completed' && (<>
-              <button onClick={() => setCloseTrialModal({ venue, outcome: 'won' })} style={{
+            {venue.trialStatus === 'pending' && (<>
+              <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{
                 padding: '5px 10px', background: '#059669', border: 'none', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><Trophy size={12} /> Won</button>
-              <button onClick={() => setCloseTrialModal({ venue, outcome: 'lost' })} style={{
+              <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{
                 padding: '5px 10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: '#64748b', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><XCircle size={12} /> Lost</button>
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'in-progress'); }} style={{
+              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'active'); }} style={{
                 padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><RotateCcw size={10} /> Back to Active</button>
             </>)}
-            {((venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') || (venue.trialStatus === 'won' && !venue.customerCode)) && (
-              <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'completed'); }} style={{
+            {((venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted') || (venue.trialStatus === 'successful' && !venue.customerCode)) && (
+              <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }} style={{
                 padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
@@ -2750,26 +2750,26 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             )}
 
             {/* Outcome strip (for won/lost/accepted) */}
-            {(venue.trialStatus === 'won' || venue.trialStatus === 'lost' || venue.trialStatus === 'accepted') && (
+            {(venue.trialStatus === 'successful' || venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted') && (
               <div style={{
                 padding: '12px 16px', borderRadius: '12px', marginBottom: '16px',
-                background: venue.trialStatus === 'lost' ? '#fef2f2' : '#f0fdf4',
-                border: `1px solid ${venue.trialStatus === 'lost' ? '#fecaca' : '#bbf7d0'}`,
+                background: venue.trialStatus === 'unsuccessful' ? '#fef2f2' : '#f0fdf4',
+                border: `1px solid ${venue.trialStatus === 'unsuccessful' ? '#fecaca' : '#bbf7d0'}`,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: venue.trialStatus === 'lost' ? '#dc2626' : '#059669' }}>
-                    {venue.trialStatus === 'lost' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: venue.trialStatus === 'unsuccessful' ? '#dc2626' : '#059669' }}>
+                    {venue.trialStatus === 'unsuccessful' ? 'Unsuccessful' : venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful'}
                   </span>
                   {venue.outcomeDate && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span></>}
                   {venue.trialReason && <><span style={{ color: '#cbd5e1' }}>·</span><span style={{ fontSize: '12px', color: '#64748b' }}>{trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason}</span></>}
                 </div>
-                {(venue.trialStatus === 'won' || venue.trialStatus === 'accepted') && (
+                {(venue.trialStatus === 'successful' || venue.trialStatus === 'accepted') && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
                     {cookersOil && <OilBadge oil={cookersOil} competitors={competitors} compact />}
                     {venue.soldPricePerLitre && <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '400' }}>@ ${parseFloat(venue.soldPricePerLitre).toFixed(2)}/L</span>}
                   </div>
                 )}
-                {venue.trialStatus === 'won' && venue.customerCode && (
+                {venue.trialStatus === 'successful' && venue.customerCode && (
                   <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <CheckCircle2 size={13} color="#059669" />
                     <span style={{ fontSize: '12px', fontWeight: '600', color: '#065f46' }}>Cust Code: {venue.customerCode}</span>
@@ -2881,7 +2881,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             ) : (
               <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '40px 20px', textAlign: 'center' }}>
                 <Calendar size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
-                <div style={{ fontSize: '13px', color: '#94a3b8' }}>{venue.trialStatus === 'pending' ? 'Calendar will appear once the trial starts' : 'No readings recorded yet'}</div>
+                <div style={{ fontSize: '13px', color: '#94a3b8' }}>{venue.trialStatus === 'pipeline' ? 'Calendar will appear once the trial starts' : 'No readings recorded yet'}</div>
               </div>
             )}
 
@@ -2943,25 +2943,25 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         );
       }
-      case 'won': {
+      case 'successful': {
         const sorted = sortList(wonTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {wonTrials.length === 0
               ? emptyState(Trophy, 'No successful trials yet', 'Won trials will appear here')
-              : isTableView ? renderTrialTable(wonTrials, 'won')
+              : isTableView ? renderTrialTable(wonTrials, 'successful')
               : <>{renderSortBar(sorted.length, 'successful trial')}{sorted.map(v => renderArchiveCard(v))}</>
             }
           </div>
         );
       }
-      case 'lost': {
+      case 'unsuccessful': {
         const sorted = sortList(lostTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             {lostTrials.length === 0
               ? emptyState(XCircle, 'No unsuccessful trials', 'Lost trials will appear here')
-              : isTableView ? renderTrialTable(lostTrials, 'lost')
+              : isTableView ? renderTrialTable(lostTrials, 'unsuccessful')
               : <>{renderSortBar(sorted.length, 'unsuccessful trial')}{sorted.map(v => renderArchiveCard(v))}</>
             }
           </div>
@@ -2986,12 +2986,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
   ];
   const ARCHIVE_ITEMS = [
-    { id: 'won', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#10b981' },
-    { id: 'lost', label: 'Unsuccessful', icon: XCircle, count: lostTrials.length, color: '#ef4444' },
+    { id: 'successful', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#10b981' },
+    { id: 'unsuccessful', label: 'Unsuccessful', icon: XCircle, count: lostTrials.length, color: '#ef4444' },
   ];
 
   // ── Mobile nav helpers ──
-  const TRIAL_TAB_IDS = ['pipeline', 'active', 'pending', 'accepted', 'won', 'lost'];
+  const TRIAL_TAB_IDS = ['pipeline', 'active', 'pending', 'accepted', 'successful', 'unsuccessful'];
   const isTrialsTab = TRIAL_TAB_IDS.includes(activeTab);
   const totalTrialsCount = pipelineTrials.length + activeTrials.length + pendingOutcomeTrials.length + acceptedTrials.length + wonTrials.length + lostTrials.length;
   const TRIAL_SUB_TABS = [
@@ -2999,8 +2999,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     { id: 'active', label: 'Active', icon: Play, count: activeTrials.length },
     { id: 'pending', label: 'Pending', icon: AlertTriangle, count: pendingOutcomeTrials.length },
     { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
-    { id: 'won', label: 'Won', icon: Trophy, count: wonTrials.length, color: '#10b981' },
-    { id: 'lost', label: 'Lost', icon: XCircle, count: lostTrials.length, color: '#ef4444' },
+    { id: 'successful', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#10b981' },
+    { id: 'unsuccessful', label: 'Unsuccessful', icon: XCircle, count: lostTrials.length, color: '#ef4444' },
   ];
 
   // ─────────────────────────────────────────
@@ -3201,7 +3201,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               ...(isDesktop
                 ? { padding: '20px 16px 40px' }
                 : { maxWidth: '760px', margin: '0 auto', padding: '20px 16px 40px' }),
-              ...(['dashboard', 'pipeline', 'active', 'pending', 'accepted', 'manage', 'won', 'lost'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
+              ...(['dashboard', 'pipeline', 'active', 'pipeline', 'accepted', 'manage', 'successful', 'unsuccessful'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
             }}>
               {renderTabContent()}
             </div>

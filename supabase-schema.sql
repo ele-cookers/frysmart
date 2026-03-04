@@ -138,8 +138,8 @@ create table venues (
 create table trials (
   id uuid primary key default uuid_generate_v4(),
   venue_id uuid not null references venues(id) on delete cascade,
-  status text not null default 'pending'
-    check (status in ('pending', 'in-progress', 'completed', 'accepted', 'won', 'lost')),
+  status text not null default 'pipeline'
+    check (status in ('pipeline', 'active', 'pending', 'accepted', 'successful', 'unsuccessful')),
   start_date date,
   end_date date,
   trial_oil_id uuid references oil_types(id) on delete set null,
