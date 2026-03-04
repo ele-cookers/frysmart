@@ -1,7 +1,7 @@
 // ============================================================
 // Seed script — realistic trial demo data for Frysmart
-// Wipes all existing trial-only venues/trials/readings, then
-// creates fresh realistic data across all trial stages.
+// Wipes the authenticated BDM's existing trial venues/trials/readings,
+// then creates fresh realistic data across all trial stages.
 //
 // Run:    node scripts/seed-sample-data.mjs <username> <password>
 // Delete: node scripts/seed-sample-data.mjs <username> <password> --delete
@@ -46,13 +46,90 @@ const daysAgoTs = (n) => {
   return d.toISOString();
 };
 
+// ── Look up BDM profile first (needed for scoped delete + seeding) ──
+const { data: bdmUser } = await supabase.from('profiles').select('id, region, name').eq('username', username).single();
+const bdmId = bdmUser?.id || null;
+const bdmName = bdmUser?.name || username;
+const bdmRegion = bdmUser?.region || 'VIC';
+const staffName = bdmName.split(' ')[0] + ' ' + (bdmName.split(' ')[1] || '').charAt(0) + '.';
+console.log(`  BDM: ${bdmName} (${bdmId ? 'found' : 'NOT FOUND'}), region: ${bdmRegion}`);
+
+// ── State labels ──
+const STATE_CITY = {
+  VIC: 'Melbourne', NSW: 'Sydney', QLD: 'Brisbane',
+  SA: 'Adelaide', WA: 'Perth', TAS: 'Hobart',
+  NT: 'Darwin', ACT: 'Canberra',
+};
+const city = STATE_CITY[bdmRegion] || bdmRegion;
+
+// ── State-specific venue names (13 per state) ──
+const STATE_VENUES = {
+  VIC: [
+    'Bayside Fish & Chips', 'Doncaster Takeaway', 'Richmond Takeaway',
+    'South Yarra Grill', 'Brunswick Street Fryer', 'St Kilda Seafood Bar',
+    'Fitzroy Chicken Shop', 'Preston Fish Bar', 'Hawthorn Hot Foods',
+    'Coburg Kebab & Chips', 'Footscray Golden Fry', 'Dandenong Quick Eats',
+    'Frankston Fish House',
+  ],
+  NSW: [
+    'Bondi Fish & Chips', 'Parramatta Hot Foods', 'Newtown Takeaway',
+    'Surry Hills Grill', 'Glebe Street Fryer', 'Manly Seafood Bar',
+    'Darlinghurst Chicken Shop', 'Chatswood Fish Bar', 'Hornsby Hot Foods',
+    'Liverpool Kebab & Chips', 'Penrith Golden Fry', 'Auburn Quick Eats',
+    'Cronulla Fish House',
+  ],
+  QLD: [
+    'Valley Fish & Chips', 'Toowoomba Takeaway', 'Surfers Paradise Fryer',
+    'Nundah Hot Foods', 'Cairns Street Fryer', 'Townsville Seafood Bar',
+    'Fortitude Valley Chicken Shop', 'Logan Fish Bar', 'Ipswich Hot Foods',
+    'Bundaberg Kebab & Chips', 'Mackay Golden Fry', 'Rockhampton Quick Eats',
+    'Sunshine Coast Fish House',
+  ],
+  SA: [
+    'Glenelg Fish & Chips', 'Norwood Takeaway', 'Prospect Fryer',
+    'Modbury Hot Foods', 'Parafield Street Fryer', 'Aldinga Seafood Bar',
+    'Morphett Vale Chicken Shop', 'Christies Beach Fish Bar', 'Golden Grove Hot Foods',
+    'Tea Tree Gully Kebab & Chips', 'Salisbury Golden Fry', 'Port Adelaide Quick Eats',
+    'Marion Fish House',
+  ],
+  WA: [
+    'Fremantle Fish & Chips', 'Subiaco Takeaway', 'Joondalup Fryer',
+    'Rockingham Hot Foods', 'Mandurah Street Fryer', 'Midland Seafood Bar',
+    'Armadale Chicken Shop', 'Baldivis Fish Bar', 'Wanneroo Hot Foods',
+    'Mirrabooka Kebab & Chips', 'Clarkson Golden Fry', 'Cannington Quick Eats',
+    'Osborne Park Fish House',
+  ],
+  TAS: [
+    'Hobart Fish & Chips', 'Launceston Takeaway', 'Devonport Fryer',
+    'Burnie Hot Foods', 'Kingston Street Fryer', 'Sandy Bay Seafood Bar',
+    'New Town Chicken Shop', 'Moonah Fish Bar', 'Glenorchy Hot Foods',
+    'Rosny Park Kebab & Chips', 'Claremont Golden Fry', 'Sorell Quick Eats',
+    'Huonville Fish House',
+  ],
+  NT: [
+    'Darwin Fish & Chips', 'Palmerston Takeaway', 'Alice Springs Fryer',
+    'Katherine Hot Foods', 'Nightcliff Street Fryer', 'Casuarina Seafood Bar',
+    'Parap Chicken Shop', 'Winnellie Fish Bar', 'Humpty Doo Hot Foods',
+    'Stuart Park Kebab & Chips', 'Berrimah Golden Fry', 'Coolalinga Quick Eats',
+    'Tennant Creek Fish House',
+  ],
+  ACT: [
+    'Belconnen Fish & Chips', 'Tuggeranong Takeaway', 'Woden Fryer',
+    'Gungahlin Hot Foods', 'Civic Street Fryer', 'Braddon Seafood Bar',
+    'Kingston Chicken Shop', 'Fyshwick Fish Bar', 'Dickson Hot Foods',
+    'Queanbeyan Kebab & Chips', 'Greenway Golden Fry', 'Mawson Quick Eats',
+    'Calwell Fish House',
+  ],
+};
+const venueNames = STATE_VENUES[bdmRegion] || STATE_VENUES['VIC'];
+
 // ══════════════════════════════════════════════
-// DELETE ALL TRIAL DATA
+// DELETE THIS BDM'S TRIAL DATA
 // ══════════════════════════════════════════════
-console.log('Wiping all existing trial data...\n');
+console.log(`Wiping existing trial data for ${bdmName}...\n`);
 
 const { data: existingTrialVenues } = await supabase
-  .from('venues').select('id').eq('status', 'trial-only');
+  .from('venues').select('id').eq('status', 'trial-only').eq('bdm_id', bdmId);
 
 if (existingTrialVenues?.length) {
   const ids = existingTrialVenues.map(v => v.id);
@@ -67,7 +144,7 @@ if (existingTrialVenues?.length) {
   console.log(`  trials: ${trialErr ? 'ERR ' + trialErr.message : 'deleted'}`);
 
   // Delete venues
-  const { error: venueErr } = await supabase.from('venues').delete().eq('status', 'trial-only');
+  const { error: venueErr } = await supabase.from('venues').delete().eq('status', 'trial-only').eq('bdm_id', bdmId);
   console.log(`  venues: ${venueErr ? 'ERR ' + venueErr.message : 'deleted'}`);
 } else {
   console.log('  No existing trial data found');
@@ -82,13 +159,6 @@ if (process.argv.includes('--delete')) {
 // SEED REALISTIC TRIAL DATA
 // ══════════════════════════════════════════════
 console.log('\nSeeding realistic trial data...\n');
-
-// ── Look up real data ──
-const { data: bdmUser } = await supabase.from('profiles').select('id, region, name').eq('username', 'bgurovsk').single();
-const bdmId = bdmUser?.id || null;
-const bdmName = bdmUser?.name || 'Bob G.';
-const staffName = bdmName.split(' ')[0] + ' ' + (bdmName.split(' ')[1] || '').charAt(0) + '.';
-console.log(`  BDM: ${bdmName} (${bdmId ? 'found' : 'NOT FOUND'})`);
 
 // Cookers oils
 const { data: cookerOils } = await supabase.from('oil_types')
@@ -223,65 +293,65 @@ function generateReadings(venueId, trialId, fryerCount, startDate, endDate, tria
 const trialDefs = [
   // ── PENDING (2) — created but not started yet ──
   {
-    venue: { name: 'Bayside Fish & Chips', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 75 },
+    venue: { fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 75 },
     trial: { status: 'pending', trial_oil: XLFRY, currentPrice: 2.35, offeredPrice: 3.10, createdDaysAgo: 2 },
   },
   {
-    venue: { name: 'Doncaster Takeaway', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 120 },
+    venue: { fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 120 },
     trial: { status: 'pending', trial_oil: ULTAFRY, currentPrice: 2.20, offeredPrice: 2.95, createdDaysAgo: 1 },
   },
 
   // ── IN-PROGRESS (3) — actively running ──
   {
-    venue: { name: 'Richmond Takeaway', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 80 },
+    venue: { fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 80 },
     trial: { status: 'in-progress', trial_oil: XLFRY, currentPrice: 2.40, offeredPrice: 3.20, startDaysAgo: 3 },
   },
   {
-    venue: { name: 'South Yarra Grill', fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 180 },
+    venue: { fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 180 },
     trial: { status: 'in-progress', trial_oil: XLFRY, currentPrice: 2.55, offeredPrice: 3.35, startDaysAgo: 6 },
   },
   {
-    venue: { name: 'Brunswick Street Fryer', fryer_count: 1, volume_bracket: 'under-60', current_weekly_avg: 45 },
+    venue: { fryer_count: 1, volume_bracket: 'under-60', current_weekly_avg: 45 },
     trial: { status: 'in-progress', trial_oil: ULTAFRY, currentPrice: 2.15, offeredPrice: 2.85, startDaysAgo: 8 },
   },
 
   // ── COMPLETED (2) — ended, awaiting decision ──
   {
-    venue: { name: 'St Kilda Seafood Bar', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 110 },
+    venue: { fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 110 },
     trial: { status: 'completed', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.25, startDaysAgo: 12, durationDays: 8 },
   },
   {
-    venue: { name: 'Fitzroy Chicken Shop', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 70 },
+    venue: { fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 70 },
     trial: { status: 'completed', trial_oil: XLFRY, currentPrice: 2.30, offeredPrice: 3.05, startDaysAgo: 10, durationDays: 7 },
   },
 
   // ── ACCEPTED (1) — won but awaiting customer code ──
   {
-    venue: { name: 'Preston Fish Bar', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 85 },
+    venue: { fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 85 },
     trial: { status: 'accepted', trial_oil: XLFRY, currentPrice: 2.40, offeredPrice: 3.15, startDaysAgo: 18, durationDays: 9, outcomeDaysAgo: 6, reason: 'oil-lasted-longer', soldPrice: 3.05 },
   },
 
   // ── WON (3) — successful trials ──
   {
-    venue: { name: 'Hawthorn Hot Foods', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 130 },
-    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.50, offeredPrice: 3.30, startDaysAgo: 30, durationDays: 10, outcomeDaysAgo: 15, reason: 'better-food-quality', soldPrice: 3.15, custCode: 'MEL-001' },
+    venue: { fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 130 },
+    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.50, offeredPrice: 3.30, startDaysAgo: 30, durationDays: 10, outcomeDaysAgo: 15, reason: 'better-food-quality', soldPrice: 3.15, custCode: `${bdmRegion.substring(0, 3)}-001` },
   },
   {
-    venue: { name: 'Coburg Kebab & Chips', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 90 },
-    trial: { status: 'won', trial_oil: ULTAFRY, currentPrice: 2.25, offeredPrice: 2.90, startDaysAgo: 25, durationDays: 7, outcomeDaysAgo: 12, reason: 'cost-savings', soldPrice: 2.80, custCode: 'MEL-002' },
+    venue: { fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 90 },
+    trial: { status: 'won', trial_oil: ULTAFRY, currentPrice: 2.25, offeredPrice: 2.90, startDaysAgo: 25, durationDays: 7, outcomeDaysAgo: 12, reason: 'cost-savings', soldPrice: 2.80, custCode: `${bdmRegion.substring(0, 3)}-002` },
   },
   {
-    venue: { name: 'Footscray Golden Fry', fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 160 },
-    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.60, offeredPrice: 3.40, startDaysAgo: 35, durationDays: 9, outcomeDaysAgo: 20, reason: 'oil-lasted-longer', soldPrice: 3.25, custCode: 'MEL-003' },
+    venue: { fryer_count: 4, volume_bracket: '150-plus', current_weekly_avg: 160 },
+    trial: { status: 'won', trial_oil: XLFRY, currentPrice: 2.60, offeredPrice: 3.40, startDaysAgo: 35, durationDays: 9, outcomeDaysAgo: 20, reason: 'oil-lasted-longer', soldPrice: 3.25, custCode: `${bdmRegion.substring(0, 3)}-003` },
   },
 
   // ── LOST (2) — unsuccessful trials ──
   {
-    venue: { name: 'Dandenong Quick Eats', fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 65 },
+    venue: { fryer_count: 2, volume_bracket: '60-100', current_weekly_avg: 65 },
     trial: { status: 'lost', trial_oil: XLFRY, currentPrice: 2.10, offeredPrice: 3.00, startDaysAgo: 22, durationDays: 8, outcomeDaysAgo: 10, reason: 'price-too-high' },
   },
   {
-    venue: { name: 'Frankston Fish House', fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 100 },
+    venue: { fryer_count: 3, volume_bracket: '100-150', current_weekly_avg: 100 },
     trial: { status: 'lost', trial_oil: XLFRY, currentPrice: 2.45, offeredPrice: 3.20, startDaysAgo: 28, durationDays: 10, outcomeDaysAgo: 14, reason: 'contract-locked' },
   },
 ];
@@ -291,17 +361,18 @@ const trialDefs = [
 // ══════════════════════════════════════════════
 let totalReadings = 0;
 
-for (const def of trialDefs) {
+for (let i = 0; i < trialDefs.length; i++) {
+  const def = trialDefs[i];
   const { venue: vDef, trial: tDef } = def;
 
   // Prospect code
-  const prospectCode = `PRS-${String(trialDefs.indexOf(def) + 1).padStart(4, '0')}`;
+  const prospectCode = `PRS-${String(i + 1).padStart(4, '0')}`;
 
   // Insert venue
   const venueRow = {
-    name: vDef.name,
+    name: venueNames[i],
     status: 'trial-only',
-    state: 'VIC',
+    state: bdmRegion,
     fryer_count: vDef.fryer_count,
     volume_bracket: vDef.volume_bracket,
     default_oil: pickCompOil(),
@@ -311,7 +382,7 @@ for (const def of trialDefs) {
   };
 
   const { data: insertedVenue, error: vErr } = await supabase.from('venues').insert(venueRow).select().single();
-  if (vErr) { console.error(`  ERR venue ${vDef.name}: ${vErr.message}`); continue; }
+  if (vErr) { console.error(`  ERR venue ${venueNames[i]}: ${vErr.message}`); continue; }
 
   // Build trial row
   const startDate = tDef.startDaysAgo ? daysAgo(tDef.startDaysAgo) : null;
@@ -322,7 +393,7 @@ for (const def of trialDefs) {
     venue_id: insertedVenue.id,
     status: tDef.status,
     trial_oil_id: tDef.trial_oil,
-    notes: `TRL-${String(trialDefs.indexOf(def) + 1).padStart(4, '0')} | Melbourne`,
+    notes: `TRL-${String(i + 1).padStart(4, '0')} | ${city}`,
     current_price_per_litre: tDef.currentPrice,
     offered_price_per_litre: tDef.offeredPrice,
     current_weekly_avg: vDef.current_weekly_avg,
@@ -333,10 +404,8 @@ for (const def of trialDefs) {
     ...(tDef.soldPrice ? { sold_price_per_litre: tDef.soldPrice } : {}),
   };
 
-  // Trial status flow: pending → in-progress → completed → accepted (won, needs code) → won (code saved)
-
   const { data: insertedTrial, error: tErr } = await supabase.from('trials').insert(trialRow).select().single();
-  if (tErr) { console.error(`  ERR trial for ${vDef.name}: ${tErr.message}`); continue; }
+  if (tErr) { console.error(`  ERR trial for ${venueNames[i]}: ${tErr.message}`); continue; }
 
   // Generate and insert readings (only for trials that have started)
   if (startDate) {
@@ -352,7 +421,7 @@ for (const def of trialDefs) {
 
     if (readings.length > 0) {
       const { error: rErr } = await supabase.from('tpm_readings').insert(readings);
-      if (rErr) { console.error(`  ERR readings for ${vDef.name}: ${rErr.message}`); }
+      if (rErr) { console.error(`  ERR readings for ${venueNames[i]}: ${rErr.message}`); }
       else { totalReadings += readings.length; }
     }
 
@@ -364,12 +433,12 @@ for (const def of trialDefs) {
   }
 
   const statusIcon = { pending: 'pipeline', 'in-progress': 'active', completed: 'decision', accepted: 'accepted', won: 'WON', lost: 'LOST' }[tDef.status];
-  console.log(`  ${vDef.name} — ${statusIcon} (${vDef.fryer_count} fryers)`);
+  console.log(`  ${venueNames[i]} — ${statusIcon} (${vDef.fryer_count} fryers)`);
 }
 
 console.log(`\nDone!`);
 console.log(`  ${trialDefs.length} trial venues created`);
 console.log(`  ${totalReadings} TPM readings generated`);
-console.log(`  All assigned to ${bdmName} in VIC`);
+console.log(`  All assigned to ${bdmName} in ${bdmRegion}`);
 console.log(`  Trial oils: mostly XLFRY, some ULTAFRY`);
 console.log(`  Status mix: 2 pending, 3 active, 2 awaiting decision, 1 accepted, 3 won, 2 lost`);
