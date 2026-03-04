@@ -7,6 +7,8 @@
 // These appear on the dark blue header bar, so colors are lighter/translucent
 export const HEADER_BADGE_COLORS = {
   admin:         { bg: 'rgba(236,72,153,0.25)',  color: '#f9a8d4', border: 'rgba(236,72,153,0.4)' },   // pink
+  mgt:           { bg: 'rgba(239,68,68,0.25)',   color: '#fca5a5', border: 'rgba(239,68,68,0.4)'  },   // red
+  nam:           { bg: 'rgba(59,130,246,0.25)',  color: '#93c5fd', border: 'rgba(59,130,246,0.4)' },   // blue
   group_manager: { bg: 'rgba(139,92,246,0.25)',  color: '#c4b5fd', border: 'rgba(139,92,246,0.4)' },   // purple
   venue:         { bg: 'rgba(249,115,22,0.25)',   color: '#ff8c00', border: 'rgba(249,115,22,0.5)' },   // orange
 };

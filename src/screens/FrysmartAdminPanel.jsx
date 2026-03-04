@@ -5032,11 +5032,13 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
           <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <img src="/images/App header.png" alt="Frysmart with Cookers" style={{ height: '65px' }} />
+              {(() => { const hb = HEADER_BADGE_COLORS[viewMode] || HEADER_BADGE_COLORS.admin; return (
               <span style={{
                 padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
-                background: HEADER_BADGE_COLORS.admin.bg, color: HEADER_BADGE_COLORS.admin.color, border: `1px solid ${HEADER_BADGE_COLORS.admin.border}`,
+                background: hb.bg, color: hb.color, border: `1px solid ${hb.border}`,
                 letterSpacing: '0.5px'
-              }}>ADMIN</span>
+              }}>{viewMode.toUpperCase()}</span>
+              ); })()}
             </div>
             <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
           </div>
@@ -5048,11 +5050,13 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '16px', paddingRight: '12px', paddingBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {(() => { const hb = HEADER_BADGE_COLORS[viewMode] || HEADER_BADGE_COLORS.admin; return (
                 <span style={{
                   padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700',
-                  background: HEADER_BADGE_COLORS.admin.bg, color: HEADER_BADGE_COLORS.admin.color, border: `1px solid ${HEADER_BADGE_COLORS.admin.border}`,
+                  background: hb.bg, color: hb.color, border: `1px solid ${hb.border}`,
                   letterSpacing: '0.5px'
-                }}>ADMIN</span>
+                }}>{viewMode.toUpperCase()}</span>
+                ); })()}
                 <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{currentUser?.name || ''}</span>
               </div>
               <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
