@@ -2086,18 +2086,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </div>
 
         {/* ── Bottom 3 KPIs — Last 90 days ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '8px', marginBottom: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
           {[
             { label: 'Avg to Decision', icon: Clock, iconColor: '#64748b', value: avgDecision !== null ? `${avgDecision}d` : '—', delta: deltaDec, deltaSuffix: 'd', invert: true },
             { label: 'Avg to Cust Code', icon: CheckCircle2, iconColor: '#059669', value: avgCustCodeDays !== null ? `${avgCustCodeDays}d` : '—' },
             { label: 'Avg Sold XLFRY $/L', icon: BarChart3, iconColor: '#f59e0b', value: avgSoldXLFRY !== null ? `$${avgSoldXLFRY}` : '—' },
           ].map(s => (
-            <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <s.icon size={16} color={s.iconColor} />
-                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
+            <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: isDesktop ? '16px' : '10px 8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                <s.icon size={13} color={s.iconColor} />
+                <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
               </div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
+              <div style={{ fontSize: isDesktop ? '28px' : '22px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
               <Delta value={s.delta} suffix={s.deltaSuffix} invert={s.invert} />
             </div>
           ))}
