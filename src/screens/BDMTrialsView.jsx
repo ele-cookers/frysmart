@@ -695,7 +695,7 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
 
 // TrialDetailModal imported from ../components/TrialDetailModal
 // ─────────────────────────────────────────────
-// COMPARISON VIEW (for completed/pending outcome trials)
+// COMPARISON VIEW (for successful/unsuccessful/pending outcome trials)
 // ─────────────────────────────────────────────
 // FILTERABLE TABLE HEADER (ported from admin panel)
 // ─────────────────────────────────────────────
@@ -3364,6 +3364,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 }
 
 // ─────────────────────────────────────────────
-// CUSTOMER CODE INPUT (inline for won trials)
+// CUSTOMER CODE INPUT (inline for successful trials)
 // ─────────────────────────────────────────────
 // CustomerCodeInput imported from ../components/CustomerCodeInput
