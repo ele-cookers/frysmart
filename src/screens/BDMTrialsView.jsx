@@ -1067,22 +1067,38 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     // If this was a "Start Trial" reading, move trial to active
     if (wasStartingTrial && startVenueId) {
       await updateVenue(startVenueId, { trialStatus: 'active', trialStartDate: getTodayString() });
-      setSuccessMsg('Trial Started');
-    } else {
-      setSuccessMsg('Reading Saved');
     }
 
     try {
       const inserts = readings.map(r => unMapReading(r));
-      await supabase.from('tpm_readings').upsert(inserts, { onConflict: 'venue_id,fryer_number,reading_date,reading_number' });
-      const venueId = readings[0]?.venueId;
-      const readingDate = readings[0]?.readingDate;
-      if (venueId && readingDate) {
-        await supabase.from('venues').update({ last_tpm_date: readingDate }).eq('id', venueId);
-        setVenues(prev => prev.map(v => v.id === venueId ? { ...v, lastTpmDate: readingDate } : v));
+      const { error: upsertErr } = await supabase.from('tpm_readings').upsert(inserts, { onConflict: 'venue_id,fryer_number,reading_date,reading_number' });
+      if (upsertErr) {
+        // Revert optimistic update and show visible error (no dev tools needed)
+        setTpmReadings(prev => prev.filter(r => !String(r.id).startsWith('temp-')));
+        setSuccessMsg(`Save failed: ${upsertErr.message}`);
+      } else {
+        setSuccessMsg(wasStartingTrial ? 'Trial Started' : 'Reading Saved');
+        const venueId = readings[0]?.venueId;
+        const readingDate = readings[0]?.readingDate;
+        if (venueId && readingDate) {
+          await supabase.from('venues').update({ last_tpm_date: readingDate }).eq('id', venueId);
+          setVenues(prev => prev.map(v => v.id === venueId ? { ...v, lastTpmDate: readingDate } : v));
+        }
+        // Full refresh first (updates venues/trials), then targeted re-fetch runs last
+        // so the new reading is guaranteed to be the final tpmReadings value
+        await refreshData();
+        if (venueId) {
+          const { data: freshReadings } = await supabase.from('tpm_readings').select('*').eq('venue_id', venueId);
+          if (freshReadings) {
+            setTpmReadings(prev => [
+              ...prev.filter(r => r.venueId !== venueId && !String(r.id).startsWith('temp-')),
+              ...freshReadings.map(mapReading),
+            ]);
+          }
+        }
       }
-      await refreshData();
     } catch (err) {
+      setSuccessMsg(`Save error: ${err.message}`);
       console.error('Save reading error:', err);
     }
   };
@@ -2503,7 +2519,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <div key={`p-${i}`} style={{ background: '#fafafa', borderRadius: '4px', minHeight: '80px' }} />
             ))}
             {calDays.map((day, idx) => {
-              const dateStr = day.toISOString().split('T')[0];
+              const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
               const allRecs = readingsByDate[dateStr] || [];
               const recs = allRecs.filter(r => (r.fryerNumber || 1) === fryerNum);
               const isFuture = day > today;

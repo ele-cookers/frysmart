@@ -231,7 +231,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(days.length, 14)}, 1fr)`, gap: '2px' }}>
                         {days.slice(-14).map((day, i) => {
-                          const dateStr = day.toISOString().split('T')[0];
+                          const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
                           const reading = fReadings[dateStr];
                           const isFuture = day > today;
                           let bg = '#f1f5f9'; let color = '#cbd5e1';
@@ -423,7 +423,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayCount}, 1fr)`, gap: '2px' }}>
                   {days.map((day, idx) => {
-                    const dateStr = day.toISOString().split('T')[0];
+                    const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
                     const allRecs = readingsByDate[dateStr] || [];
                     const recs = allRecs.filter(r => (r.fryerNumber || 1) === fryerNum);
                     const isFuture = day > today;

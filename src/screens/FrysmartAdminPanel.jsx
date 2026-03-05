@@ -3887,8 +3887,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
 
         // Win % helper
         const winPct = (counts) => {
-          const cl = (counts.won || 0) + (counts.lost || 0);
-          return cl > 0 ? Math.round((counts.won / cl) * 100) : null;
+          const cl = (counts.successful || 0) + (counts.unsuccessful || 0);
+          return cl > 0 ? Math.round(((counts.successful || 0) / cl) * 100) : null;
         };
 
         // Shared table styles
@@ -3916,8 +3916,8 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
           bdmTrialCounts[name].total += 1;
         });
         const bdmEntries = Object.entries(bdmTrialCounts);
-        const topWon = [...bdmEntries].sort((a, b) => b[1].successful - a[1].successful).filter(([, c]) => c.won > 0).slice(0, 5);
-        const topLost = [...bdmEntries].sort((a, b) => b[1].unsuccessful - a[1].unsuccessful).filter(([, c]) => c.lost > 0).slice(0, 5);
+        const topWon = [...bdmEntries].sort((a, b) => b[1].successful - a[1].successful).filter(([, c]) => c.successful > 0).slice(0, 5);
+        const topLost = [...bdmEntries].sort((a, b) => b[1].unsuccessful - a[1].unsuccessful).filter(([, c]) => c.unsuccessful > 0).slice(0, 5);
         const topPipeline = [...bdmEntries].sort((a, b) => b[1].pipeline - a[1].pipeline).filter(([, c]) => c.pipeline > 0).slice(0, 5);
         const topActive = [...bdmEntries].sort((a, b) => b[1]['active'] - a[1]['active']).filter(([, c]) => c['active'] > 0).slice(0, 5);
 
@@ -4242,32 +4242,32 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
               <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Top 5 Oils Trialled Against</div>
                 {topCompOilDetail.length > 0 ? (() => {
-                  const maxWon = Math.max(...topCompOilDetail.map(([, d]) => d.won), 1);
-                  const maxLost = Math.max(...topCompOilDetail.map(([, d]) => d.lost), 1);
-                  const maxTotal = Math.max(...topCompOilDetail.map(([, d]) => d.won + d.lost), 1);
+                  const maxWon = Math.max(...topCompOilDetail.map(([, d]) => d.successful), 1);
+                  const maxLost = Math.max(...topCompOilDetail.map(([, d]) => d.unsuccessful), 1);
+                  const maxTotal = Math.max(...topCompOilDetail.map(([, d]) => d.successful + d.unsuccessful), 1);
                   return (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: 'left', padding: '6px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Competitor</th>
-                        <th style={{ textAlign: 'left', padding: '6px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Oil</th>
-                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
-                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
-                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
+                        <th style={{ width: '28%', textAlign: 'left', padding: '6px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Competitor</th>
+                        <th style={{ width: '32%', textAlign: 'left', padding: '6px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Oil</th>
+                        <th style={{ width: '13%', textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
+                        <th style={{ width: '13%', textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
+                        <th style={{ width: '14%', textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {topCompOilDetail.map(([key, d]) => {
-                        const total = d.won + d.lost;
-                        const wonOp = d.won ? Math.max(0.1, (d.won / maxWon) * 0.4) : 0;
-                        const lostOp = d.lost ? Math.max(0.08, (d.lost / maxLost) * 0.35) : 0;
+                        const total = d.successful + d.unsuccessful;
+                        const wonOp = d.successful ? Math.max(0.1, (d.successful / maxWon) * 0.4) : 0;
+                        const lostOp = d.unsuccessful ? Math.max(0.08, (d.unsuccessful / maxLost) * 0.35) : 0;
                         const totalOp = Math.max(0.1, (total / maxTotal) * 0.35);
                         return (
                         <tr key={key}>
                           <td style={{ padding: '6px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }} title={d.compName}><span style={{ fontSize: '10px', fontWeight: '700', color: '#e53e3e', background: 'rgba(229,62,62,0.08)', padding: '2px 8px', borderRadius: '20px' }}>{d.compName}</span></td>
                           <td style={{ padding: '6px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }} title={d.oilName}><span style={{ fontSize: '10px', fontWeight: '600', color: '#1f2937' }}>{d.oilName}</span></td>
-                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.won ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.won}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.lost ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.lost}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.successful ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.successful}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.unsuccessful ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.unsuccessful}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                           <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '11px', fontWeight: '700', color: '#6d28d9', background: `rgba(139, 92, 246, ${totalOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{total}</span></td>
                         </tr>
                         );
@@ -4281,32 +4281,32 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
               <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Top 5 Competitors Trialled Against</div>
                 {topCompetitorData.length > 0 ? (() => {
-                  const maxWon = Math.max(...topCompetitorData.map(([, d]) => d.won), 1);
-                  const maxLost = Math.max(...topCompetitorData.map(([, d]) => d.lost), 1);
+                  const maxWon = Math.max(...topCompetitorData.map(([, d]) => d.successful), 1);
+                  const maxLost = Math.max(...topCompetitorData.map(([, d]) => d.unsuccessful), 1);
                   const maxTotal = Math.max(...topCompetitorData.map(([, d]) => d.total), 1);
                   return (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed' }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Competitor</th>
-                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
-                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
-                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
-                        <th style={{ textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Win %</th>
+                        <th style={{ width: '40%', textAlign: 'left', padding: '6px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Competitor</th>
+                        <th style={{ width: '15%', textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#10b981', borderBottom: '2px solid #e2e8f0' }}>Won</th>
+                        <th style={{ width: '15%', textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#ef4444', borderBottom: '2px solid #e2e8f0' }}>Lost</th>
+                        <th style={{ width: '15%', textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#7c3aed', borderBottom: '2px solid #e2e8f0' }}>Total</th>
+                        <th style={{ width: '15%', textAlign: 'center', padding: '6px 4px', fontSize: '10px', fontWeight: '700', color: '#64748b', borderBottom: '2px solid #e2e8f0' }}>Win %</th>
                       </tr>
                     </thead>
                     <tbody>
                       {topCompetitorData.map(([name, d]) => {
-                        const wonOp = d.won ? Math.max(0.1, (d.won / maxWon) * 0.4) : 0;
-                        const lostOp = d.lost ? Math.max(0.08, (d.lost / maxLost) * 0.35) : 0;
+                        const wonOp = d.successful ? Math.max(0.1, (d.successful / maxWon) * 0.4) : 0;
+                        const lostOp = d.unsuccessful ? Math.max(0.08, (d.unsuccessful / maxLost) * 0.35) : 0;
                         const totalOp = Math.max(0.1, (d.total / maxTotal) * 0.35);
-                        const decided = d.won + d.lost;
-                        const wp = decided > 0 ? Math.round((d.won / decided) * 100) : null;
+                        const decided = d.successful + d.unsuccessful;
+                        const wp = decided > 0 ? Math.round((d.successful / decided) * 100) : null;
                         return (
                         <tr key={name}>
-                          <td style={{ padding: '6px 8px', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '10px', fontWeight: '700', color: '#e53e3e', background: 'rgba(229,62,62,0.08)', padding: '2px 8px', borderRadius: '20px' }}>{name}</span></td>
-                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.won ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.won}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.lost ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.lost}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 8px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={name}><span style={{ fontSize: '10px', fontWeight: '700', color: '#e53e3e', background: 'rgba(229,62,62,0.08)', padding: '2px 8px', borderRadius: '20px' }}>{name}</span></td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.successful ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', background: `rgba(16, 185, 129, ${wonOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.successful}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                          <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{d.unsuccessful ? <span style={{ fontSize: '11px', fontWeight: '700', color: '#991b1b', background: `rgba(239, 68, 68, ${lostOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.unsuccessful}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                           <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}><span style={{ fontSize: '11px', fontWeight: '700', color: '#6d28d9', background: `rgba(139, 92, 246, ${totalOp})`, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', minWidth: '26px' }}>{d.total}</span></td>
                           <td style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{wp !== null ? <span style={{ fontSize: '11px', fontWeight: '700', color: wp >= 60 ? '#059669' : wp >= 40 ? '#ca8a04' : '#dc2626' }}>{wp}%</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                         </tr>

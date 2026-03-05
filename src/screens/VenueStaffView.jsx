@@ -1563,7 +1563,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
             const ds = formatDate(date);
             const allFryerRecs = (grouped[ds] || []).filter(r => r.fryerNumber === selectedFryer);
             const activeRecs = allFryerRecs.filter(r => !r.notInUse);
-            const fryerRecs = activeRecs;
+            const fryerRecs = [...activeRecs].sort((a, b) => (a.readingNumber || 1) - (b.readingNumber || 1));
             const isCurrentMo = date.getMonth() === month;
             const isT = ds === today;
             const cd = new Date(date); cd.setHours(0,0,0,0);
@@ -1696,9 +1696,12 @@ const QuarterView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) =
   // Per-fryer stats
   const fryerStats = Array.from({ length: fryerCount }, (_, i) => {
     const fNum = i + 1;
-    const fryerReadings = readings.filter(r => r.fryerNumber === fNum && !r.notInUse && r.readingDate >= formatDate(qStart) && r.readingDate <= formatDate(qEnd));
+    // All recordings (including notInUse) — used for compliance counting so notInUse days count as recorded
+    const allFryerReadings = readings.filter(r => r.fryerNumber === fNum && r.readingDate >= formatDate(qStart) && r.readingDate <= formatDate(qEnd));
+    // Active recordings only — used for TPM averages, filter rate, oil change analysis
+    const fryerReadings = allFryerReadings.filter(r => !r.notInUse);
 
-    const daysRecorded = new Set(fryerReadings.map(r => r.readingDate)).size;
+    const daysRecorded = new Set(allFryerReadings.map(r => r.readingDate)).size;
     const compliance = allDates.length > 0 ? Math.round((daysRecorded / allDates.length) * 100) : 0;
 
     const tpmValues = fryerReadings.filter(r => r.tpmValue != null).map(r => parseFloat(r.tpmValue));
@@ -1854,8 +1857,11 @@ const YearView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
       pastDays.push(formatDate(new Date(d)));
     }
 
-    const monthReadings = readings.filter(r => !r.notInUse && r.readingDate >= startStr && r.readingDate <= endStr);
-    const daysRecorded = new Set(monthReadings.map(r => r.readingDate)).size;
+    // All recordings (including notInUse) — used for compliance counting so notInUse days count as recorded
+    const allMonthReadings = readings.filter(r => r.readingDate >= startStr && r.readingDate <= endStr);
+    // Active recordings only — used for TPM averages, filter rate, oil change analysis
+    const monthReadings = allMonthReadings.filter(r => !r.notInUse);
+    const daysRecorded = new Set(allMonthReadings.map(r => r.readingDate)).size;
     const compliance = pastDays.length > 0 ? Math.round((daysRecorded / pastDays.length) * 100) : null;
 
     const tpmValues = monthReadings.filter(r => r.tpmValue != null).map(r => parseFloat(r.tpmValue));
@@ -3177,4 +3183,4 @@ export default function VenueStaffView({
   );
 }
 
-export { SummaryView, DashboardView };
+export { SummaryView, DashboardView, DayView, WeekView, MonthView, QuarterView, YearView };

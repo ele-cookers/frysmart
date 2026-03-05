@@ -197,7 +197,7 @@ function App() {
     try {
       const [venueRes, readingsRes, settingsRes] = await Promise.all([
         supabase.from('venues').select('*').eq('id', venueId).single(),
-        supabase.from('tpm_readings').select('*').eq('venue_id', venueId),
+        supabase.from('tpm_readings').select('*').eq('venue_id', venueId).order('reading_number', { ascending: true }),
         supabase.from('system_settings').select('*').single(),
       ]);
       if (venueRes.error) console.error('Venue fetch error:', venueRes.error);
@@ -282,7 +282,7 @@ function App() {
     // Reload readings for the active venue
     const activeVenueId = previewVenueId || venueLogin?.venueId || currentUser?.venueId;
     if (activeVenueId) {
-      const { data, error: readErr } = await supabase.from('tpm_readings').select('*').eq('venue_id', activeVenueId);
+      const { data, error: readErr } = await supabase.from('tpm_readings').select('*').eq('venue_id', activeVenueId).order('reading_number', { ascending: true });
       if (readErr) console.error('Reload readings error:', readErr);
       if (data) setStaffReadings(data.map(mapReading));
     }

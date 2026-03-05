@@ -199,12 +199,12 @@ alter table profiles
 -- ============================================================
 
 create or replace function update_updated_at()
-returns trigger as $$
+returns trigger language plpgsql set search_path = public as $$
 begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$;
 
 create trigger competitors_updated_at
   before update on competitors
@@ -321,15 +321,19 @@ create table user_roles (
   region text
 );
 
--- No RLS on user_roles — this is intentional.
--- Only authenticated users can SELECT (granted below), and writes
--- happen exclusively via the sync trigger (SECURITY DEFINER).
+-- RLS is enabled with a SELECT-only allow policy for authenticated users.
+-- SECURITY DEFINER functions bypass RLS so the circular-dep protection still holds.
+-- Writes happen exclusively via the sync trigger (SECURITY DEFINER).
 
 grant select on user_roles to authenticated;
 
+alter table user_roles enable row level security;
+create policy "allow_authenticated_select" on user_roles
+  for select to authenticated using (true);
+
 -- Sync trigger: keeps user_roles in sync with profiles
 create or replace function sync_user_roles()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if (tg_op = 'DELETE') then
     delete from user_roles where id = old.id;
@@ -358,12 +362,12 @@ insert into user_roles (id, role, region)
 -- ============================================================
 
 create or replace function auth_email_prefix()
-returns text language sql stable security definer as $$
+returns text language sql stable security definer set search_path = public as $$
   select split_part(auth.jwt() ->> 'email', '@', 1);
 $$;
 
 create or replace function get_my_role()
-returns text language plpgsql stable security definer as $$
+returns text language plpgsql stable security definer set search_path = public as $$
 declare
   _role text;
 begin
@@ -381,17 +385,17 @@ end;
 $$;
 
 create or replace function get_my_region()
-returns text language sql stable security definer as $$
+returns text language sql stable security definer set search_path = public as $$
   select region from user_roles where id = auth.uid();
 $$;
 
 create or replace function get_my_profile_id()
-returns uuid language sql stable security definer as $$
+returns uuid language sql stable security definer set search_path = public as $$
   select id from user_roles where id = auth.uid();
 $$;
 
 create or replace function get_my_venue_id()
-returns uuid language plpgsql stable security definer as $$
+returns uuid language plpgsql stable security definer set search_path = public as $$
 declare _id uuid;
 begin
   select id into _id from venues where customer_code = upper(auth_email_prefix()) limit 1;
@@ -400,7 +404,7 @@ end;
 $$;
 
 create or replace function get_my_group_id()
-returns uuid language plpgsql stable security definer as $$
+returns uuid language plpgsql stable security definer set search_path = public as $$
 declare _id uuid;
 begin
   select id into _id from groups where lower(username) = lower(auth_email_prefix()) limit 1;
@@ -409,12 +413,12 @@ end;
 $$;
 
 create or replace function is_admin_or_mgt()
-returns boolean language sql stable security definer as $$
+returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from user_roles where id = auth.uid() and role in ('admin', 'mgt'));
 $$;
 
 create or replace function is_admin()
-returns boolean language sql stable security definer as $$
+returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from user_roles where id = auth.uid() and role = 'admin');
 $$;
 
@@ -428,30 +432,113 @@ create index if not exists idx_venues_state on venues(state);
 create index if not exists idx_groups_nam_id on groups(nam_id);
 
 -- ============================================================
--- 17. RLS policies — permissive (allow all authenticated users)
+-- 17. RLS helper functions — tpm_readings & trials
 --
--- Note: Role-based RLS was attempted but cross-table subqueries
--- in policies cause PostgreSQL recursive evaluation failures.
--- The user_roles table, trigger, and helper functions above are
--- retained as infrastructure for a future attempt.
---
--- Current security layers without row-level policies:
---   1. Supabase Auth — no access without valid login
---   2. Admin operations gated by verifyAdmin() in Netlify function
---   3. Role-based UI — frontend shows different views per role
---   4. Accounts created by admins only — no public signup
+-- PLPGSQL SECURITY DEFINER ensures auth.uid() / auth.jwt()
+-- are always evaluated in the function owner's context, not the
+-- calling role's context (i.e. no recursive RLS on venues/groups).
+-- Functions query user_roles directly (no nested custom fn calls).
 -- ============================================================
 
-create policy "allow_all" on profiles     for all to authenticated using (true) with check (true);
-create policy "allow_all" on groups       for all to authenticated using (true) with check (true);
-create policy "allow_all" on venues       for all to authenticated using (true) with check (true);
-create policy "allow_all" on trials       for all to authenticated using (true) with check (true);
-create policy "allow_all" on tpm_readings for all to authenticated using (true) with check (true);
-create policy "allow_all" on competitors  for all to authenticated using (true) with check (true);
-create policy "allow_all" on oil_types    for all to authenticated using (true) with check (true);
+-- Returns true if the current user may READ a venue's TPM data:
+--   admin, mgt, the venue's BDM, the venue's own staff login,
+--   or the NAM / group manager for the venue's group.
+create or replace function tpm_readable(p_venue_id uuid)
+returns boolean language plpgsql stable security definer set search_path = public as $$
+declare _ok boolean;
+begin
+  select (
+    exists(select 1 from user_roles where id = auth.uid() and role in ('admin','mgt'))
+    or exists(select 1 from venues where id = p_venue_id and bdm_id = auth.uid())
+    or exists(select 1 from venues where id = p_venue_id
+              and customer_code = upper(split_part(auth.jwt()->>'email','@',1)))
+    or exists(
+      select 1 from venues v join groups g on g.id = v.group_id
+      where v.id = p_venue_id
+      and (g.nam_id = auth.uid()
+           or lower(g.username) = lower(split_part(auth.jwt()->>'email','@',1)))
+    )
+  ) into _ok;
+  return coalesce(_ok, false);
+end;
+$$;
+
+-- Returns true if the current user may WRITE TPM data for a venue:
+--   admin, mgt, the venue's BDM, or the venue's own staff login.
+--   (Group/NAM managers are read-only.)
+create or replace function tpm_writable(p_venue_id uuid)
+returns boolean language plpgsql stable security definer set search_path = public as $$
+declare _ok boolean;
+begin
+  select (
+    exists(select 1 from user_roles where id = auth.uid() and role in ('admin','mgt'))
+    or exists(select 1 from venues where id = p_venue_id and bdm_id = auth.uid())
+    or exists(select 1 from venues where id = p_venue_id
+              and customer_code = upper(split_part(auth.jwt()->>'email','@',1)))
+  ) into _ok;
+  return coalesce(_ok, false);
+end;
+$$;
+
+-- Returns true if the current user is the BDM for this venue.
+create or replace function is_my_bdm_venue(p_venue_id uuid)
+returns boolean language plpgsql stable security definer set search_path = public as $$
+declare _ok boolean;
+begin
+  select exists(select 1 from venues where id = p_venue_id and bdm_id = auth.uid()) into _ok;
+  return coalesce(_ok, false);
+end;
+$$;
+
+grant execute on function tpm_readable(uuid)    to authenticated;
+grant execute on function tpm_writable(uuid)    to authenticated;
+grant execute on function is_my_bdm_venue(uuid) to authenticated;
+
+-- ============================================================
+-- 18. RLS policies
+--
+-- profiles, groups, venues, competitors, oil_types, trial_reasons,
+-- volume_brackets, system_settings: allow-all for authenticated
+-- (UI + Netlify function enforce role-based access).
+--
+-- trials & tpm_readings: role-scoped policies using the helper
+-- functions defined in section 17.
+-- ============================================================
+
+create policy "allow_all" on profiles         for all to authenticated using (true) with check (true);
+create policy "allow_all" on groups           for all to authenticated using (true) with check (true);
+create policy "allow_all" on venues           for all to authenticated using (true) with check (true);
+create policy "allow_all" on competitors      for all to authenticated using (true) with check (true);
+create policy "allow_all" on oil_types        for all to authenticated using (true) with check (true);
 create policy "allow_all" on trial_reasons    for all to authenticated using (true) with check (true);
 create policy "allow_all" on volume_brackets  for all to authenticated using (true) with check (true);
 create policy "allow_all" on system_settings  for all to authenticated using (true) with check (true);
+
+-- tpm_readings: scoped to venues the user can access
+create policy "tpm_select" on tpm_readings for select to authenticated using (tpm_readable(venue_id));
+create policy "tpm_insert" on tpm_readings for insert to authenticated with check (tpm_writable(venue_id));
+create policy "tpm_update" on tpm_readings for update to authenticated
+  using (tpm_writable(venue_id)) with check (tpm_writable(venue_id));
+create policy "tpm_delete" on tpm_readings for delete to authenticated using (tpm_readable(venue_id));
+
+-- trials: same read scope as TPM; write restricted to admin/mgt/BDM
+create policy "trials_select" on trials for select to authenticated using (tpm_readable(venue_id));
+create policy "trials_insert" on trials for insert to authenticated
+  with check (
+    exists(select 1 from user_roles where id = auth.uid() and role in ('admin','mgt'))
+    or is_my_bdm_venue(venue_id)
+  );
+create policy "trials_update" on trials for update to authenticated
+  using (
+    exists(select 1 from user_roles where id = auth.uid() and role in ('admin','mgt'))
+    or is_my_bdm_venue(venue_id)
+  )
+  with check (
+    exists(select 1 from user_roles where id = auth.uid() and role in ('admin','mgt'))
+    or is_my_bdm_venue(venue_id)
+  );
+create policy "trials_delete" on trials for delete to authenticated
+  using (exists(select 1 from user_roles where id = auth.uid() and role in ('admin','mgt')));
 
 -- ============================================================
 -- Done! All tables, constraints, indexes, seeds, user_roles & RLS.
