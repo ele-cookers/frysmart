@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  X, CheckCircle2, Edit3, ChevronRight, Filter, Star, MessageSquare,
+  X, CheckCircle2, Edit3, ChevronRight, Filter, Star, MessageSquare, ClipboardList, XCircle, Send,
 } from 'lucide-react';
 import {
   TRIAL_STATUS_COLORS,
@@ -37,7 +37,7 @@ const calcTrialWeeklyAvg = (venueId, trialStartDate, readings, trialEndDate) => 
   return Math.round((totalLitres / daysElapsed) * 7 * 10) / 10;
 };
 
-export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, bdmName, namName, renderActions }) => {
+export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, readings, onClose, onSaveCustomerCode, onManage, bdmName, namName, renderActions, onLogReading, onEndTrial, onAddComment }) => {
   const statusConfig = TRIAL_STATUS_COLORS[venue.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
   const compOil = oilTypes.find(o => o.id === venue.defaultOil);
   const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
@@ -49,6 +49,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const [selectedCell, setSelectedCell] = useState(null);
+  const [comment, setComment] = useState('');
 
   // Pricing & savings
   const liveTrialAvg = calcTrialWeeklyAvg(venue.id, venue.trialStartDate, readings, venue.trialEndDate);
@@ -136,7 +137,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px', marginBottom: '12px' }}>
             {[
               { label: 'Start', value: displayDate(venue.trialStartDate) },
-              { label: 'End', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' },
+              { label: venue.trialStatus === 'active' ? 'Est. End' : 'End', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' },
               { label: 'Fryers', value: venue.fryerCount || '—' },
               (venue.customerCode && !venue.customerCode.startsWith('PRS-')) ? { label: 'Customer Code', value: venue.customerCode } : null,
             ].filter(Boolean).map((row, i) => (
@@ -148,12 +149,17 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
           </div>
 
           {/* Oil comparison */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '12px', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-            {comp && <CompetitorPill comp={comp} />}
-            {comp && <span style={{ color: '#e2e8f0', margin: '0 2px' }}>·</span>}
-            <OilBadge oil={compOil} competitors={competitors} compact />
-            <span style={{ fontSize: '12px', color: '#94a3b8', margin: '0 4px' }}>vs</span>
-            <OilBadge oil={cookersOil} competitors={competitors} compact />
+          <div style={{ paddingBottom: '12px', marginBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
+            {comp && (
+              <div style={{ marginBottom: '6px' }}>
+                <CompetitorPill comp={comp} />
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <OilBadge oil={compOil} competitors={competitors} compact />
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>vs</span>
+              <OilBadge oil={cookersOil} competitors={competitors} compact />
+            </div>
           </div>
 
           {/* Pricing & volumes */}
@@ -163,7 +169,6 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
                 venue.currentPricePerLitre ? { label: 'Current price/L', value: `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` } : null,
                 venue.offeredPricePerLitre ? { label: 'Offered price/L', value: `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` } : null,
                 preTrialAvg ? { label: 'Pre-trial weekly avg', value: `${preTrialAvg} L` } : null,
-                liveTrialAvg !== null ? { label: 'Trial weekly avg', value: `${liveTrialAvg} L` } : null,
               ].filter(Boolean).map((row, i) => (
                 <div key={i} style={{ padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
                   <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{row.label}</div>
@@ -173,32 +178,6 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
             </div>
           )}
 
-          {/* Savings table */}
-          {weekLitres !== null && (
-            <div style={{ marginBottom: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc' }}>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Savings</th>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Litres</th>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Spend</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Weekly</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: weekLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekLitres < 0 ? '-' : ''}{Math.abs(weekLitres)} L</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: weekSpend !== null && weekSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{weekSpend !== null ? (weekSpend < 0 ? '-$' : '$') + Math.abs(weekSpend).toLocaleString() : '—'}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937' }}>Annual</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: annualLitres < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualLitres < 0 ? '-' : ''}{Math.abs(annualLitres)} L</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: annualSpend !== null && annualSpend < 0 ? '#dc2626' : '#1f2937', textAlign: 'right' }}>{annualSpend !== null ? (annualSpend < 0 ? '-' : '') + '$' + Math.abs(annualSpend).toLocaleString() : '—'}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
 
           {/* TPM Readings Calendar — compact version for mobile only */}
           {!isDesktop && venue.trialStartDate && venue.trialStatus !== 'pipeline' && (() => {
@@ -316,8 +295,11 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
                 const trimmed = line.trim();
                 if (!trimmed) return;
                 const tagMatch = trimmed.match(/^\[(Won|Lost)\s+(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
+                const noteMatch = trimmed.match(/^\[Note\s+(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
                 if (tagMatch) {
                   notes.push({ date: tagMatch[2], type: tagMatch[1] === 'Won' ? 'outcome-won' : 'outcome-lost', text: tagMatch[3] || `Marked as ${tagMatch[1]}` });
+                } else if (noteMatch) {
+                  notes.push({ date: noteMatch[1], type: 'comment', text: noteMatch[2] || 'Comment added' });
                 } else if (trimmed.startsWith('TRL-')) {
                   const afterId = trimmed.replace(/^TRL-\d+(\s*\|[^|]*)?/, '').trim();
                   if (afterId) notes.push({ date: venue.trialStartDate || venue.createdAt?.slice(0, 10) || '', type: 'creation', text: afterId });
@@ -334,6 +316,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
             const typeConfig = {
               creation: { label: 'Trial Created', color: '#1a428a', bg: 'rgba(26,66,138,0.06)' },
               reading: { label: 'Recording Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
+              comment: { label: 'Comment', color: '#7c3aed', bg: 'rgba(124,58,237,0.06)' },
               'outcome-won': { label: venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
               'outcome-lost': { label: 'Unsuccessful', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
             };
@@ -362,16 +345,46 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
             );
           })()}
 
-          {/* Manage link — go to full manage screen */}
-          {onManage && (
-            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', textAlign: 'center' }}>
-              <button onClick={() => { onClose(); if (onManage) onManage(venue); }} style={{
-                background: 'none', border: 'none', fontSize: '12px', fontWeight: '600', color: '#1a428a',
-                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px',
-                padding: '6px 12px',
-              }}>
-                <Edit3 size={13} /> Manage Trial <ChevronRight size={14} />
-              </button>
+          {/* Action buttons + Comment — active trials */}
+          {venue.trialStatus === 'active' && (onLogReading || onEndTrial || onAddComment) && (
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginBottom: '4px' }}>
+              {(onLogReading || onEndTrial) && (
+                <div style={{ display: 'flex', gap: '8px', marginBottom: onAddComment ? '12px' : '0' }}>
+                  {onLogReading && (
+                    <button onClick={() => onLogReading(venue)} style={{ flex: 1, padding: '10px', background: '#1a428a', border: 'none', borderRadius: '10px', cursor: 'pointer', color: 'white', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <ClipboardList size={14} /> Log Reading
+                    </button>
+                  )}
+                  {onEndTrial && (
+                    <button onClick={() => onEndTrial(venue)} style={{ flex: 1, padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', cursor: 'pointer', color: '#dc2626', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <XCircle size={14} /> End Trial
+                    </button>
+                  )}
+                </div>
+              )}
+              {onAddComment && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Add Comment</div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                    <textarea
+                      value={comment}
+                      onChange={e => setComment(e.target.value)}
+                      placeholder="Add a comment or note..."
+                      rows={2}
+                      style={{ flex: 1, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#1f2937', resize: 'none', outline: 'none', fontFamily: 'inherit', lineHeight: '1.4' }}
+                      onFocus={e => e.target.style.borderColor = '#1a428a'}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                    <button
+                      onClick={() => { if (comment.trim()) { onAddComment(venue.id, comment.trim()); setComment(''); } }}
+                      disabled={!comment.trim()}
+                      style={{ padding: '8px 12px', background: comment.trim() ? '#1a428a' : '#e2e8f0', border: 'none', borderRadius: '8px', cursor: comment.trim() ? 'pointer' : 'default', color: comment.trim() ? 'white' : '#94a3b8', flexShrink: 0, alignSelf: 'flex-end' }}
+                    >
+                      <Send size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -479,7 +492,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
         return (
           <div style={{ flex: 2, minWidth: 0, borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: '#f8fafc' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2 }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Trial Calendar</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>Trial Calendar</div>
               <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{totalReadings} readings • {days.length} days • {fryerCount} fryer{fryerCount > 1 ? 's' : ''}</div>
             </div>
             <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
@@ -564,8 +577,11 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
             const trimmed = line.trim();
             if (!trimmed) return;
             const tagMatch = trimmed.match(/^\[(Won|Lost)\s+(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
+            const noteMatch = trimmed.match(/^\[Note\s+(\d{4}-\d{2}-\d{2})\]\s*(.*)/);
             if (tagMatch) {
               notes.push({ date: tagMatch[2], type: tagMatch[1] === 'Won' ? 'outcome-won' : 'outcome-lost', text: tagMatch[3] || `Marked as ${tagMatch[1]}` });
+            } else if (noteMatch) {
+              notes.push({ date: noteMatch[1], type: 'comment', text: noteMatch[2] || 'Comment added' });
             } else if (trimmed.startsWith('TRL-')) {
               const afterId = trimmed.replace(/^TRL-\d+(\s*\|[^|]*)?/, '').trim();
               if (afterId) notes.push({ date: venue.trialStartDate || venue.createdAt?.slice(0, 10) || '', type: 'creation', text: afterId });
@@ -583,6 +599,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
         const typeConfig = {
           creation: { label: 'Trial Created', color: '#1a428a', bg: 'rgba(26,66,138,0.06)' },
           reading: { label: 'Recording Note', color: '#d97706', bg: 'rgba(217,119,6,0.06)' },
+          comment: { label: 'Comment', color: '#7c3aed', bg: 'rgba(124,58,237,0.06)' },
           'outcome-won': { label: venue.trialStatus === 'accepted' ? 'Accepted' : 'Successful', color: '#059669', bg: 'rgba(5,150,105,0.06)' },
           'outcome-lost': { label: 'Unsuccessful', color: '#dc2626', bg: 'rgba(220,38,38,0.06)' },
         };
@@ -591,7 +608,7 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
           <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #e2e8f0', overflowY: 'auto', maxHeight: '94vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', letterSpacing: '0.3px' }}>Notes</div>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>Notes</div>
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{notes.length} note{notes.length !== 1 ? 's' : ''}</div>
               </div>
               <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>
