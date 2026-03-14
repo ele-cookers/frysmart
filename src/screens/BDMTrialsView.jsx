@@ -2791,11 +2791,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
             {/* ── Pre-trial Details ── */}
             {manageSubTab === 'details' && (() => {
-              const trialIdLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('TRL-')) || '';
-              const trialId = trialIdLine.match(/^TRL-\d+/)?.[0] || '';
+              // Trial ID — handle both "TRL-0001" and "WA-TRL-0009" formats
+              const trialIdLine = venue.trialNotes?.split('\n').find(l => /TRL-\d+/.test(l.trim())) || '';
+              const trialId = trialIdLine.match(/[A-Z]+-TRL-\d+|TRL-\d+/)?.[0] || '';
               const initialNote = venue.trialNotes
                 ? venue.trialNotes.split('\n')
-                    .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !t.match(/^TRL-/); })
+                    .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); })
                     .join('\n')
                 : '';
               const hasStarted = venue.trialStatus !== 'pipeline';
@@ -2804,7 +2805,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
               const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes', 'extend-life': 'Extend oil life' };
+              // Type: new prospect (vs competitor) or existing customer
+              const isNewProspect = !!comp;
+              const typeBadge = isNewProspect
+                ? <span style={{ fontSize: '11px', fontWeight: '700', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '6px', padding: '3px 8px' }}>New prospect</span>
+                : <span style={{ fontSize: '11px', fontWeight: '700', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '3px 8px' }}>Existing customer</span>;
               const currentSupplierEl = comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>;
+              // Last recording date from tpm readings
+              const lastRecDate = venueReadings.length > 0 ? venueReadings.reduce((max, r) => r.readingDate > max ? r.readingDate : max, venueReadings[0].readingDate) : null;
+              // Last edited (venue record updated_at)
+              const lastEditedDate = venue.updatedAt ? venue.updatedAt.split('T')[0] : null;
               // Clean label-value field helper
               const fld = (label, value) => (
                 <div>
@@ -2812,7 +2822,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                 </div>
               );
-              const divider = <div style={{ borderTop: '1px solid #f0f4f8', margin: '14px 0' }} />;
               const sectionLabel = (text) => (
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>{text}</div>
               );
@@ -2855,31 +2864,47 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   {!mEditing ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', alignItems: 'start' }}>
 
-                      {/* ── Left: all context fields, no section headings ── */}
-                      <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                      {/* ── Left: 3-column detail grid ── */}
+                      <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
+                          {/* Row 1: Type | Supplier | Current oil */}
+                          {fld('Type', typeBadge)}
                           {fld('Supplier', currentSupplierEl)}
                           {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
+                          {/* Row 2: Price/L | Avg litres | Volume bracket */}
                           {fld('Price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
                           {fld('Avg litres / week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
                           {fld('Volume bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
-                          {fld('Fryer count', fc ? String(fc) : null)}
+                          {/* Row 3: Trial oil | Offered price | Fryer count */}
                           {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
                           {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
-                          {fld('Created', trialCreatedDate ? displayDate(trialCreatedDate) : null)}
+                          {fld('Fryer count', fc ? String(fc) : null)}
+                          {/* Row 4: Start date | End date | [per-fryer or blank] */}
                           {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                           {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
                           <div />
                         </div>
                         {/* Per-fryer volumes if recorded */}
                         {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))', gap: '10px 16px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
                             {Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
                               const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
                               return vol ? fld(`Fryer ${fn}`, `${vol} L`) : null;
                             })}
                           </div>
                         )}
+                        {/* Bottom metadata strip */}
+                        <div style={{ display: 'flex', gap: '20px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8', flexWrap: 'wrap' }}>
+                          {trialCreatedDate && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
+                          )}
+                          {lastRecDate && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last recording {displayDate(lastRecDate)}</span>
+                          )}
+                          {lastEditedDate && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last edited {displayDate(lastEditedDate)}</span>
+                          )}
+                        </div>
                       </div>
 
                       {/* ── Right: notes + goals ── */}
