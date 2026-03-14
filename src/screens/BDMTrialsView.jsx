@@ -851,7 +851,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     customerCode: '', venueName: '',
     competitor: '',
     trialOilId: '', fryerCount: 1, fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
-    avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '', endDateManual: false,
+    avgLitresPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
   });
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
@@ -1225,11 +1225,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       if (venueErr) throw venueErr;
 
       // 2. Insert trial linked to that venue
+      const goalsLine = newTrialForm.trialGoals.length > 0 ? `[Goals: ${newTrialForm.trialGoals.join(', ')}]` : '';
       const newTrialObj = {
         venueId: venueRow.id,
         trialStatus: 'pipeline',
         trialOilId: newTrialForm.trialOilId,
-        trialNotes: `${trialId}${newTrialForm.notes ? `\n${newTrialForm.notes}` : ''}`,
+        trialNotes: [trialId, goalsLine, newTrialForm.notes].filter(Boolean).join('\n'),
         currentPricePerLitre: parseFloat(newTrialForm.currentPrice),
         offeredPricePerLitre: parseFloat(newTrialForm.offeredPrice),
         currentWeeklyAvg: parseFloat(newTrialForm.avgLitresPerWeek),
@@ -1250,7 +1251,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         customerCode: '', venueName: '',
         competitor: '',
         trialOilId: '', fryerCount: 1, fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
-        avgLitresPerWeek: '', notes: '', estStartDate: '', estEndDate: '', endDateManual: false,
+        avgLitresPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
       });
       setTrialType('new');
       setSuccessMsg(`Trial Created — ${trialId}`);
@@ -1753,15 +1754,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </div>
       </div>
 
-      {/* Per-fryer volume fields */}
+      {/* Per-fryer volume fields — 2-column grid matching form layout */}
       {parseInt(newTrialForm.fryerCount) > 0 && (
         <div style={S.field}>
           <label style={S.label}>FRYER VOLUMES</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
-              <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', minWidth: '52px' }}>Fryer {fn}</div>
-                <div style={{ position: 'relative', width: '140px' }}>
+              <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', minWidth: '54px' }}>Fryer {fn}</div>
+                <div style={{ position: 'relative', flex: 1 }}>
                   <input
                     type="number" min="1" step="1"
                     value={newTrialForm.fryerVolumes[fn] ?? ''}
@@ -1818,6 +1819,45 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="What do we know going into this trial?"
           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
       </div>
+
+      {/* Trial Goals */}
+      {(() => {
+        const GOAL_OPTIONS = [
+          { key: 'save-money', label: 'Save money / reduce costs' },
+          { key: 'reduce-consumption', label: 'Reduce oil consumption & waste' },
+          { key: 'food-quality', label: 'Better food quality & taste' },
+          { key: 'food-colour', label: 'Improve food colour' },
+          { key: 'reduce-changes', label: 'Reduce fryer change frequency' },
+          { key: 'simplify-ops', label: 'Simplify kitchen operations' },
+        ];
+        const toggleGoal = (key) => setNewTrialForm(f => ({
+          ...f,
+          trialGoals: f.trialGoals.includes(key)
+            ? f.trialGoals.filter(g => g !== key)
+            : [...f.trialGoals, key],
+        }));
+        return (
+          <div style={S.field}>
+            <label style={S.label}>TRIAL GOALS <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(select all that apply)</span></label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {GOAL_OPTIONS.map(opt => {
+                const selected = newTrialForm.trialGoals.includes(opt.key);
+                return (
+                  <button key={opt.key} type="button" onClick={() => toggleGoal(opt.key)} style={{
+                    padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                    border: selected ? '1.5px solid #1a428a' : '1.5px solid #e2e8f0',
+                    background: selected ? '#eff6ff' : 'white',
+                    color: selected ? '#1a428a' : '#64748b',
+                  }}>
+                    {selected ? '✓ ' : ''}{opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Submit */}
       <button type="submit" disabled={saving || !formValid} style={{
@@ -2722,12 +2762,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <button key={tab.key} onClick={() => setManageSubTab(tab.key)} style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                   padding: '12px 8px', border: 'none',
-                  borderBottom: isActive ? '2px solid #1a428a' : '2px solid transparent',
-                  marginBottom: '-2px',
-                  background: isActive ? 'white' : 'transparent',
-                  color: isActive ? '#1a428a' : '#64748b',
+                  background: isActive ? '#1a428a' : 'transparent',
+                  color: isActive ? 'white' : '#64748b',
                   fontSize: '12px', fontWeight: isActive ? '700' : '500',
-                  cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s',
+                  cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
                 }}>
                   <TabIcon size={13} />
                   {tab.label}
@@ -2751,10 +2789,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const hasStarted = venue.trialStatus !== 'pipeline';
               const hasEnded = venue.trialStatus === 'successful' || venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted';
               const trialCreatedDate = venue.trialCreatedAt ? venue.trialCreatedAt.split('T')[0] : null;
-              const secHeader = { fontSize: '11px', fontWeight: '700', color: '#1a428a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingBottom: '6px', borderBottom: '2px solid #eff6ff' };
-              const fieldRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f8fafc', gap: '12px' };
-              const fieldLabel = { fontSize: '12px', color: '#64748b', fontWeight: '500' };
-              const fieldValue = { fontSize: '13px', color: '#1f2937', fontWeight: '500', textAlign: 'right', display: 'flex', alignItems: 'center', gap: '4px' };
+              const secHeader = { fontSize: '11px', fontWeight: '700', color: '#1a428a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', paddingBottom: '6px', borderBottom: '2px solid #eff6ff' };
+              const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
+              const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
+              const GOAL_LABELS = { 'save-money': 'Save money / reduce costs', 'reduce-consumption': 'Reduce oil consumption & waste', 'food-quality': 'Better food quality & taste', 'food-colour': 'Improve food colour', 'reduce-changes': 'Reduce fryer change frequency', 'simplify-ops': 'Simplify kitchen operations' };
+              const statCard = (label, value, sub) => (
+                <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '12px 14px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>{label}</div>
+                  <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>{value}</div>
+                  {sub && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px' }}>{sub}</div>}
+                </div>
+              );
+              const currentSupplierName = comp ? comp.name : 'Cookers';
+              const currentSupplierEl = comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>;
               return (
                 <div>
                   {/* Header row: trial ID + edit button */}
@@ -2790,51 +2837,65 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {!mEditing ? (
                     <div>
-                      {/* ── Section 1: Pre-trial Details ── */}
+                      {/* ── Section 1: Pre-trial Details — 3-column grid ── */}
                       <div style={{ marginBottom: '24px' }}>
                         <div style={secHeader}>Pre-trial Details</div>
-                        {[
-                          { label: 'Competitor', value: comp ? <CompetitorPill comp={comp} /> : '—' },
-                          { label: 'Current Oil', value: compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : '—' },
-                          { label: 'Current $/L', value: venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : '—' },
-                          { label: 'Avg Litres / Week', value: venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : '—' },
-                          { label: 'Volume Bracket', value: venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : '—' },
-                          { label: 'Fryer Count', value: String(fc) },
-                        ].map((item, i) => (
-                          <div key={i} style={fieldRow}>
-                            <div style={fieldLabel}>{item.label}</div>
-                            <div style={fieldValue}>{item.value}</div>
+                        {/* Row 1: Current Supplier | Current Oil | Current $/L */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                          {statCard('Current Supplier', currentSupplierEl)}
+                          {statCard('Current Oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : <span style={{ color: '#94a3b8' }}>—</span>)}
+                          {statCard('Current $/L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}/L` : '—')}
+                        </div>
+                        {/* Row 2: Trial Oil | Avg Litres/Week | Volume Bracket */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                          {statCard('Trial Oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : <span style={{ color: '#94a3b8' }}>—</span>)}
+                          {statCard('Avg Litres / Week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : '—')}
+                          {statCard('Volume Bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : '—')}
+                        </div>
+                        {/* Row 3: Fryer Count (+ per-fryer volumes) */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                          {statCard('Fryer Count', String(fc))}
+                          {Array.from({ length: Math.min(fc, 2) }, (_, i) => i + 1).map(fn => {
+                            const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
+                            return statCard(`Fryer ${fn} Volume`, vol ? `${vol} L` : '—');
+                          })}
+                        </div>
+                        {/* Additional fryer volumes if > 3 fryers */}
+                        {fc > 3 && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '10px' }}>
+                            {Array.from({ length: fc - 3 }, (_, i) => i + 3 + 1).map(fn => {
+                              const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
+                              return <div key={fn}>{statCard(`Fryer ${fn} Volume`, vol ? `${vol} L` : '—')}</div>;
+                            })}
                           </div>
-                        ))}
-                        {/* Per-fryer volumes */}
-                        {fc > 0 && Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
-                          const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
-                          if (!vol) return null;
-                          return (
-                            <div key={fn} style={fieldRow}>
-                              <div style={fieldLabel}>Fryer {fn} Volume</div>
-                              <div style={fieldValue}>{vol} L</div>
-                            </div>
-                          );
-                        })}
+                        )}
                       </div>
 
-                      {/* ── Section 2: Trial Details ── */}
+                      {/* ── Section 2: Trial Details — 3-column dates ── */}
                       <div style={{ marginBottom: '24px' }}>
                         <div style={secHeader}>Trial Details</div>
-                        {[
-                          { label: 'Trial Created', value: trialCreatedDate ? displayDate(trialCreatedDate) : '—' },
-                          { label: hasStarted ? 'Start Date' : 'Estimated Start', value: venue.trialStartDate ? displayDate(venue.trialStartDate) : '—' },
-                          { label: hasEnded ? 'End Date' : 'Estimated End', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' },
-                        ].map((item, i) => (
-                          <div key={i} style={fieldRow}>
-                            <div style={fieldLabel}>{item.label}</div>
-                            <div style={fieldValue}>{item.value}</div>
-                          </div>
-                        ))}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                          {statCard('Trial Created', trialCreatedDate ? displayDate(trialCreatedDate) : '—')}
+                          {statCard(hasStarted ? 'Start Date' : 'Estimated Start', venue.trialStartDate ? displayDate(venue.trialStartDate) : '—')}
+                          {statCard(hasEnded ? 'End Date' : 'Estimated End', venue.trialEndDate ? displayDate(venue.trialEndDate) : '—')}
+                        </div>
                       </div>
 
-                      {/* ── Section 3: Initial note ── */}
+                      {/* ── Section 3: Goals (if any) ── */}
+                      {parsedGoals.length > 0 && (
+                        <div style={{ marginBottom: '24px' }}>
+                          <div style={secHeader}>Trial Goals</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {parsedGoals.map(g => (
+                              <span key={g} style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', background: '#eff6ff', color: '#1a428a', border: '1px solid #bfdbfe' }}>
+                                {GOAL_LABELS[g] || g}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Section 4: Initial note ── */}
                       {initialNote && (
                         <div>
                           <div style={secHeader}>What do we know going into this trial?</div>
