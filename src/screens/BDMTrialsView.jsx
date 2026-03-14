@@ -2594,37 +2594,53 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageEditing(val);
       if (val) {
         // Reset form to current venue values when entering edit mode
+        const initNotesText = (venue.trialNotes || '').split('\n')
+          .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); }).join('\n');
+        const initCompOil = oilTypes.find(o => o.id === venue.defaultOil);
         setManageEditForm({
-          name: venue.name || '', trialNotes: venue.trialNotes || '',
+          name: venue.name || '',
+          notesText: initNotesText,
           currentPricePerLitre: venue.currentPricePerLitre ? String(venue.currentPricePerLitre) : '',
           offeredPricePerLitre: venue.offeredPricePerLitre ? String(venue.offeredPricePerLitre) : '',
           trialStartDate: venue.trialStartDate || '', trialEndDate: venue.trialEndDate || '',
           trialOilId: venue.trialOilId || '', defaultOil: venue.defaultOil || '',
+          competitor: initCompOil?.competitorId || '',
           fryerCount: venue.fryerCount || 1, avgLitresPerWeek: venue.currentWeeklyAvg ? String(venue.currentWeeklyAvg) : '',
+          fryerVolumes: { ...(venue.fryerVolumes || {}) },
         });
       }
     };
     const mSaving = manageSaving;
+    const initNotesForDirty = (venue.trialNotes || '').split('\n')
+      .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); }).join('\n');
     const mDirty = mEditing && (
-      mEditForm.name !== (venue.name || '') || mEditForm.trialNotes !== (venue.trialNotes || '') ||
+      mEditForm.name !== (venue.name || '') ||
+      mEditForm.notesText !== initNotesForDirty ||
       mEditForm.currentPricePerLitre !== (venue.currentPricePerLitre ? String(venue.currentPricePerLitre) : '') ||
       mEditForm.offeredPricePerLitre !== (venue.offeredPricePerLitre ? String(venue.offeredPricePerLitre) : '') ||
       mEditForm.trialStartDate !== (venue.trialStartDate || '') || mEditForm.trialEndDate !== (venue.trialEndDate || '') ||
       mEditForm.trialOilId !== (venue.trialOilId || '') || mEditForm.defaultOil !== (venue.defaultOil || '') ||
       String(mEditForm.fryerCount) !== String(venue.fryerCount || 1) ||
-      mEditForm.avgLitresPerWeek !== (venue.currentWeeklyAvg ? String(venue.currentWeeklyAvg) : '')
+      mEditForm.avgLitresPerWeek !== (venue.currentWeeklyAvg ? String(venue.currentWeeklyAvg) : '') ||
+      JSON.stringify(mEditForm.fryerVolumes) !== JSON.stringify(venue.fryerVolumes || {})
     );
     const handleMSave = async () => {
       setManageSaving(true);
       const avgL = mEditForm.avgLitresPerWeek ? parseFloat(mEditForm.avgLitresPerWeek) : null;
+      // Reconstruct trialNotes preserving metadata (TRL-ID, Goals lines)
+      const metaLines = (venue.trialNotes || '').split('\n')
+        .filter(l => { const t = l.trim(); return t && (t.match(/^\[/) || /TRL-\d+/.test(t)); });
+      const newTrialNotes = [...metaLines, mEditForm.notesText].filter(Boolean).join('\n');
       await handleSaveTrialEdits(venue.id, {
-        name: mEditForm.name.trim() || venue.name, trialNotes: mEditForm.trialNotes,
+        name: mEditForm.name.trim() || venue.name,
+        trialNotes: newTrialNotes,
         currentPricePerLitre: mEditForm.currentPricePerLitre ? parseFloat(mEditForm.currentPricePerLitre) : null,
         offeredPricePerLitre: mEditForm.offeredPricePerLitre ? parseFloat(mEditForm.offeredPricePerLitre) : null,
         trialStartDate: mEditForm.trialStartDate || null, trialEndDate: mEditForm.trialEndDate || null,
         trialOilId: mEditForm.trialOilId || null, defaultOil: mEditForm.defaultOil || null,
         fryerCount: parseInt(mEditForm.fryerCount) || 1, currentWeeklyAvg: avgL,
         volumeBracket: avgL ? calcVolumeBracket(avgL) : null,
+        fryerVolumes: mEditForm.fryerVolumes && Object.keys(mEditForm.fryerVolumes).length > 0 ? mEditForm.fryerVolumes : null,
       });
       setManageSaving(false); setManageEditing(false);
     };
@@ -2830,11 +2846,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
               return (
                 <div>
-                  {/* Header row: trial ID + edit button */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    {trialId
-                      ? <div style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.5px' }}>{trialId}</div>
-                      : <div />}
+                  {/* Header row: edit button */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px' }}>
                     {!isReadOnly && !mEditing && (
                       <button onClick={() => setMEditing(true)} style={{
                         background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px',
@@ -2935,27 +2948,162 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     </div>
                   ) : (
-                    <div>
-                      <div style={{ marginBottom: '10px' }}>
-                        <label style={{ ...S.label, fontSize: '10px' }}>VENUE NAME</label>
-                        <input type="text" value={mEditForm.name} onChange={e => setMEditForm(p => ({ ...p, name: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+                      {/* Venue name */}
+                      <div style={S.field}>
+                        <label style={S.label}>VENUE NAME</label>
+                        <input type="text" value={mEditForm.name}
+                          onChange={e => setMEditForm(p => ({ ...p, name: e.target.value }))}
+                          style={inputStyle}
+                          onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>START DATE</label><input type="date" value={mEditForm.trialStartDate} onChange={e => setMEditForm(p => ({ ...p, trialStartDate: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} /></div>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>END DATE</label><input type="date" value={mEditForm.trialEndDate} onChange={e => setMEditForm(p => ({ ...p, trialEndDate: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} /></div>
+
+                      {/* Competitor */}
+                      <div style={S.field}>
+                        <label style={S.label}>COMPETITOR</label>
+                        <select value={mEditForm.competitor}
+                          onChange={e => setMEditForm(p => ({ ...p, competitor: e.target.value, defaultOil: '' }))}
+                          style={selectStyle}
+                          onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
+                          <option value="">None — existing Cookers customer</option>
+                          {competitors.filter(c => c.status === 'active').sort((a, b) => a.name.localeCompare(b.name)).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>COMP. $/L</label><div style={{ position: 'relative' }}><span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b', pointerEvents: 'none' }}>$</span><input type="number" step="0.01" min="0" value={mEditForm.currentPricePerLitre} onChange={e => setMEditForm(p => ({ ...p, currentPricePerLitre: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px 8px 22px', width: '100%', boxSizing: 'border-box' }} placeholder="0.00" /></div></div>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>OFFERED $/L</label><div style={{ position: 'relative' }}><span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b', pointerEvents: 'none' }}>$</span><input type="number" step="0.01" min="0" value={mEditForm.offeredPricePerLitre} onChange={e => setMEditForm(p => ({ ...p, offeredPricePerLitre: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px 8px 22px', width: '100%', boxSizing: 'border-box' }} placeholder="0.00" /></div></div>
+
+                      {/* Current oil | Current price/L */}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+                        <div style={S.field}>
+                          <label style={S.label}>CURRENT OIL</label>
+                          <select value={mEditForm.defaultOil}
+                            onChange={e => setMEditForm(p => ({ ...p, defaultOil: e.target.value }))}
+                            style={selectStyle}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
+                            <option value="">—</option>
+                            {mEditForm.competitor
+                              ? (allOilOptions.compGroups[competitors.find(c => c.id === mEditForm.competitor)?.name] || []).map(o => <option key={o.id} value={o.id}>{o.name}</option>)
+                              : <optgroup label="Cookers Oils">{allOilOptions.cookers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>
+                            }
+                          </select>
+                        </div>
+                        <div style={S.field}>
+                          <label style={S.label}>CURRENT PRICE / L</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b', pointerEvents: 'none' }}>$</span>
+                            <input type="number" step="0.01" min="0" value={mEditForm.currentPricePerLitre}
+                              onChange={e => setMEditForm(p => ({ ...p, currentPricePerLitre: e.target.value }))}
+                              style={{ ...inputStyle, paddingLeft: '24px' }} placeholder="0.00"
+                              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>CURRENT OIL</label><select value={mEditForm.defaultOil} onChange={e => setMEditForm(p => ({ ...p, defaultOil: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option><optgroup label="Cookers Oils">{allOilOptions.cookers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>{Object.entries(allOilOptions.compGroups).map(([company, oils]) => (<optgroup key={company} label={company}>{oils.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>))}</select></div>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>TRIAL OIL</label><select value={mEditForm.trialOilId} onChange={e => setMEditForm(p => ({ ...p, trialOilId: e.target.value }))} style={{ ...selectStyle, fontSize: '13px', padding: '8px 10px' }}><option value="">—</option>{cookerOilsList.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
+
+                      {/* Trial oil | Offered price/L */}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+                        <div style={S.field}>
+                          <label style={S.label}>TRIAL OIL</label>
+                          <select value={mEditForm.trialOilId}
+                            onChange={e => setMEditForm(p => ({ ...p, trialOilId: e.target.value }))}
+                            style={selectStyle}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
+                            <option value="">—</option>
+                            {cookerOilsList.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                          </select>
+                        </div>
+                        <div style={S.field}>
+                          <label style={S.label}>OFFERED PRICE / L</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b', pointerEvents: 'none' }}>$</span>
+                            <input type="number" step="0.01" min="0" value={mEditForm.offeredPricePerLitre}
+                              onChange={e => setMEditForm(p => ({ ...p, offeredPricePerLitre: e.target.value }))}
+                              style={{ ...inputStyle, paddingLeft: '24px' }} placeholder="0.00"
+                              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>AVG LITRES/WEEK</label><input type="number" min="0" step="1" value={mEditForm.avgLitresPerWeek} onChange={e => setMEditForm(p => ({ ...p, avgLitresPerWeek: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} placeholder="e.g. 80" /></div>
-                        <div><label style={{ ...S.label, fontSize: '10px' }}>FRYER COUNT</label><input type="number" min="1" max="20" value={mEditForm.fryerCount} onChange={e => setMEditForm(p => ({ ...p, fryerCount: e.target.value }))} style={{ ...inputStyle, fontSize: '13px', padding: '8px 10px' }} /></div>
+
+                      {/* Avg litres/week (left) + Fryer count + volumes (right) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
+                        <div style={S.field}>
+                          <label style={S.label}>CURRENT AVG LITRES / WEEK</label>
+                          <input type="number" min="0" step="1" value={mEditForm.avgLitresPerWeek}
+                            onChange={e => setMEditForm(p => ({ ...p, avgLitresPerWeek: e.target.value }))}
+                            placeholder="e.g. 80" style={inputStyle}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                          {mEditForm.avgLitresPerWeek && calcVolumeBracket(mEditForm.avgLitresPerWeek) && (
+                            <div style={{ marginTop: '6px' }}><VolumePill bracket={calcVolumeBracket(mEditForm.avgLitresPerWeek)} /></div>
+                          )}
+                        </div>
+                        <div>
+                          <div style={S.field}>
+                            <label style={S.label}>FRYER COUNT</label>
+                            <input type="number" min="1" max="20" value={mEditForm.fryerCount}
+                              onChange={e => {
+                                const count = parseInt(e.target.value) || 1;
+                                setMEditForm(p => {
+                                  const vols = { ...p.fryerVolumes };
+                                  for (let i = 1; i <= count; i++) { if (!vols[i]) vols[i] = ''; }
+                                  Object.keys(vols).forEach(k => { if (parseInt(k) > count) delete vols[k]; });
+                                  return { ...p, fryerCount: e.target.value, fryerVolumes: vols };
+                                });
+                              }}
+                              style={inputStyle}
+                              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                          </div>
+                          {parseInt(mEditForm.fryerCount) > 0 && (
+                            <div style={{ ...S.field, marginTop: '2px' }}>
+                              <label style={S.label}>FRYER VOLUMES</label>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {Array.from({ length: parseInt(mEditForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
+                                  <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '76px', flexShrink: 0 }}>Fryer {fn}</div>
+                                    <div style={{ position: 'relative', flex: 1 }}>
+                                      <input type="number" min="1" step="1"
+                                        value={mEditForm.fryerVolumes?.[fn] ?? ''}
+                                        onChange={e => setMEditForm(p => ({ ...p, fryerVolumes: { ...p.fryerVolumes, [fn]: e.target.value } }))}
+                                        placeholder="20"
+                                        style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
+                                        onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                                      <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Start date | End date */}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+                        <div style={S.field}>
+                          <label style={S.label}>START DATE</label>
+                          <input type="date" value={mEditForm.trialStartDate}
+                            onChange={e => setMEditForm(p => ({ ...p, trialStartDate: e.target.value }))}
+                            style={inputStyle}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                        </div>
+                        <div style={S.field}>
+                          <label style={S.label}>END DATE</label>
+                          <input type="date" value={mEditForm.trialEndDate}
+                            onChange={e => setMEditForm(p => ({ ...p, trialEndDate: e.target.value }))}
+                            style={inputStyle}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                        </div>
+                      </div>
+
+                      {/* Notes */}
+                      <div style={S.field}>
+                        <label style={S.label}>WHAT DO WE KNOW GOING INTO THIS TRIAL?</label>
+                        <textarea value={mEditForm.notesText}
+                          onChange={e => setMEditForm(p => ({ ...p, notesText: e.target.value }))}
+                          rows={4} style={{ ...inputStyle, resize: 'vertical' }}
+                          placeholder="Background, goals, context..."
+                          onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                      </div>
+
                     </div>
                   )}
                 </div>
