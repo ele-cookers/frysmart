@@ -858,6 +858,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
   const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
+  const [summaryEditMode, setSummaryEditMode] = useState(false); // edit mode for trial findings in summary
+  const [summaryFindingsText, setSummaryFindingsText] = useState(''); // editable findings text
   const [manageStatusFilter, setManageStatusFilter] = useState([]); // Manage screen status filter pills
   const [manageSearchQuery, setManageSearchQuery] = useState(''); // Manage screen keyword search
   const [decisionModal, setDecisionModal] = useState(null); // venue object for won/lost decision popup
@@ -2886,16 +2888,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     return (
       <div>
         {/* Back button + header + action buttons */}
-        <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'flex-start' : 'stretch', gap: isDesktop ? '12px' : '8px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'flex-end' : 'stretch', gap: isDesktop ? '12px' : '8px', marginBottom: '16px' }}>
           <button onClick={() => setManageVenueId(null)} style={{
             background: '#f1f5f9', border: 'none', borderRadius: '6px', padding: '6px 10px',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-            fontSize: '11px', fontWeight: '600', color: '#64748b',
+            fontSize: '11px', fontWeight: '600', color: '#64748b', flexShrink: 0,
           }}>
             <ChevronDown size={12} style={{ transform: 'rotate(90deg)' }} /> Back
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: 0 }}>{venue.name}</h2>
+            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', margin: 0, lineHeight: 1 }}>{venue.name}</h2>
           </div>
           {/* Inline action buttons */}
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
@@ -3372,7 +3374,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const thBase = { padding: '5px 4px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
               const tdBase = { padding: '5px 4px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
               const badge = (label, bg, color) => (
-                <span style={{ fontSize: '9px', fontWeight: '700', background: bg, color, borderRadius: '3px', padding: '2px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '52px', textAlign: 'center' }}>{label}</span>
+                <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '4px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
               );
               return (
                 <div>
@@ -3401,10 +3403,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
-                        <col style={{ width: '70px' }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
-                        <col />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: '90px' }} />
                         <col />
                       </colgroup>
                       <thead>
@@ -3419,7 +3421,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <th style={thBase}>Fill Type</th>
                           <th style={thBase}>Litres</th>
                           <th style={thBase}>Filtered</th>
-                          <th style={{ ...thBase, textAlign: 'left' }}>Food</th>
+                          <th style={{ ...thBase, textAlign: 'center' }}>Food</th>
                           <th style={{ ...thBase, textAlign: 'left' }}>Notes</th>
                         </tr>
                       </thead>
@@ -3435,10 +3437,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const tpmCol = r?.tpmValue != null ? tpmColor(r.tpmValue) : '#1f2937';
                           const tpmBg = r?.tpmValue != null ? (r.tpmValue <= 14 ? '#d1fae5' : r.tpmValue <= 18 ? '#fef3c7' : '#fee2e2') : 'transparent';
                           const missed = !r && !isFuture;
-                          const varInRange = variance != null && Math.abs(variance) <= 5;
+                          const varZero = variance === 0;
+                          const varInRange = variance != null && variance !== 0 && Math.abs(variance) <= 5;
                           const varOutRange = variance != null && Math.abs(variance) > 5;
                           const dash = missed ? '' : '—'; // blank for missed days, dash for future
-                          const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}`;
+                          const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}`;
                           return (
                             <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '36px' }}>
                               <td style={{ ...tdBase, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
@@ -3451,19 +3454,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               <td style={tdBase}>{r ? (r.actualTemperature ?? '—') : dash}</td>
                               <td style={{
                                 ...tdBase, fontWeight: '600',
-                                background: varInRange ? '#d1fae5' : varOutRange ? '#fee2e2' : 'transparent',
-                                color: varInRange ? '#059669' : varOutRange ? '#dc2626' : '#94a3b8',
+                                background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent',
+                                color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8',
                               }}>
-                                {variance != null ? (variance > 0 ? '+' : '') + variance + '°' : dash}
+                                {variance != null ? (variance > 0 ? '+' : '') + variance : dash}
                               </td>
                               <td style={tdBase}>
                                 {isFresh ? badge('Fresh Fill', '#d1fae5', '#059669')
-                                  : isToppedUp ? badge('Top Up', '#dbeafe', '#1e40af')
+                                  : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706')
                                   : ''}
                               </td>
                               <td style={tdBase}>{r ? ((r.litresFilled > 0) ? `${r.litresFilled}L` : '—') : dash}</td>
                               <td style={tdBase}>
-                                {r?.filtered ? badge('Filtered', '#fef3c7', '#d97706') : ''}
+                                {r?.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}
                               </td>
                               <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>
                                 {r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}
@@ -3531,11 +3534,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               const r = dayRecs[dayRecs.length - 1] || null;
                               const isFuture = day > today;
                               const missed = !r && !isFuture;
+                              const cellIsFresh = r?.oilAge === 1;
+                              const cellIsTopUp = r && r.litresFilled > 0 && !cellIsFresh;
+                              const cellBorder = cellIsFresh ? '2px solid #10b981' : cellIsTopUp ? '2px solid #f59e0b' : '1px solid #e2e8f0';
                               return (
                                 <td key={idx} style={{
                                   height: '40px',
                                   background: r?.tpmValue != null ? cellTpmBg(r.tpmValue) : isFuture ? '#f8fafc' : 'white',
-                                  border: '1px solid #e2e8f0', borderRadius: '5px',
+                                  border: cellBorder, borderRadius: '5px',
                                   textAlign: 'center', verticalAlign: 'middle',
                                   opacity: isFuture ? 0.3 : 1,
                                 }}>
@@ -3596,14 +3602,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const recordedTPMs = chartData.filter(d => d.tpm != null).map(d => d.tpm);
               const yMax = recordedTPMs.length > 0 ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, 24) : 24;
 
-              // SVG layout constants — wider chart
-              const CHART_H = 170;
+              // SVG layout constants — taller + wider chart
+              const CHART_H = 210;
               const TOP_PAD = 44;
-              const BOT_PAD = 36;
-              const LEFT_PAD = 44;
+              const BOT_PAD = 48;
+              const LEFT_PAD = 48;
               const RIGHT_PAD = 24;
-              const BAR_W = 36;
-              const STEP = 48;
+              const BAR_W = 40;
+              const STEP = 54;
               const N = chartData.length;
               const SVG_W = LEFT_PAD + N * STEP + RIGHT_PAD;
               const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
@@ -3634,25 +3640,36 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
 
-                  {/* Legend — centered ABOVE chart */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    {[
-                      { color: '#10b981', label: '≤14 (Good)', round: false },
-                      { color: '#f59e0b', label: '15–18 (Caution)', round: false },
-                      { color: '#ef4444', label: '>18 (Replace)', round: false },
-                      { color: '#f97316', label: 'Fresh fill', round: true },
-                      { color: '#3b82f6', label: 'Top-up', round: true },
-                    ].map(l => (
-                      <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <div style={{ width: '10px', height: '10px', borderRadius: l.round ? '50%' : '2px', background: l.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
-                      </div>
-                    ))}
+                  {/* Legend — two rows: TPM colours | fill types */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                      {[
+                        { color: '#10b981', label: '≤14 (Good)', round: false },
+                        { color: '#f59e0b', label: '15–18 (Caution)', round: false },
+                        { color: '#ef4444', label: '>18 (Replace)', round: false },
+                      ].map(l => (
+                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                      {[
+                        { color: '#10b981', label: 'Fresh fill', round: true },
+                        { color: '#f59e0b', label: 'Top-up', round: true },
+                      ].map(l => (
+                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Chart — full width, fixed CSS height so it never overflows screen */}
+                  {/* Chart — full width, taller */}
                   <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="240" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
+                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="320" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
 
                       {/* Y-axis gridlines + labels */}
                       {yTicks.map(v => {
@@ -3687,13 +3704,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         return (
                           <g key={idx}>
                             {/* Bar (skip future days) */}
-                            {!d.isFuture && (d.tpm != null || d.missed) && (
-                              <rect
-                                x={x} y={d.missed ? TOP_PAD + CHART_H - 3 : barY}
-                                width={BAR_W} height={d.missed ? 3 : barH}
-                                fill={d.missed ? '#e2e8f0' : color} rx={3}
-                              />
-                            )}
+                            {!d.isFuture && (d.tpm != null || d.missed) && (() => {
+                              const barIsFresh = d.isFresh;
+                              const barIsTopUp = d.litres > 0 && !d.isFresh;
+                              const barStroke = barIsFresh ? '#10b981' : barIsTopUp ? '#f59e0b' : 'none';
+                              const barSW = (barIsFresh || barIsTopUp) ? 2 : 0;
+                              return (
+                                <rect
+                                  x={x} y={d.missed ? TOP_PAD + CHART_H - 3 : barY}
+                                  width={BAR_W} height={d.missed ? 3 : barH}
+                                  fill={d.missed ? '#e2e8f0' : color} rx={3}
+                                  stroke={barStroke} strokeWidth={barSW}
+                                />
+                              );
+                            })()}
 
                             {/* TPM value inside tall bars, above short ones */}
                             {d.tpm != null && !d.isFuture && barH > 26 && (
@@ -3706,7 +3730,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             {/* Litres bubble — single line e.g. "12L" */}
                             {d.litres > 0 && !d.isFuture && (() => {
                               const bubbleY = d.tpm != null ? barY - BUBBLE_R - 5 : TOP_PAD - BUBBLE_R - 2;
-                              const bColor = d.isFresh ? '#f97316' : '#3b82f6';
+                              const bColor = d.isFresh ? '#10b981' : '#f59e0b';
                               return (
                                 <g>
                                   <circle cx={cx} cy={bubbleY} r={BUBBLE_R} fill={bColor} />
@@ -3723,6 +3747,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 transform={`rotate(-40, ${cx}, ${TOP_PAD + CHART_H + 12})`}
                               >{dateLabel}</text>
                             )}
+                            {/* Day number under date */}
+                            <text
+                              x={cx} y={TOP_PAD + CHART_H + BOT_PAD - 6}
+                              textAnchor="middle" fontSize={8} fill="#94a3b8" fontWeight="500"
+                            >{`D${idx + 1}`}</text>
                           </g>
                         );
                       })}
@@ -3730,6 +3759,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {/* Axes */}
                       <line x1={LEFT_PAD} y1={TOP_PAD + CHART_H} x2={SVG_W - RIGHT_PAD} y2={TOP_PAD + CHART_H} stroke="#d1d5db" strokeWidth={1} />
                       <line x1={LEFT_PAD} y1={TOP_PAD} x2={LEFT_PAD} y2={TOP_PAD + CHART_H} stroke="#d1d5db" strokeWidth={1} />
+                      {/* Y-axis label */}
+                      <text
+                        x={10} y={TOP_PAD + CHART_H / 2}
+                        textAnchor="middle" fontSize={9} fill="#94a3b8" fontWeight="600"
+                        transform={`rotate(-90, 10, ${TOP_PAD + CHART_H / 2})`}
+                      >TPM</text>
                     </svg>
                   </div>
                 </div>
@@ -3857,22 +3892,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               return (
                 <div style={{ padding: '0 24px' }}>
 
-                  {/* ── Title + type badge + venue name ── */}
-                  <div style={{ marginBottom: '24px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '10px' }}>Summary Report</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {typeBadge}
-                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>{venue.name}</span>
-                    </div>
-                  </div>
+                  {/* ── Title ── */}
+                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '24px' }}>Summary Report</div>
 
-                  {/* ── Two-column layout ── */}
+                  {/* ── GRID 1: details left | notes + findings right ── */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
 
-                    {/* ── Left: details grid + comparison table ── */}
+                    {/* Left: details grid */}
                     <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px', marginBottom: '24px' }}>
-                        {sfld('Current supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
+                        {/* Row 1: Type | Venue name (spans 2 cols) */}
+                        {sfld('Type', typeBadge)}
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Venue name</div>
+                          <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '600' }}>{venue.name || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
+                        </div>
+                        {sfld('Current supplier', compPill || <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>)}
                         {sfld('Current oil', compOilBadge)}
                         {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
                         {sfld('Fryer count', fc ? String(fc) : null)}
@@ -3880,24 +3915,55 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
                         {sfld('Vol bracket', volBadge)}
                         {sfld('Pre-trial avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
-                        {sfld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
+                        {sfld('Pre-trial avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
                         {sfld('Trial total litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
                         {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
-                        {sfld('Max oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
+                        {sfld('Trial max oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
                         {sfld('Start date', displayDate(venue.trialStartDate))}
                         {sfld('End date', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
                         {sfld('Trial duration', trialDuration > 0 ? `${trialDuration} days` : null)}
                       </div>
+                    </div>
 
-                      {/* Comparison table */}
-                      {secLabel('Comparison')}
+                    {/* Right: what we know + findings */}
+                    <div style={{ paddingLeft: '28px' }}>
+                      {rSecLabel('What do we know going into this trial?', 0)}
+                      {initialNote
+                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No notes entered.</p>
+                      }
+                      {rSecLabel('Trial Findings')}
+                      {summaryEditMode ? (
+                        <textarea
+                          value={summaryFindingsText}
+                          onChange={e => setSummaryFindingsText(e.target.value)}
+                          rows={6}
+                          style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #bfdbfe', borderRadius: '7px', fontSize: '13px', color: '#1f2937', resize: 'vertical', lineHeight: 1.6 }}
+                          placeholder="Trial findings..."
+                        />
+                      ) : (
+                        trialFindings
+                          ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
+                          : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No trial findings recorded.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Divider ── */}
+                  <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
+
+                  {/* ── GRID 2: comparison left | goals right ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+
+                    {/* Left: comparison table */}
+                    <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
                       {(compWklyAvg || liveTrialAvg !== null) ? (
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                             <thead>
                               <tr style={{ background: '#f8fafc' }}>
-                                <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Oil</th>
-                                {['Price / L', 'L / Wk', 'Cost / Wk', 'Cost / Yr'].map(h => (
+                                <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Comparison</th>
+                                {['Price / L', 'Litres/Wk', 'Litres/Yr', 'Cost / Wk', 'Cost / Yr'].map(h => (
                                   <th key={h} style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
                                 ))}
                               </tr>
@@ -3909,6 +3975,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 </td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
                               </tr>
@@ -3918,15 +3985,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 </td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—'}</td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
                                 <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
                               </tr>
                               {weekSpend !== null && (
                                 <tr style={{ background: '#f8fafc' }}>
-                                  <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Savings</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Difference</td>
                                   <td style={{ padding: '8px 10px' }} />
                                   <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
                                     {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                    {annualLitres != null ? `${annualLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(annualLitres))}` : '—'}
                                   </td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
                                     {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
@@ -3944,90 +4015,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       )}
                     </div>
 
-                    {/* ── Right: outcome + notes + findings + goals ── */}
+                    {/* Right: goals */}
                     <div style={{ paddingLeft: '28px' }}>
-
-                      {/* ── Trial outcome ── */}
-                      <div style={{ marginBottom: '20px' }}>
-                        <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Trial Outcome</div>
-
-                        {/* Pending: show Won / Lost buttons */}
-                        {venue.trialStatus === 'pending' && (
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                              <Trophy size={13} /> Won
-                            </button>
-                            <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#ef4444', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                              <XCircle size={13} /> Lost
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Accepted: won, needs customer code */}
-                        {venue.trialStatus === 'accepted' && (
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: '700', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '3px 10px' }}>Accepted</span>
-                              {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
-                            </div>
-                            {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 12px 0' }}>{reasonLabel}</p>}
-                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Enter Customer Code</div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <input type="text" value={summaryCustCode} onChange={e => setSummaryCustCode(e.target.value)} placeholder="e.g. CKR-0123"
-                                style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', fontWeight: '600', color: '#1f2937', outline: 'none' }} />
-                              <button onClick={() => { if (summaryCustCode.trim()) { handleSaveCustomerCode(venue.id, summaryCustCode.trim()); setSummaryCustCode(''); } }}
-                                style={{ padding: '7px 14px', background: summaryCustCode.trim() ? '#1a428a' : '#e2e8f0', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: summaryCustCode.trim() ? 'white' : '#94a3b8', cursor: summaryCustCode.trim() ? 'pointer' : 'not-allowed' }}>
-                                Save
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Successful: won + customer code */}
-                        {venue.trialStatus === 'successful' && (
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: '700', background: '#d1fae5', color: '#065f46', border: '1px solid #6ee7b7', borderRadius: '6px', padding: '3px 10px' }}>Successful</span>
-                              {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
-                            </div>
-                            {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 10px 0' }}>{reasonLabel}</p>}
-                            {venue.customerCode && (
-                              <div>
-                                <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Customer Code</div>
-                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a' }}>{venue.customerCode}</div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Unsuccessful */}
-                        {venue.trialStatus === 'unsuccessful' && (
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                              <span style={{ fontSize: '11px', fontWeight: '700', background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '6px', padding: '3px 10px' }}>Unsuccessful</span>
-                              {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
-                            </div>
-                            {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0' }}>{reasonLabel}</p>}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* What do we know going into this trial */}
-                      {rSecLabel('What do we know going into this trial?', 0)}
-                      {initialNote
-                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No notes entered.</p>
-                      }
-
-                      {/* Trial findings (end-trial comments) */}
-                      {rSecLabel('Trial Findings')}
-                      {trialFindings
-                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
-                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No trial findings recorded.</p>
-                      }
-
-                      {/* Trial goals achieved */}
-                      {rSecLabel('Trial Goals Achieved')}
+                      {rSecLabel('Trial Goals Achieved', 0)}
                       {trialGoalsList.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                           {trialGoalsList.map(g => {
@@ -4039,7 +4029,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   {GoalIcon ? <GoalIcon size={14} color="#1a428a" /> : null}
                                 </div>
                                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e', flex: 1 }}>{GOAL_LABELS[g] || g}</span>
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, background: achieved ? '#059669' : 'transparent', border: achieved ? '2px solid #059669' : '2px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, background: achieved ? '#f59e0b' : 'transparent', border: achieved ? '2px solid #f59e0b' : '2px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   {achieved && <Check size={11} color="white" strokeWidth={3} />}
                                 </div>
                               </div>
@@ -4049,8 +4039,103 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       ) : (
                         <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0' }}>No goals selected.</p>
                       )}
-
                     </div>
+                  </div>
+
+                  {/* ── Second divider ── */}
+                  <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
+
+                  {/* ── Bottom: Trial outcome details (BDM-only section) ── */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Trial Outcome</div>
+                      <button
+                        onClick={() => { if (!summaryEditMode) setSummaryFindingsText(trialFindings); setSummaryEditMode(prev => !prev); }}
+                        style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Edit3 size={12} /> {summaryEditMode ? 'Cancel Edit' : 'Edit Findings'}
+                      </button>
+                    </div>
+                    {summaryEditMode && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <button onClick={async () => {
+                          const existingLines = (venue.trialNotes || '').split('\n');
+                          const firstMatch = existingLines.find(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
+                          const prefix = firstMatch
+                            ? firstMatch.trim().match(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/)[0]
+                            : `[Successful ${getTodayString()}]`;
+                          const nonFindingLines = existingLines.filter(l => !l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
+                          const newFindingLines = summaryFindingsText.trim()
+                            ? summaryFindingsText.split('\n').map(t => t.trim() ? `${prefix} ${t.trim()}` : '').filter(Boolean)
+                            : [];
+                          const newNotes = [...nonFindingLines, ...newFindingLines].join('\n').trim();
+                          await updateVenue(venue.id, { trialNotes: newNotes });
+                          setSummaryEditMode(false);
+                        }} style={{ padding: '6px 14px', background: '#1a428a', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Save size={11} /> Save Findings
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Pending: show Won / Lost buttons */}
+                    {venue.trialStatus === 'pending' && (
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                          <Trophy size={13} /> Won
+                        </button>
+                        <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#ef4444', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                          <XCircle size={13} /> Lost
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Accepted: won, needs customer code */}
+                    {venue.trialStatus === 'accepted' && (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '3px 10px' }}>Accepted</span>
+                          {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
+                        </div>
+                        {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 12px 0' }}>{reasonLabel}</p>}
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Enter Customer Code</div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input type="text" value={summaryCustCode} onChange={e => setSummaryCustCode(e.target.value)} placeholder="e.g. CKR-0123"
+                            style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', fontWeight: '600', color: '#1f2937', outline: 'none' }} />
+                          <button onClick={() => { if (summaryCustCode.trim()) { handleSaveCustomerCode(venue.id, summaryCustCode.trim()); setSummaryCustCode(''); } }}
+                            style={{ padding: '7px 14px', background: summaryCustCode.trim() ? '#1a428a' : '#e2e8f0', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: summaryCustCode.trim() ? 'white' : '#94a3b8', cursor: summaryCustCode.trim() ? 'pointer' : 'not-allowed' }}>
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Successful: won + customer code */}
+                    {venue.trialStatus === 'successful' && (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', background: '#d1fae5', color: '#065f46', border: '1px solid #6ee7b7', borderRadius: '6px', padding: '3px 10px' }}>Successful</span>
+                          {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
+                        </div>
+                        {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 10px 0' }}>{reasonLabel}</p>}
+                        {venue.customerCode && (
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Customer Code</div>
+                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a' }}>{venue.customerCode}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Unsuccessful */}
+                    {venue.trialStatus === 'unsuccessful' && (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '6px', padding: '3px 10px' }}>Unsuccessful</span>
+                          {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
+                        </div>
+                        {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0' }}>{reasonLabel}</p>}
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ height: '20px' }} />
