@@ -120,6 +120,7 @@ create table venues (
   customer_code text,
   state text not null,
   fryer_count int not null default 4,
+  fryer_volumes jsonb default '{}'::jsonb,
   volume_bracket text references volume_brackets(key),
   default_oil uuid references oil_types(id) on delete set null,
   group_id uuid references groups(id) on delete set null,
