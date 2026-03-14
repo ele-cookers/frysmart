@@ -353,7 +353,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
       }}>
       <div style={{ overflowY: 'auto', maxHeight: '95vh' }}>
         {/* Header */}
-        <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
+        <div style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>
               {venue.name} — Fryer {currentFryerNumber}
@@ -369,7 +369,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           )}
         </div>
 
-        <form onSubmit={handleSaveAndContinue} style={{ padding: '12px 14px' }}>
+        <form onSubmit={handleSaveAndContinue} style={{ padding: '12px 20px' }}>
           {/* Reading Date */}
           <div style={fld}>
             <label style={lbl}>Reading Date</label>
@@ -550,15 +550,17 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" onClick={handleSkip} style={{
-              flex: 1, padding: '12px', background: 'white', border: '2px solid #e2e8f0',
-              borderRadius: '10px', fontSize: '14px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-              {currentFryerIndex === 0 ? 'Cancel' : 'Skip'}
-            </button>
-            <button type="submit" disabled={!canSave} style={{
-              flex: 1, padding: '12px', background: canSave ? '#1a428a' : '#9ca3af', border: 'none',
+            {currentFryerIndex > 0 && (
+              <button type="button" className="bdm-log-back-btn" onClick={() => setCurrentFryerIndex(i => i - 1)} style={{
+                flex: 1, padding: '10px 12px', background: 'white', border: '1.5px solid #e2e8f0',
+                borderRadius: '10px', fontSize: '14px', fontWeight: '600', color: '#64748b', cursor: 'pointer', transition: 'all 0.15s' }}>
+                ← Back
+              </button>
+            )}
+            <button type="submit" disabled={!canSave} className={canSave ? 'bdm-log-save-btn' : ''} style={{
+              flex: 1, padding: '10px 12px', background: canSave ? '#1a428a' : '#9ca3af', border: 'none',
               borderRadius: '10px', fontSize: '14px', fontWeight: '600', color: 'white',
-              cursor: canSave ? 'pointer' : 'not-allowed' }}>
+              cursor: canSave ? 'pointer' : 'not-allowed', transition: 'all 0.15s' }}>
               {currentFryerIndex < fryerNums.length - 1 ? 'Save & Next' : 'Save'}
             </button>
           </div>
@@ -657,6 +659,13 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
   const litresSaved = preTrialAvg > 0 ? Math.round((preTrialAvg - litresPerWeek) * 10) / 10 : null;
   const dollarsSaved = litresSaved !== null && currentPrice > 0 ? Math.round((preTrialAvg * currentPrice - litresPerWeek * offeredPrice) * 100) / 100 : null;
   const totalNum = systemTotal;
+
+  // Pre-trial oil lifespan — parse [FryerChanges: X] from trialNotes
+  const fryerChangesLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[FryerChanges:')) || '';
+  const preTrialLifespan = fryerChangesLine ? parseInt(fryerChangesLine.replace(/^\[FryerChanges:\s*/, '').replace(/\]$/, '')) || null : null;
+
+  // Trial findings text (new field)
+  const [trialFindings, setTrialFindings] = useState('');
 
   // Trial goals — parse from trialNotes
   const GOAL_OPTIONS = [
@@ -759,25 +768,25 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Oil Usage</th>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Count</th>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Litres</th>
+                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>Count</th>
+                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>Litres</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Fresh fills</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{freshFills.length}</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{Math.round(freshLitres)}L</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{freshFills.length}</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{Math.round(freshLitres)}L</td>
                   </tr>
                   <tr>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Top-ups</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{topUps.length}</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{Math.round(topUpLitres)}L</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{topUps.length}</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{Math.round(topUpLitres)}L</td>
                   </tr>
                   <tr style={{ background: '#f8fafc' }}>
                     <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Total</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', textAlign: 'right' }}></td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'right' }}>{Math.round(systemTotal)}L</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', textAlign: 'center' }}></td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'center' }}>{Math.round(systemTotal)}L</td>
                   </tr>
                 </tbody>
               </table>
@@ -789,21 +798,38 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Oil Lifespan</th>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Days</th>
+                    <th style={{ padding: '7px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>+/−</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {(() => {
+                    const lifespanDelta = (val) => {
+                      if (val === null || preTrialLifespan === null) return null;
+                      return val - preTrialLifespan;
+                    };
+                    const deltaCell = (delta, bold) => {
+                      if (delta === null) return <td style={{ padding: '6px 8px', fontSize: '11px', textAlign: 'right', color: '#94a3b8' }}>—</td>;
+                      const pos = delta >= 0;
+                      return <td style={{ padding: bold ? '6px 8px' : '6px 8px', fontSize: bold ? '12px' : '11px', fontWeight: bold ? '700' : '500', textAlign: 'right', color: pos ? '#059669' : '#dc2626', borderBottom: bold ? 'none' : '1px solid #f1f5f9' }}>{pos ? '+' : ''}{delta}d</td>;
+                    };
+                    return (<>
                   <tr>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Min</td>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{lifespanMin !== null ? `${lifespanMin}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
+                    {deltaCell(lifespanDelta(lifespanMin), false)}
                   </tr>
                   <tr>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Max</td>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{lifespanMax !== null ? `${lifespanMax}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
+                    {deltaCell(lifespanDelta(lifespanMax), false)}
                   </tr>
                   <tr style={{ background: '#f8fafc' }}>
                     <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Avg</td>
                     <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'right' }}>{lifespanAvg !== null ? `${lifespanAvg}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
+                    {deltaCell(lifespanDelta(lifespanAvg), true)}
                   </tr>
+                    </>);
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -881,27 +907,28 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           {trialGoals.length > 0 && (
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Trial Goals Achieved</div>
-              <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                {GOAL_OPTIONS.filter(g => trialGoals.includes(g.key)).map((goal, idx, arr) => {
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                {GOAL_OPTIONS.filter(g => trialGoals.includes(g.key)).map((goal) => {
                   const GoalIcon = goal.icon;
                   const achieved = achievedGoals.includes(goal.key);
                   return (
                     <div key={goal.key} onClick={() => toggleGoal(goal.key)} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px',
-                      cursor: 'pointer', background: achieved ? '#f0fdf4' : 'white',
-                      borderBottom: idx < arr.length - 1 ? '1px solid #f1f5f9' : 'none',
-                      transition: 'background 0.1s',
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px',
+                      cursor: 'pointer', borderRadius: '8px',
+                      background: achieved ? '#dbeafe' : '#f8fafc',
+                      border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`,
+                      transition: 'all 0.1s',
                     }}>
-                      <GoalIcon size={14} color={achieved ? '#059669' : '#94a3b8'} />
-                      <span style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: achieved ? '#1f2937' : '#64748b' }}>{goal.label}</span>
+                      <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
+                      <span style={{ flex: 1, fontSize: '11px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
                       <div style={{
-                        width: '18px', height: '18px', borderRadius: '4px',
-                        border: `2px solid ${achieved ? '#059669' : '#d1d5db'}`,
-                        background: achieved ? '#059669' : 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
+                        border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`,
+                        background: achieved ? '#f59e0b' : 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'all 0.1s',
                       }}>
-                        {achieved && <Check size={10} color="white" strokeWidth={3} />}
+                        {achieved && <Check size={9} color="white" strokeWidth={3} />}
                       </div>
                     </div>
                   );
@@ -910,10 +937,22 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
           )}
 
+          {/* Trial Findings */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '6px' }}>Trial Findings</label>
+            <textarea
+              value={trialFindings}
+              onChange={e => setTrialFindings(e.target.value)}
+              placeholder="What happened? Key observations, outcomes, things that stood out, customer feedback, oil performance notes…"
+              rows={3}
+              style={{ width: '100%', padding: '9px 10px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', resize: 'vertical', fontFamily: 'inherit', color: '#1f2937', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5' }}
+            />
+          </div>
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
               Confirm End Trial
             </button>
           </div>
@@ -1291,13 +1330,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     }
   };
 
-  const handleEndTrial = (venueId, _totalLitres, achievedGoalsList = []) => {
+  const handleEndTrial = (venueId, _totalLitres, achievedGoalsList = [], trialFindingsText = '') => {
     const v = venues.find(x => x.id === venueId);
-    // Preserve existing trialNotes, replacing or appending [GoalsAchieved:] line
+    // Preserve existing trialNotes, replacing or appending metadata lines
     const existingNotes = v?.trialNotes || '';
-    const lines = existingNotes.split('\n').filter(l => !l.trim().startsWith('[GoalsAchieved:'));
+    const lines = existingNotes.split('\n')
+      .filter(l => !l.trim().startsWith('[GoalsAchieved:'))
+      .filter(l => !l.trim().startsWith('[TrialFindings:'));
     if (achievedGoalsList.length > 0) {
       lines.push(`[GoalsAchieved: ${achievedGoalsList.join(', ')}]`);
+    }
+    if (trialFindingsText.trim()) {
+      lines.push(`[TrialFindings: ${trialFindingsText.trim()}]`);
     }
     const newTrialNotes = lines.filter(Boolean).join('\n');
     // Close immediately (optimistic), fire update in background
@@ -1737,12 +1781,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {tc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(allVenues, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
               {tc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Offered $/L" options={getUniqueValues(allVenues, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
               {showSold && tc('soldPrice') && <FilterableTh colKey="soldPrice" label="Sold $/L" options={getUniqueValues(allVenues, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-              {showStart && tc('start') && <FilterableTh colKey="start" label={tabType === 'pipeline' ? 'Est. Start' : 'Start'} options={getUniqueValues(allVenues, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-              {showEnd && tc('end') && <FilterableTh colKey="end" label={(tabType === 'pipeline' || tabType === 'active') ? 'Est. End' : 'End'} options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+              {showStart && tc('start') && <FilterableTh colKey="start" label={tabType === 'pipeline' ? 'Est. Start' : 'Start'} options={getUniqueValues(allVenues, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '62px' } : {}} />}
+              {showEnd && tc('end') && <FilterableTh colKey="end" label={(tabType === 'pipeline' || tabType === 'active') ? 'Est. End' : 'End'} options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '62px' } : {}} />}
               {(tabType === 'pending' || isAccepted) && tc('days') && <th style={{ textAlign: 'center', width: '50px' }}>Days</th>}
               {tabType === 'active' && tc('today') && <th style={{ textAlign: 'center', width: '50px' }}>Today</th>}
-              {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-              {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+              {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '62px' }} />}
+              {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ maxWidth: '90px', width: '90px' }} />}
               {showCustomerCode && tc('customerCode') && <FilterableTh colKey="customerCode" label="Cust Code" options={getUniqueValues(allVenues, colAccessors.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
             </tr></thead>
@@ -1760,25 +1804,25 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <tr key={venue.id} onClick={() => setRowActionVenue({ venue, tabType })} style={{ height: '34px', cursor: 'pointer' }}>
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
-                    {tc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
-                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</td>}
-                    {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {tc('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge oil={cookersOil} competitors={competitors} compact /></td>}
+                    {tc('volume') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><VolumePill bracket={venue.volumeBracket} /></span></td>}
+                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</span></td>}
+                    {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''} style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                    {tc('trialOil') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><OilBadge oil={cookersOil} competitors={competitors} compact /></span></td>}
                     {tc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {showSold && tc('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${parseFloat(venue.soldPricePerLitre).toFixed(2)}` : '—'}</td>}
-                    {showStart && tc('start') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal' }}>{displayDate(venue.trialStartDate) || '—'}</td>}
-                    {showEnd && tc('end') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal' }}>{displayDate(venue.trialEndDate) || '—'}</td>}
+                    {showStart && tc('start') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal', textAlign: isArchiveTab(tabType) ? 'center' : 'left' }}>{displayDate(venue.trialStartDate) || '—'}</td>}
+                    {showEnd && tc('end') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal', textAlign: isArchiveTab(tabType) ? 'center' : 'left' }}>{displayDate(venue.trialEndDate) || '—'}</td>}
                     {tabType === 'active' && tc('today') && (() => {
                       const recorded = tpmReadings.some(r => r.venueId === venue.id && r.readingDate === todayStr);
                       return <td style={{ textAlign: 'center' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: recorded ? '#10b981' : '#ef4444', margin: '0 auto' }} title={recorded ? 'Recorded today' : 'Not yet recorded'} /></td>;
                     })()}
                     {tabType === 'pending' && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.trialEndDate ? daysBetween(venue.trialEndDate, todayStr) : '—'}</td>}
                     {isAccepted && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.outcomeDate ? daysBetween(venue.outcomeDate, todayStr) : '—'}</td>}
-                    {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{displayDate(venue.outcomeDate)}</td>}
-                    {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
+                    {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', textAlign: 'center' }}>{displayDate(venue.outcomeDate)}</td>}
+                    {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
                     {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap' }}>{venue.customerCode || '—'}</td>}
-                    <td style={{ textAlign: 'center', paddingLeft: '2px', paddingRight: '2px' }}><TrialStatusBadge status={venue.trialStatus} /></td>
+                    <td style={{ textAlign: 'center', paddingLeft: '2px', paddingRight: '2px' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><TrialStatusBadge status={venue.trialStatus} /></span></td>
                   </tr>
                 );
               })}
@@ -1858,23 +1902,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT OIL {req}</label>
-          <select value={newTrialForm.defaultOil} onChange={e => setNewTrialForm(f => ({ ...f, defaultOil: e.target.value }))}
-            style={{ ...selectStyle, color: newTrialForm.defaultOil ? '#1f2937' : '#94a3b8' }} required>
-            <option value="" disabled>{trialType === 'existing' ? 'Select Cookers oil...' : 'Select current oil...'}</option>
+          <select
+            value={newTrialForm.defaultOil}
+            onChange={e => setNewTrialForm(f => ({ ...f, defaultOil: e.target.value }))}
+            disabled={trialType === 'new' && !newTrialForm.competitor}
+            style={{ ...selectStyle, color: newTrialForm.defaultOil ? '#1f2937' : '#94a3b8', opacity: (trialType === 'new' && !newTrialForm.competitor) ? 0.5 : 1, cursor: (trialType === 'new' && !newTrialForm.competitor) ? 'not-allowed' : 'pointer' }}
+            required>
+            <option value="" disabled>
+              {trialType === 'existing' ? 'Select Cookers oil...' : (trialType === 'new' && !newTrialForm.competitor) ? 'Select competitor first…' : 'Select current oil...'}
+            </option>
             {trialType === 'existing' ? (
               allOilOptions.cookers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)
-            ) : trialType === 'new' && newTrialForm.competitor ? (
-              /* Filter to selected competitor's oils */
+            ) : (trialType === 'new' && newTrialForm.competitor) ? (
               (allOilOptions.compGroups[competitors.find(c => c.id === newTrialForm.competitor)?.name] || [])
                 .map(o => <option key={o.id} value={o.id}>{o.name}</option>)
-            ) : (
-              /* No competitor selected yet — show all */
-              Object.entries(allOilOptions.compGroups).sort(([a], [b]) => a.localeCompare(b)).map(([compName, oils]) => (
-                <optgroup key={compName} label={compName}>
-                  {oils.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-                </optgroup>
-              ))
-            )}
+            ) : null}
           </select>
         </div>
         <div style={S.field}>
@@ -1959,7 +2001,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
                 <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '56px', flexShrink: 0 }}>Fryer {fn}</div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
                   <div style={{ position: 'relative', flex: 1 }}>
                     <input
                       type="number" min="1" step="1"
@@ -2013,9 +2055,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       {/* Notes */}
       <div style={S.field}>
-        <label style={S.label}>NOTES</label>
+        <label style={S.label}>WHAT DO WE KNOW GOING INTO THIS TRIAL?</label>
         <textarea value={newTrialForm.notes} onChange={e => setNewTrialForm(f => ({ ...f, notes: e.target.value }))}
-          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="What do we know going into this trial?"
+          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="E.g. competitor pricing pressure, key contact notes, food quality concerns, things to watch…"
           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
       </div>
 
@@ -3335,7 +3377,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               {Array.from({ length: parseInt(mEditForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
                                 <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '56px', flexShrink: 0 }}>Fryer {fn}</div>
+                                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
                                   <div style={{ position: 'relative', flex: 1 }}>
                                     <input type="number" min="1" step="1"
                                       value={mEditForm.fryerVolumes?.[fn] ?? ''}
@@ -3372,11 +3414,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* Notes */}
                       <div style={S.field}>
-                        <label style={S.label}>NOTES</label>
+                        <label style={S.label}>WHAT DO WE KNOW GOING INTO THIS TRIAL?</label>
                         <textarea value={mEditForm.notesText}
                           onChange={e => setMEditForm(p => ({ ...p, notesText: e.target.value }))}
                           rows={3} style={{ ...inputStyle, resize: 'vertical' }}
-                          placeholder="What do we know going into this trial?"
+                          placeholder="E.g. competitor pricing pressure, key contact notes, food quality concerns, things to watch…"
                           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                       </div>
 
@@ -3460,7 +3502,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
               const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
               const activeFryer = calFryerTab;
-              const EQ_W = '58px';
+              const EQ_W = '44px';
               const thBase = { padding: '3px 2px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
               const tdBase = { padding: '3px 2px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
               const badge = (label, bg, color) => (
@@ -3484,20 +3526,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', fontSize: '11px', tableLayout: 'fixed' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '480px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '28px' }} />
-                        <col style={{ width: '44px' }} />
-                        <col style={{ width: '72px' }} />
+                        <col style={{ width: '24px' }} />
+                        <col style={{ width: '38px' }} />
+                        <col style={{ width: '52px' }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
+                        <col style={{ width: '48px' }} />
+                        <col style={{ width: '62px' }} />
                         <col style={{ width: EQ_W }} />
-                        <col style={{ width: '72px' }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: '72px' }} />
-                        <col style={{ width: '90px' }} />
-                        <col style={{ width: '160px' }} />
+                        <col style={{ width: '56px' }} />
+                        <col style={{ width: '60px' }} />
+                        <col />
                       </colgroup>
                       <thead>
                         <tr>
@@ -3869,7 +3911,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </svg>
                     </div>
                     {/* Notes panel */}
-                    <div style={{ width: isDesktop ? '210px' : '100%', flexShrink: 0, paddingTop: '4px' }}>
+                    <div style={{ width: isDesktop ? '270px' : '100%', flexShrink: 0, paddingTop: '4px' }}>
                       <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Notes</div>
                       {daysWithNotes.length === 0 ? (
                         <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes recorded</div>
@@ -4043,21 +4085,35 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Venue name</div>
                           <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '600' }}>{venue.name || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                         </div>
+                        {/* Row 2: Current supplier | Current oil | Trial oil */}
                         {sfld('Current supplier', compPill || <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>)}
                         {sfld('Current oil', compOilBadge)}
-                        {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
-                        {sfld('Fryer count', fc ? String(fc) : null)}
                         {sfld('Trial oil', trialOilBadge)}
+                        {/* Row 3: Fryer count | Current price/L | Offered price/L */}
+                        {sfld('Fryer count', fc ? String(fc) : null)}
+                        {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
                         {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
+                        {/* Row 4: Vol bracket | Pre-trial weekly avg | Trial weekly avg */}
                         {sfld('Vol bracket', volBadge)}
-                        {sfld('Pre-trial avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
-                        {sfld('Pre-trial avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                        {sfld('Trial total litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                        {sfld('Pre-trial weekly avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
                         {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
-                        {sfld('Trial max oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
-                        {sfld('Start date', displayDate(venue.trialStartDate))}
-                        {sfld('End date', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
-                        {sfld('Trial duration', trialDuration > 0 ? `${trialDuration} days` : null)}
+                        {/* Row 5: Total trial litres | Pre-trial oil lifespan | Trial oil lifespan */}
+                        {sfld('Total trial litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                        {sfld('Pre-trial oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
+                        {sfld('Trial oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
+                      </div>
+                      {/* Row 6: Start / End / Duration — temporal context, visually separated */}
+                      <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1.5px dashed #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
+                        {[
+                          { label: 'Start', value: displayDate(venue.trialStartDate) },
+                          { label: 'End', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing' },
+                          { label: 'Duration', value: trialDuration > 0 ? `${trialDuration} days` : null },
+                        ].map(({ label, value }) => (
+                          <div key={label}>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
+                            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -4416,8 +4472,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
         .bdm-table-sm thead th { padding: 5px 4px !important; font-size: 9px !important; }
         .bdm-table-sm tbody td { padding: 5px 4px !important; font-size: 10px !important; }
+        .bdm-table-sm tbody td .bdm-badge-wrap { transform: scale(0.82); transform-origin: center; display: inline-block; }
         .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: white; width: 100%; transition: all 0.15s; }
-        .bdm-row-btn:hover { background: #1a428a; color: white; border-color: #1a428a; }
+        .bdm-row-btn:hover { background: #eef2ff; color: #1a428a; border-color: #c7d2fe; }
+        .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
+        .bdm-log-save-btn:hover { background: #143270 !important; }
         .bdm-row-btn.green:hover { background: #10b981; color: white; border-color: #10b981; }
         .bdm-row-btn.red:hover { background: #ef4444; color: white; border-color: #ef4444; }
         .bdm-undo-btn { padding: 4px 8px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; background: white; transition: all 0.15s; }
@@ -4841,7 +4900,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
                 {prevStage && (
                   <button className="bdm-undo-btn" onClick={handleUndo} title={`Revert to ${prevStage}`} style={{ marginLeft: '10px', flexShrink: 0 }}>
-                    <RotateCcw size={11} /> Undo
+                    <RotateCcw size={11} /> Rollback
                   </button>
                 )}
               </div>
