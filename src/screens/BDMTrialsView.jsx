@@ -3782,9 +3782,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             {manageSubTab === 'summary' && (() => {
               const GOAL_LABELS = {
                 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste',
+                'reduce-consumption': 'Reduce consumption',
                 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour',
-                'reduce-changes': 'Fewer fryer changes', 'extend-life': 'Extend oil life',
+                'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Simplify operations',
+                'extend-life': 'Extend oil life',
               };
+              const GOAL_ICONS = {
+                'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets,
+                'food-quality': Award, 'food-colour': Palette, 'reduce-changes': Cog,
+                'simplify-ops': Cog, 'extend-life': TrendingUp,
+              };
+              const initialNote = venue.trialNotes
+                ? venue.trialNotes.split('\n')
+                    .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); })
+                    .join('\n')
+                : '';
               const compWklyAvg = preTrialAvg || null;
               // Comma-formatted helpers
               const fmtNum = (v, decimals = 2) => v != null ? parseFloat(v).toLocaleString('en-AU', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : null;
@@ -3822,28 +3834,71 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div style={{ padding: '0 24px' }}>
                   <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '20px' }}>Summary Report</div>
 
-                  {/* ── Trial details — 3-col grid matching pre-trial tab order ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px', marginBottom: '24px' }}>
-                    {/* Row 1: Current supplier | Current oil | Current price/L */}
-                    {sfld('Current supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
-                    {sfld('Current oil', compOilBadge)}
-                    {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
-                    {/* Row 2: Fryer count | Trial oil | Offered price/L */}
-                    {sfld('Fryer count', fc ? String(fc) : null)}
-                    {sfld('Trial oil', trialOilBadge)}
-                    {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
-                    {/* Row 3: Vol bracket | Pre-trial avg | Avg oil lifespan */}
-                    {sfld('Vol bracket', volBadge)}
-                    {sfld('Pre-trial avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
-                    {sfld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                    {/* Row 4 (trial actuals): Trial total litres | Trial weekly avg | Max oil lifespan */}
-                    {sfld('Trial total litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
-                    {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
-                    {sfld('Max oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
-                    {/* Row 5: Start date | End date | Trial duration */}
-                    {sfld('Start date', displayDate(venue.trialStartDate))}
-                    {sfld('End date', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
-                    {sfld('Trial duration', trialDuration > 0 ? `${trialDuration} days` : null)}
+                  {/* ── Two-column layout: left = details, right = notes + goals ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginBottom: '24px' }}>
+
+                    {/* ── Left: trial details 3-col grid ── */}
+                    <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
+                        {/* Row 1: Current supplier | Current oil | Current price/L */}
+                        {sfld('Current supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
+                        {sfld('Current oil', compOilBadge)}
+                        {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
+                        {/* Row 2: Fryer count | Trial oil | Offered price/L */}
+                        {sfld('Fryer count', fc ? String(fc) : null)}
+                        {sfld('Trial oil', trialOilBadge)}
+                        {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
+                        {/* Row 3: Vol bracket | Pre-trial avg | Avg oil lifespan */}
+                        {sfld('Vol bracket', volBadge)}
+                        {sfld('Pre-trial avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
+                        {sfld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
+                        {/* Row 4 (trial actuals): Trial total litres | Trial weekly avg | Max oil lifespan */}
+                        {sfld('Trial total litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                        {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
+                        {sfld('Max oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
+                        {/* Row 5: Start date | End date | Trial duration */}
+                        {sfld('Start date', displayDate(venue.trialStartDate))}
+                        {sfld('End date', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
+                        {sfld('Trial duration', trialDuration > 0 ? `${trialDuration} days` : null)}
+                      </div>
+                    </div>
+
+                    {/* ── Right: what we know + goals achieved ── */}
+                    <div style={{ paddingLeft: '28px' }}>
+                      {secLabel('What do we know going into this trial?')}
+                      {initialNote
+                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No notes entered.</p>
+                      }
+                      {secLabel('Trial goals achieved')}
+                      {parsedGoals.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {parsedGoals.map(g => {
+                            const GoalIcon = GOAL_ICONS[g];
+                            const achieved = achievedGoals.includes(g);
+                            return (
+                              <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '7px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
+                                <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  {GoalIcon ? <GoalIcon size={14} color="#1a428a" /> : null}
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e', flex: 1 }}>{GOAL_LABELS[g] || g}</span>
+                                <div style={{
+                                  width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
+                                  background: achieved ? '#059669' : 'transparent',
+                                  border: achieved ? '2px solid #059669' : '2px solid #cbd5e1',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                  {achieved && <Check size={11} color="white" strokeWidth={3} />}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0' }}>No goals selected.</p>
+                      )}
+                    </div>
+
                   </div>
 
                   {/* ── Trial Calendar — full width below details ── */}
