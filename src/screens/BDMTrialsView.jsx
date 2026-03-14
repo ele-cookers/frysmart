@@ -3865,14 +3865,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     {/* ── Right: what we know + goals achieved ── */}
                     <div style={{ paddingLeft: '28px' }}>
-                      {secLabel('What do we know going into this trial?')}
+                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>What do we know going into this trial?</div>
                       {initialNote
-                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No notes entered.</p>
+                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 16px 0' }}>No notes entered.</p>
                       }
-                      {secLabel('Trial goals achieved')}
+                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Trial goals achieved</div>
                       {parsedGoals.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                           {parsedGoals.map(g => {
                             const GoalIcon = GOAL_ICONS[g];
                             const achieved = achievedGoals.includes(g);
