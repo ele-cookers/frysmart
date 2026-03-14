@@ -3564,8 +3564,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
               const activeFryer = calFryerTab;
               const EQ_W = '44px';
-              const thBase = { padding: '3px 2px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', background: '#f8fafc' };
-              const tdBase = { padding: '3px 2px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
+              const thBase = { padding: '5px 5px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', background: '#f8fafc' };
+              const tdBase = { padding: '5px 5px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '4px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
               );
@@ -3587,19 +3587,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px', fontSize: '11px', tableLayout: 'fixed' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '860px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '22px' }} />  {/* # */}
-                        <col style={{ width: '30px' }} />  {/* Day */}
-                        <col style={{ width: '60px' }} />  {/* Date */}
-                        <col style={{ width: '36px' }} />  {/* TPM */}
-                        <col style={{ width: '40px' }} />  {/* Set°C */}
-                        <col style={{ width: '58px' }} />  {/* Actual°C — needs room for "ACTUAL °C" header */}
-                        <col style={{ width: '40px' }} />  {/* -/+°C */}
-                        <col style={{ width: '76px' }} />  {/* Fill Type */}
-                        <col style={{ width: '36px' }} />  {/* Litres */}
-                        <col style={{ width: '66px' }} />  {/* Filtered */}
-                        <col style={{ width: '120px' }} /> {/* Food — needs room for "Battered Fish" etc */}
+                        <col style={{ width: '30px' }} />  {/* # */}
+                        <col style={{ width: '36px' }} />  {/* Day */}
+                        <col style={{ width: '66px' }} />  {/* Date */}
+                        <col style={{ width: '44px' }} />  {/* TPM */}
+                        <col style={{ width: '46px' }} />  {/* Set°C */}
+                        <col style={{ width: '64px' }} />  {/* Actual°C */}
+                        <col style={{ width: '46px' }} />  {/* -/+°C */}
+                        <col style={{ width: '84px' }} />  {/* Fill Type */}
+                        <col style={{ width: '44px' }} />  {/* Litres */}
+                        <col style={{ width: '72px' }} />  {/* Filtered */}
+                        <col style={{ width: '126px' }} /> {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
@@ -3664,7 +3664,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>
                                 {r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}
                               </td>
-                              <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible', verticalAlign: 'top', paddingTop: '6px' }}>{r?.notes || ''}</td>
+                              <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}>{r?.notes || ''}</td>
                             </tr>
                           );
                         })}
