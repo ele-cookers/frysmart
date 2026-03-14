@@ -124,7 +124,7 @@ export const CompetitorPill = ({ comp, table }) => {
       background: bgColor, color: textColor,
       fontSize: '11px', fontWeight: '600', letterSpacing: '0.2px',
       ...(table ? {
-        width: '68px', whiteSpace: 'nowrap', overflow: 'hidden',
+        width: '96px', whiteSpace: 'nowrap', overflow: 'hidden',
         textOverflow: 'ellipsis', textAlign: 'center',
       } : { whiteSpace: 'nowrap' }),
       verticalAlign: 'middle',
