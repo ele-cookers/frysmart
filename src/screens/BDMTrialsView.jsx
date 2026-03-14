@@ -2485,13 +2485,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={{ marginBottom: '8px' }}>
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
-        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 320px)', scrollbarGutter: 'stable', paddingRight: '8px' }}>
+        <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 320px)', paddingRight: '8px' }}>
           <style>{`
             .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
             .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
             .bdm-table tbody tr { transition: background 0.1s; }
             .bdm-table tbody tr:hover { background: #eef2ff; }
             .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
+            .bdm-scroll::-webkit-scrollbar { width: 4px; }
+            .bdm-scroll::-webkit-scrollbar-track { background: transparent; }
+            .bdm-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; transition: background 0.2s; }
+            .bdm-scroll:hover::-webkit-scrollbar-thumb { background: #d1d5db; }
+            .bdm-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+            .bdm-scroll:hover { scrollbar-color: #d1d5db transparent; }
           `}</style>
           <table className="bdm-table" style={{ width: '100%', tableLayout: 'fixed' }}>
             <thead><tr>
@@ -2542,7 +2548,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {mc('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {mc('start') && <td style={{ textAlign: 'center', color: '#64748b', fontSize: '11px', whiteSpace: 'nowrap' }}>{venue.trialStartDate ? displayDate(venue.trialStartDate) : '—'}</td>}
                     {mc('end') && <td style={{ textAlign: 'center', color: '#64748b', fontSize: '11px', whiteSpace: 'nowrap' }}>{venue.trialEndDate ? displayDate(venue.trialEndDate) : '—'}</td>}
-                    {mc('status') && <td style={{ textAlign: 'center' }}><TrialStatusBadge status={venue.trialStatus} /></td>}
+                    {mc('status') && <td style={{ textAlign: 'center', paddingLeft: '2px', paddingRight: '2px' }}><TrialStatusBadge status={venue.trialStatus} /></td>}
                   </tr>
                 );
               })}
