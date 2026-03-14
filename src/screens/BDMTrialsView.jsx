@@ -147,7 +147,7 @@ const S = Object.freeze({
     letterSpacing: '0.3px', display: 'block', marginBottom: '6px',
     textTransform: 'uppercase',
   },
-  field: { marginBottom: '14px' },
+  field: { marginBottom: '10px' },
 });
 
 // ─────────────────────────────────────────────
@@ -293,9 +293,9 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const isNoFill = fryer.fillType === 'no_fill';
   const canSave = fryer.notInUse || !!fryer.tpmValue;
 
-  const inputSt = { width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '16px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: 'white', color: '#1f2937' };
-  const lbl = { display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' };
-  const fld = { marginBottom: '12px' };
+  const inputSt = { width: '100%', maxWidth: '100%', padding: '8px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: 'white', color: '#1f2937' };
+  const lbl = { display: 'block', marginBottom: '3px', color: '#1f2937', fontSize: '11px', fontWeight: '600' };
+  const fld = { marginBottom: '8px' };
 
   const handleSkip = () => {
     if (currentFryerIndex < fryerNums.length - 1) setCurrentFryerIndex(i => i + 1);
@@ -353,9 +353,9 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
       }}>
       <div style={{ overflowY: 'auto', maxHeight: '95vh' }}>
         {/* Header */}
-        <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: 0 }}>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: 0 }}>
               {venue.name} — Fryer {currentFryerNumber}
             </h2>
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
@@ -369,7 +369,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           )}
         </div>
 
-        <form onSubmit={handleSaveAndContinue} style={{ padding: '16px' }}>
+        <form onSubmit={handleSaveAndContinue} style={{ padding: '12px 14px' }}>
           {/* Reading Date */}
           <div style={fld}>
             <label style={lbl}>Reading Date</label>
@@ -453,15 +453,22 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             </div>
           ) : (
           <>
-          {/* Litres — hidden for no fill */}
+          {/* Litres — hidden for no fill; read-only for fresh fill (auto-populated) */}
           {!isNoFill && (
             <div style={fld}>
               <label style={lbl}>{isFreshOil ? 'Litres (fresh fill)' : 'Litres Topped Up'}</label>
-              <input type="text" inputMode="decimal" value={fryer.litresFilled}
-                onChange={e => updateFryer('litresFilled', e.target.value.replace(/[^0-9.]/g, ''))}
-                placeholder="0" style={inputSt}
-                onFocus={e => e.target.style.borderColor = '#1a428a'}
-                onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+              {isFreshOil ? (
+                <div style={{ ...inputSt, background: '#f8fafc', color: '#64748b', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', cursor: 'default' }}>
+                  <span style={{ fontWeight: '600', color: '#1f2937' }}>{fryer.litresFilled || '—'}</span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '4px' }}>L (from fryer volume)</span>
+                </div>
+              ) : (
+                <input type="text" inputMode="decimal" value={fryer.litresFilled}
+                  onChange={e => updateFryer('litresFilled', e.target.value.replace(/[^0-9.]/g, ''))}
+                  placeholder="0" style={inputSt}
+                  onFocus={e => e.target.style.borderColor = '#1a428a'}
+                  onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+              )}
             </div>
           )}
 
@@ -729,9 +736,9 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} color="#94a3b8" /></button>
         </div>
-        <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
+        <div style={{ padding: '12px 14px', overflowY: 'auto', flex: 1 }}>
           {/* Start / End / Duration — evenly distributed */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
             {[
               { label: 'Start', value: displayDate(venue.trialStartDate) },
               { label: 'End', value: displayDate(getTodayString()) },
@@ -745,7 +752,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           </div>
 
           {/* Oil usage + Oil lifespan — side by side */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
             {/* Oil usage table */}
             <div style={{ flex: 1, borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -866,6 +873,39 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                     <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Trial Goals Achieved */}
+          {trialGoals.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Trial Goals Achieved</div>
+              <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                {GOAL_OPTIONS.filter(g => trialGoals.includes(g.key)).map((goal, idx, arr) => {
+                  const GoalIcon = goal.icon;
+                  const achieved = achievedGoals.includes(goal.key);
+                  return (
+                    <div key={goal.key} onClick={() => toggleGoal(goal.key)} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px',
+                      cursor: 'pointer', background: achieved ? '#f0fdf4' : 'white',
+                      borderBottom: idx < arr.length - 1 ? '1px solid #f1f5f9' : 'none',
+                      transition: 'background 0.1s',
+                    }}>
+                      <GoalIcon size={14} color={achieved ? '#059669' : '#94a3b8'} />
+                      <span style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: achieved ? '#1f2937' : '#64748b' }}>{goal.label}</span>
+                      <div style={{
+                        width: '18px', height: '18px', borderRadius: '4px',
+                        border: `2px solid ${achieved ? '#059669' : '#d1d5db'}`,
+                        background: achieved ? '#059669' : 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        transition: 'all 0.1s',
+                      }}>
+                        {achieved && <Check size={10} color="white" strokeWidth={3} />}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1035,6 +1075,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageNoteText(v?.trialNotes || '');
     }
   }, [manageVenueId]); // eslint-disable-line
+
+  // Reset manage trial venue when switching away from the manage tab
+  useEffect(() => {
+    if (activeTab !== 'manage') setManageVenueId(null);
+  }, [activeTab]); // eslint-disable-line
 
   // ── Data loading ──
   useEffect(() => {
@@ -1671,9 +1716,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const showStart = true;
     const showEnd = true;
     const showClosed = isArchiveTab(tabType);
-    const showSold = isArchiveTab(tabType) || isAccepted;
+    const showSold = tabType === 'successful' || isAccepted; // only successful + accepted (not unsuccessful)
     const showReason = isArchiveTab(tabType);
-    const showCustomerCode = isAccepted;
+    const showCustomerCode = false; // removed from accepted tab
     const tc = (key) => trialVisibleCols.includes(key);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -1681,7 +1726,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
         <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
-          <table className="bdm-table" style={{ width: '100%', tableLayout: 'auto' }}>
+          <table className={`bdm-table${isArchiveTab(tabType) ? ' bdm-table-sm' : ''}`} style={{ width: '100%', tableLayout: 'auto' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
@@ -1728,8 +1773,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const recorded = tpmReadings.some(r => r.venueId === venue.id && r.readingDate === todayStr);
                       return <td style={{ textAlign: 'center' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: recorded ? '#10b981' : '#ef4444', margin: '0 auto' }} title={recorded ? 'Recorded today' : 'Not yet recorded'} /></td>;
                     })()}
-                    {tabType === 'pending' && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.trialEndDate ? daysBetween(venue.trialEndDate, todayStr) + 'd' : '—'}</td>}
-                    {isAccepted && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.outcomeDate ? daysBetween(venue.outcomeDate, todayStr) + 'd' : '—'}</td>}
+                    {tabType === 'pending' && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.trialEndDate ? daysBetween(venue.trialEndDate, todayStr) : '—'}</td>}
+                    {isAccepted && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.outcomeDate ? daysBetween(venue.outcomeDate, todayStr) : '—'}</td>}
                     {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{displayDate(venue.outcomeDate)}</td>}
                     {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
                     {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap' }}>{venue.customerCode || '—'}</td>}
@@ -1747,10 +1792,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // -- NEW TRIAL FORM --
   const renderNewTrialForm = () => (
     <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h3 style={{ fontSize: '18px', fontWeight: '700', color: COLORS.text, marginBottom: '16px', marginTop: 0 }}>Create New Trial</h3>
+      <h3 style={{ fontSize: '15px', fontWeight: '700', color: COLORS.text, marginBottom: '12px', marginTop: 0 }}>Create New Trial</h3>
 
       {/* Trial Type — segmented control */}
-      <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px', marginBottom: '12px' }}>
         {[{ val: 'existing', label: 'Existing Customer' }, { val: 'new', label: 'New Prospect' }].map(opt => {
           const isActive = trialType === opt.val;
           return (
@@ -1769,7 +1814,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         })}
       </div>
 
-    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
     <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #94a3b8; }`}</style>
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
@@ -2484,9 +2529,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const statusCounts = {};
     allTrials.forEach(v => { statusCounts[v.trialStatus] = (statusCounts[v.trialStatus] || 0) + 1; });
 
-    // Name column fixed; every other column is exactly equal width
+    // Name column fixed; narrower for price/date, wider for status
     const NAME_W = '120px';
-    const COL_W = '84px'; // VOL, SUPPLIER, OIL×2, PRICE×2, DATE×2, STATUS
+    const COL_W = '80px';   // VOL, SUPPLIER, OIL×2
+    const PRICE_W = '62px'; // Current $/L, Offered $/L
+    const DATE_W = '66px';  // Start, End
+    const STATUS_W = '96px'; // Status — give more room, not hugging scrollbar
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -2563,11 +2611,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
               {mc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
               {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
-              {mc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(statusFiltered, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
-              {mc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Offered $/L" options={getUniqueValues(statusFiltered, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
-              {mc('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(statusFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
-              {mc('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(statusFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
-              {mc('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(statusFiltered, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: PRICE_W }} />}
+              {mc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Offered $/L" options={getUniqueValues(statusFiltered, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: PRICE_W }} />}
+              {mc('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(statusFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: DATE_W }} />}
+              {mc('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(statusFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: DATE_W }} />}
+              {mc('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: STATUS_W }} />}
             </tr></thead>
             <tbody>
               {rows.length === 0 ? (
@@ -3070,19 +3118,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <Edit3 size={12} /> Edit
                         </button>
                       )}
-                      {mEditing && (<>
+                      {mEditing && (
                         <button onClick={() => setMEditing(false)} style={{
                           background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px',
                           fontSize: '11px', fontWeight: '600', color: '#64748b', cursor: 'pointer',
                         }}>Cancel</button>
-                        <button onClick={handleMSave} disabled={mSaving || !mDirty} style={{
-                          background: mDirty ? '#1a428a' : '#e2e8f0', border: 'none', borderRadius: '6px', padding: '4px 12px',
-                          fontSize: '11px', fontWeight: '600', color: mDirty ? 'white' : '#94a3b8',
-                          cursor: mDirty ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px',
-                        }}>
-                          <Save size={11} /> {mSaving ? 'Saving...' : 'Save'}
-                        </button>
-                      </>)}
+                      )}
                     </div>
                   </div>
 
@@ -3349,6 +3390,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
                           { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
                         ];
+
                         const toggleGoal = (key) => setMEditForm(p => ({
                           ...p,
                           trialGoals: (p.trialGoals || []).includes(key)
@@ -3389,6 +3431,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         );
                       })()}
 
+                      {/* Save button — bottom of edit form */}
+                      <button onClick={handleMSave} disabled={mSaving || !mDirty} style={{
+                        width: '100%', padding: '11px', borderRadius: '8px', border: 'none',
+                        background: mDirty ? '#1a428a' : '#e2e8f0', fontSize: '13px', fontWeight: '600',
+                        color: mDirty ? 'white' : '#94a3b8',
+                        cursor: mDirty ? 'pointer' : 'not-allowed',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        marginTop: '4px',
+                      }}>
+                        <Save size={14} /> {mSaving ? 'Saving…' : 'Save Changes'}
+                      </button>
+
                     </div>
                   )}
                 </div>
@@ -3407,8 +3461,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
               const activeFryer = calFryerTab;
               const EQ_W = '58px';
-              const thBase = { padding: '5px 4px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
-              const tdBase = { padding: '5px 4px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
+              const thBase = { padding: '3px 2px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
+              const tdBase = { padding: '3px 2px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '4px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
               );
@@ -3711,7 +3765,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   {/* Chart + Notes panel side by side */}
                   {(() => {
                     const daysWithNotes = chartData
-                      .map((d, idx) => ({ idx, note: d.r?.notes, isFuture: d.isFuture }))
+                      .map((d, idx) => ({ idx, note: d.r?.notes, isFuture: d.isFuture, day: d.day }))
                       .filter(d => d.note && !d.isFuture);
                     return (
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -3815,18 +3869,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </svg>
                     </div>
                     {/* Notes panel */}
-                    <div style={{ width: '160px', flexShrink: 0, paddingTop: '4px' }}>
+                    <div style={{ width: '210px', flexShrink: 0, paddingTop: '4px' }}>
                       <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Notes</div>
                       {daysWithNotes.length === 0 ? (
                         <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes recorded</div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {daysWithNotes.map(({ idx, note }) => (
+                          {daysWithNotes.map(({ idx, note, day }) => {
+                            const dateLabel = day ? `${String(day.getDate()).padStart(2,'0')}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getFullYear()).slice(-2)}` : `D${idx + 1}`;
+                            return (
                             <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                              <span style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '4px', padding: '1px 5px', flexShrink: 0, lineHeight: '16px' }}>D{idx + 1}</span>
+                              <span style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '4px', padding: '1px 5px', flexShrink: 0, lineHeight: '16px' }}>{dateLabel}</span>
                               <span style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.4', wordBreak: 'break-word' }}>{note}</span>
                             </div>
-                          ))}
+                          );})}
                         </div>
                       )}
                     </div>
@@ -4358,6 +4414,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table tbody tr { transition: background 0.1s; }
         .bdm-table tbody tr:hover { background: #eef2ff; }
         .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
+        .bdm-table-sm thead th { padding: 5px 4px !important; font-size: 9px !important; }
+        .bdm-table-sm tbody td { padding: 5px 4px !important; font-size: 10px !important; }
+        .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: white; width: 100%; transition: all 0.15s; }
+        .bdm-row-btn:hover { background: #1a428a; color: white; border-color: #1a428a; }
+        .bdm-row-btn.green:hover { background: #10b981; color: white; border-color: #10b981; }
+        .bdm-row-btn.red:hover { background: #ef4444; color: white; border-color: #ef4444; }
+        .bdm-undo-btn { padding: 4px 8px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; background: white; transition: all 0.15s; }
+        .bdm-undo-btn:hover { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
       `}</style>
 
       {/* ── HEADER ── */}
@@ -4754,51 +4818,65 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       {rowActionVenue && (() => {
         const { venue: rv, tabType: rt } = rowActionVenue;
         const stageCfg = TRIAL_STATUS_COLORS[rt] || TRIAL_STATUS_COLORS['pipeline'];
-        const btnPrimary = { padding: '10px 16px', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: BLUE };
-        const btnSecondary = { padding: '10px 16px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#374151', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: 'white' };
-        const btnGreen = { ...btnPrimary, background: '#10b981' };
-        const btnRed = { ...btnPrimary, background: '#ef4444' };
         const close = () => setRowActionVenue(null);
+        // Undo: revert to previous stage
+        const prevStage = { active: 'pipeline', pending: 'active', accepted: 'pending', successful: 'pending', unsuccessful: 'pending' }[rt];
+        const handleUndo = () => {
+          if (!prevStage) return;
+          const undoUpdates = { trialStatus: prevStage };
+          if (rt === 'active') { undoUpdates.trialStartDate = null; }
+          if (rt === 'pending') { undoUpdates.trialEndDate = null; }
+          if (rt === 'accepted' || rt === 'successful' || rt === 'unsuccessful') { undoUpdates.outcomeDate = null; undoUpdates.trialReason = null; }
+          close();
+          updateVenue(rv.id, undoUpdates);
+        };
         return (
           <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
             <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '14px', padding: '20px', width: '100%', maxWidth: '320px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-              {/* Header: venue name + stage badge on same row */}
+              {/* Header: venue name + stage badge + undo button */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{rv.name}</div>
-                <span style={{ fontSize: '10px', fontWeight: '700', background: stageCfg.bg, color: stageCfg.text, border: `1px solid ${stageCfg.border}`, borderRadius: '6px', padding: '2px 8px', textTransform: 'capitalize', whiteSpace: 'nowrap', marginLeft: '8px' }}>{rt}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rv.name}</div>
+                  <span style={{ fontSize: '10px', fontWeight: '700', background: stageCfg.bg, color: stageCfg.text, border: `1px solid ${stageCfg.border}`, borderRadius: '6px', padding: '2px 8px', textTransform: 'capitalize', whiteSpace: 'nowrap', display: 'inline-block', marginTop: '3px' }}>{rt}</span>
+                </div>
+                {prevStage && (
+                  <button className="bdm-undo-btn" onClick={handleUndo} title={`Revert to ${prevStage}`} style={{ marginLeft: '10px', flexShrink: 0 }}>
+                    <RotateCcw size={11} /> Undo
+                  </button>
+                )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* Manage trial — all tabs */}
-                <button style={btnSecondary} onClick={() => { close(); setManageVenueId(rv.id); setActiveTab('manage'); }}>
+                <button className="bdm-row-btn" onClick={() => { close(); setManageVenueId(rv.id); setActiveTab('manage'); }}>
                   <ClipboardList size={14} /> Manage trial
                 </button>
                 {/* Pipeline: Start trial */}
                 {rt === 'pipeline' && (
-                  <button style={btnPrimary} onClick={() => { close(); setReadingModal({ ...rv, startingTrial: true, trialStartDate: rv.trialStartDate || getTodayString() }); }}>
+                  <button className="bdm-row-btn" onClick={() => { close(); setReadingModal({ ...rv, startingTrial: true, trialStartDate: rv.trialStartDate || getTodayString() }); }}>
                     <Play size={14} /> Start trial
                   </button>
                 )}
                 {/* Active: Log reading + End trial */}
                 {rt === 'active' && (<>
-                  <button style={btnSecondary} onClick={() => { close(); setReadingModal(rv); }}>
+                  <button className="bdm-row-btn" onClick={() => { close(); setReadingModal(rv); }}>
                     <Edit3 size={14} /> Log reading
                   </button>
-                  <button style={btnSecondary} onClick={() => { close(); setEndTrialModal(rv); }}>
+                  <button className="bdm-row-btn" onClick={() => { close(); setEndTrialModal(rv); }}>
                     <CheckCircle2 size={14} /> End trial
                   </button>
                 </>)}
                 {/* Pending: Successful + Unsuccessful */}
                 {rt === 'pending' && (<>
-                  <button style={btnGreen} onClick={() => { close(); setCloseTrialModal({ venue: rv, outcome: 'successful' }); }}>
+                  <button className="bdm-row-btn green" onClick={() => { close(); setCloseTrialModal({ venue: rv, outcome: 'successful' }); }}>
                     <Trophy size={14} /> Successful
                   </button>
-                  <button style={btnRed} onClick={() => { close(); setCloseTrialModal({ venue: rv, outcome: 'unsuccessful' }); }}>
+                  <button className="bdm-row-btn red" onClick={() => { close(); setCloseTrialModal({ venue: rv, outcome: 'unsuccessful' }); }}>
                     <XCircle size={14} /> Unsuccessful
                   </button>
                 </>)}
                 {/* Accepted: Enter cust code */}
                 {rt === 'accepted' && (
-                  <button style={btnGreen} onClick={() => { close(); setCustCodeModal(rv); }}>
+                  <button className="bdm-row-btn green" onClick={() => { close(); setCustCodeModal(rv); }}>
                     <Award size={14} /> Enter cust code
                   </button>
                 )}
