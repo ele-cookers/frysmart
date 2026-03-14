@@ -1838,7 +1838,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={S.field}>
             <label style={S.label}>TRIAL GOALS <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(select all that apply)</span></label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               {GOAL_OPTIONS.map(opt => {
                 const selected = newTrialForm.trialGoals.includes(opt.key);
                 return (
@@ -2798,19 +2798,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const hasStarted = venue.trialStatus !== 'pipeline';
               const hasEnded = venue.trialStatus === 'successful' || venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted';
               const trialCreatedDate = venue.trialCreatedAt ? venue.trialCreatedAt.split('T')[0] : null;
-              const secHeader = { fontSize: '11px', fontWeight: '700', color: '#1a428a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', paddingBottom: '6px', borderBottom: '2px solid #eff6ff' };
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
               const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes' };
-              const statCard = (label, value, sub) => (
-                <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '12px 14px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>{label}</div>
-                  <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>{value}</div>
-                  {sub && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px' }}>{sub}</div>}
+              const currentSupplierEl = comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>;
+              // Clean label-value field helper
+              const fld = (label, value) => (
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>{label}</div>
+                  <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minHeight: '22px' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                 </div>
               );
-              const currentSupplierName = comp ? comp.name : 'Cookers';
-              const currentSupplierEl = comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>;
+              const divider = <div style={{ borderTop: '1px solid #f1f5f9', margin: '20px 0' }} />;
+              const sectionLabel = (text) => <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '14px' }}>{text}</div>;
               return (
                 <div>
                   {/* Header row: trial ID + edit button */}
@@ -2846,76 +2846,77 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {!mEditing ? (
                     <div>
-                      {/* ── Section 1: Pre-trial Details — 3-column grid ── */}
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={secHeader}>Pre-trial Details</div>
-                        {/* Row 1: Current Supplier | Current Oil | Current $/L */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                          {statCard('Current Supplier', currentSupplierEl)}
-                          {statCard('Current Oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : <span style={{ color: '#94a3b8' }}>—</span>)}
-                          {statCard('Current $/L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}/L` : '—')}
-                        </div>
-                        {/* Row 2: Trial Oil | Avg Litres/Week | Volume Bracket */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                          {statCard('Trial Oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : <span style={{ color: '#94a3b8' }}>—</span>)}
-                          {statCard('Avg Litres / Week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : '—')}
-                          {statCard('Volume Bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : '—')}
-                        </div>
-                        {/* Row 3: Fryer Count (+ per-fryer volumes) */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                          {statCard('Fryer Count', String(fc))}
-                          {Array.from({ length: Math.min(fc, 2) }, (_, i) => i + 1).map(fn => {
+
+                      {/* ── Their current setup ── */}
+                      {sectionLabel('Their current setup')}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginBottom: '4px' }}>
+                        {fld('Supplier', currentSupplierEl)}
+                        {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
+                        {fld('Price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
+                      </div>
+
+                      {divider}
+
+                      {/* ── Cookers trial ── */}
+                      {sectionLabel('Cookers trial')}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginBottom: '4px' }}>
+                        {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
+                        {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
+                        <div />
+                      </div>
+
+                      {divider}
+
+                      {/* ── Usage & fryers ── */}
+                      {sectionLabel('Usage & fryers')}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                        {fld('Avg litres / week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                        {fld('Volume bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
+                        {fld('Fryer count', fc ? String(fc) : null)}
+                      </div>
+                      {/* Per-fryer volumes if recorded */}
+                      {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                          {Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
                             const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
-                            return statCard(`Fryer ${fn} Volume`, vol ? `${vol} L` : '—');
+                            return vol ? fld(`Fryer ${fn}`, `${vol} L`) : null;
                           })}
                         </div>
-                        {/* Additional fryer volumes if > 3 fryers */}
-                        {fc > 3 && (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '10px' }}>
-                            {Array.from({ length: fc - 3 }, (_, i) => i + 3 + 1).map(fn => {
-                              const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
-                              return <div key={fn}>{statCard(`Fryer ${fn} Volume`, vol ? `${vol} L` : '—')}</div>;
-                            })}
-                          </div>
-                        )}
+                      )}
+
+                      {divider}
+
+                      {/* ── Trial timeline ── */}
+                      {sectionLabel('Trial timeline')}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                        {fld('Created', trialCreatedDate ? displayDate(trialCreatedDate) : null)}
+                        {fld(hasStarted ? 'Start date' : 'Est. start date', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
+                        {fld(hasEnded ? 'End date' : 'Est. end date', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
                       </div>
 
-                      {/* ── Section 2: Trial Details — 3-column dates ── */}
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={secHeader}>Trial Details</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                          {statCard('Trial Created', trialCreatedDate ? displayDate(trialCreatedDate) : '—')}
-                          {statCard(hasStarted ? 'Start Date' : 'Estimated Start', venue.trialStartDate ? displayDate(venue.trialStartDate) : '—')}
-                          {statCard(hasEnded ? 'End Date' : 'Estimated End', venue.trialEndDate ? displayDate(venue.trialEndDate) : '—')}
-                        </div>
-                      </div>
+                      {/* ── What do we know ── */}
+                      {initialNote && (<>
+                        {divider}
+                        {sectionLabel('What do we know going into this trial?')}
+                        <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                      </>)}
 
-                      {/* ── Section 3: Goals (if any) ── */}
-                      {parsedGoals.length > 0 && (
-                        <div style={{ marginBottom: '24px' }}>
-                          <div style={secHeader}>Trial Goals</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {parsedGoals.map(g => (
-                              <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                                <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                  <Check size={10} color="white" strokeWidth={3} />
-                                </div>
-                                <span style={{ fontSize: '13px', fontWeight: '600', color: '#1a428a' }}>{GOAL_LABELS[g] || g}</span>
+                      {/* ── Trial goals ── */}
+                      {parsedGoals.length > 0 && (<>
+                        {divider}
+                        {sectionLabel('Trial goals')}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                          {parsedGoals.map(g => (
+                            <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
+                              <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Check size={10} color="white" strokeWidth={3} />
                               </div>
-                            ))}
-                          </div>
+                              <span style={{ fontSize: '13px', fontWeight: '500', color: '#1e3a6e' }}>{GOAL_LABELS[g] || g}</span>
+                            </div>
+                          ))}
                         </div>
-                      )}
+                      </>)}
 
-                      {/* ── Section 4: Initial note ── */}
-                      {initialNote && (
-                        <div>
-                          <div style={secHeader}>What do we know going into this trial?</div>
-                          <div style={{ fontSize: '13px', color: '#1f2937', whiteSpace: 'pre-wrap', lineHeight: '1.6', background: '#f8fafc', borderRadius: '8px', padding: '12px' }}>
-                            {initialNote}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div>
