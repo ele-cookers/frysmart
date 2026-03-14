@@ -2583,7 +2583,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const manageTabs = [
       { key: 'details',  label: 'Pre-trial Details', icon: ClipboardList },
       { key: 'calendar', label: 'Trial Calendar',    icon: Calendar },
-      { key: 'notes',    label: 'Notes',              icon: MessageSquare },
+      { key: 'notes',    label: 'TPM Chart',           icon: TrendingUp },
       { key: 'results',  label: 'Trial Results',      icon: BarChart3 },
       { key: 'summary',  label: 'Summary Report',     icon: FileText },
     ];
@@ -2943,8 +2943,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
                           : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 16px 0' }}>No notes entered.</p>
                         }
-                        {parsedGoals.length > 0 && (<>
-                          {sectionLabel('Trial goals')}
+                        {sectionLabel('Trial goals')}
+                        {parsedGoals.length > 0 ? (
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                             {parsedGoals.map(g => {
                               const GoalIcon = GOAL_ICONS[g];
@@ -2958,7 +2958,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               );
                             })}
                           </div>
-                        </>)}
+                        ) : (
+                          <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0' }}>No goals selected.</p>
+                        )}
                       </div>
 
                     </div>
@@ -3195,7 +3197,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const activeFryer = calFryerTab;
               const EQ_W = '76px'; // equal width for Weekday → Filtered columns
               const thBase = { padding: '8px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
-              const tdBase = { padding: '7px 6px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' };
+              const tdBase = { padding: '7px 6px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'top' };
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '2px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center' }}>{label}</span>
               );
@@ -3261,7 +3263,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const dash = missed ? '' : '—'; // blank for missed days, dash for future
                           const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}`;
                           return (
-                            <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1 }}>
+                            <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '52px' }}>
                               <td style={{ ...tdBase, fontWeight: '500', color: '#64748b', fontSize: '13px' }}>{idx + 1}</td>
                               <td style={{ ...tdBase, color: '#64748b', fontWeight: '500' }}>{DAYS[day.getDay()]}</td>
                               <td style={{ ...tdBase, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
@@ -3300,8 +3302,173 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
             })()}
 
-            {/* ── Notes ── */}
-            {manageSubTab === 'notes' && (
+            {/* ── TPM Chart ── */}
+            {manageSubTab === 'notes' && (() => {
+              const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const activeFryer = calFryerTab;
+
+              if (calDays.length === 0) return (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <TrendingUp size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
+                  <div style={{ fontSize: '13px', color: '#94a3b8' }}>{venue.trialStatus === 'pipeline' ? 'Chart will appear once the trial starts' : 'No readings recorded yet'}</div>
+                </div>
+              );
+
+              // Build per-day data for the active fryer
+              const chartData = calDays.map(day => {
+                const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+                const dayRecs = (readingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === activeFryer);
+                const r = dayRecs[dayRecs.length - 1] || null;
+                const isFuture = day > today;
+                const isFresh = r?.oilAge === 1;
+                const litres = r?.litresFilled > 0 ? r.litresFilled : 0;
+                return { day, dateStr, r, isFuture, missed: !r && !isFuture, tpm: r?.tpmValue ?? null, litres, isFresh };
+              });
+
+              const recordedTPMs = chartData.filter(d => d.tpm != null).map(d => d.tpm);
+              const yMax = recordedTPMs.length > 0 ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, 24) : 24;
+
+              // SVG layout constants
+              const CHART_H = 180;
+              const TOP_PAD = 52;   // space above bars for bubbles
+              const BOT_PAD = 52;   // space below bars for x-labels
+              const LEFT_PAD = 40;  // y-axis
+              const RIGHT_PAD = 16;
+              const BAR_W = 20;
+              const STEP = 26;      // bar width + gap
+              const N = chartData.length;
+              const SVG_W = LEFT_PAD + N * STEP + RIGHT_PAD;
+              const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
+
+              const toY = val => TOP_PAD + CHART_H - (val / yMax) * CHART_H;
+              const barColor = tpm => tpm == null ? '#e2e8f0' : tpm <= 14 ? '#10b981' : tpm <= 18 ? '#f59e0b' : '#ef4444';
+
+              const yTicks = [];
+              for (let v = 0; v <= yMax; v += 5) yTicks.push(v);
+
+              // x-axis: label every day if ≤14, else every 7
+              const labelStep = N <= 14 ? 1 : 7;
+
+              return (
+                <div>
+                  {/* Fryer sub-tabs */}
+                  {fc > 1 && (
+                    <div style={{ display: 'flex', gap: '0', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
+                      {fryerList.map(fn => (
+                        <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
+                          padding: '8px 16px', border: 'none', borderBottom: activeFryer === fn ? '2px solid #1a428a' : '2px solid transparent',
+                          background: 'transparent', color: activeFryer === fn ? '#1a428a' : '#64748b',
+                          fontSize: '13px', fontWeight: activeFryer === fn ? '600' : '500', cursor: 'pointer',
+                        }}>Fryer {fn}</button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Legend */}
+                  <div style={{ display: 'flex', gap: '16px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                    {[
+                      { color: '#10b981', label: '≤14 (Good)', round: false },
+                      { color: '#f59e0b', label: '15–18 (Caution)', round: false },
+                      { color: '#ef4444', label: '>18 (Replace)', round: false },
+                      { color: '#f97316', label: 'Fresh fill', round: true },
+                      { color: '#3b82f6', label: 'Top-up', round: true },
+                    ].map(l => (
+                      <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <div style={{ width: '10px', height: '10px', borderRadius: l.round ? '50%' : '2px', background: l.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Chart */}
+                  <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+                    <svg width={SVG_W} height={SVG_H} style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
+
+                      {/* Y-axis gridlines + labels */}
+                      {yTicks.map(v => {
+                        const y = toY(v);
+                        return (
+                          <g key={v}>
+                            <line x1={LEFT_PAD} y1={y} x2={SVG_W - RIGHT_PAD} y2={y}
+                              stroke={v === 0 ? '#d1d5db' : '#f1f5f9'} strokeWidth={1}
+                              strokeDasharray={v > 0 ? '3 3' : ''} />
+                            <text x={LEFT_PAD - 6} y={y + 4} textAnchor="end" fontSize={9} fill="#94a3b8" fontWeight="500">{v}</text>
+                          </g>
+                        );
+                      })}
+
+                      {/* TPM threshold reference lines */}
+                      <line x1={LEFT_PAD} y1={toY(14)} x2={SVG_W - RIGHT_PAD} y2={toY(14)}
+                        stroke="#10b981" strokeWidth={1} strokeDasharray="4 3" opacity={0.5} />
+                      <line x1={LEFT_PAD} y1={toY(18)} x2={SVG_W - RIGHT_PAD} y2={toY(18)}
+                        stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 3" opacity={0.5} />
+
+                      {/* Bars + bubbles + x-labels */}
+                      {chartData.map((d, idx) => {
+                        const x = LEFT_PAD + idx * STEP;
+                        const cx = x + BAR_W / 2;
+                        const barH = d.tpm != null ? Math.max((d.tpm / yMax) * CHART_H, 3) : 0;
+                        const barY = TOP_PAD + CHART_H - barH;
+                        const color = barColor(d.tpm);
+                        const showLabel = idx === 0 || idx === N - 1 || idx % labelStep === 0;
+                        const dateLabel = `${d.day.getDate()} ${MONTHS_SHORT[d.day.getMonth()]}`;
+                        const BUBBLE_R = 13;
+
+                        return (
+                          <g key={idx}>
+                            {/* Bar (skip future days) */}
+                            {!d.isFuture && (d.tpm != null || d.missed) && (
+                              <rect
+                                x={x} y={d.missed ? TOP_PAD + CHART_H - 3 : barY}
+                                width={BAR_W} height={d.missed ? 3 : barH}
+                                fill={d.missed ? '#e2e8f0' : color} rx={3}
+                              />
+                            )}
+
+                            {/* TPM value inside tall bars, above short ones */}
+                            {d.tpm != null && !d.isFuture && barH > 26 && (
+                              <text x={cx} y={barY + 14} textAnchor="middle" fontSize={9} fill="white" fontWeight="700">{d.tpm}</text>
+                            )}
+                            {d.tpm != null && !d.isFuture && barH <= 26 && barH > 0 && (
+                              <text x={cx} y={barY - 4} textAnchor="middle" fontSize={9} fill={color} fontWeight="700">{d.tpm}</text>
+                            )}
+
+                            {/* Litres bubble */}
+                            {d.litres > 0 && !d.isFuture && (() => {
+                              const bubbleY = d.tpm != null ? barY - BUBBLE_R - 5 : TOP_PAD - BUBBLE_R - 2;
+                              const bColor = d.isFresh ? '#f97316' : '#3b82f6';
+                              return (
+                                <g>
+                                  <circle cx={cx} cy={bubbleY} r={BUBBLE_R} fill={bColor} />
+                                  <text x={cx} y={bubbleY - 3} textAnchor="middle" fontSize={7} fill="white" fontWeight="700">{d.litres}</text>
+                                  <text x={cx} y={bubbleY + 5} textAnchor="middle" fontSize={7} fill="white" fontWeight="500">L</text>
+                                </g>
+                              );
+                            })()}
+
+                            {/* X-axis date label (rotated) */}
+                            {showLabel && (
+                              <text
+                                x={cx} y={TOP_PAD + CHART_H + 12}
+                                textAnchor="end" fontSize={9} fill="#64748b"
+                                transform={`rotate(-40, ${cx}, ${TOP_PAD + CHART_H + 12})`}
+                              >{dateLabel}</text>
+                            )}
+                          </g>
+                        );
+                      })}
+
+                      {/* Axes */}
+                      <line x1={LEFT_PAD} y1={TOP_PAD + CHART_H} x2={SVG_W - RIGHT_PAD} y2={TOP_PAD + CHART_H} stroke="#d1d5db" strokeWidth={1} />
+                      <line x1={LEFT_PAD} y1={TOP_PAD} x2={LEFT_PAD} y2={TOP_PAD + CHART_H} stroke="#d1d5db" strokeWidth={1} />
+                    </svg>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── (old Notes tab preserved for reference) ── */}
+            {false && manageSubTab === '__notes_disabled' && (
               <div>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '12px' }}>Notes Timeline</div>
                 {renderNotesTimeline(parseNotes())}
