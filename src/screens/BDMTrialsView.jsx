@@ -2613,9 +2613,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     // Name column fixed; narrower for price/date, wider for status
     const NAME_W = '120px';
-    const COL_W = '80px';   // VOL, SUPPLIER, OIL×2
-    const PRICE_W = '62px'; // Current $/L, Offered $/L
-    const DATE_W = '66px';  // Start, End
+    const COL_W = '70px';    // VOL, OIL×2
+    const SUPP_W = '110px';  // Supplier — wider
+    const PRICE_W = '54px';  // Current $/L, Offered $/L
+    const DATE_W = '60px';   // Start, End
     const STATUS_W = '96px'; // Status — give more room, not hugging scrollbar
 
     return (
@@ -2690,7 +2691,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: NAME_W }} />
               {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
-              {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: SUPP_W }} />}
               {mc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
               {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
               {mc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(statusFiltered, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: PRICE_W }} />}
@@ -3630,7 +3631,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '36px' }} />  {/* # */}
-                        <col style={{ width: '52px' }} />  {/* Day */}
+                        <col style={{ width: '56px' }} />  {/* Day */}
                         <col style={{ width: '92px' }} />  {/* Date */}
                         <col style={{ width: '58px' }} />  {/* TPM */}
                         <col style={{ width: '60px' }} />  {/* Set°C */}
@@ -3639,7 +3640,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <col style={{ width: '90px' }} />  {/* Fill Type */}
                         <col style={{ width: '50px' }} />  {/* Litres */}
                         <col style={{ width: '78px' }} />  {/* Filtered */}
-                        <col style={{ width: '102px' }} /> {/* Food */}
+                        <col style={{ width: '94px' }} />  {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
@@ -3895,7 +3896,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '12px', alignItems: isDesktop ? 'flex-start' : 'stretch' }}>
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                     {/* Legend — centered above chart */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
                         {[
                           { bg: '#d1fae5', border: '#059669', label: '≤14 (Good)' },
@@ -4117,7 +4118,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
               // Shared helpers matching pre-trial tab style
               const secLabel = (text) => (
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: '18px' }}>{text}</div>
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: '18px' }}>{text}</div>
               );
               const sfld = (label, value, valueColor) => (
                 <div key={label}>
@@ -4169,7 +4170,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
               // Section label helper (no top margin — use marginTop inline when needed)
               const rSecLabel = (text, mt = 20) => (
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: `${mt}px` }}>{text}</div>
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: `${mt}px` }}>{text}</div>
               );
 
               // Internal use metadata
@@ -4250,7 +4251,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           { label: 'Duration', value: trialDuration > 0 ? `${trialDuration} days` : null },
                         ].map(({ label, value }) => (
                           <div key={label}>
-                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
                             <div style={{ fontSize: isDesktop ? '13px' : '11px', color: '#64748b', fontWeight: '500' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                           </div>
                         ))}
