@@ -2855,19 +2855,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
               return (
                 <div style={{ padding: '0 24px' }}>
-                  {/* Header row: edit button */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px' }}>
-                    {!isReadOnly && !mEditing && (
-                      <button onClick={() => setMEditing(true)} style={{
-                        background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px',
-                        fontSize: '11px', fontWeight: '600', color: '#1a428a', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                      }}>
-                        <Edit3 size={12} /> Edit
-                      </button>
-                    )}
-                    {mEditing && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                  {/* Header row: "Pre-Trial Details" title + edit/save buttons on same line */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Pre-Trial Details</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {!isReadOnly && !mEditing && (
+                        <button onClick={() => setMEditing(true)} style={{
+                          background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px',
+                          fontSize: '11px', fontWeight: '600', color: '#1a428a', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '4px',
+                        }}>
+                          <Edit3 size={12} /> Edit
+                        </button>
+                      )}
+                      {mEditing && (<>
                         <button onClick={() => setMEditing(false)} style={{
                           background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px',
                           fontSize: '11px', fontWeight: '600', color: '#64748b', cursor: 'pointer',
@@ -2879,8 +2880,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         }}>
                           <Save size={11} /> {mSaving ? 'Saving...' : 'Save'}
                         </button>
-                      </div>
-                    )}
+                      </>)}
+                    </div>
                   </div>
 
                   {!mEditing ? (
@@ -2888,8 +2889,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* ── Left: 3-column detail grid ── */}
                       <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        {/* Heading */}
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Pre-Trial Details</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
                           {/* Row 1: Type | Venue name (spans 2 cols) */}
                           {fld('Type', typeBadge)}
@@ -2897,18 +2896,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Venue name</div>
                             <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '600' }}>{venue.name || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                           </div>
-                          {/* Row 2: Current supplier | Current oil */}
+                          {/* Row 2: Current supplier | Current oil | Current price/L */}
                           {fld('Current supplier', currentSupplierEl)}
                           {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
-                          <div />
-                          {/* Row 3: Pre-trial weekly avg | Vol bracket | Current price/L */}
-                          {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
-                          {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
                           {fld('Current price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
-                          {/* Row 4: Fryer count | Trial oil | Offered price */}
+                          {/* Row 3: Fryer count | Trial oil | Offered price */}
                           {fld('Fryer count', fc ? String(fc) : null)}
                           {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
                           {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
+                          {/* Row 4: Pre-trial weekly avg | Vol bracket */}
+                          {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                          {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
+                          <div />
                           {/* Row 5: Start date | End date */}
                           {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                           {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
@@ -2939,15 +2938,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* ── Right: notes + goals ── */}
                       <div style={{ paddingLeft: '28px' }}>
-                        {initialNote ? (<>
-                          {sectionLabel('What do we know going into this trial?')}
-                          <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                        </>) : (
-                          <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 16px 0' }}>No notes entered.</p>
-                        )}
+                        {sectionLabel('What do we know going into this trial?')}
+                        {initialNote
+                          ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                          : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 16px 0' }}>No notes entered.</p>
+                        }
                         {parsedGoals.length > 0 && (<>
                           {sectionLabel('Trial goals')}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                             {parsedGoals.map(g => {
                               const GoalIcon = GOAL_ICONS[g];
                               return (
@@ -2961,33 +2959,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             })}
                           </div>
                         </>)}
-                        {!initialNote && parsedGoals.length === 0 && (
-                          <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes or goals recorded.</p>
-                        )}
                       </div>
 
                     </div>
                   ) : (
                     <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-                      {/* Trial Type — read-only, locked to originally selected type */}
-                      <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px' }}>
-                        {[{ val: 'existing', label: 'Existing Customer' }, { val: 'new', label: 'New Prospect' }].map(opt => {
-                          const isActive = mEditForm.trialType === opt.val;
-                          return (
-                            <div key={opt.val} style={{
-                              flex: 1, padding: '9px 16px', fontWeight: '600', textAlign: 'center',
-                              borderRadius: '8px',
-                              background: isActive ? 'white' : 'transparent',
-                              color: isActive ? BLUE : '#94a3b8', fontSize: '13px',
-                              boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                              userSelect: 'none',
-                            }}>
-                              {opt.label}
-                            </div>
-                          );
-                        })}
-                      </div>
 
                       {/* Venue name */}
                       <div style={S.field}>
