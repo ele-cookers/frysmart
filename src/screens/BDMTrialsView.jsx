@@ -147,7 +147,7 @@ const S = Object.freeze({
     letterSpacing: '0.3px', display: 'block', marginBottom: '6px',
     textTransform: 'uppercase',
   },
-  field: { marginBottom: '10px' },
+  field: { marginBottom: '14px' },
 });
 
 // ─────────────────────────────────────────────
@@ -293,9 +293,11 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const isNoFill = fryer.fillType === 'no_fill';
   const canSave = fryer.notInUse || !!fryer.tpmValue;
 
-  const inputSt = { width: '100%', maxWidth: '100%', padding: '8px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: 'white', color: '#1f2937' };
-  const lbl = { display: 'block', marginBottom: '3px', color: '#1f2937', fontSize: '11px', fontWeight: '600' };
-  const fld = { marginBottom: '8px' };
+  const inputSt = { width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: 'white', color: '#1f2937' };
+  const chevronBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`;
+  const selectSt = { ...inputSt, WebkitAppearance: 'none', appearance: 'none', backgroundImage: chevronBg, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '32px', cursor: 'pointer' };
+  const lbl = { display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '11px', fontWeight: '600' };
+  const fld = { marginBottom: '12px' };
 
   const handleSkip = () => {
     if (currentFryerIndex < fryerNums.length - 1) setCurrentFryerIndex(i => i + 1);
@@ -369,7 +371,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           )}
         </div>
 
-        <form onSubmit={handleSaveAndContinue} style={{ padding: '12px 20px' }}>
+        <form onSubmit={handleSaveAndContinue} style={{ padding: '16px 24px' }}>
           {/* Reading Date */}
           <div style={fld}>
             <label style={lbl}>Reading Date</label>
@@ -379,7 +381,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           </div>
 
           {/* Fryer operation toggle */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px' }}>
             <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>Fryer Status</span>
             <button type="button" onClick={() => updateFryer('notInUse', !fryer.notInUse)} style={{
               display: 'flex', alignItems: 'center', gap: '6px',
@@ -433,10 +435,10 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           )}
 
           {fryer.notInUse ? (
-            <div style={{ marginBottom: '16px' }}>
+            <div style={fld}>
               <label style={lbl}>Reason</label>
               <select value={fryer.notInUseReason} onChange={e => updateFryer('notInUseReason', e.target.value)}
-                style={{ ...inputSt, background: 'white', appearance: 'none', WebkitAppearance: 'none' }}>
+                style={selectSt}>
                 <option value="">Select reason...</option>
                 <option value="Cleaning">Cleaning</option>
                 <option value="Maintenance">Maintenance</option>
@@ -483,7 +485,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           </div>
 
           {/* Temps — side by side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
             <div>
               <label style={lbl}>Set Temp (°C)</label>
               <input type="text" inputMode="numeric" pattern="[0-9]*" value={fryer.setTemperature}
@@ -530,7 +532,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           <div style={fld}>
             <label style={lbl}>What are you frying?</label>
             <select value={fryer.foodType} onChange={e => updateFryer('foodType', e.target.value)}
-              style={{ ...inputSt, background: 'white', appearance: 'none', WebkitAppearance: 'none' }}
+              style={selectSt}
               onFocus={e => e.target.style.borderColor = '#1a428a'}
               onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
               {FOOD_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
@@ -538,7 +540,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           </div>
 
           {/* Notes */}
-          <div style={{ marginBottom: '16px' }}>
+          <div style={fld}>
             <label style={lbl}>Notes (optional)</label>
             <textarea value={fryer.notes} onChange={e => updateFryer('notes', e.target.value)}
               placeholder="Add notes..."
@@ -666,6 +668,8 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
 
   // Trial findings text (new field)
   const [trialFindings, setTrialFindings] = useState('');
+  // Trial outcome — 'successful' | 'unsuccessful' | null
+  const [trialOutcome, setTrialOutcome] = useState(null);
 
   // Trial goals — parse from trialNotes
   const GOAL_OPTIONS = [
@@ -903,6 +907,41 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
           )}
 
+          {/* Trial Outcome */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Trial Outcome</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              {[
+                { key: 'successful',   label: 'Successful',   icon: Trophy },
+                { key: 'unsuccessful', label: 'Unsuccessful', icon: AlertTriangle },
+              ].map(opt => {
+                const OptIcon = opt.icon;
+                const selected = trialOutcome === opt.key;
+                return (
+                  <div key={opt.key} onClick={() => setTrialOutcome(selected ? null : opt.key)} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px',
+                    cursor: 'pointer', borderRadius: '8px',
+                    background: selected ? '#dbeafe' : '#f8fafc',
+                    border: `1px solid ${selected ? '#93c5fd' : '#e2e8f0'}`,
+                    transition: 'all 0.1s',
+                  }}>
+                    <OptIcon size={13} color={selected ? '#1a428a' : '#94a3b8'} />
+                    <span style={{ flex: 1, fontSize: '11px', fontWeight: '600', color: selected ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{opt.label}</span>
+                    <div style={{
+                      width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
+                      border: `2px solid ${selected ? '#f59e0b' : '#d1d5db'}`,
+                      background: selected ? '#f59e0b' : 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.1s',
+                    }}>
+                      {selected && <Check size={9} color="white" strokeWidth={3} />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Trial Goals Achieved */}
           {trialGoals.length > 0 && (
             <div style={{ marginBottom: '16px' }}>
@@ -952,7 +991,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, trialOutcome)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
               Confirm End Trial
             </button>
           </div>
@@ -1330,18 +1369,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     }
   };
 
-  const handleEndTrial = (venueId, _totalLitres, achievedGoalsList = [], trialFindingsText = '') => {
+  const handleEndTrial = (venueId, _totalLitres, achievedGoalsList = [], trialFindingsText = '', trialOutcomeKey = null) => {
     const v = venues.find(x => x.id === venueId);
     // Preserve existing trialNotes, replacing or appending metadata lines
     const existingNotes = v?.trialNotes || '';
     const lines = existingNotes.split('\n')
       .filter(l => !l.trim().startsWith('[GoalsAchieved:'))
-      .filter(l => !l.trim().startsWith('[TrialFindings:'));
+      .filter(l => !l.trim().startsWith('[TrialFindings:'))
+      .filter(l => !l.trim().startsWith('[TrialOutcome:'));
     if (achievedGoalsList.length > 0) {
       lines.push(`[GoalsAchieved: ${achievedGoalsList.join(', ')}]`);
     }
     if (trialFindingsText.trim()) {
       lines.push(`[TrialFindings: ${trialFindingsText.trim()}]`);
+    }
+    if (trialOutcomeKey) {
+      lines.push(`[TrialOutcome: ${trialOutcomeKey}]`);
     }
     const newTrialNotes = lines.filter(Boolean).join('\n');
     // Close immediately (optimistic), fire update in background
@@ -1786,7 +1829,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {(tabType === 'pending' || isAccepted) && tc('days') && <th style={{ textAlign: 'center', width: '50px' }}>Days</th>}
               {tabType === 'active' && tc('today') && <th style={{ textAlign: 'center', width: '50px' }}>Today</th>}
               {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '62px' }} />}
-              {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ maxWidth: '90px', width: '90px' }} />}
+              {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ minWidth: '130px' }} />}
               {showCustomerCode && tc('customerCode') && <FilterableTh colKey="customerCode" label="Cust Code" options={getUniqueValues(allVenues, colAccessors.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
             </tr></thead>
@@ -1805,7 +1848,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                     {tc('volume') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><VolumePill bracket={venue.volumeBracket} /></span></td>}
-                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</span></td>}
+                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</td>}
                     {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''} style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('trialOil') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><OilBadge oil={cookersOil} competitors={competitors} compact /></span></td>}
                     {tc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
@@ -1820,7 +1863,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {tabType === 'pending' && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.trialEndDate ? daysBetween(venue.trialEndDate, todayStr) : '—'}</td>}
                     {isAccepted && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.outcomeDate ? daysBetween(venue.outcomeDate, todayStr) : '—'}</td>}
                     {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', textAlign: 'center' }}>{displayDate(venue.outcomeDate)}</td>}
-                    {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
+                    {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
                     {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap' }}>{venue.customerCode || '—'}</td>}
                     <td style={{ textAlign: 'center', paddingLeft: '2px', paddingRight: '2px' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><TrialStatusBadge status={venue.trialStatus} /></span></td>
                   </tr>
@@ -1858,8 +1901,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         })}
       </div>
 
-    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #94a3b8; }`}</style>
+    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #94a3b8; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: #f8fafc !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
       {/* Customer code — only for existing */}
@@ -1899,7 +1942,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       )}
 
       {/* Current Oil + Current Price — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT OIL {req}</label>
           <select
@@ -1932,7 +1975,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Trial Oil + Offered Price — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px' }}>
         <div style={S.field}>
           <label style={S.label}>TRIAL OIL {req}</label>
           <select value={newTrialForm.trialOilId} onChange={e => setNewTrialForm(f => ({ ...f, trialOilId: e.target.value }))}
@@ -1954,7 +1997,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Row 1: Avg Litres/Week | No. of Fryer Changes/Week */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT AVG LITRES/WEEK {req}</label>
           <input type="number" min="0" step="1" value={newTrialForm.avgLitresPerWeek}
@@ -1977,7 +2020,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Row 2: Fryer Count | Fryer Volumes */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
         {/* Left: Fryer Count */}
         <div style={S.field}>
           <label style={S.label}>FRYER COUNT {req}</label>
@@ -2021,7 +2064,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Est. Start Date + Est. End Date — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px' }}>
         <div style={S.field}>
           <label style={S.label}>EST. START DATE</label>
           <input type="date" value={newTrialForm.estStartDate}
@@ -3537,20 +3580,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '480px', fontSize: '11px', tableLayout: 'fixed' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '540px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '24px' }} />
-                        <col style={{ width: '38px' }} />
-                        <col style={{ width: '52px' }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: '48px' }} />
-                        <col style={{ width: '62px' }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: '56px' }} />
-                        <col style={{ width: '60px' }} />
-                        <col />
+                        <col style={{ width: '22px' }} />  {/* # */}
+                        <col style={{ width: '34px' }} />  {/* Day */}
+                        <col style={{ width: '58px' }} />  {/* Date */}
+                        <col style={{ width: '40px' }} />  {/* TPM */}
+                        <col style={{ width: '44px' }} />  {/* Set°C */}
+                        <col style={{ width: '52px' }} />  {/* Actual°C */}
+                        <col style={{ width: '38px' }} />  {/* -/+°C */}
+                        <col style={{ width: '66px' }} />  {/* Fill Type */}
+                        <col style={{ width: '42px' }} />  {/* Litres */}
+                        <col style={{ width: '54px' }} />  {/* Filtered */}
+                        <col style={{ width: '66px' }} />  {/* Food */}
+                        <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
                         <tr>
@@ -3788,33 +3831,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
 
-                  {/* Legend — two rows: TPM colours | fill types */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                      {[
-                        { bg: '#d1fae5', border: '#059669', label: '≤14 (Good)' },
-                        { bg: '#fef3c7', border: '#d97706', label: '15–18 (Caution)' },
-                        { bg: '#fee2e2', border: '#dc2626', label: '>18 (Replace)' },
-                      ].map(l => (
-                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.bg, border: `1px solid ${l.border}44`, flexShrink: 0 }} />
-                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                      {[
-                        { color: '#10b981', label: 'Fresh fill', round: true },
-                        { color: '#f59e0b', label: 'Top-up', round: true },
-                      ].map(l => (
-                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, flexShrink: 0 }} />
-                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Chart + Notes panel side by side */}
                   {(() => {
                     const daysWithNotes = chartData
@@ -3822,7 +3838,34 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       .filter(d => d.note && !d.isFuture);
                     return (
                   <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                    {/* Legend — centered above chart */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                        {[
+                          { bg: '#d1fae5', border: '#059669', label: '≤14 (Good)' },
+                          { bg: '#fef3c7', border: '#d97706', label: '15–18 (Caution)' },
+                          { bg: '#fee2e2', border: '#dc2626', label: '>18 (Replace)' },
+                        ].map(l => (
+                          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.bg, border: `1px solid ${l.border}44`, flexShrink: 0 }} />
+                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                        {[
+                          { color: '#10b981', label: 'Fresh fill' },
+                          { color: '#f59e0b', label: 'Top-up' },
+                        ].map(l => (
+                          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, flexShrink: 0 }} />
+                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
                     <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="320" preserveAspectRatio="xMinYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
 
                       {/* Y-axis gridlines + labels */}
@@ -3921,8 +3964,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       >TPM</text>
                     </svg>
                     </div>
+                    </div>
                     {/* Notes panel */}
-                    <div style={{ width: isDesktop ? '270px' : '100%', flexShrink: 0, paddingTop: '4px' }}>
+                    <div style={{ width: isDesktop ? '320px' : '100%', flexShrink: 0, paddingTop: '4px' }}>
                       <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Notes</div>
                       {daysWithNotes.length === 0 ? (
                         <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes recorded</div>
@@ -4059,6 +4103,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     .join('\n')
                 : '';
 
+              // Trial outcome: [TrialOutcome: KEY] from trialNotes
+              const trialOutcomeValue = (() => {
+                const line = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[TrialOutcome:'));
+                if (!line) return null;
+                return line.replace(/^\[TrialOutcome:\s*/, '').replace(/\].*$/, '').trim();
+              })();
+
               // Section label helper (no top margin — use marginTop inline when needed)
               const rSecLabel = (text, mt = 20) => (
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: `${mt}px` }}>{text}</div>
@@ -4082,7 +4133,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div style={{ padding: isDesktop ? '0 24px' : '0' }}>
 
                   {/* ── Title ── */}
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '24px' }}>Summary Report</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Summary Report</div>
+                    {trialOutcomeValue && (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        padding: '4px 10px', borderRadius: '8px',
+                        background: trialOutcomeValue === 'successful' ? '#d1fae5' : '#fee2e2',
+                        border: `1px solid ${trialOutcomeValue === 'successful' ? '#6ee7b7' : '#fca5a5'}`,
+                        fontSize: '12px', fontWeight: '700',
+                        color: trialOutcomeValue === 'successful' ? '#059669' : '#dc2626',
+                      }}>
+                        {trialOutcomeValue === 'successful' ? <Trophy size={12} /> : <AlertTriangle size={12} />}
+                        {trialOutcomeValue.charAt(0).toUpperCase() + trialOutcomeValue.slice(1)}
+                      </div>
+                    )}
+                  </div>
 
                   {/* ── GRID 1: details left | notes + findings right ── */}
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '0' }}>
