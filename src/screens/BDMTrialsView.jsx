@@ -3768,7 +3768,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       .map((d, idx) => ({ idx, note: d.r?.notes, isFuture: d.isFuture, day: d.day }))
                       .filter(d => d.note && !d.isFuture);
                     return (
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
                     <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="320" preserveAspectRatio="xMinYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
 
@@ -3869,7 +3869,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </svg>
                     </div>
                     {/* Notes panel */}
-                    <div style={{ width: '210px', flexShrink: 0, paddingTop: '4px' }}>
+                    <div style={{ width: isDesktop ? '210px' : '100%', flexShrink: 0, paddingTop: '4px' }}>
                       <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Notes</div>
                       {daysWithNotes.length === 0 ? (
                         <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes recorded</div>
