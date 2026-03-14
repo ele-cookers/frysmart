@@ -883,6 +883,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     if (manageVenueId) {
       setManageSubTab('details');
       setCalFryerTab(1);
+      setManageEditing(false);
+      setManageEditForm({});
       const v = venues.find(x => x.id === manageVenueId);
       setManageNoteText(v?.trialNotes || '');
     }
@@ -2954,7 +2956,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     </div>
                   ) : (
-                    <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                       {/* Trial Type toggle — same as create form */}
                       <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px' }}>
