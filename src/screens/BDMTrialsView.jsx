@@ -12,7 +12,7 @@ import {
   ArrowDown, Filter,
   Edit3, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
   Star, MessageSquare, Target,
-  DollarSign, Droplets, Palette, Cog, TrendingUp, Award
+  DollarSign, Droplets, Palette, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
@@ -177,10 +177,14 @@ const daysBetween = (start, end) => {
   return Math.round((e - s) / 86400000);
 };
 
+const MONTHS_SHORT_DISP = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const displayDate = (dateStr) => {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const day = String(d.getDate()).padStart(2, '0');
+  const mon = MONTHS_SHORT_DISP[d.getMonth()];
+  const yr = String(d.getFullYear()).slice(-2);
+  return `${day}-${mon}-${yr}`;
 };
 
 const calcVolumeBracket = (litres) => {
@@ -2419,6 +2423,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     allTrials.forEach(v => { statusCounts[v.trialStatus] = (statusCounts[v.trialStatus] || 0) + 1; });
 
     // Fixed width for all badge/value columns — consistent sizing
+    const NAME_W = '150px';
     const VOL_W = '90px';
     const SUPPLIER_W = '78px';
     const OIL_W = '88px';
@@ -2429,7 +2434,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* Status filter pills */}
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', overflowX: 'auto', paddingRight: '2px' }}>
           {[
             { key: 'pipeline', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
             { key: 'active', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
@@ -2496,7 +2501,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <table className="bdm-table" style={{ width: '100%', tableLayout: 'fixed' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
-              <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
+              <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: NAME_W }} />
               {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: VOL_W }} />}
               {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: SUPPLIER_W }} />}
               {mc('compOil') && <FilterableTh colKey="compOil" label="Curr. Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: OIL_W }} />}
@@ -2521,7 +2526,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return (
                   <tr key={venue.id} onClick={() => setManageVenueId(venue.id)} style={{ height: '34px', cursor: 'pointer' }}>
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
-                    <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
+                    <td style={{ fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{venue.name}</td>
                     {mc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
                     {mc('competitor') && <td>
                       {vComp ? <CompetitorPill comp={vComp} table /> : <span style={{ color: '#cbd5e1' }}>—</span>}
@@ -3580,9 +3585,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const yMax = recordedTPMs.length > 0 ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, 24) : 24;
 
               // SVG layout constants — wider chart
-              const CHART_H = 280;
-              const TOP_PAD = 56;
-              const BOT_PAD = 56;
+              const CHART_H = 170;
+              const TOP_PAD = 44;
+              const BOT_PAD = 36;
               const LEFT_PAD = 44;
               const RIGHT_PAD = 24;
               const BAR_W = 36;
@@ -3633,9 +3638,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     ))}
                   </div>
 
-                  {/* Chart — full width, responsive via viewBox */}
-                  <div style={{ overflowX: 'auto', overflowY: 'visible', width: '100%' }}>
-                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" style={{ display: 'block', minWidth: `${Math.min(SVG_W, 320)}px`, fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
+                  {/* Chart — full width, fixed CSS height so it never overflows screen */}
+                  <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="240" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
 
                       {/* Y-axis gridlines + labels */}
                       {yTicks.map(v => {
@@ -3794,107 +3799,234 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const trialOilBadge = cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null;
               const volBadge = venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null;
 
+              // Icon-labelled field helper
+              const sfldIcon = (icon, label, value, valueColor) => (
+                <div key={label}>
+                  <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <span style={{ color: '#b0bac9', display: 'flex', alignItems: 'center' }}>{icon}</span>{label}
+                  </div>
+                  <div style={{ fontSize: '13px', color: valueColor || '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {(value !== null && value !== undefined && value !== '') ? value : <span style={{ color: '#cbd5e1' }}>—</span>}
+                  </div>
+                </div>
+              );
+
+              // Mini calendar helpers (same colour logic as Trial Calendar tab)
+              const miniCalBg = tpm => tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
+              const miniCalCol = tpm => tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+
               return (
                 <div style={{ padding: '0 4px' }}>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '4px' }}>Summary Report</div>
+                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Summary Report</div>
 
-                  {/* ── Trial Overview + Comparison side by side ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '24px', alignItems: 'start' }}>
+                  {/* ── Top: Details (left) + divider + Mini Calendar (right) ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '3fr 1px 1fr' : '1fr', gap: '0', alignItems: 'start', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', marginBottom: '14px', background: 'white' }}>
 
-                    {/* Left: Trial Overview (no heading) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 20px' }}>
-                      {sfld('Trial Start', displayDate(venue.trialStartDate))}
-                      {sfld('Trial End', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
-                      {sfld('Duration', trialDuration > 0 ? `${trialDuration} days` : null)}
-                      {sfld('Fryers', fc ? String(fc) : null)}
-                      {sfld('Vol Bracket', volBadge)}
-                      {sfld('Pre-trial Avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
-                      {sfld('Fryer Changes / wk', fryerChangesPerWeek ? `${fryerChangesPerWeek}×` : null)}
-                      {sfld('Avg TPM', avgTPM !== null ? avgTPM.toFixed(1) : null)}
-                      {sfld('Current Supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
-                      {sfld('Current Oil', compOilBadge)}
-                      {sfld('Curr. Price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
-                      {sfld('Trial Oil', trialOilBadge)}
-                      {sfld('Offered Price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
-                      {sfld('Trial Litres Total', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                    {/* Left: Trial details — 3 columns */}
+                    <div style={{ padding: '16px 18px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px 16px' }}>
+                      {sfldIcon(<Calendar size={10} />, 'Start', displayDate(venue.trialStartDate))}
+                      {sfldIcon(<Calendar size={10} />, 'End', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
+                      {sfldIcon(<Clock size={10} />, 'Duration', trialDuration > 0 ? `${trialDuration} days` : null)}
+                      {sfldIcon(<Flame size={10} />, 'Fryers', fc ? String(fc) : null)}
+                      {sfldIcon(<Droplets size={10} />, 'Vol Bracket', volBadge)}
+                      {sfldIcon(<Activity size={10} />, 'Pre-trial Avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
+                      {sfldIcon(<RotateCcw size={10} />, 'Changes / wk', fryerChangesPerWeek ? `${fryerChangesPerWeek}×` : null)}
+                      {sfldIcon(<BarChart3 size={10} />, 'Avg TPM', avgTPM !== null ? avgTPM.toFixed(1) : null)}
+                      {sfldIcon(<Droplets size={10} />, 'Total Litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                      {sfldIcon(<Target size={10} />, 'Supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
+                      {sfldIcon(<Droplets size={10} />, 'Current Oil', compOilBadge)}
+                      {sfldIcon(<DollarSign size={10} />, 'Curr. $/L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
+                      {sfldIcon(<Award size={10} />, 'Trial Oil', trialOilBadge)}
+                      {sfldIcon(<DollarSign size={10} />, 'Offered $/L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
                     </div>
 
-                    {/* Right: Comparison table (no heading) */}
-                    {(compWklyAvg || liveTrialAvg !== null) ? (
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '320px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                          <thead>
+                    {/* Vertical divider */}
+                    {isDesktop && <div style={{ background: '#e2e8f0', alignSelf: 'stretch', width: '1px' }} />}
+
+                    {/* Right: Mini Trial Calendar */}
+                    {isDesktop && (
+                      <div style={{ padding: '16px 14px' }}>
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={9} color="#94a3b8" /> Trial Calendar
+                        </div>
+                        {calDays.length > 0 ? (
+                          <div style={{ overflowX: 'auto' }}>
+                            <table style={{ borderCollapse: 'separate', borderSpacing: '2px', tableLayout: 'auto' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ width: '28px', minWidth: '28px' }} />
+                                  {calDays.map((_, i) => (
+                                    <th key={i} style={{ fontSize: '7px', color: '#94a3b8', textAlign: 'center', padding: '0 1px', fontWeight: '600', minWidth: '14px' }}>{i + 1}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {fryerList.map(fn => (
+                                  <tr key={fn}>
+                                    <td style={{ fontSize: '8px', fontWeight: '700', color: '#1a428a', paddingRight: '4px', whiteSpace: 'nowrap' }}>{fc > 1 ? `F${fn}` : 'TPM'}</td>
+                                    {calDays.map((day, idx) => {
+                                      const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+                                      const dayRecs = (readingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === fn);
+                                      const r = dayRecs[dayRecs.length - 1] || null;
+                                      const isFuture = day > today;
+                                      return (
+                                        <td key={idx} style={{
+                                          width: '14px', height: '14px', minWidth: '14px',
+                                          background: r?.tpmValue != null ? miniCalBg(r.tpmValue) : isFuture ? '#f8fafc' : '#f1f5f9',
+                                          borderRadius: '2px', textAlign: 'center', verticalAlign: 'middle', opacity: isFuture ? 0.3 : 1,
+                                        }}>
+                                          {r?.tpmValue != null && (
+                                            <span style={{ fontSize: '6px', fontWeight: '800', color: miniCalCol(r.tpmValue), lineHeight: '1' }}>{r.tpmValue}</span>
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>No readings yet</div>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+                          {[{ bg: '#d1fae5', color: '#059669', label: '≤14' }, { bg: '#fef3c7', color: '#d97706', label: '15–18' }, { bg: '#fee2e2', color: '#dc2626', label: '>18' }].map(l => (
+                            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <div style={{ width: '8px', height: '8px', background: l.bg, border: `1px solid ${l.color}44`, borderRadius: '1px', flexShrink: 0 }} />
+                              <span style={{ fontSize: '9px', color: '#64748b' }}>{l.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Comparison table — below details, no row-label column ── */}
+                  {(compWklyAvg || liveTrialAvg !== null) ? (
+                    <div style={{ overflowX: 'auto', marginBottom: '14px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '380px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc' }}>
+                            {['Oil', '$/L', 'L / wk', '$ / wk', '$ / yr'].map(h => (
+                              <th key={h} style={{ padding: '7px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Competitor row */}
+                          <tr style={{ background: '#fafafa' }}>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>vs</span>
+                                {compOilBadge || <span style={{ fontSize: '11px', color: '#64748b' }}>{compOilName || '—'}</span>}
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
+                          </tr>
+                          {/* Trial row */}
+                          <tr style={{ background: '#eff6ff' }}>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', borderBottom: '1px solid #dbeafe', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '9px', fontWeight: '700', color: '#1a428a', textTransform: 'uppercase' }}>trial</span>
+                                {trialOilBadge || <span style={{ fontSize: '11px', color: '#1f2937' }}>{trialOilName || '—'}</span>}
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
+                            <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
+                          </tr>
+                          {/* Difference row */}
+                          {weekSpend !== null && (
                             <tr style={{ background: '#f8fafc' }}>
-                              {['', 'Oil', '$/L', 'L/wk', '$/wk', '$/yr'].map(h => (
-                                <th key={h} style={{ padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: h === '' ? 'left' : 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                              <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                                <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Difference</span>
+                              </td>
+                              <td style={{ padding: '8px 10px' }} />
+                              <td style={{ padding: '8px 10px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
+                              </td>
+                              <td style={{ padding: '8px 10px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
+                              </td>
+                              <td style={{ padding: '8px 10px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                {annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '12px', color: '#94a3b8', padding: '12px 0 14px' }}>Comparison data will appear once trial readings are recorded.</div>
+                  )}
+
+                  {/* ── Savings: two 3-column tables side by side ── */}
+                  {(weekLitres !== null || weekSpend !== null) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '14px' }}>
+                      {/* Reduced Consumption */}
+                      <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Droplets size={12} color="#3b82f6" />
+                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reduced Consumption</span>
+                        </div>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr>
+                              {['Per Week', 'Per Year', '% Reduction'].map(h => (
+                                <th key={h} style={{ padding: '6px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
-                            <tr style={{ background: 'white' }}>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>Competitor</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{compOilName || '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
+                            <tr>
+                              <td style={{ padding: '12px 10px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                {weekLitres !== null ? (weekLitres >= 0 ? `–${fmtL(weekLitres)}` : `+${fmtL(Math.abs(weekLitres))}`) : '—'}
+                              </td>
+                              <td style={{ padding: '12px 10px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                {annualLitres !== null ? (annualLitres >= 0 ? `–${fmtL(annualLitres)}` : `+${fmtL(Math.abs(annualLitres))}`) : '—'}
+                              </td>
+                              <td style={{ padding: '12px 10px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: pctLitresReduced >= 0 ? '#059669' : '#dc2626' }}>
+                                {pctLitresReduced !== null ? `${Math.abs(pctLitresReduced).toFixed(1)}%` : '—'}
+                              </td>
                             </tr>
-                            <tr style={{ background: 'white' }}>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', fontWeight: '700', color: '#1a428a', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>Trial</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{trialOilName || '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
-                              <td style={{ padding: '7px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
-                            </tr>
-                            {weekSpend !== null && (
-                              <tr style={{ background: '#f8fafc' }}>
-                                <td style={{ padding: '7px 8px', fontSize: '11px', fontWeight: '700', color: '#64748b', whiteSpace: 'nowrap' }}>Difference</td>
-                                <td style={{ padding: '7px 8px', textAlign: 'right' }} />
-                                <td style={{ padding: '7px 8px', textAlign: 'right' }} />
-                                <td style={{ padding: '7px 8px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                  {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
-                                </td>
-                                <td style={{ padding: '7px 8px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                  {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
-                                </td>
-                                <td style={{ padding: '7px 8px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                  {annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
-                                </td>
-                              </tr>
-                            )}
                           </tbody>
                         </table>
                       </div>
-                    ) : (
-                      <div style={{ fontSize: '12px', color: '#94a3b8', padding: '20px 0' }}>Comparison data will appear once trial readings are recorded.</div>
-                    )}
-                  </div>
-
-                  {/* ── Projected Savings — 2 columns: Consumption | Cost ── */}
-                  {(weekLitres !== null || weekSpend !== null) && (<>
-                    {secLabel('Projected Savings')}
-                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '24px' }}>
-                      {/* Left: Reduced Consumption */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 20px' }}>
-                        <div style={{ gridColumn: 'span 2' }}>
-                          <div style={{ fontSize: '9px', fontWeight: '700', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Reduced Consumption</div>
+                      {/* Cost Savings */}
+                      <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <TrendingDown size={12} color="#059669" />
+                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cost Savings</span>
                         </div>
-                        {weekLitres !== null && sfld('Weekly Litres', weekLitres >= 0 ? fmtL(weekLitres) : `+${fmtL(Math.abs(weekLitres))}`, weekLitres >= 0 ? '#059669' : '#dc2626')}
-                        {annualLitres !== null && sfld('Yearly Litres', annualLitres >= 0 ? fmtL(annualLitres) : `+${fmtL(Math.abs(annualLitres))}`, annualLitres >= 0 ? '#059669' : '#dc2626')}
-                        {pctLitresReduced !== null && sfld('% Reduced', `${pctLitresReduced >= 0 ? '' : '+'}${Math.abs(pctLitresReduced).toFixed(1)}%`, pctLitresReduced >= 0 ? '#059669' : '#dc2626')}
-                      </div>
-                      {/* Right: Cost Savings */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 20px' }}>
-                        <div style={{ gridColumn: 'span 2' }}>
-                          <div style={{ fontSize: '9px', fontWeight: '700', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Cost Savings</div>
-                        </div>
-                        {weekSpend !== null && sfld('Weekly Savings', weekSpend >= 0 ? fmt$(weekSpend) : `–${fmt$(Math.abs(weekSpend))}`, weekSpend >= 0 ? '#059669' : '#dc2626')}
-                        {annualSpend !== null && sfld('Yearly Savings', annualSpend >= 0 ? fmt$(annualSpend) : `–${fmt$(Math.abs(annualSpend))}`, annualSpend >= 0 ? '#059669' : '#dc2626')}
-                        {pctCostSaved !== null && sfld('% Cost Saved', `${Math.abs(pctCostSaved).toFixed(1)}%`, pctCostSaved >= 0 ? '#059669' : '#dc2626')}
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr>
+                              {['Per Week', 'Per Year', '% Saved'].map(h => (
+                                <th key={h} style={{ padding: '6px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td style={{ padding: '12px 10px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                {weekSpend !== null ? (weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`) : '—'}
+                              </td>
+                              <td style={{ padding: '12px 10px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                {annualSpend !== null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
+                              </td>
+                              <td style={{ padding: '12px 10px', textAlign: 'center', fontSize: '15px', fontWeight: '800', color: pctCostSaved >= 0 ? '#059669' : '#dc2626' }}>
+                                {pctCostSaved !== null ? `${Math.abs(pctCostSaved).toFixed(1)}%` : '—'}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                  </>)}
+                  )}
 
                   {/* ── Goals Achieved ── */}
                   {trialGoalsList.length > 0 && (<>
