@@ -2829,6 +2829,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
               const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes', 'extend-life': 'Extend oil life' };
+              const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Palette, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
               // Type: new prospect (vs competitor) or existing customer
               const isNewProspect = !!comp;
               const typeBadge = isNewProspect
@@ -2853,7 +2854,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>{children}</div>
               );
               return (
-                <div>
+                <div style={{ padding: '0 24px' }}>
                   {/* Header row: edit button */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px' }}>
                     {!isReadOnly && !mEditing && (
@@ -2947,14 +2948,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         {parsedGoals.length > 0 && (<>
                           {sectionLabel('Trial goals')}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                            {parsedGoals.map(g => (
-                              <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '7px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
-                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                  <Check size={9} color="white" strokeWidth={3} />
+                            {parsedGoals.map(g => {
+                              const GoalIcon = GOAL_ICONS[g];
+                              return (
+                                <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '7px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
+                                  <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    {GoalIcon ? <GoalIcon size={14} color="#1a428a" /> : null}
+                                  </div>
+                                  <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e' }}>{GOAL_LABELS[g] || g}</span>
                                 </div>
-                                <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e' }}>{GOAL_LABELS[g] || g}</span>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </>)}
                         {!initialNote && parsedGoals.length === 0 && (
@@ -2966,22 +2970,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   ) : (
                     <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-                      {/* Trial Type toggle — same as create form */}
+                      {/* Trial Type — read-only, locked to originally selected type */}
                       <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px' }}>
                         {[{ val: 'existing', label: 'Existing Customer' }, { val: 'new', label: 'New Prospect' }].map(opt => {
                           const isActive = mEditForm.trialType === opt.val;
                           return (
-                            <button key={opt.val} type="button"
-                              onClick={() => setMEditForm(p => ({ ...p, trialType: opt.val, competitor: '', defaultOil: '' }))}
-                              style={{
-                                flex: 1, padding: '9px 16px', fontWeight: '600', cursor: 'pointer',
-                                transition: 'all 0.15s', borderRadius: '8px', border: 'none',
-                                background: isActive ? 'white' : 'transparent',
-                                color: isActive ? BLUE : '#64748b', fontSize: '13px',
-                                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                              }}>
+                            <div key={opt.val} style={{
+                              flex: 1, padding: '9px 16px', fontWeight: '600', textAlign: 'center',
+                              borderRadius: '8px',
+                              background: isActive ? 'white' : 'transparent',
+                              color: isActive ? BLUE : '#94a3b8', fontSize: '13px',
+                              boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                              userSelect: 'none',
+                            }}>
                               {opt.label}
-                            </button>
+                            </div>
                           );
                         })}
                       </div>
