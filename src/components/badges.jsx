@@ -34,7 +34,7 @@ export const OilBadge = ({ oil, competitors: comps, compact }) => {
       <span style={{
         padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
         background: s.bg, color: s.text, border: `1px solid ${s.border}`,
-        whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center', verticalAlign: 'middle',
+        whiteSpace: 'nowrap', display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>{oil.name}</span>
     );
   }
