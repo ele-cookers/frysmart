@@ -2887,20 +2887,28 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* ── Left: 3-column detail grid ── */}
                       <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        {/* Heading */}
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Pre-Trial Details</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
-                          {/* Row 1: Type | Supplier | Current oil */}
+                          {/* Row 1: Type | Venue name (spans 2 cols) */}
                           {fld('Type', typeBadge)}
-                          {fld('Supplier', currentSupplierEl)}
+                          <div style={{ gridColumn: 'span 2' }}>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Venue name</div>
+                            <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '600' }}>{venue.name || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
+                          </div>
+                          {/* Row 2: Current supplier | Current oil */}
+                          {fld('Current supplier', currentSupplierEl)}
                           {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
-                          {/* Row 2: Price/L | Avg litres | Volume bracket */}
-                          {fld('Price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
-                          {fld('Avg litres / week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
-                          {fld('Volume bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
-                          {/* Row 3: Trial oil | Offered price | Fryer count */}
+                          <div />
+                          {/* Row 3: Pre-trial weekly avg | Vol bracket | Current price/L */}
+                          {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                          {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
+                          {fld('Current price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
+                          {/* Row 4: Fryer count | Trial oil | Offered price */}
+                          {fld('Fryer count', fc ? String(fc) : null)}
                           {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
                           {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
-                          {fld('Fryer count', fc ? String(fc) : null)}
-                          {/* Row 4: Start date | End date | [per-fryer or blank] */}
+                          {/* Row 5: Start date | End date */}
                           {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                           {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
                           <div />
@@ -2914,8 +2922,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             })}
                           </div>
                         )}
-                        {/* Bottom metadata strip */}
-                        <div style={{ display: 'flex', gap: '20px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8', flexWrap: 'wrap' }}>
+                        {/* Bottom metadata strip — evenly distributed */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
                           {trialCreatedDate && (
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
                           )}
