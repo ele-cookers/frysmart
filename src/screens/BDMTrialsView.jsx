@@ -3228,7 +3228,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         marginBottom: isDesktop ? '0' : '20px',
                         display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
                       }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '16px 20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
                           {/* Row 1: Type | Venue name (spans 2 cols) */}
                           {fld('Type', typeBadge)}
                           <div style={{ gridColumn: 'span 2' }}>
@@ -3247,10 +3247,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
                           {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
                           {fld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                          {/* Row 5: Start date | End date */}
-                          {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
-                          {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
-                          <div />
+                          {/* Row 5: Start date | End date — desktop only (moved to bottom on mobile) */}
+                          {isDesktop && fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
+                          {isDesktop && fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
+                          {isDesktop && <div />}
                         </div>
                         {/* Per-fryer volumes if recorded */}
                         {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
@@ -3262,7 +3262,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </div>
                         )}
                         {/* Bottom metadata strip — evenly distributed */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
                           {trialCreatedDate && (
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
                           )}
@@ -3273,10 +3273,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last edited {displayDate(lastEditedDate)}</span>
                           )}
                         </div>
+                        {/* Start/End dates — mobile only, dashed border above */}
+                        {!isDesktop && (venue.trialStartDate || venue.trialEndDate) && (
+                          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #e2e8f0' }}>
+                            {venue.trialStartDate && <span style={{ fontSize: '10px', color: '#b0bac9' }}>{hasStarted ? 'Start' : 'Est. start'}: {displayDate(venue.trialStartDate)}</span>}
+                            {venue.trialEndDate && <span style={{ fontSize: '10px', color: '#b0bac9' }}>{hasEnded ? 'End' : 'Est. end'}: {displayDate(venue.trialEndDate)}</span>}
+                          </div>
+                        )}
                       </div>
 
                       {/* ── Right: notes + goals ── */}
-                      <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px' }}>
+                      <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px', paddingBottom: isDesktop ? '0' : '20px', marginBottom: isDesktop ? '0' : '20px', borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8' }}>
                         {sectionLabel('What do we know going into this trial?')}
                         {initialNote
                           ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
@@ -3558,7 +3565,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const activeFryer = calFryerTab;
               const EQ_W = '44px';
               const thBase = { padding: '3px 2px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
-              const tdBase = { padding: '3px 2px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
+              const tdBase = { padding: '3px 2px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '4px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
               );
@@ -3580,19 +3587,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '540px', fontSize: '11px', tableLayout: 'fixed' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '680px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '22px' }} />  {/* # */}
-                        <col style={{ width: '34px' }} />  {/* Day */}
-                        <col style={{ width: '58px' }} />  {/* Date */}
-                        <col style={{ width: '40px' }} />  {/* TPM */}
-                        <col style={{ width: '44px' }} />  {/* Set°C */}
-                        <col style={{ width: '52px' }} />  {/* Actual°C */}
-                        <col style={{ width: '38px' }} />  {/* -/+°C */}
-                        <col style={{ width: '66px' }} />  {/* Fill Type */}
-                        <col style={{ width: '42px' }} />  {/* Litres */}
-                        <col style={{ width: '54px' }} />  {/* Filtered */}
-                        <col style={{ width: '66px' }} />  {/* Food */}
+                        <col style={{ width: '24px' }} />  {/* # */}
+                        <col style={{ width: '32px' }} />  {/* Day */}
+                        <col style={{ width: '62px' }} />  {/* Date */}
+                        <col style={{ width: '38px' }} />  {/* TPM */}
+                        <col style={{ width: '38px' }} />  {/* Set°C */}
+                        <col style={{ width: '46px' }} />  {/* Actual°C */}
+                        <col style={{ width: '36px' }} />  {/* -/+°C */}
+                        <col style={{ width: '78px' }} />  {/* Fill Type */}
+                        <col style={{ width: '40px' }} />  {/* Litres */}
+                        <col style={{ width: '66px' }} />  {/* Filtered */}
+                        <col style={{ width: '72px' }} />  {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
@@ -3629,7 +3636,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const dash = missed ? '' : '—'; // blank for missed days, dash for future
                           const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}`;
                           return (
-                            <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '36px' }}>
+                            <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '44px' }}>
                               <td style={{ ...tdBase, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
                               <td style={{ ...tdBase, color: '#64748b', fontWeight: '500' }}>{DAYS[day.getDay()]}</td>
                               <td style={{ ...tdBase, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
@@ -3657,7 +3664,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>
                                 {r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}
                               </td>
-                              <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word', minWidth: '120px', maxWidth: '200px' }}>{r?.notes || ''}</td>
+                              <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible', verticalAlign: 'top', paddingTop: '6px' }}>{r?.notes || ''}</td>
                             </tr>
                           );
                         })}
@@ -4248,74 +4255,112 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   {/* ── GRID 2: comparison left | goals right ── */}
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '0' }}>
 
-                    {/* Left: comparison table */}
+                    {/* Left: comparison table — on mobile appears SECOND (after goals) */}
                     <div style={{
                       paddingRight: isDesktop ? '28px' : '0',
                       borderRight: isDesktop ? '1px solid #f0f4f8' : 'none',
-                      borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8',
-                      paddingBottom: isDesktop ? '0' : '20px',
-                      marginBottom: isDesktop ? '0' : '20px',
+                      borderBottom: 'none',
+                      paddingBottom: '0',
+                      marginBottom: '0',
+                      order: isDesktop ? 0 : 1,
                     }}>
                       {(compWklyAvg || liveTrialAvg !== null) ? (
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                            <thead>
-                              <tr style={{ background: '#f8fafc' }}>
-                                <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Comparison</th>
-                                {['Price / L', 'Litres/Wk', 'Litres/Yr', 'Cost / Wk', 'Cost / Yr'].map(h => (
-                                  <th key={h} style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr style={{ background: '#fafafa' }}>
-                                <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
-                                  {compOilBadge || <span style={{ fontSize: '11px', color: '#64748b' }}>{compOilName || '—'}</span>}
-                                </td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
-                              </tr>
-                              <tr style={{ background: '#eff6ff' }}>
-                                <td style={{ padding: '8px 10px', borderBottom: '1px solid #dbeafe', whiteSpace: 'nowrap' }}>
-                                  {trialOilBadge || <span style={{ fontSize: '11px', color: '#1f2937' }}>{trialOilName || '—'}</span>}
-                                </td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
-                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
-                              </tr>
-                              {weekSpend !== null && (
+                        !isDesktop ? (
+                          /* ── Mobile: transposed table (metrics as rows) ── */
+                          <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                              <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                  <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Difference</td>
-                                  <td style={{ padding: '8px 10px' }} />
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                    {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
-                                  </td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                    {annualLitres != null ? `${annualLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(annualLitres))}` : '—'}
-                                  </td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                    {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
-                                  </td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                    {annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
-                                  </td>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Metric</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                    {compOilName || 'Current'}
+                                  </th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                    {trialOilName || 'Trial'}
+                                  </th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Diff</th>
                                 </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
+                              </thead>
+                              <tbody>
+                                {[
+                                  { label: 'Price / L',   comp: currentPrice ? fmt$(currentPrice) : '—',       trial: trialPrice ? fmt$(trialPrice) : '—',                              diff: null, diffColor: null },
+                                  { label: 'Litres / Wk', comp: compWklyAvg ? fmtL(compWklyAvg) : '—',          trial: liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—',                 diff: weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—',   diffColor: weekLitres != null ? (weekLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Litres / Yr', comp: compYearlyLitres ? fmtL(compYearlyLitres) : '—', trial: trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—',      diff: annualLitres != null ? `${annualLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(annualLitres))}` : '—', diffColor: annualLitres != null ? (annualLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Wk',   comp: compWeeklySpend != null ? fmt$(compWeeklySpend) : '—', trial: trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—',   diff: weekSpend != null ? (weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`) : '—', diffColor: weekSpend != null ? (weekSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Yr',   comp: compYearlySpend != null ? fmt$(compYearlySpend) : '—', trial: trialYearlySpend != null ? fmt$(trialYearlySpend) : '—',   diff: annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—', diffColor: annualSpend != null ? (annualSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                ].map((row, i, arr) => (
+                                  <tr key={row.label} style={{ background: i % 2 === 0 ? '#fafafa' : 'white' }}>
+                                    <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.label}</td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.comp}</td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.trial}</td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none', color: row.diffColor || '#94a3b8' }}>{row.diff ?? '—'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          /* ── Desktop: original wide table ── */
+                          <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                              <thead>
+                                <tr style={{ background: '#f8fafc' }}>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Comparison</th>
+                                  {['Price / L', 'Litres/Wk', 'Litres/Yr', 'Cost / Wk', 'Cost / Yr'].map(h => (
+                                    <th key={h} style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr style={{ background: '#fafafa' }}>
+                                  <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
+                                    {compOilBadge || <span style={{ fontSize: '11px', color: '#64748b' }}>{compOilName || '—'}</span>}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
+                                </tr>
+                                <tr style={{ background: '#eff6ff' }}>
+                                  <td style={{ padding: '8px 10px', borderBottom: '1px solid #dbeafe', whiteSpace: 'nowrap' }}>
+                                    {trialOilBadge || <span style={{ fontSize: '11px', color: '#1f2937' }}>{trialOilName || '—'}</span>}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
+                                </tr>
+                                {weekSpend !== null && (
+                                  <tr style={{ background: '#f8fafc' }}>
+                                    <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Difference</td>
+                                    <td style={{ padding: '8px 10px' }} />
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                      {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
+                                    </td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                      {annualLitres != null ? `${annualLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(annualLitres))}` : '—'}
+                                    </td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                      {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
+                                    </td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                      {annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        )
                       ) : (
                         <div style={{ fontSize: '12px', color: '#94a3b8' }}>Comparison data will appear once readings are recorded.</div>
                       )}
                     </div>
 
-                    {/* Right: goals */}
-                    <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px' }}>
+                    {/* Right: goals — on mobile appears FIRST (above comparison) */}
+                    <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px', paddingBottom: isDesktop ? '0' : '20px', marginBottom: isDesktop ? '0' : '20px', borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8', order: isDesktop ? 0 : 0 }}>
                       {rSecLabel('Trial Goals Achieved', 0)}
                       {trialGoalsList.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -4345,17 +4390,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
 
                   {/* ── Bottom: Internal Use section ── */}
-                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px', position: 'relative' }}>
-                    {/* Edit Findings button — absolute top-right */}
-                    <button
-                      onClick={() => { if (!summaryEditMode) setSummaryFindingsText(trialFindings); setSummaryEditMode(prev => !prev); }}
-                      style={{ position: 'absolute', top: '14px', right: '16px', background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Edit3 size={12} /> {summaryEditMode ? 'Cancel Edit' : 'Edit Findings'}
-                    </button>
+                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
+                    {/* Header row — button in normal flow, right-aligned */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                      <button
+                        onClick={() => { if (!summaryEditMode) setSummaryFindingsText(trialFindings); setSummaryEditMode(prev => !prev); }}
+                        style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Edit3 size={12} /> {summaryEditMode ? 'Cancel Edit' : 'Edit Findings'}
+                      </button>
+                    </div>
 
                     {/* Metadata grid — 7 fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '14px 20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 20px' }}>
                       {[
                         { label: 'Status', value: <TrialStatusBadge status={venue.trialStatus} /> },
                         { label: 'Decision date', value: venue.outcomeDate ? displayDate(venue.outcomeDate) : null },
