@@ -864,6 +864,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [manageSearchQuery, setManageSearchQuery] = useState(''); // Manage screen keyword search
   const [decisionModal, setDecisionModal] = useState(null); // venue object for won/lost decision popup
   const [custCodeModal, setCustCodeModal] = useState(null); // venue object for cust code popup
+  const [rowActionVenue, setRowActionVenue] = useState(null); // { venue, tabType } for pipeline row-click popup
   // ── Column toggle state ──
   const BDM_TRIAL_COLS = [
     { key: 'name', label: 'Venue Name', locked: true },
@@ -1577,12 +1578,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const filtered = colFilters.activeCount > 0 ? colFilters.applyFilters(allVenues, colAccessors) : allVenues;
     const rows = sortList(filtered);
     const isAccepted = tabType === 'accepted';
-    const showStart = true; // All tabs show start (estimated for pipeline, actual for others)
-    const showEnd = true; // All tabs show end
+    const showStart = true;
+    const showEnd = true;
     const showClosed = isArchiveTab(tabType);
     const showSold = isArchiveTab(tabType) || isAccepted;
     const showReason = isArchiveTab(tabType);
-    const showAction = !isArchiveTab(tabType) && !isAccepted;
     const showCustomerCode = isAccepted;
     const tc = (key) => trialVisibleCols.includes(key);
     return (
@@ -1590,20 +1590,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={{ marginBottom: '8px' }}>
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
-        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
-          <style>{`
-            .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-            .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
-            .bdm-table tbody tr { transition: background 0.1s; }
-            .bdm-table tbody tr:hover { background: #eef2ff; }
-            .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
-          `}</style>
+        <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
           <table className="bdm-table" style={{ width: '100%', tableLayout: 'auto' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
               {tc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-              {tc('competitor') && <FilterableTh colKey="competitor" label="Comp." options={getUniqueValues(allVenues, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+              {tc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(allVenues, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {tc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(allVenues, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
               {tc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(allVenues, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
               {tc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(allVenues, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
@@ -1616,7 +1609,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {showCustomerCode && tc('customerCode') && <FilterableTh colKey="customerCode" label="Cust Code" options={getUniqueValues(allVenues, colAccessors.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-              {showAction && <th style={{ textAlign: 'center', width: '100px' }}>Action</th>}
             </tr></thead>
             <tbody>
               {rows.length === 0 ? (
@@ -1629,15 +1621,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 const compTier = compOil ? (COMPETITOR_TIER_COLORS[compOil.tier] || COMPETITOR_TIER_COLORS.standard) : null;
                 const reasonObj = venue.trialReason ? trialReasons.find(r => r.key === venue.trialReason) : null;
                 return (
-                  <tr key={venue.id} onClick={tabType === 'pipeline' ? undefined : () => setSelectedTrialVenue(venue)} style={{ height: '34px', cursor: tabType === 'pipeline' ? 'default' : 'pointer' }}>
+                  <tr key={venue.id} onClick={() => setRowActionVenue({ venue, tabType })} style={{ height: '34px', cursor: 'pointer' }}>
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                     {tc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
-                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '72px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>}</td>}
+                    {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge oil={cookersOil} competitors={competitors} compact /></td>}
                     {tc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {tc('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '11px', color: '#1a428a', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                    {tc('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {showSold && tc('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${parseFloat(venue.soldPricePerLitre).toFixed(2)}` : '—'}</td>}
                     {showStart && tc('start') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal' }}>{displayDate(venue.trialStartDate) || '—'}</td>}
                     {showEnd && tc('end') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal' }}>{displayDate(venue.trialEndDate) || '—'}</td>}
@@ -1651,13 +1643,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{displayDate(venue.outcomeDate)}</td>}
                     {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
                     {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap' }}>{venue.customerCode || '—'}</td>}
-                    {showAction && (
-                      <td style={{ textAlign: 'center' }}>
-                        {tabType === 'pipeline' && <button onClick={(e) => { e.stopPropagation(); setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() }); }} style={{ padding: '5px 12px', background: BLUE, border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Start</button>}
-                        {tabType === 'active' && <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}><button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={{ padding: '5px 10px', background: BLUE, border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Log</button><button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={{ padding: '5px 10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: COLORS.textMuted, cursor: 'pointer' }}>End</button></div>}
-                        {tabType === 'pending' && <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}><button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={{ padding: '5px 10px', background: '#10b981', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Won</button><button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={{ padding: '5px 10px', background: '#ef4444', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>Lost</button></div>}
-                      </td>
-                    )}
                   </tr>
                 );
               })}
@@ -2369,23 +2354,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         </div>
 
-        {/* ── Bottom 3 KPIs — Last 90 days ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
-          {[
-            { label: 'Avg to Decision', icon: Clock, iconColor: '#64748b', value: avgDecision !== null ? `${avgDecision}d` : '—', delta: deltaDec, deltaSuffix: 'd', invert: true },
-            { label: 'Avg to Cust Code', icon: CheckCircle2, iconColor: '#059669', value: avgCustCodeDays !== null ? `${avgCustCodeDays}d` : '—' },
-            { label: 'Avg Sold XLFRY $/L', icon: BarChart3, iconColor: '#f59e0b', value: avgSoldXLFRY !== null ? `$${avgSoldXLFRY}` : '—' },
-          ].map(s => (
-            <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: isDesktop ? '16px' : '10px 8px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                <s.icon size={13} color={s.iconColor} />
-                <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{s.label}</span>
-              </div>
-              <div style={{ fontSize: isDesktop ? '28px' : '22px', fontWeight: '700', color: '#1f2937' }}>{s.value}</div>
-              <Delta value={s.delta} suffix={s.deltaSuffix} invert={s.invert} />
-            </div>
-          ))}
-        </div>
         </>}
 
 
@@ -2488,19 +2456,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={{ marginBottom: '8px' }}>
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
-        <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 320px)', paddingRight: '8px' }}>
+        <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 320px)' }}>
           <style>{`
             .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
             .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
             .bdm-table tbody tr { transition: background 0.1s; }
             .bdm-table tbody tr:hover { background: #eef2ff; }
             .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
-            .bdm-scroll::-webkit-scrollbar { width: 4px; }
-            .bdm-scroll::-webkit-scrollbar-track { background: transparent; }
-            .bdm-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; transition: background 0.2s; }
-            .bdm-scroll:hover::-webkit-scrollbar-thumb { background: #d1d5db; }
-            .bdm-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
-            .bdm-scroll:hover { scrollbar-color: #d1d5db transparent; }
           `}</style>
           <table className="bdm-table" style={{ width: '100%', tableLayout: 'fixed' }}>
             <thead><tr>
@@ -2750,7 +2712,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       { key: 'calendar', label: 'Trial Results',     icon: BarChart3 },
       { key: 'tpcal',    label: 'Trial Calendar',    icon: Calendar },
       { key: 'notes',    label: 'TPM Chart',          icon: TrendingUp },
-      ...(venue.trialEndDate ? [{ key: 'summary', label: 'Summary Report', icon: FileText }] : []),
+      ...(['pending', 'accepted', 'successful', 'unsuccessful'].includes(venue.trialStatus) ? [{ key: 'summary', label: 'Summary Report', icon: FileText }] : []),
     ];
 
     // Use outer state for edit form
@@ -2924,23 +2886,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><RotateCcw size={10} /> Back to Pipeline</button>
-            </>)}
-            {venue.trialStatus === 'pending' && (<>
-              <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{
-                padding: '5px 10px', background: '#059669', border: 'none', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><Trophy size={12} /> Won</button>
-              <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{
-                padding: '5px 10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: '#64748b', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><XCircle size={12} /> Lost</button>
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'active'); }} style={{
-                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><RotateCcw size={10} /> Back to Active</button>
             </>)}
             {((venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted') || (venue.trialStatus === 'successful' && !venue.customerCode)) && (
               <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }} style={{
@@ -3407,7 +3352,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: '90px' }} />
-                        <col />
+                        <col style={{ width: '160px' }} />
                       </colgroup>
                       <thead>
                         <tr>
@@ -3500,7 +3445,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
               return (
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Trial Calendar</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Calendar</div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      {[{ color: '#10b981', label: 'Fresh fill' }, { color: '#f59e0b', label: 'Top-up' }].map(l => (
+                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <div style={{ width: '14px', height: '14px', borderRadius: '3px', border: `2px solid ${l.color}`, background: 'white', flexShrink: 0 }} />
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', minWidth: `${minTableWidth}px`, tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px' }}>
@@ -3656,8 +3611,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
                       {[
-                        { color: '#10b981', label: 'Fresh fill', round: true },
-                        { color: '#f59e0b', label: 'Top-up', round: true },
+                        { color: '#3b82f6', label: 'Fresh fill', round: true },
+                        { color: '#f97316', label: 'Top-up', round: true },
                       ].map(l => (
                         <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, flexShrink: 0 }} />
@@ -3707,7 +3662,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             {!d.isFuture && (d.tpm != null || d.missed) && (() => {
                               const barIsFresh = d.isFresh;
                               const barIsTopUp = d.litres > 0 && !d.isFresh;
-                              const barStroke = barIsFresh ? '#10b981' : barIsTopUp ? '#f59e0b' : 'none';
+                              const barStroke = barIsFresh ? '#3b82f6' : barIsTopUp ? '#f97316' : 'none';
                               const barSW = (barIsFresh || barIsTopUp) ? 2 : 0;
                               return (
                                 <rect
@@ -3730,7 +3685,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             {/* Litres bubble — single line e.g. "12L" */}
                             {d.litres > 0 && !d.isFuture && (() => {
                               const bubbleY = d.tpm != null ? barY - BUBBLE_R - 5 : TOP_PAD - BUBBLE_R - 2;
-                              const bColor = d.isFresh ? '#10b981' : '#f59e0b';
+                              const bColor = d.isFresh ? '#3b82f6' : '#f97316';
                               return (
                                 <g>
                                   <circle cx={cx} cy={bubbleY} r={BUBBLE_R} fill={bColor} />
@@ -3889,6 +3844,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: `${mt}px` }}>{text}</div>
               );
 
+              // Internal use metadata
+              const trialCreatedDate = venue.trialCreatedAt ? venue.trialCreatedAt.split('T')[0] : null;
+              const lastRecDate = venueReadings.length > 0
+                ? venueReadings.reduce((max, r) => r.readingDate > max ? r.readingDate : max, venueReadings[0].readingDate)
+                : null;
+              const lastEditedDate = venue.updatedAt ? venue.updatedAt.split('T')[0] : null;
+              const daysToDecision = venue.trialEndDate && venue.outcomeDate
+                ? daysBetween(venue.trialEndDate, venue.outcomeDate)
+                : (venue.trialEndDate && venue.trialStatus === 'pending' ? daysBetween(venue.trialEndDate, todayStr) : null);
+              const customerCodeSavedDate = venue.customerCodeSavedAt ? venue.customerCodeSavedAt.split('T')[0] : null;
+              const daysToCustCode = venue.outcomeDate && customerCodeSavedDate
+                ? daysBetween(venue.outcomeDate, customerCodeSavedDate)
+                : (venue.outcomeDate && venue.trialStatus === 'accepted' ? daysBetween(venue.outcomeDate, todayStr) : null);
+
               return (
                 <div style={{ padding: '0 24px' }}>
 
@@ -4045,10 +4014,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   {/* ── Second divider ── */}
                   <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
 
-                  {/* ── Bottom: Trial outcome details (BDM-only section) ── */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Trial Outcome</div>
+                  {/* ── Bottom: Internal Use section ── */}
+                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
+                    {/* Header row: label + edit findings button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Internal Use</div>
                       <button
                         onClick={() => { if (!summaryEditMode) setSummaryFindingsText(trialFindings); setSummaryEditMode(prev => !prev); }}
                         style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -4056,8 +4026,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <Edit3 size={12} /> {summaryEditMode ? 'Cancel Edit' : 'Edit Findings'}
                       </button>
                     </div>
+
+                    {/* Save button when in edit mode */}
                     {summaryEditMode && (
-                      <div style={{ marginBottom: '16px' }}>
+                      <div style={{ marginBottom: '14px' }}>
                         <button onClick={async () => {
                           const existingLines = (venue.trialNotes || '').split('\n');
                           const firstMatch = existingLines.find(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
@@ -4077,26 +4049,32 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
                     )}
 
-                    {/* Pending: show Won / Lost buttons */}
-                    {venue.trialStatus === 'pending' && (
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                        <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                          <Trophy size={13} /> Won
-                        </button>
-                        <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#ef4444', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
-                          <XCircle size={13} /> Lost
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Accepted: won, needs customer code */}
-                    {venue.trialStatus === 'accepted' && (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '700', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '3px 10px' }}>Accepted</span>
-                          {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
+                    {/* Metadata grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 20px' }}>
+                      {[
+                        { label: 'Status', value: <TrialStatusBadge status={venue.trialStatus} /> },
+                        { label: 'Decision date', value: venue.outcomeDate ? displayDate(venue.outcomeDate) : null },
+                        { label: 'Days to decision', value: daysToDecision !== null ? `${daysToDecision} days` : null },
+                        { label: 'Sold price / L', value: venue.soldPricePerLitre ? `$${parseFloat(venue.soldPricePerLitre).toFixed(2)}` : null },
+                        { label: 'Customer code', value: venue.customerCode || null },
+                        { label: 'Days to cust code', value: daysToCustCode !== null ? `${daysToCustCode} days` : null },
+                        { label: 'Outcome reason', value: reasonLabel || null },
+                        { label: 'Created', value: trialCreatedDate ? displayDate(trialCreatedDate) : null },
+                        { label: 'Last recording', value: lastRecDate ? displayDate(lastRecDate) : null },
+                        { label: 'Last edited', value: lastEditedDate ? displayDate(lastEditedDate) : null },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label}</div>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937', display: 'flex', alignItems: 'center' }}>
+                            {value !== null && value !== undefined ? value : <span style={{ color: '#cbd5e1' }}>—</span>}
+                          </div>
                         </div>
-                        {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 12px 0' }}>{reasonLabel}</p>}
+                      ))}
+                    </div>
+
+                    {/* Customer code input — only for accepted status */}
+                    {venue.trialStatus === 'accepted' && (
+                      <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
                         <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Enter Customer Code</div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <input type="text" value={summaryCustCode} onChange={e => setSummaryCustCode(e.target.value)} placeholder="e.g. CKR-0123"
@@ -4106,34 +4084,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             Save
                           </button>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Successful: won + customer code */}
-                    {venue.trialStatus === 'successful' && (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '700', background: '#d1fae5', color: '#065f46', border: '1px solid #6ee7b7', borderRadius: '6px', padding: '3px 10px' }}>Successful</span>
-                          {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
-                        </div>
-                        {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 10px 0' }}>{reasonLabel}</p>}
-                        {venue.customerCode && (
-                          <div>
-                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Customer Code</div>
-                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a' }}>{venue.customerCode}</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Unsuccessful */}
-                    {venue.trialStatus === 'unsuccessful' && (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '700', background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '6px', padding: '3px 10px' }}>Unsuccessful</span>
-                          {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
-                        </div>
-                        {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0' }}>{reasonLabel}</p>}
                       </div>
                     )}
                   </div>
@@ -4282,6 +4232,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         button, input, select, textarea { font-family: inherit; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .bdm-scroll::-webkit-scrollbar { width: 4px; }
+        .bdm-scroll::-webkit-scrollbar-track { background: transparent; }
+        .bdm-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; transition: background 0.2s; }
+        .bdm-scroll:hover::-webkit-scrollbar-thumb { background: #d1d5db; }
+        .bdm-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        .bdm-scroll:hover { scrollbar-color: #d1d5db transparent; }
+        .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+        .bdm-table tbody tr { transition: background 0.1s; }
+        .bdm-table tbody tr:hover { background: #eef2ff; }
+        .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
       `}</style>
 
       {/* ── HEADER ── */}
@@ -4456,7 +4417,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div className="bdm-scroll" style={{ flex: 1, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <div style={{
               ...(isDesktop
                 ? { padding: '20px 16px 40px' }
@@ -4672,6 +4633,59 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         </div>
       )}
+
+      {rowActionVenue && (() => {
+        const { venue: rv, tabType: rt } = rowActionVenue;
+        const btnPrimary = { padding: '10px 16px', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: BLUE };
+        const btnSecondary = { padding: '10px 16px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#374151', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: 'white' };
+        const btnGreen = { ...btnPrimary, background: '#10b981' };
+        const btnRed = { ...btnPrimary, background: '#ef4444' };
+        const close = () => setRowActionVenue(null);
+        return (
+          <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '14px', padding: '20px', width: '100%', maxWidth: '320px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{rv.name}</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '16px', textTransform: 'capitalize' }}>{rt} stage</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Manage trial — all tabs */}
+                <button style={btnSecondary} onClick={() => { close(); setManageVenueId(rv.id); setActiveTab('manage'); }}>
+                  <ClipboardList size={14} /> Manage trial
+                </button>
+                {/* Pipeline: Start trial */}
+                {rt === 'pipeline' && (
+                  <button style={btnPrimary} onClick={() => { close(); setReadingModal({ ...rv, startingTrial: true, trialStartDate: rv.trialStartDate || getTodayString() }); }}>
+                    <Play size={14} /> Start trial
+                  </button>
+                )}
+                {/* Active: Log reading + End trial */}
+                {rt === 'active' && (<>
+                  <button style={btnPrimary} onClick={() => { close(); setReadingModal(rv); }}>
+                    <BarChart3 size={14} /> Log reading
+                  </button>
+                  <button style={btnSecondary} onClick={() => { close(); setEndTrialModal(rv); }}>
+                    <XCircle size={14} /> End trial
+                  </button>
+                </>)}
+                {/* Pending: Successful + Unsuccessful */}
+                {rt === 'pending' && (<>
+                  <button style={btnGreen} onClick={() => { close(); setCloseTrialModal({ venue: rv, outcome: 'successful' }); }}>
+                    <Trophy size={14} /> Successful
+                  </button>
+                  <button style={btnRed} onClick={() => { close(); setCloseTrialModal({ venue: rv, outcome: 'unsuccessful' }); }}>
+                    <XCircle size={14} /> Unsuccessful
+                  </button>
+                </>)}
+                {/* Accepted: Enter cust code */}
+                {rt === 'accepted' && (
+                  <button style={btnGreen} onClick={() => { close(); setCustCodeModal(rv); }}>
+                    <Award size={14} /> Enter cust code
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {selectedTrialVenue && (
         <TrialDetailModal
