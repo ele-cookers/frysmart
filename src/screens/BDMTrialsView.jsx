@@ -3630,17 +3630,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <div style={{ overflowX: 'auto', ...( (!isDesktop && showTrialTableModal) ? { flex: 1, background: 'white', overflowY: 'auto' } : {}) }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '36px' }} />  {/* # */}
+                        <col style={{ width: '32px' }} />  {/* # */}
                         <col style={{ width: '56px' }} />  {/* Day */}
                         <col style={{ width: '92px' }} />  {/* Date */}
                         <col style={{ width: '58px' }} />  {/* TPM */}
                         <col style={{ width: '60px' }} />  {/* Set°C */}
-                        <col style={{ width: '78px' }} />  {/* Actual°C */}
-                        <col style={{ width: '60px' }} />  {/* -/+°C */}
+                        <col style={{ width: '74px' }} />  {/* Actual°C */}
+                        <col style={{ width: '58px' }} />  {/* -/+°C */}
                         <col style={{ width: '90px' }} />  {/* Fill Type */}
-                        <col style={{ width: '50px' }} />  {/* Litres */}
+                        <col style={{ width: '46px' }} />  {/* Litres */}
                         <col style={{ width: '78px' }} />  {/* Filtered */}
-                        <col style={{ width: '94px' }} />  {/* Food */}
+                        <col style={{ width: '108px' }} /> {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
