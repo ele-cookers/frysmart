@@ -1823,12 +1823,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       {/* Trial Goals */}
       {(() => {
         const GOAL_OPTIONS = [
-          { key: 'save-money', label: 'Save money / reduce costs' },
-          { key: 'reduce-consumption', label: 'Reduce oil consumption & waste' },
-          { key: 'food-quality', label: 'Better food quality & taste' },
-          { key: 'food-colour', label: 'Improve food colour' },
-          { key: 'reduce-changes', label: 'Reduce fryer change frequency' },
-          { key: 'simplify-ops', label: 'Simplify kitchen operations' },
+          { key: 'save-money',      label: 'Save money' },
+          { key: 'reduce-waste',    label: 'Reduce oil waste' },
+          { key: 'food-quality',    label: 'Better food quality' },
+          { key: 'food-colour',     label: 'Improve food colour' },
+          { key: 'reduce-changes',  label: 'Fewer fryer changes' },
         ];
         const toggleGoal = (key) => setNewTrialForm(f => ({
           ...f,
@@ -1839,18 +1838,28 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={S.field}>
             <label style={S.label}>TRIAL GOALS <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(select all that apply)</span></label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {GOAL_OPTIONS.map(opt => {
                 const selected = newTrialForm.trialGoals.includes(opt.key);
                 return (
                   <button key={opt.key} type="button" onClick={() => toggleGoal(opt.key)} style={{
-                    padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '10px 14px', borderRadius: '8px', width: '100%', textAlign: 'left',
                     cursor: 'pointer', transition: 'all 0.15s',
                     border: selected ? '1.5px solid #1a428a' : '1.5px solid #e2e8f0',
                     background: selected ? '#eff6ff' : 'white',
                     color: selected ? '#1a428a' : '#64748b',
+                    fontSize: '13px', fontWeight: selected ? '600' : '500',
                   }}>
-                    {selected ? '✓ ' : ''}{opt.label}
+                    <div style={{
+                      width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                      background: selected ? '#1a428a' : 'white',
+                      border: `2px solid ${selected ? '#1a428a' : '#cbd5e1'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {selected && <Check size={11} color="white" strokeWidth={3} />}
+                    </div>
+                    {opt.label}
                   </button>
                 );
               })}
@@ -2792,7 +2801,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const secHeader = { fontSize: '11px', fontWeight: '700', color: '#1a428a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', paddingBottom: '6px', borderBottom: '2px solid #eff6ff' };
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
-              const GOAL_LABELS = { 'save-money': 'Save money / reduce costs', 'reduce-consumption': 'Reduce oil consumption & waste', 'food-quality': 'Better food quality & taste', 'food-colour': 'Improve food colour', 'reduce-changes': 'Reduce fryer change frequency', 'simplify-ops': 'Simplify kitchen operations' };
+              const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes' };
               const statCard = (label, value, sub) => (
                 <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '12px 14px' }}>
                   <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>{label}</div>
@@ -2885,11 +2894,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {parsedGoals.length > 0 && (
                         <div style={{ marginBottom: '24px' }}>
                           <div style={secHeader}>Trial Goals</div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {parsedGoals.map(g => (
-                              <span key={g} style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', background: '#eff6ff', color: '#1a428a', border: '1px solid #bfdbfe' }}>
-                                {GOAL_LABELS[g] || g}
-                              </span>
+                              <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <Check size={10} color="white" strokeWidth={3} />
+                                </div>
+                                <span style={{ fontSize: '13px', fontWeight: '600', color: '#1a428a' }}>{GOAL_LABELS[g] || g}</span>
+                              </div>
                             ))}
                           </div>
                         </div>
