@@ -3826,9 +3826,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const yMax = recordedTPMs.length > 0 ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, 24) : 24;
 
               // SVG layout constants — taller + wider chart
-              const CHART_H = 210;
+              const CHART_H = 235;
               const TOP_PAD = 44;
-              const BOT_PAD = 48;
+              const BOT_PAD = 60;
               const LEFT_PAD = 48;
               const RIGHT_PAD = 24;
               const BAR_W = 40;
@@ -3899,7 +3899,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
-                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="280" preserveAspectRatio="xMinYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
+                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible', width: '100%' }}>
 
                       {/* Y-axis gridlines + labels */}
                       {yTicks.map(v => {
