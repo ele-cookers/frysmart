@@ -3081,28 +3081,32 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {/* Top sub-tab panel */}
         <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
           {/* Top tab bar */}
-          <div style={{ display: 'flex', background: '#eef2f8', borderBottom: '2px solid #d1dce8' }}>
+          <div style={{ overflowX: 'auto', borderBottom: '2px solid #d1dce8', background: '#eef2f8' }}>
+            <div style={{ display: 'flex', minWidth: 'fit-content' }}>
             {manageTabs.map(tab => {
               const TabIcon = tab.icon;
               const isActive = manageSubTab === tab.key;
+              const shortLabels = { details: 'Details', calendar: 'Results', tpcal: 'Calendar', notes: 'Chart', summary: 'Summary' };
               return (
                 <button key={tab.key} onClick={() => setManageSubTab(tab.key)} style={{
-                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                  padding: '12px 8px', border: 'none',
+                  flex: isDesktop ? 1 : 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                  padding: isDesktop ? '12px 8px' : '11px 14px', border: 'none',
                   background: isActive ? '#1a428a' : 'transparent',
                   color: isActive ? 'white' : '#64748b',
-                  fontSize: '12px', fontWeight: isActive ? '700' : '500',
+                  fontSize: isDesktop ? '12px' : '11px', fontWeight: isActive ? '700' : '500',
                   cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
                 }}>
                   <TabIcon size={13} />
-                  {tab.label}
+                  {isDesktop ? tab.label : shortLabels[tab.key] || tab.label}
                 </button>
               );
             })}
+            </div>
           </div>
 
           {/* Tab content */}
-          <div style={{ padding: '20px' }}>
+          <div style={{ padding: isDesktop ? '20px' : '14px 12px' }}>
 
             {/* ── Pre-trial Details ── */}
             {manageSubTab === 'details' && (() => {
@@ -3146,7 +3150,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>{children}</div>
               );
               return (
-                <div style={{ padding: '0 24px' }}>
+                <div style={{ padding: isDesktop ? '0 24px' : '0' }}>
                   {/* Header row: "Pre-Trial Details" title + edit/save buttons on same line */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Pre-Trial Details</div>
@@ -3170,11 +3174,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </div>
 
                   {!mEditing ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', alignItems: 'start' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '0', alignItems: 'start' }}>
 
                       {/* ── Left: 3-column detail grid ── */}
-                      <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
+                      <div style={{
+                        paddingRight: isDesktop ? '28px' : '0',
+                        borderRight: isDesktop ? '1px solid #f0f4f8' : 'none',
+                        borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8',
+                        paddingBottom: isDesktop ? '0' : '20px',
+                        marginBottom: isDesktop ? '0' : '20px',
+                        display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+                      }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '16px 20px' }}>
                           {/* Row 1: Type | Venue name (spans 2 cols) */}
                           {fld('Type', typeBadge)}
                           <div style={{ gridColumn: 'span 2' }}>
@@ -3222,7 +3233,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
 
                       {/* ── Right: notes + goals ── */}
-                      <div style={{ paddingLeft: '28px' }}>
+                      <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px' }}>
                         {sectionLabel('What do we know going into this trial?')}
                         {initialNote
                           ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
@@ -4068,17 +4079,23 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 : (venue.outcomeDate && venue.trialStatus === 'accepted' ? daysBetween(venue.outcomeDate, todayStr) : null);
 
               return (
-                <div style={{ padding: '0 24px' }}>
+                <div style={{ padding: isDesktop ? '0 24px' : '0' }}>
 
                   {/* ── Title ── */}
                   <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '24px' }}>Summary Report</div>
 
                   {/* ── GRID 1: details left | notes + findings right ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '0' }}>
 
                     {/* Left: details grid */}
-                    <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
+                    <div style={{
+                      paddingRight: isDesktop ? '28px' : '0',
+                      borderRight: isDesktop ? '1px solid #f0f4f8' : 'none',
+                      borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8',
+                      paddingBottom: isDesktop ? '0' : '20px',
+                      marginBottom: isDesktop ? '0' : '20px',
+                    }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '16px 20px' }}>
                         {/* Row 1: Type | Venue name (spans 2 cols) */}
                         {sfld('Type', typeBadge)}
                         <div style={{ gridColumn: 'span 2' }}>
@@ -4118,7 +4135,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* Right: what we know + findings */}
-                    <div style={{ paddingLeft: '28px' }}>
+                    <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px' }}>
                       {rSecLabel('What do we know going into this trial?', 0)}
                       {initialNote
                         ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
@@ -4163,10 +4180,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
 
                   {/* ── GRID 2: comparison left | goals right ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '0' }}>
 
                     {/* Left: comparison table */}
-                    <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
+                    <div style={{
+                      paddingRight: isDesktop ? '28px' : '0',
+                      borderRight: isDesktop ? '1px solid #f0f4f8' : 'none',
+                      borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8',
+                      paddingBottom: isDesktop ? '0' : '20px',
+                      marginBottom: isDesktop ? '0' : '20px',
+                    }}>
                       {(compWklyAvg || liveTrialAvg !== null) ? (
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
@@ -4226,7 +4249,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* Right: goals */}
-                    <div style={{ paddingLeft: '28px' }}>
+                    <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px' }}>
                       {rSecLabel('Trial Goals Achieved', 0)}
                       {trialGoalsList.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -4266,7 +4289,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </button>
 
                     {/* Metadata grid — 7 fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '14px 20px' }}>
                       {[
                         { label: 'Status', value: <TrialStatusBadge status={venue.trialStatus} /> },
                         { label: 'Decision date', value: venue.outcomeDate ? displayDate(venue.outcomeDate) : null },
