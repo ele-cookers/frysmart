@@ -1047,7 +1047,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [loading, setLoading] = useState(true);
 
   // ── UI state ──
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('actions');
   // archiveSubTab removed — Successful/Unsuccessful are now separate top-level tabs
   // bdmView removed — responsive design uses isDesktop (window.innerWidth >= 768)
   const [sortNewest, setSortNewest] = useState(false); // false = A-Z, true = most recent
@@ -2064,8 +2064,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Est. Start Date + Est. End Date — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px' }}>
-        <div style={S.field}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ ...S.field, minWidth: 0 }}>
           <label style={S.label}>EST. START DATE</label>
           <input type="date" value={newTrialForm.estStartDate}
             onChange={e => {
@@ -2084,7 +2084,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
-        <div style={S.field}>
+        <div style={{ ...S.field, minWidth: 0 }}>
           <label style={S.label}>EST. END DATE</label>
           <input type="date" value={newTrialForm.estEndDate}
             onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
@@ -2390,8 +2390,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     }}>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
                       <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
-                      {daysIn != null && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>Day {daysIn}</span>}
-                    </div>
+                              </div>
                   );
                 })}
                 {awaitingRecording.length > 3 && (
@@ -2429,8 +2428,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     }}>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#eab308', flexShrink: 0 }} />
                       <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
-                      {daysSinceEnd != null && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>{daysSinceEnd}d</span>}
-                    </div>
+                              </div>
                   );
                 })}
                 {pendingOutcomeTrials.length > 3 && (
@@ -2468,7 +2466,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   }}>
                     <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
                     <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
-                    {daysSinceAccepted != null && <span style={{ fontSize: '9px', color: COLORS.textMuted, flexShrink: 0 }}>{daysSinceAccepted}d</span>}
                   </div>
                   );
                 })}
@@ -3852,7 +3849,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const RIGHT_PAD = 24;
               const BAR_W = 40;
               const STEP = 54;
-              const N = chartData.length;
+              // On mobile, trim future days so the chart stays compact (no large empty right side)
+              const visibleChartData = isDesktop ? chartData : (() => {
+                const todayIdx = chartData.findIndex(d => d.dateStr === todayStr);
+                const cutoff = todayIdx >= 0 ? Math.min(chartData.length, todayIdx + 3) : chartData.length;
+                return chartData.slice(0, cutoff);
+              })();
+              const N = visibleChartData.length;
               const SVG_W = LEFT_PAD + N * STEP + RIGHT_PAD;
               const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
 
@@ -3940,7 +3943,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 3" opacity={0.5} />
 
                       {/* Bars + bubbles + x-labels */}
-                      {chartData.map((d, idx) => {
+                      {visibleChartData.map((d, idx) => {
                         const x = LEFT_PAD + idx * STEP;
                         const cx = x + BAR_W / 2;
                         const barH = d.tpm != null ? Math.max((d.tpm / yMax) * CHART_H, 3) : 0;
@@ -4871,42 +4874,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <Plus size={18} strokeWidth={2.5} />
                 <span>New</span>
               </button>
-              {/* Dashboard */}
-              <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
+              {/* Actions */}
+              <button onClick={() => { setActiveTab('actions'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                 padding: '10px 4px 8px', border: 'none', background: 'transparent',
-                borderBottom: activeTab === 'dashboard' ? `3px solid ${BLUE}` : '3px solid transparent',
-                color: activeTab === 'dashboard' ? BLUE : '#94a3b8',
-                fontSize: '10px', fontWeight: activeTab === 'dashboard' ? '700' : '500',
+                borderBottom: activeTab === 'actions' ? `3px solid ${BLUE}` : '3px solid transparent',
+                color: activeTab === 'actions' ? BLUE : '#94a3b8',
+                fontSize: '10px', fontWeight: activeTab === 'actions' ? '700' : '500',
                 cursor: 'pointer', transition: 'all 0.15s',
               }}>
-                <BarChart3 size={18} />
-                <span>Dashboard</span>
+                <Bell size={18} />
+                <span>Actions</span>
               </button>
-              {/* Actions */}
-              {(() => {
-                const actionCount = pipelineTrials.length + awaitingRecordingToday.length + pendingOutcomeTrials.length + acceptedTrials.length;
-                return (
-                  <button onClick={() => { setActiveTab('actions'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
-                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
-                    padding: '10px 4px 8px', border: 'none', background: 'transparent',
-                    borderBottom: activeTab === 'actions' ? `3px solid ${BLUE}` : '3px solid transparent',
-                    color: activeTab === 'actions' ? BLUE : '#94a3b8',
-                    fontSize: '10px', fontWeight: activeTab === 'actions' ? '700' : '500',
-                    cursor: 'pointer', transition: 'all 0.15s', position: 'relative',
-                  }}>
-                    <Bell size={18} />
-                    <span>Actions</span>
-                    {actionCount > 0 && (
-                      <span style={{
-                        position: 'absolute', top: '4px', right: 'calc(50% - 20px)',
-                        background: activeTab === 'actions' ? BLUE : '#94a3b8', color: 'white',
-                        padding: '1px 5px', borderRadius: '8px', fontSize: '9px', fontWeight: '700', minWidth: '16px', textAlign: 'center',
-                      }}>{actionCount}</span>
-                    )}
-                  </button>
-                );
-              })()}
               {/* Trials */}
               <button onClick={() => { if (!isTrialsTab) setActiveTab('pipeline'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
@@ -4914,17 +4893,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 borderBottom: isTrialsTab ? `3px solid ${BLUE}` : '3px solid transparent',
                 color: isTrialsTab ? BLUE : '#94a3b8',
                 fontSize: '10px', fontWeight: isTrialsTab ? '700' : '500',
-                cursor: 'pointer', transition: 'all 0.15s', position: 'relative',
+                cursor: 'pointer', transition: 'all 0.15s',
               }}>
                 <ClipboardList size={18} />
                 <span>Trials</span>
-                {totalTrialsCount > 0 && (
-                  <span style={{
-                    position: 'absolute', top: '4px', right: 'calc(50% - 20px)',
-                    background: isTrialsTab ? BLUE : '#94a3b8', color: 'white',
-                    padding: '1px 5px', borderRadius: '8px', fontSize: '9px', fontWeight: '700', minWidth: '16px', textAlign: 'center',
-                  }}>{totalTrialsCount}</span>
-                )}
               </button>
               {/* Manage */}
               <button onClick={() => { setActiveTab('manage'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
@@ -4937,6 +4909,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               }}>
                 <Edit3 size={18} />
                 <span>Manage</span>
+              </button>
+              {/* Dashboard */}
+              <button onClick={() => { setActiveTab('dashboard'); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '10px 4px 8px', border: 'none', background: 'transparent',
+                borderBottom: activeTab === 'dashboard' ? `3px solid ${BLUE}` : '3px solid transparent',
+                color: activeTab === 'dashboard' ? BLUE : '#94a3b8',
+                fontSize: '10px', fontWeight: activeTab === 'dashboard' ? '700' : '500',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}>
+                <BarChart3 size={18} />
+                <span>Dashboard</span>
               </button>
             </div>
 
@@ -4959,13 +4943,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       }}>
                         <tab.icon size={13} />
                         {tab.label}
-                        {tab.count > 0 && (
-                          <span style={{
-                            background: active ? 'rgba(255,255,255,0.3)' : '#f1f5f9',
-                            color: active ? 'white' : '#64748b',
-                            padding: '1px 6px', borderRadius: '10px', fontSize: '10px', fontWeight: '600',
-                          }}>{tab.count}</span>
-                        )}
                       </button>
                     );
                   })}
