@@ -3630,16 +3630,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '36px' }} />  {/* # */}
-                        <col style={{ width: '48px' }} />  {/* Day */}
-                        <col style={{ width: '88px' }} />  {/* Date */}
-                        <col style={{ width: '54px' }} />  {/* TPM */}
-                        <col style={{ width: '56px' }} />  {/* Set°C */}
-                        <col style={{ width: '74px' }} />  {/* Actual°C */}
-                        <col style={{ width: '56px' }} />  {/* -/+°C */}
+                        <col style={{ width: '52px' }} />  {/* Day */}
+                        <col style={{ width: '92px' }} />  {/* Date */}
+                        <col style={{ width: '58px' }} />  {/* TPM */}
+                        <col style={{ width: '60px' }} />  {/* Set°C */}
+                        <col style={{ width: '78px' }} />  {/* Actual°C */}
+                        <col style={{ width: '60px' }} />  {/* -/+°C */}
                         <col style={{ width: '90px' }} />  {/* Fill Type */}
                         <col style={{ width: '50px' }} />  {/* Litres */}
                         <col style={{ width: '78px' }} />  {/* Filtered */}
-                        <col style={{ width: '116px' }} /> {/* Food */}
+                        <col style={{ width: '102px' }} /> {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
