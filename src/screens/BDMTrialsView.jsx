@@ -1723,7 +1723,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Avg Litres/Week + Fryer Count — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT AVG LITRES/WEEK {req}</label>
           <input type="number" min="0" step="1" value={newTrialForm.avgLitresPerWeek}
@@ -1736,48 +1736,48 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             </div>
           )}
         </div>
-        <div style={S.field}>
-          <label style={S.label}>FRYER COUNT {req}</label>
-          <input type="number" min="1" max="20" value={newTrialForm.fryerCount}
-            onChange={e => {
-              const count = parseInt(e.target.value) || 1;
-              setNewTrialForm(f => {
-                // Keep existing volumes, add/remove as needed
-                const vols = { ...f.fryerVolumes };
-                for (let i = 1; i <= count; i++) { if (!vols[i]) vols[i] = ''; }
-                Object.keys(vols).forEach(k => { if (parseInt(k) > count) delete vols[k]; });
-                return { ...f, fryerCount: e.target.value, fryerVolumes: vols };
-              });
-            }}
-            style={inputStyle} required
-            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+        {/* Right column: Fryer Count + volumes stacked below */}
+        <div>
+          <div style={S.field}>
+            <label style={S.label}>FRYER COUNT {req}</label>
+            <input type="number" min="1" max="20" value={newTrialForm.fryerCount}
+              onChange={e => {
+                const count = parseInt(e.target.value) || 1;
+                setNewTrialForm(f => {
+                  const vols = { ...f.fryerVolumes };
+                  for (let i = 1; i <= count; i++) { if (!vols[i]) vols[i] = ''; }
+                  Object.keys(vols).forEach(k => { if (parseInt(k) > count) delete vols[k]; });
+                  return { ...f, fryerCount: e.target.value, fryerVolumes: vols };
+                });
+              }}
+              style={inputStyle} required
+              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+          </div>
+          {parseInt(newTrialForm.fryerCount) > 0 && (
+            <div style={{ ...S.field, marginTop: '2px' }}>
+              <label style={S.label}>FRYER VOLUMES</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
+                  <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '52px', flexShrink: 0 }}>Fryer {fn}</div>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input
+                        type="number" min="1" step="1"
+                        value={newTrialForm.fryerVolumes[fn] ?? ''}
+                        onChange={e => setNewTrialForm(f => ({ ...f, fryerVolumes: { ...f.fryerVolumes, [fn]: e.target.value } }))}
+                        placeholder="20"
+                        style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
+                        onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                      />
+                      <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Per-fryer volume fields — 2-column grid matching form layout */}
-      {parseInt(newTrialForm.fryerCount) > 0 && (
-        <div style={S.field}>
-          <label style={S.label}>FRYER VOLUMES</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
-              <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', minWidth: '54px' }}>Fryer {fn}</div>
-                <div style={{ position: 'relative', flex: 1 }}>
-                  <input
-                    type="number" min="1" step="1"
-                    value={newTrialForm.fryerVolumes[fn] ?? ''}
-                    onChange={e => setNewTrialForm(f => ({ ...f, fryerVolumes: { ...f.fryerVolumes, [fn]: e.target.value } }))}
-                    placeholder="20"
-                    style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
-                    onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                  />
-                  <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Est. Start Date + Est. End Date — side by side on desktop */}
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
@@ -1828,6 +1828,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           { key: 'food-quality',    label: 'Better food quality' },
           { key: 'food-colour',     label: 'Improve food colour' },
           { key: 'reduce-changes',  label: 'Fewer fryer changes' },
+          { key: 'extend-life',     label: 'Extend oil life' },
         ];
         const toggleGoal = (key) => setNewTrialForm(f => ({
           ...f,
@@ -2800,7 +2801,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const trialCreatedDate = venue.trialCreatedAt ? venue.trialCreatedAt.split('T')[0] : null;
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
-              const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes' };
+              const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes', 'extend-life': 'Extend oil life' };
               const currentSupplierEl = comp ? <CompetitorPill comp={comp} /> : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>;
               // Clean label-value field helper
               const fld = (label, value) => (
@@ -2809,8 +2810,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minHeight: '22px' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                 </div>
               );
-              const divider = <div style={{ borderTop: '1px solid #f1f5f9', margin: '20px 0' }} />;
-              const sectionLabel = (text) => <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '14px' }}>{text}</div>;
+              const divider = <div style={{ borderTop: '1px solid #f1f5f9', margin: '20px 0 20px 30px' }} />;
+              // Section wrapper: vertical label on left + content on right
+              const section = (label, content) => (
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                  <div style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: '9px', fontWeight: '700', color: '#c0cad6', textTransform: 'uppercase', letterSpacing: '0.8px', flexShrink: 0, paddingBottom: '2px', userSelect: 'none' }}>{label}</div>
+                  <div style={{ flex: 1 }}>{content}</div>
+                </div>
+              );
               return (
                 <div>
                   {/* Header row: trial ID + edit button */}
@@ -2845,76 +2852,83 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </div>
 
                   {!mEditing ? (
-                    <div>
+                    <div style={{ padding: '0 8px' }}>
 
-                      {/* ── Their current setup ── */}
-                      {sectionLabel('Their current setup')}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginBottom: '4px' }}>
-                        {fld('Supplier', currentSupplierEl)}
-                        {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
-                        {fld('Price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
-                      </div>
-
-                      {divider}
-
-                      {/* ── Cookers trial ── */}
-                      {sectionLabel('Cookers trial')}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginBottom: '4px' }}>
-                        {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
-                        {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
-                        <div />
-                      </div>
+                      {/* ── Current setup ── */}
+                      {section('Current setup',
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                          {fld('Supplier', currentSupplierEl)}
+                          {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
+                          {fld('Price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
+                        </div>
+                      )}
 
                       {divider}
 
                       {/* ── Usage & fryers ── */}
-                      {sectionLabel('Usage & fryers')}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
-                        {fld('Avg litres / week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
-                        {fld('Volume bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
-                        {fld('Fryer count', fc ? String(fc) : null)}
-                      </div>
-                      {/* Per-fryer volumes if recorded */}
-                      {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '16px', marginTop: '16px' }}>
-                          {Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
-                            const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
-                            return vol ? fld(`Fryer ${fn}`, `${vol} L`) : null;
-                          })}
+                      {section('Usage & fryers',
+                        <div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                            {fld('Avg litres / week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                            {fld('Volume bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
+                            {fld('Fryer count', fc ? String(fc) : null)}
+                          </div>
+                          {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
+                              {Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
+                                const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
+                                return vol ? fld(`Fryer ${fn}`, `${vol} L`) : null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {divider}
+
+                      {/* ── Cookers trial ── */}
+                      {section('Cookers trial',
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                          {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
+                          {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
+                          <div />
                         </div>
                       )}
 
                       {divider}
 
                       {/* ── Trial timeline ── */}
-                      {sectionLabel('Trial timeline')}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
-                        {fld('Created', trialCreatedDate ? displayDate(trialCreatedDate) : null)}
-                        {fld(hasStarted ? 'Start date' : 'Est. start date', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
-                        {fld(hasEnded ? 'End date' : 'Est. end date', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
-                      </div>
+                      {section('Trial timeline',
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+                          {fld('Created', trialCreatedDate ? displayDate(trialCreatedDate) : null)}
+                          {fld(hasStarted ? 'Start date' : 'Est. start date', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
+                          {fld(hasEnded ? 'End date' : 'Est. end date', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
+                        </div>
+                      )}
 
                       {/* ── What do we know ── */}
                       {initialNote && (<>
                         {divider}
-                        {sectionLabel('What do we know going into this trial?')}
-                        <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                        {section('What do we know',
+                          <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                        )}
                       </>)}
 
                       {/* ── Trial goals ── */}
                       {parsedGoals.length > 0 && (<>
                         {divider}
-                        {sectionLabel('Trial goals')}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                          {parsedGoals.map(g => (
-                            <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
-                              <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Check size={10} color="white" strokeWidth={3} />
+                        {section('Trial goals',
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            {parsedGoals.map(g => (
+                              <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <Check size={10} color="white" strokeWidth={3} />
+                                </div>
+                                <span style={{ fontSize: '13px', fontWeight: '500', color: '#1e3a6e' }}>{GOAL_LABELS[g] || g}</span>
                               </div>
-                              <span style={{ fontSize: '13px', fontWeight: '500', color: '#1e3a6e' }}>{GOAL_LABELS[g] || g}</span>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </>)}
 
                     </div>
