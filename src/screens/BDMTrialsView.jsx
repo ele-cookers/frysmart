@@ -143,7 +143,7 @@ const S = Object.freeze({
     gap: '4px',
   },
   label: {
-    fontSize: '11px', fontWeight: '700', color: '#64748b',
+    fontSize: '11px', fontWeight: '700', color: '#94a3b8',
     letterSpacing: '0.3px', display: 'block', marginBottom: '6px',
     textTransform: 'uppercase',
   },
@@ -4252,7 +4252,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         ].map(({ label, value }) => (
                           <div key={label}>
                             <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
-                            <div style={{ fontSize: isDesktop ? '13px' : '11px', color: '#64748b', fontWeight: '500' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
+                            <div style={{ fontSize: isDesktop ? '13px' : '11px', color: '#1f2937', fontWeight: '600' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                           </div>
                         ))}
                       </div>
