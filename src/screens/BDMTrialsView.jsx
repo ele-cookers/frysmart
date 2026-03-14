@@ -1819,19 +1819,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
               {tc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '86px' }} />}
-              {tc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(allVenues, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+              {tc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(allVenues, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '130px' }} />}
               {tc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(allVenues, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '100px' }} />}
               {tc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(allVenues, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '100px' }} />}
               {tc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(allVenues, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '74px' }} />}
               {tc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Offered $/L" options={getUniqueValues(allVenues, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '74px' }} />}
               {showSold && tc('soldPrice') && <FilterableTh colKey="soldPrice" label="Sold $/L" options={getUniqueValues(allVenues, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '66px' }} />}
-              {showStart && tc('start') && <FilterableTh colKey="start" label={tabType === 'pipeline' ? 'Est. Start' : 'Start'} options={getUniqueValues(allVenues, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '76px' } : {}} />}
-              {showEnd && tc('end') && <FilterableTh colKey="end" label={(tabType === 'pipeline' || tabType === 'active') ? 'Est. End' : 'End'} options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '76px' } : {}} />}
+              {showStart && tc('start') && <FilterableTh colKey="start" label={tabType === 'pipeline' ? 'Est. Start' : 'Start'} options={getUniqueValues(allVenues, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', ...(isArchiveTab(tabType) ? { width: '76px' } : {}) }} />}
+              {showEnd && tc('end') && <FilterableTh colKey="end" label={(tabType === 'pipeline' || tabType === 'active') ? 'Est. End' : 'End'} options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', ...(isArchiveTab(tabType) ? { width: '76px' } : {}) }} />}
               {(tabType === 'pending' || isAccepted) && tc('days') && <th style={{ textAlign: 'center', width: '50px' }}>Days</th>}
               {tabType === 'active' && tc('today') && <th style={{ textAlign: 'center', width: '50px' }}>Today</th>}
               {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '62px' }} />}
-              {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ minWidth: '130px' }} />}
-              {showCustomerCode && tc('customerCode') && <FilterableTh colKey="customerCode" label="Cust Code" options={getUniqueValues(allVenues, colAccessors.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+              {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', minWidth: '130px' }} />}
+              {showCustomerCode && tc('customerCode') && <FilterableTh colKey="customerCode" label="Cust Code" options={getUniqueValues(allVenues, colAccessors.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
               <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
             </tr></thead>
             <tbody>
@@ -1849,14 +1849,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                     {tc('volume') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><VolumePill bracket={venue.volumeBracket} /></span></td>}
-                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</span></td>}
+                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap', textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap-supplier' : ''}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</span></td>}
                     {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''} style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('trialOil') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><OilBadge oil={cookersOil} competitors={competitors} compact /></span></td>}
                     {tc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {showSold && tc('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap' }}>{venue.soldPricePerLitre ? `$${parseFloat(venue.soldPricePerLitre).toFixed(2)}` : '—'}</td>}
-                    {showStart && tc('start') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal', textAlign: isArchiveTab(tabType) ? 'center' : 'left' }}>{displayDate(venue.trialStartDate) || '—'}</td>}
-                    {showEnd && tc('end') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal', textAlign: isArchiveTab(tabType) ? 'center' : 'left' }}>{displayDate(venue.trialEndDate) || '—'}</td>}
+                    {showSold && tc('soldPrice') && <td style={{ fontWeight: '600', color: '#065f46', whiteSpace: 'nowrap', textAlign: 'center' }}>{venue.soldPricePerLitre ? `$${parseFloat(venue.soldPricePerLitre).toFixed(2)}` : '—'}</td>}
+                    {showStart && tc('start') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal', textAlign: 'center' }}>{displayDate(venue.trialStartDate) || '—'}</td>}
+                    {showEnd && tc('end') && <td style={{ color: tabType === 'pipeline' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap', fontStyle: tabType === 'pipeline' ? 'italic' : 'normal', textAlign: 'center' }}>{displayDate(venue.trialEndDate) || '—'}</td>}
                     {tabType === 'active' && tc('today') && (() => {
                       const recorded = tpmReadings.some(r => r.venueId === venue.id && r.readingDate === todayStr);
                       return <td style={{ textAlign: 'center' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: recorded ? '#10b981' : '#ef4444', margin: '0 auto' }} title={recorded ? 'Recorded today' : 'Not yet recorded'} /></td>;
@@ -1864,8 +1864,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {tabType === 'pending' && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.trialEndDate ? daysBetween(venue.trialEndDate, todayStr) : '—'}</td>}
                     {isAccepted && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.outcomeDate ? daysBetween(venue.outcomeDate, todayStr) : '—'}</td>}
                     {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', textAlign: 'center' }}>{displayDate(venue.outcomeDate)}</td>}
-                    {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
-                    {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap' }}>{venue.customerCode || '—'}</td>}
+                    {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>{reasonObj ? reasonObj.label : '—'}</td>}
+                    {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap', textAlign: 'center' }}>{venue.customerCode || '—'}</td>}
                     <td style={{ textAlign: 'center', paddingLeft: '2px', paddingRight: '2px' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><TrialStatusBadge status={venue.trialStatus} /></span></td>
                   </tr>
                 );
@@ -3247,7 +3247,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
                           {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
                           {fld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                          {/* Row 5: Start date | End date — desktop only (moved to bottom on mobile) */}
+                          {/* Row 5: Start date | End date — desktop only (moved to bottom on mobile), with dashed separator */}
+                          {isDesktop && <div style={{ gridColumn: 'span 3', borderTop: '1.5px dashed #e2e8f0', marginTop: '6px' }} />}
                           {isDesktop && fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                           {isDesktop && fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
                           {isDesktop && <div />}
@@ -3269,18 +3270,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <div />
                           </div>
                         )}
-                        {/* Bottom metadata strip — always last */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
-                          {trialCreatedDate && (
-                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
-                          )}
-                          {lastRecDate && (
-                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last recording {displayDate(lastRecDate)}</span>
-                          )}
-                          {lastEditedDate && (
-                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last edited {displayDate(lastEditedDate)}</span>
-                          )}
-                        </div>
+                        {/* Bottom metadata strip — desktop only (mobile version rendered after goals below) */}
+                        {isDesktop && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                            {trialCreatedDate && (
+                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
+                            )}
+                            {lastRecDate && (
+                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last recording {displayDate(lastRecDate)}</span>
+                            )}
+                            {lastEditedDate && (
+                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last edited {displayDate(lastEditedDate)}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* ── Right: notes + goals ── */}
@@ -3309,6 +3312,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0' }}>No goals selected.</p>
                         )}
                       </div>
+
+                      {/* Mobile-only metadata strip — rendered AFTER goals so it appears at bottom on mobile */}
+                      {!isDesktop && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', paddingTop: '16px', borderTop: '1px solid #f0f4f8' }}>
+                          {trialCreatedDate && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
+                          )}
+                          {lastRecDate && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last recording {displayDate(lastRecDate)}</span>
+                          )}
+                          {lastEditedDate && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last edited {displayDate(lastEditedDate)}</span>
+                          )}
+                        </div>
+                      )}
 
                     </div>
                   ) : (
@@ -3567,8 +3585,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
               const activeFryer = calFryerTab;
               const EQ_W = '44px';
-              const thBase = { padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', background: '#f8fafc' };
-              const tdBase = { padding: '6px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
+              const thBase = { padding: '6px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', background: '#f8fafc' };
+              const tdBase = { padding: '6px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '4px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
               );
@@ -3871,7 +3889,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       .map((d, idx) => ({ idx, note: d.r?.notes, isFuture: d.isFuture, day: d.day }))
                       .filter(d => d.note && !d.isFuture);
                     return (
-                  <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '12px', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '12px', alignItems: isDesktop ? 'flex-start' : 'stretch' }}>
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                     {/* Legend — centered above chart */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
@@ -4010,7 +4028,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             const MNTHS_N = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                             const dateLabel = day ? `${String(day.getDate()).padStart(2,'0')}-${MNTHS_N[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}` : `D${idx + 1}`;
                             return (
-                            <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '7px 10px', borderRadius: '7px', background: ni % 2 === 0 ? '#f8fafc' : 'white', border: `1px solid ${ni % 2 === 0 ? '#e8edf3' : '#f1f5f9'}` }}>
+                            <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '7px 10px', borderRadius: '7px', background: ni % 2 === 0 ? '#f8fafc' : 'white', border: `1px solid ${ni % 2 === 0 ? '#e8edf3' : '#f1f5f9'}` }}>
                               <span style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '4px', padding: '2px 6px', flexShrink: 0, lineHeight: '1.5', whiteSpace: 'nowrap' }}>{dateLabel}</span>
                               <span style={{ fontSize: '10px', color: '#374151', lineHeight: '1.55', wordBreak: 'break-word' }}>{note}</span>
                             </div>
@@ -4091,7 +4109,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               // Comma-formatted helpers
               const fmtNum = (v, decimals = 2) => v != null ? parseFloat(v).toLocaleString('en-AU', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : null;
               const fmt$ = v => v != null ? `$${fmtNum(v, 2)}` : '—';
-              const fmtL = v => v != null ? `${parseFloat(v).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 1 })} L` : '—';
+              const fmt$nd = v => v != null ? `$${fmtNum(v, 0)}` : '—';
+              const fmtL = v => v != null ? `${parseFloat(v).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} L` : '—';
 
               // Shared helpers matching pre-trial tab style
               const secLabel = (text) => (
@@ -4229,7 +4248,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         ].map(({ label, value }) => (
                           <div key={label}>
                             <div style={{ fontSize: '9px', fontWeight: '700', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
-                            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
+                            <div style={{ fontSize: isDesktop ? '13px' : '11px', color: '#64748b', fontWeight: '500' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                           </div>
                         ))}
                       </div>
@@ -4314,8 +4333,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   { label: 'Price / L',   comp: currentPrice ? fmt$(currentPrice) : '—',       trial: trialPrice ? fmt$(trialPrice) : '—',                              diff: null, diffColor: null },
                                   { label: 'Litres / Wk', comp: compWklyAvg ? fmtL(compWklyAvg) : '—',          trial: liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—',                 diff: weekLitres != null ? `${Math.round(Math.abs(weekLitres)).toLocaleString('en-AU')} L` : '—',   diffColor: weekLitres != null ? (weekLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
                                   { label: 'Litres / Yr', comp: compYearlyLitres ? fmtL(compYearlyLitres) : '—', trial: trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—',      diff: annualLitres != null ? `${Math.round(Math.abs(annualLitres)).toLocaleString('en-AU')} L` : '—', diffColor: annualLitres != null ? (annualLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
-                                  { label: 'Cost / Wk',   comp: compWeeklySpend != null ? fmt$(compWeeklySpend) : '—', trial: trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—',   diff: weekSpend != null ? `$${Math.round(Math.abs(weekSpend)).toLocaleString('en-AU')}` : '—', diffColor: weekSpend != null ? (weekSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
-                                  { label: 'Cost / Yr',   comp: compYearlySpend != null ? fmt$(compYearlySpend) : '—', trial: trialYearlySpend != null ? fmt$(trialYearlySpend) : '—',   diff: annualSpend != null ? `$${Math.round(Math.abs(annualSpend)).toLocaleString('en-AU')}` : '—', diffColor: annualSpend != null ? (annualSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Wk',   comp: compWeeklySpend != null ? fmt$nd(compWeeklySpend) : '—', trial: trialWeeklySpend != null ? fmt$nd(trialWeeklySpend) : '—',   diff: weekSpend != null ? `$${Math.round(Math.abs(weekSpend)).toLocaleString('en-AU')}` : '—', diffColor: weekSpend != null ? (weekSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Yr',   comp: compYearlySpend != null ? fmt$nd(compYearlySpend) : '—', trial: trialYearlySpend != null ? fmt$nd(trialYearlySpend) : '—',   diff: annualSpend != null ? `$${Math.round(Math.abs(annualSpend)).toLocaleString('en-AU')}` : '—', diffColor: annualSpend != null ? (annualSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
                                 ].map((row, i, arr) => (
                                   <tr key={row.label} style={{ background: i % 2 === 0 ? '#fafafa' : 'white' }}>
                                     <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.label}</td>
@@ -4347,8 +4366,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$nd(compWeeklySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$nd(compYearlySpend) : '—'}</td>
                                 </tr>
                                 <tr style={{ background: '#eff6ff' }}>
                                   <td style={{ padding: '8px 10px', borderBottom: '1px solid #dbeafe', whiteSpace: 'nowrap' }}>
@@ -4357,8 +4376,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$nd(trialWeeklySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$nd(trialYearlySpend) : '—'}</td>
                                 </tr>
                                 {weekSpend !== null && (
                                   <tr style={{ background: '#f8fafc' }}>
@@ -4637,6 +4656,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table-sm thead th { padding: 5px 4px !important; font-size: 9px !important; }
         .bdm-table-sm tbody td { padding: 5px 4px !important; font-size: 10px !important; }
         .bdm-table-sm tbody td .bdm-badge-wrap { transform: scale(0.82); transform-origin: center; display: inline-block; }
+        .bdm-table-sm tbody td .bdm-badge-wrap-supplier { transform: scale(0.72); transform-origin: center; display: inline-block; }
         .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: white; width: 100%; transition: all 0.15s; }
         .bdm-row-btn:hover { background: #eef2ff; color: #1a428a; border-color: #c7d2fe; }
         .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
