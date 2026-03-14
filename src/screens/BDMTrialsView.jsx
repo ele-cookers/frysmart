@@ -3254,14 +3254,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         </div>
                         {/* Per-fryer volumes if recorded */}
                         {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))', gap: '10px 16px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px 16px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
                             {Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
                               const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
                               return vol ? fld(`Fryer ${fn}`, `${vol} L`) : null;
                             })}
                           </div>
                         )}
-                        {/* Bottom metadata strip — evenly distributed */}
+                        {/* Start/End dates — mobile only, in fld-style 3-col grid */}
+                        {!isDesktop && (venue.trialStartDate || venue.trialEndDate) && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px', marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed #e2e8f0' }}>
+                            {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
+                            {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
+                            <div />
+                          </div>
+                        )}
+                        {/* Bottom metadata strip — always last */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
                           {trialCreatedDate && (
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
@@ -3273,13 +3281,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Last edited {displayDate(lastEditedDate)}</span>
                           )}
                         </div>
-                        {/* Start/End dates — mobile only, dashed border above */}
-                        {!isDesktop && (venue.trialStartDate || venue.trialEndDate) && (
-                          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #e2e8f0' }}>
-                            {venue.trialStartDate && <span style={{ fontSize: '10px', color: '#b0bac9' }}>{hasStarted ? 'Start' : 'Est. start'}: {displayDate(venue.trialStartDate)}</span>}
-                            {venue.trialEndDate && <span style={{ fontSize: '10px', color: '#b0bac9' }}>{hasEnded ? 'End' : 'Est. end'}: {displayDate(venue.trialEndDate)}</span>}
-                          </div>
-                        )}
                       </div>
 
                       {/* ── Right: notes + goals ── */}
@@ -3566,8 +3567,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
               const activeFryer = calFryerTab;
               const EQ_W = '44px';
-              const thBase = { padding: '5px 5px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', background: '#f8fafc' };
-              const tdBase = { padding: '5px 5px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
+              const thBase = { padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', background: '#f8fafc' };
+              const tdBase = { padding: '6px 8px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '4px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
               );
@@ -3589,7 +3590,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   {!isDesktop && !showTrialTableModal ? (
-                    <button onClick={() => setShowTrialTableModal(true)} style={{
+                    <button onClick={() => { setShowTrialTableModal(true); screen?.orientation?.lock?.('landscape').catch(()=>{}); }} style={{
                       width: '100%', padding: '14px 16px', borderRadius: '10px',
                       background: '#eff6ff', border: '1.5px solid #bfdbfe',
                       cursor: 'pointer', display: 'flex', alignItems: 'center',
@@ -3607,23 +3608,23 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {(!isDesktop && showTrialTableModal) && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#1a428a', flexShrink: 0 }}>
                           <div style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>Trial Results</div>
-                          <button onClick={() => setShowTrialTableModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '22px', lineHeight: '1', padding: '4px 8px' }}>✕</button>
+                          <button onClick={() => { setShowTrialTableModal(false); screen?.orientation?.unlock?.(); }} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '22px', lineHeight: '1', padding: '4px 8px' }}>✕</button>
                         </div>
                       )}
                     <div style={{ overflowX: 'auto', ...( (!isDesktop && showTrialTableModal) ? { flex: 1, background: 'white', overflowY: 'auto' } : {}) }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '860px', fontSize: '11px', tableLayout: 'fixed' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '30px' }} />  {/* # */}
-                        <col style={{ width: '36px' }} />  {/* Day */}
-                        <col style={{ width: '78px' }} />  {/* Date */}
-                        <col style={{ width: '44px' }} />  {/* TPM */}
-                        <col style={{ width: '46px' }} />  {/* Set°C */}
-                        <col style={{ width: '64px' }} />  {/* Actual°C */}
-                        <col style={{ width: '46px' }} />  {/* -/+°C */}
-                        <col style={{ width: '84px' }} />  {/* Fill Type */}
-                        <col style={{ width: '44px' }} />  {/* Litres */}
-                        <col style={{ width: '72px' }} />  {/* Filtered */}
-                        <col style={{ width: '126px' }} /> {/* Food */}
+                        <col style={{ width: '36px' }} />  {/* # */}
+                        <col style={{ width: '42px' }} />  {/* Day */}
+                        <col style={{ width: '84px' }} />  {/* Date */}
+                        <col style={{ width: '50px' }} />  {/* TPM */}
+                        <col style={{ width: '52px' }} />  {/* Set°C */}
+                        <col style={{ width: '70px' }} />  {/* Actual°C */}
+                        <col style={{ width: '52px' }} />  {/* -/+°C */}
+                        <col style={{ width: '90px' }} />  {/* Fill Type */}
+                        <col style={{ width: '50px' }} />  {/* Litres */}
+                        <col style={{ width: '78px' }} />  {/* Filtered */}
+                        <col style={{ width: '132px' }} /> {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
@@ -3825,10 +3826,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const recordedTPMs = chartData.filter(d => d.tpm != null).map(d => d.tpm);
               const yMax = recordedTPMs.length > 0 ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, 24) : 24;
 
-              // SVG layout constants — taller + wider chart
-              const CHART_H = 235;
+              // SVG layout constants — fills container width proportionally
+              const CHART_H = 185;
               const TOP_PAD = 44;
-              const BOT_PAD = 60;
+              const BOT_PAD = 56;
               const LEFT_PAD = 48;
               const RIGHT_PAD = 24;
               const BAR_W = 40;
@@ -3999,19 +4000,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
                     </div>
                     {/* Notes panel */}
-                    <div style={{ width: isDesktop ? '320px' : '100%', flexShrink: 0, paddingTop: '4px' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Notes</div>
+                    <div style={{ width: isDesktop ? '300px' : '100%', flexShrink: 0 }}>
+                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Notes</div>
                       {daysWithNotes.length === 0 ? (
                         <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes recorded</div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {daysWithNotes.map(({ idx, note, day }) => {
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          {daysWithNotes.map(({ idx, note, day }, ni) => {
                             const MNTHS_N = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                             const dateLabel = day ? `${String(day.getDate()).padStart(2,'0')}-${MNTHS_N[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}` : `D${idx + 1}`;
                             return (
-                            <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                              <span style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '4px', padding: '1px 5px', flexShrink: 0, lineHeight: '16px' }}>{dateLabel}</span>
-                              <span style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.4', wordBreak: 'break-word' }}>{note}</span>
+                            <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '7px 10px', borderRadius: '7px', background: ni % 2 === 0 ? '#f8fafc' : 'white', border: `1px solid ${ni % 2 === 0 ? '#e8edf3' : '#f1f5f9'}` }}>
+                              <span style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '4px', padding: '2px 6px', flexShrink: 0, lineHeight: '1.5', whiteSpace: 'nowrap' }}>{dateLabel}</span>
+                              <span style={{ fontSize: '10px', color: '#374151', lineHeight: '1.55', wordBreak: 'break-word' }}>{note}</span>
                             </div>
                           );})}
                         </div>
@@ -4299,22 +4300,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               <thead>
                                 <tr style={{ background: '#f8fafc' }}>
                                   <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Metric</th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f1f5f9' }}>
-                                    {compOilName || 'Current'}
+                                  <th style={{ padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#64748b', textAlign: 'center', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9' }}>
+                                    {compOilBadge ? <span style={{ display: 'inline-block', transform: 'scale(0.85)', transformOrigin: 'center' }}>{compOilBadge}</span> : <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{compOilName || 'Current'}</span>}
                                   </th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', background: '#eff6ff' }}>
-                                    {trialOilName || 'Trial'}
+                                  <th style={{ padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#1d4ed8', textAlign: 'center', borderBottom: '1px solid #e2e8f0', background: '#eff6ff' }}>
+                                    {trialOilBadge ? <span style={{ display: 'inline-block', transform: 'scale(0.85)', transformOrigin: 'center' }}>{trialOilBadge}</span> : <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{trialOilName || 'Trial'}</span>}
                                   </th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>±</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Difference</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {[
                                   { label: 'Price / L',   comp: currentPrice ? fmt$(currentPrice) : '—',       trial: trialPrice ? fmt$(trialPrice) : '—',                              diff: null, diffColor: null },
-                                  { label: 'Litres / Wk', comp: compWklyAvg ? fmtL(compWklyAvg) : '—',          trial: liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—',                 diff: weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—',   diffColor: weekLitres != null ? (weekLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
-                                  { label: 'Litres / Yr', comp: compYearlyLitres ? fmtL(compYearlyLitres) : '—', trial: trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—',      diff: annualLitres != null ? `${annualLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(annualLitres))}` : '—', diffColor: annualLitres != null ? (annualLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
-                                  { label: 'Cost / Wk',   comp: compWeeklySpend != null ? fmt$(compWeeklySpend) : '—', trial: trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—',   diff: weekSpend != null ? (weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`) : '—', diffColor: weekSpend != null ? (weekSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
-                                  { label: 'Cost / Yr',   comp: compYearlySpend != null ? fmt$(compYearlySpend) : '—', trial: trialYearlySpend != null ? fmt$(trialYearlySpend) : '—',   diff: annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—', diffColor: annualSpend != null ? (annualSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Litres / Wk', comp: compWklyAvg ? fmtL(compWklyAvg) : '—',          trial: liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—',                 diff: weekLitres != null ? `${Math.round(Math.abs(weekLitres)).toLocaleString('en-AU')} L` : '—',   diffColor: weekLitres != null ? (weekLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Litres / Yr', comp: compYearlyLitres ? fmtL(compYearlyLitres) : '—', trial: trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—',      diff: annualLitres != null ? `${Math.round(Math.abs(annualLitres)).toLocaleString('en-AU')} L` : '—', diffColor: annualLitres != null ? (annualLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Wk',   comp: compWeeklySpend != null ? fmt$(compWeeklySpend) : '—', trial: trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—',   diff: weekSpend != null ? `$${Math.round(Math.abs(weekSpend)).toLocaleString('en-AU')}` : '—', diffColor: weekSpend != null ? (weekSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Yr',   comp: compYearlySpend != null ? fmt$(compYearlySpend) : '—', trial: trialYearlySpend != null ? fmt$(trialYearlySpend) : '—',   diff: annualSpend != null ? `$${Math.round(Math.abs(annualSpend)).toLocaleString('en-AU')}` : '—', diffColor: annualSpend != null ? (annualSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
                                 ].map((row, i, arr) => (
                                   <tr key={row.label} style={{ background: i % 2 === 0 ? '#fafafa' : 'white' }}>
                                     <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.label}</td>
@@ -4364,16 +4365,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                     <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Difference</td>
                                     <td style={{ padding: '8px 10px' }} />
                                     <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                      {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
+                                      {weekLitres != null ? `${Math.round(Math.abs(weekLitres)).toLocaleString('en-AU')} L` : '—'}
                                     </td>
                                     <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                      {annualLitres != null ? `${annualLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(annualLitres))}` : '—'}
+                                      {annualLitres != null ? `${Math.round(Math.abs(annualLitres)).toLocaleString('en-AU')} L` : '—'}
                                     </td>
                                     <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                      {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
+                                      {weekSpend != null ? `$${Math.round(Math.abs(weekSpend)).toLocaleString('en-AU')}` : '—'}
                                     </td>
                                     <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                      {annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
+                                      {annualSpend != null ? `$${Math.round(Math.abs(annualSpend)).toLocaleString('en-AU')}` : '—'}
                                     </td>
                                   </tr>
                                 )}
@@ -4441,7 +4442,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       ].map(({ label, value }) => (
                         <div key={label}>
                           <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label}</div>
-                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937', display: 'flex', alignItems: 'center' }}>
+                          <div style={{ fontSize: isDesktop ? '13px' : '11px', fontWeight: '600', color: '#1f2937', display: 'flex', alignItems: 'center' }}>
                             {value !== null && value !== undefined ? value : <span style={{ color: '#cbd5e1' }}>—</span>}
                           </div>
                         </div>
