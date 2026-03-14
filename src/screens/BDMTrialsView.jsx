@@ -857,6 +857,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [calFryerTab, setCalFryerTab] = useState(1); // Fryer tab within calendar sub-tab
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
+  const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
   const [manageStatusFilter, setManageStatusFilter] = useState([]); // Manage screen status filter pills
   const [manageSearchQuery, setManageSearchQuery] = useState(''); // Manage screen keyword search
   const [decisionModal, setDecisionModal] = useState(null); // venue object for won/lost decision popup
@@ -3826,51 +3827,207 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const miniCalBg = tpm => tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
               const miniCalCol = tpm => tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
 
-              // Yearly litres for each row in comparison table
+              // Yearly litres (kept for comparison table savings row)
               const compYearlyLitres = compWklyAvg ? compWklyAvg * 52 : null;
               const trialYearlyLitres = liveTrialAvg !== null ? liveTrialAvg * 52 : null;
 
+              // Type badge (same as pre-trial tab)
+              const isNewProspect = !!comp;
+              const typeBadge = isNewProspect
+                ? <span style={{ fontSize: '11px', fontWeight: '700', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '6px', padding: '3px 8px' }}>New prospect</span>
+                : <span style={{ fontSize: '11px', fontWeight: '700', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '3px 8px' }}>Existing customer</span>;
+
+              // Outcome reason label
+              const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
+
+              // Trial findings: [Successful DATE] or [Unsuccessful DATE] lines from trialNotes
+              const trialFindings = venue.trialNotes
+                ? venue.trialNotes.split('\n')
+                    .filter(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/))
+                    .map(l => l.replace(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]\s*/, '').trim())
+                    .filter(Boolean)
+                    .join('\n')
+                : '';
+
+              // Section label helper (no top margin — use marginTop inline when needed)
+              const rSecLabel = (text, mt = 20) => (
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: `${mt}px` }}>{text}</div>
+              );
+
               return (
                 <div style={{ padding: '0 24px' }}>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '20px' }}>Summary Report</div>
 
-                  {/* ── Two-column layout: left = details, right = notes + goals ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginBottom: '24px' }}>
+                  {/* ── Title + type badge + venue name ── */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '10px' }}>Summary Report</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {typeBadge}
+                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>{venue.name}</span>
+                    </div>
+                  </div>
 
-                    {/* ── Left: trial details 3-col grid ── */}
+                  {/* ── Two-column layout ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+
+                    {/* ── Left: details grid + comparison table ── */}
                     <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
-                        {/* Row 1: Current supplier | Current oil | Current price/L */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px', marginBottom: '24px' }}>
                         {sfld('Current supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
                         {sfld('Current oil', compOilBadge)}
                         {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
-                        {/* Row 2: Fryer count | Trial oil | Offered price/L */}
                         {sfld('Fryer count', fc ? String(fc) : null)}
                         {sfld('Trial oil', trialOilBadge)}
                         {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
-                        {/* Row 3: Vol bracket | Pre-trial avg | Avg oil lifespan */}
                         {sfld('Vol bracket', volBadge)}
                         {sfld('Pre-trial avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
                         {sfld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                        {/* Row 4 (trial actuals): Trial total litres | Trial weekly avg | Max oil lifespan */}
                         {sfld('Trial total litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
                         {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
                         {sfld('Max oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
-                        {/* Row 5: Start date | End date | Trial duration */}
                         {sfld('Start date', displayDate(venue.trialStartDate))}
                         {sfld('End date', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
                         {sfld('Trial duration', trialDuration > 0 ? `${trialDuration} days` : null)}
                       </div>
+
+                      {/* Comparison table */}
+                      {secLabel('Comparison')}
+                      {(compWklyAvg || liveTrialAvg !== null) ? (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                            <thead>
+                              <tr style={{ background: '#f8fafc' }}>
+                                <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Oil</th>
+                                {['Price / L', 'L / Wk', 'Cost / Wk', 'Cost / Yr'].map(h => (
+                                  <th key={h} style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr style={{ background: '#fafafa' }}>
+                                <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
+                                  {compOilBadge || <span style={{ fontSize: '11px', color: '#64748b' }}>{compOilName || '—'}</span>}
+                                </td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
+                              </tr>
+                              <tr style={{ background: '#eff6ff' }}>
+                                <td style={{ padding: '8px 10px', borderBottom: '1px solid #dbeafe', whiteSpace: 'nowrap' }}>
+                                  {trialOilBadge || <span style={{ fontSize: '11px', color: '#1f2937' }}>{trialOilName || '—'}</span>}
+                                </td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
+                                <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
+                              </tr>
+                              {weekSpend !== null && (
+                                <tr style={{ background: '#f8fafc' }}>
+                                  <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Savings</td>
+                                  <td style={{ padding: '8px 10px' }} />
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                    {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                    {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                    {annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>Comparison data will appear once readings are recorded.</div>
+                      )}
                     </div>
 
-                    {/* ── Right: what we know + goals achieved ── */}
+                    {/* ── Right: outcome + notes + findings + goals ── */}
                     <div style={{ paddingLeft: '28px' }}>
-                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>What do we know going into this trial?</div>
+
+                      {/* ── Trial outcome ── */}
+                      <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Trial Outcome</div>
+
+                        {/* Pending: show Won / Lost buttons */}
+                        {venue.trialStatus === 'pending' && (
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                              <Trophy size={13} /> Won
+                            </button>
+                            <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#ef4444', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                              <XCircle size={13} /> Lost
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Accepted: won, needs customer code */}
+                        {venue.trialStatus === 'accepted' && (
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: '700', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '3px 10px' }}>Accepted</span>
+                              {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
+                            </div>
+                            {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 12px 0' }}>{reasonLabel}</p>}
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Enter Customer Code</div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <input type="text" value={summaryCustCode} onChange={e => setSummaryCustCode(e.target.value)} placeholder="e.g. CKR-0123"
+                                style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', fontWeight: '600', color: '#1f2937', outline: 'none' }} />
+                              <button onClick={() => { if (summaryCustCode.trim()) { handleSaveCustomerCode(venue.id, summaryCustCode.trim()); setSummaryCustCode(''); } }}
+                                style={{ padding: '7px 14px', background: summaryCustCode.trim() ? '#1a428a' : '#e2e8f0', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: summaryCustCode.trim() ? 'white' : '#94a3b8', cursor: summaryCustCode.trim() ? 'pointer' : 'not-allowed' }}>
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Successful: won + customer code */}
+                        {venue.trialStatus === 'successful' && (
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: '700', background: '#d1fae5', color: '#065f46', border: '1px solid #6ee7b7', borderRadius: '6px', padding: '3px 10px' }}>Successful</span>
+                              {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
+                            </div>
+                            {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 10px 0' }}>{reasonLabel}</p>}
+                            {venue.customerCode && (
+                              <div>
+                                <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Customer Code</div>
+                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a' }}>{venue.customerCode}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Unsuccessful */}
+                        {venue.trialStatus === 'unsuccessful' && (
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: '700', background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '6px', padding: '3px 10px' }}>Unsuccessful</span>
+                              {venue.outcomeDate && <span style={{ fontSize: '12px', color: '#64748b' }}>{displayDate(venue.outcomeDate)}</span>}
+                            </div>
+                            {reasonLabel && <p style={{ fontSize: '12px', color: '#374151', margin: '0' }}>{reasonLabel}</p>}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* What do we know going into this trial */}
+                      {rSecLabel('What do we know going into this trial?', 0)}
                       {initialNote
-                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 16px 0' }}>No notes entered.</p>
+                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No notes entered.</p>
                       }
-                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Trial goals achieved</div>
+
+                      {/* Trial findings (end-trial comments) */}
+                      {rSecLabel('Trial Findings')}
+                      {trialFindings
+                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
+                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No trial findings recorded.</p>
+                      }
+
+                      {/* Trial goals achieved */}
+                      {rSecLabel('Trial Goals Achieved')}
                       {trialGoalsList.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                           {trialGoalsList.map(g => {
@@ -3882,12 +4039,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   {GoalIcon ? <GoalIcon size={14} color="#1a428a" /> : null}
                                 </div>
                                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e', flex: 1 }}>{GOAL_LABELS[g] || g}</span>
-                                <div style={{
-                                  width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                                  background: achieved ? '#059669' : 'transparent',
-                                  border: achieved ? '2px solid #059669' : '2px solid #cbd5e1',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, background: achieved ? '#059669' : 'transparent', border: achieved ? '2px solid #059669' : '2px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   {achieved && <Check size={11} color="white" strokeWidth={3} />}
                                 </div>
                               </div>
@@ -3897,183 +4049,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       ) : (
                         <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0' }}>No goals selected.</p>
                       )}
-                    </div>
 
-                  </div>
-
-                  {/* ── Trial Calendar — full width below details ── */}
-                  <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Trial Calendar</div>
-                    {calDays.length > 0 ? (
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ borderCollapse: 'separate', borderSpacing: '2px', tableLayout: 'auto' }}>
-                          <thead>
-                            <tr>
-                              <th style={{ minWidth: '48px' }} />
-                              {calDays.map((_, i) => (
-                                <th key={i} style={{ fontSize: '7px', color: '#94a3b8', textAlign: 'center', padding: '0 1px', fontWeight: '600', minWidth: '16px' }}>{i + 1}</th>
-                              ))}
-                              <th style={{ fontSize: '7px', color: '#64748b', textAlign: 'center', padding: '0 4px', fontWeight: '700', whiteSpace: 'nowrap', minWidth: '36px' }}>Max Days</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {fryerList.map(fn => (
-                              <tr key={fn}>
-                                <td style={{ fontSize: '9px', fontWeight: '700', color: '#1a428a', paddingRight: '6px', whiteSpace: 'nowrap' }}>{fc > 1 ? `Fryer ${fn}` : 'TPM'}</td>
-                                {calDays.map((day, idx) => {
-                                  const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
-                                  const dayRecs = (readingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === fn);
-                                  const r = dayRecs[dayRecs.length - 1] || null;
-                                  const isFuture = day > today;
-                                  return (
-                                    <td key={idx} style={{
-                                      width: '16px', height: '16px', minWidth: '16px',
-                                      background: r?.tpmValue != null ? miniCalBg(r.tpmValue) : isFuture ? '#f8fafc' : '#f1f5f9',
-                                      borderRadius: '3px', textAlign: 'center', verticalAlign: 'middle', opacity: isFuture ? 0.3 : 1,
-                                    }}>
-                                      {r?.tpmValue != null && (
-                                        <span style={{ fontSize: '7px', fontWeight: '800', color: miniCalCol(r.tpmValue), lineHeight: '1' }}>{r.tpmValue}</span>
-                                      )}
-                                    </td>
-                                  );
-                                })}
-                                <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingLeft: '4px' }}>
-                                  <span style={{ fontSize: '10px', fontWeight: '700', color: maxOilLifespanByFryer[fn] != null ? '#1a428a' : '#cbd5e1' }}>
-                                    {maxOilLifespanByFryer[fn] != null ? `${maxOilLifespanByFryer[fn]}d` : '—'}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>No readings yet</div>
-                    )}
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-                      {[{ bg: '#d1fae5', color: '#059669', label: '≤14 TPM' }, { bg: '#fef3c7', color: '#d97706', label: '15–18 TPM' }, { bg: '#fee2e2', color: '#dc2626', label: '>18 TPM' }].map(l => (
-                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ width: '10px', height: '10px', background: l.bg, border: `1px solid ${l.color}44`, borderRadius: '2px', flexShrink: 0 }} />
-                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
-                        </div>
-                      ))}
                     </div>
                   </div>
-
-                  {/* ── Divider ── */}
-                  <div style={{ height: '1px', background: '#e2e8f0', margin: '20px 0' }} />
-
-                  {/* ── Comparison table ── */}
-                  {(compWklyAvg || liveTrialAvg !== null) ? (
-                    <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '480px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                        <thead>
-                          <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '8px 12px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Oil</th>
-                            {['Price / L', 'Litres / Week', 'Litres / Year', 'Cost / Week', 'Cost / Year'].map(h => (
-                              <th key={h} style={{ padding: '8px 12px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* Competitor row */}
-                          <tr style={{ background: '#fafafa' }}>
-                            <td style={{ padding: '9px 12px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
-                              {compOilBadge || <span style={{ fontSize: '11px', color: '#64748b' }}>{compOilName || '—'}</span>}
-                            </td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
-                          </tr>
-                          {/* Trial row */}
-                          <tr style={{ background: '#eff6ff' }}>
-                            <td style={{ padding: '9px 12px', borderBottom: '1px solid #dbeafe', whiteSpace: 'nowrap' }}>
-                              {trialOilBadge || <span style={{ fontSize: '11px', color: '#1f2937' }}>{trialOilName || '—'}</span>}
-                            </td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlyLitres ? fmtL(trialYearlyLitres) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
-                            <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
-                          </tr>
-                          {/* Savings row */}
-                          {weekSpend !== null && (
-                            <tr style={{ background: '#f8fafc' }}>
-                              <td style={{ padding: '9px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Savings</td>
-                              <td style={{ padding: '9px 12px' }} />
-                              <td style={{ padding: '9px 12px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                {weekLitres != null ? `${weekLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
-                              </td>
-                              <td style={{ padding: '9px 12px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                {annualLitres != null ? `${annualLitres >= 0 ? '–' : '+'}${fmtL(Math.abs(annualLitres))}` : '—'}
-                              </td>
-                              <td style={{ padding: '9px 12px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                {weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
-                              </td>
-                              <td style={{ padding: '9px 12px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
-                                {annualSpend != null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', padding: '12px 0 16px' }}>Comparison data will appear once trial readings are recorded.</div>
-                  )}
-
-                  {/* ── Savings stat cards — 3 per row ── */}
-                  {(weekLitres !== null || weekSpend !== null) && (() => {
-                    const cards = [
-                      { icon: <Droplets size={16} />, iconColor: '#3b82f6', iconBg: '#dbeafe', label: 'Litres / Week', value: weekLitres !== null ? (weekLitres >= 0 ? `–${fmtL(weekLitres)}` : `+${fmtL(Math.abs(weekLitres))}`) : null, positive: weekLitres >= 0 },
-                      { icon: <Droplets size={16} />, iconColor: '#3b82f6', iconBg: '#dbeafe', label: 'Litres / Year', value: annualLitres !== null ? (annualLitres >= 0 ? `–${fmtL(annualLitres)}` : `+${fmtL(Math.abs(annualLitres))}`) : null, positive: annualLitres >= 0 },
-                      { icon: <Activity size={16} />, iconColor: '#8b5cf6', iconBg: '#ede9fe', label: 'Oil Reduction', value: pctLitresReduced !== null ? `${Math.abs(pctLitresReduced).toFixed(1)}%` : null, positive: pctLitresReduced >= 0 },
-                      { icon: <DollarSign size={16} />, iconColor: '#059669', iconBg: '#d1fae5', label: 'Savings / Week', value: weekSpend !== null ? (weekSpend >= 0 ? `–${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`) : null, positive: weekSpend >= 0 },
-                      { icon: <DollarSign size={16} />, iconColor: '#059669', iconBg: '#d1fae5', label: 'Savings / Year', value: annualSpend !== null ? (annualSpend >= 0 ? `–${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : null, positive: annualSpend >= 0 },
-                      { icon: <TrendingDown size={16} />, iconColor: '#059669', iconBg: '#d1fae5', label: 'Cost Reduction', value: pctCostSaved !== null ? `${Math.abs(pctCostSaved).toFixed(1)}%` : null, positive: pctCostSaved >= 0 },
-                    ].filter(c => c.value !== null);
-                    return (
-                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
-                        {cards.map((c, i) => (
-                          <div key={i} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: c.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: c.iconColor }}>
-                              {c.icon}
-                            </div>
-                            <div>
-                              <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{c.label}</div>
-                              <div style={{ fontSize: '16px', fontWeight: '800', color: c.positive ? '#059669' : '#dc2626', lineHeight: '1.2' }}>{c.value}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── Trial Goals Achieved — label left, tick box far right ── */}
-                  {trialGoalsList.length > 0 && (<>
-                    {secLabel('Trial Goals Achieved')}
-                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '8px' }}>
-                      {trialGoalsList.map(key => {
-                        const label = GOAL_LABELS[key] || key;
-                        const achieved = achievedGoals.includes(key);
-                        return (
-                          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                            <span style={{ fontSize: '13px', fontWeight: '500', color: achieved ? '#1f2937' : '#94a3b8' }}>{label}</span>
-                            <div style={{
-                              width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                              background: achieved ? '#10b981' : '#f1f5f9',
-                              border: `2px solid ${achieved ? '#10b981' : '#e2e8f0'}`,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              {achieved && <Check size={10} color="white" strokeWidth={3} />}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>)}
 
                   <div style={{ height: '20px' }} />
                 </div>
