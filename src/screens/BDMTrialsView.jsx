@@ -2419,8 +2419,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     allTrials.forEach(v => { statusCounts[v.trialStatus] = (statusCounts[v.trialStatus] || 0) + 1; });
 
     // Fixed width for all badge/value columns — consistent sizing
-    const BADGE_COL_W = '88px';
-    const PRICE_COL_W = '72px';
+    const VOL_W = '90px';
+    const SUPPLIER_W = '78px';
+    const OIL_W = '88px';
+    const PRICE_COL_W = '62px';
+    const DATE_W = '74px';
+    const STATUS_W = '96px';
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -2489,19 +2493,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             .bdm-table tbody tr:hover { background: #eef2ff; }
             .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
           `}</style>
-          <table className="bdm-table" style={{ width: '100%', tableLayout: 'auto' }}>
+          <table className="bdm-table" style={{ width: '100%', tableLayout: 'fixed' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: BADGE_COL_W }} />}
-              {mc('competitor') && <FilterableTh colKey="competitor" label="Current Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: BADGE_COL_W }} />}
-              {mc('compOil') && <FilterableTh colKey="compOil" label="Curr. Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: BADGE_COL_W }} />}
-              {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: BADGE_COL_W }} />}
+              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: VOL_W }} />}
+              {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: SUPPLIER_W }} />}
+              {mc('compOil') && <FilterableTh colKey="compOil" label="Curr. Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: OIL_W }} />}
+              {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: OIL_W }} />}
               {mc('currentPrice') && <FilterableTh colKey="currentPrice" label="Curr. $/L" options={getUniqueValues(statusFiltered, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: PRICE_COL_W }} />}
               {mc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Off $/L" options={getUniqueValues(statusFiltered, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: PRICE_COL_W }} />}
-              {mc('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(statusFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-              {mc('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(statusFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-              {mc('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: BADGE_COL_W }} />}
+              {mc('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(statusFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: DATE_W }} />}
+              {mc('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(statusFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: DATE_W }} />}
+              {mc('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: STATUS_W }} />}
             </tr></thead>
             <tbody>
               {rows.length === 0 ? (
@@ -2518,27 +2522,23 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <tr key={venue.id} onClick={() => setManageVenueId(venue.id)} style={{ height: '34px', cursor: 'pointer' }}>
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
-                    {mc('volume') && <td style={{ textAlign: 'center', width: BADGE_COL_W, maxWidth: BADGE_COL_W, overflow: 'hidden' }}><VolumePill bracket={venue.volumeBracket} /></td>}
-                    {mc('competitor') && <td style={{ width: BADGE_COL_W, maxWidth: BADGE_COL_W, overflow: 'hidden' }}>
-                      {vComp ? (
-                        <div style={{ maxWidth: '84px', overflow: 'hidden' }}><CompetitorPill comp={vComp} /></div>
-                      ) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                    {mc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
+                    {mc('competitor') && <td>
+                      {vComp ? <CompetitorPill comp={vComp} table /> : <span style={{ color: '#cbd5e1' }}>—</span>}
                     </td>}
-                    {mc('compOil') && <td style={{ textAlign: 'center', width: BADGE_COL_W, maxWidth: BADGE_COL_W, paddingLeft: '4px', paddingRight: '4px' }}>
+                    {mc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>
                       {vCompOil && compTier ? (
                         <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '80px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vCompOil.name}</span>
                       ) : <span style={{ color: '#cbd5e1' }}>—</span>}
                     </td>}
-                    {mc('trialOil') && <td style={{ textAlign: 'center', width: BADGE_COL_W, maxWidth: BADGE_COL_W, overflow: 'hidden' }}>
-                      <div style={{ display: 'inline-block', maxWidth: '84px', overflow: 'hidden' }}>
-                        <OilBadge oil={vCookersOil} competitors={competitors} compact />
-                      </div>
+                    {mc('trialOil') && <td style={{ textAlign: 'center' }}>
+                      <OilBadge oil={vCookersOil} competitors={competitors} compact />
                     </td>}
-                    {mc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', width: PRICE_COL_W }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {mc('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', width: PRICE_COL_W }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
-                    {mc('start') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{venue.trialStartDate ? displayDate(venue.trialStartDate) : '—'}</td>}
-                    {mc('end') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{venue.trialEndDate ? displayDate(venue.trialEndDate) : '—'}</td>}
-                    {mc('status') && <td style={{ width: BADGE_COL_W }}><TrialStatusBadge status={venue.trialStatus} /></td>}
+                    {mc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                    {mc('offeredPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b' }}>{venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
+                    {mc('start') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'nowrap' }}>{venue.trialStartDate ? displayDate(venue.trialStartDate) : '—'}</td>}
+                    {mc('end') && <td style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'nowrap' }}>{venue.trialEndDate ? displayDate(venue.trialEndDate) : '—'}</td>}
+                    {mc('status') && <td><TrialStatusBadge status={venue.trialStatus} /></td>}
                   </tr>
                 );
               })}
