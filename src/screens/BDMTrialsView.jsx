@@ -2853,76 +2853,60 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </div>
 
                   {!mEditing ? (
-                    <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', alignItems: 'start' }}>
 
-                      {/* ── Current setup ── */}
-                      {sectionLabel('Current setup')}
-                      {fldGrid(<>
-                        {fld('Supplier', currentSupplierEl)}
-                        {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
-                        {fld('Price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
-                      </>)}
-
-                      {divider}
-
-                      {/* ── Usage & fryers ── */}
-                      {sectionLabel('Usage & fryers')}
-                      {fldGrid(<>
-                        {fld('Avg litres / week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
-                        {fld('Volume bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
-                        {fld('Fryer count', fc ? String(fc) : null)}
-                      </>)}
-                      {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '12px', marginTop: '12px' }}>
-                          {Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
-                            const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
-                            return vol ? fld(`Fryer ${fn}`, `${vol} L`) : null;
-                          })}
+                      {/* ── Left: all context fields, no section headings ── */}
+                      <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                          {fld('Supplier', currentSupplierEl)}
+                          {fld('Current oil', compOil ? <OilBadge oil={compOil} competitors={competitors} compact /> : null)}
+                          {fld('Price / L', venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : null)}
+                          {fld('Avg litres / week', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                          {fld('Volume bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
+                          {fld('Fryer count', fc ? String(fc) : null)}
+                          {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
+                          {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
+                          {fld('Created', trialCreatedDate ? displayDate(trialCreatedDate) : null)}
+                          {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
+                          {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
+                          <div />
                         </div>
-                      )}
+                        {/* Per-fryer volumes if recorded */}
+                        {fc > 0 && Object.values(venue.fryerVolumes || {}).some(Boolean) && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                            {Array.from({ length: fc }, (_, i) => i + 1).map(fn => {
+                              const vol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
+                              return vol ? fld(`Fryer ${fn}`, `${vol} L`) : null;
+                            })}
+                          </div>
+                        )}
+                      </div>
 
-                      {divider}
-
-                      {/* ── Cookers trial ── */}
-                      {sectionLabel('Cookers trial')}
-                      {fldGrid(<>
-                        {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
-                        {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
-                        <div />
-                      </>)}
-
-                      {divider}
-
-                      {/* ── Trial timeline ── */}
-                      {sectionLabel('Trial timeline')}
-                      {fldGrid(<>
-                        {fld('Created', trialCreatedDate ? displayDate(trialCreatedDate) : null)}
-                        {fld(hasStarted ? 'Start date' : 'Est. start date', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
-                        {fld(hasEnded ? 'End date' : 'Est. end date', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
-                      </>)}
-
-                      {/* ── What do we know ── */}
-                      {initialNote && (<>
-                        {divider}
-                        {sectionLabel('What do we know going into this trial?')}
-                        <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.65', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                      </>)}
-
-                      {/* ── Trial goals ── */}
-                      {parsedGoals.length > 0 && (<>
-                        {divider}
-                        {sectionLabel('Trial goals')}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
-                          {parsedGoals.map(g => (
-                            <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '7px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
-                              <div style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Check size={9} color="white" strokeWidth={3} />
+                      {/* ── Right: notes + goals ── */}
+                      <div style={{ paddingLeft: '28px' }}>
+                        {initialNote ? (<>
+                          {sectionLabel('What do we know going into this trial?')}
+                          <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                        </>) : (
+                          <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 16px 0' }}>No notes entered.</p>
+                        )}
+                        {parsedGoals.length > 0 && (<>
+                          {sectionLabel('Trial goals')}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            {parsedGoals.map(g => (
+                              <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '7px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
+                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', background: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <Check size={9} color="white" strokeWidth={3} />
+                                </div>
+                                <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e' }}>{GOAL_LABELS[g] || g}</span>
                               </div>
-                              <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e', flex: 1 }}>{GOAL_LABELS[g] || g}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>)}
+                            ))}
+                          </div>
+                        </>)}
+                        {!initialNote && parsedGoals.length === 0 && (
+                          <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes or goals recorded.</p>
+                        )}
+                      </div>
 
                     </div>
                   ) : (
