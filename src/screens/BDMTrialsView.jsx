@@ -630,15 +630,11 @@ const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
 // ─────────────────────────────────────────────
 const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
   const venueReadings = readings.filter(r => r.venueId === venue.id && r.readingDate >= (venue.trialStartDate || ''));
-  // Fresh fills = oilAge 1, meaning a full fryer capacity refill
   const freshFills = venueReadings.filter(r => r.oilAge === 1 && r.litresFilled > 0);
   const freshLitres = freshFills.reduce((sum, r) => sum + (parseFloat(r.litresFilled) || 0), 0);
-  // Top-ups = oilAge > 1, with litres filled
   const topUps = venueReadings.filter(r => r.oilAge > 1 && r.litresFilled > 0);
   const topUpLitres = topUps.reduce((sum, r) => sum + (parseFloat(r.litresFilled) || 0), 0);
   const systemTotal = freshLitres + topUpLitres;
-
-  // Trial duration
   const startDate = venue.trialStartDate ? new Date(venue.trialStartDate + 'T00:00:00') : null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const daysElapsed = startDate ? Math.max(1, Math.floor((today - startDate) / 86400000)) : 0;
@@ -651,18 +647,35 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
   const dollarsSaved = litresSaved !== null && currentPrice > 0 ? Math.round((preTrialAvg * currentPrice - litresPerWeek * offeredPrice) * 100) / 100 : null;
   const totalNum = systemTotal;
 
+  // Trial goals — parse from trialNotes
+  const GOAL_OPTIONS = [
+    { key: 'save-money',     label: 'Save money',          icon: DollarSign },
+    { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
+    { key: 'food-quality',   label: 'Better food quality', icon: Award      },
+    { key: 'food-colour',    label: 'Improve food colour', icon: Palette    },
+    { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
+    { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
+  ];
+  const goalsLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
+  const trialGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
+  const [achievedGoals, setAchievedGoals] = useState(trialGoals); // default: all ticked
+
+  const toggleGoal = (key) => {
+    setAchievedGoals(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
+
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-        <div style={{ padding: '14px 16px', borderLeft: '4px solid #f59e0b', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '14px 16px', borderLeft: '4px solid #f59e0b', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>End Trial</div>
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{venue.name}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} color="#94a3b8" /></button>
         </div>
-        <div style={{ padding: '16px' }}>
-          {/* Start / End dates */}
+        <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
+          {/* Start / End / Duration */}
           <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Start</div>
@@ -729,10 +742,45 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
             </div>
           )}
 
+          {/* Trial goals achieved */}
+          {trialGoals.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px' }}>Goals Achieved?</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {trialGoals.map(key => {
+                  const opt = GOAL_OPTIONS.find(o => o.key === key);
+                  if (!opt) return null;
+                  const Icon = opt.icon;
+                  const checked = achievedGoals.includes(key);
+                  return (
+                    <button key={key} onClick={() => toggleGoal(key)} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '9px 12px', borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
+                      border: `1.5px solid ${checked ? '#10b981' : '#e2e8f0'}`,
+                      background: checked ? '#f0fdf4' : 'white',
+                      transition: 'all 0.1s',
+                    }}>
+                      <div style={{
+                        width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                        border: `2px solid ${checked ? '#10b981' : '#d1d5db'}`,
+                        background: checked ? '#10b981' : 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {checked && <Check size={11} color="white" strokeWidth={3} />}
+                      </div>
+                      <Icon size={14} color={checked ? '#059669' : '#94a3b8'} />
+                      <span style={{ fontSize: '13px', fontWeight: '500', color: checked ? '#065f46' : '#64748b' }}>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={() => onConfirm(venue.id, totalNum)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
               Confirm End Trial
             </button>
           </div>
@@ -852,7 +900,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     customerCode: '', venueName: '',
     competitor: '',
     trialOilId: '', fryerCount: 1, fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
-    avgLitresPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
+    avgLitresPerWeek: '', fryerChangesPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
   });
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
@@ -1100,8 +1148,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     }
   };
 
-  const handleEndTrial = async (venueId) => {
-    await updateVenue(venueId, { trialStatus: 'pending', trialEndDate: getTodayString() });
+  const handleEndTrial = async (venueId, _totalLitres, achievedGoalsList = []) => {
+    const v = venues.find(x => x.id === venueId);
+    // Preserve existing trialNotes, replacing or appending [GoalsAchieved:] line
+    const existingNotes = v?.trialNotes || '';
+    const lines = existingNotes.split('\n').filter(l => !l.trim().startsWith('[GoalsAchieved:'));
+    if (achievedGoalsList.length > 0) {
+      lines.push(`[GoalsAchieved: ${achievedGoalsList.join(', ')}]`);
+    }
+    const newTrialNotes = lines.filter(Boolean).join('\n');
+    await updateVenue(venueId, { trialStatus: 'pending', trialEndDate: getTodayString(), trialNotes: newTrialNotes });
     setEndTrialModal(null);
     setSuccessMsg('Trial Ended');
   };
@@ -1229,11 +1285,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       // 2. Insert trial linked to that venue
       const goalsLine = newTrialForm.trialGoals.length > 0 ? `[Goals: ${newTrialForm.trialGoals.join(', ')}]` : '';
+      const fryerChangesLine = newTrialForm.fryerChangesPerWeek ? `[FryerChanges: ${newTrialForm.fryerChangesPerWeek}]` : '';
       const newTrialObj = {
         venueId: venueRow.id,
         trialStatus: 'pipeline',
         trialOilId: newTrialForm.trialOilId,
-        trialNotes: [trialId, goalsLine, newTrialForm.notes].filter(Boolean).join('\n'),
+        trialNotes: [trialId, goalsLine, fryerChangesLine, newTrialForm.notes].filter(Boolean).join('\n'),
         currentPricePerLitre: parseFloat(newTrialForm.currentPrice),
         offeredPricePerLitre: parseFloat(newTrialForm.offeredPrice),
         currentWeeklyAvg: parseFloat(newTrialForm.avgLitresPerWeek),
@@ -1725,7 +1782,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </div>
       </div>
 
-      {/* Avg Litres/Week + Fryer Count — side by side on desktop */}
+      {/* Row 1: Avg Litres/Week | No. of Fryer Changes/Week */}
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT AVG LITRES/WEEK {req}</label>
@@ -1739,47 +1796,57 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             </div>
           )}
         </div>
-        {/* Right column: Fryer Count + volumes stacked below */}
-        <div>
-          <div style={S.field}>
-            <label style={S.label}>FRYER COUNT {req}</label>
-            <input type="number" min="1" max="20" value={newTrialForm.fryerCount}
-              onChange={e => {
-                const count = parseInt(e.target.value) || 1;
-                setNewTrialForm(f => {
-                  const vols = { ...f.fryerVolumes };
-                  for (let i = 1; i <= count; i++) { if (!vols[i]) vols[i] = ''; }
-                  Object.keys(vols).forEach(k => { if (parseInt(k) > count) delete vols[k]; });
-                  return { ...f, fryerCount: e.target.value, fryerVolumes: vols };
-                });
-              }}
-              style={inputStyle} required
-              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-          </div>
-          {parseInt(newTrialForm.fryerCount) > 0 && (
-            <div style={{ ...S.field, marginTop: '2px' }}>
-              <label style={S.label}>FRYER VOLUMES</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
-                  <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '76px', flexShrink: 0 }}>Fryer {fn}</div>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <input
-                        type="number" min="1" step="1"
-                        value={newTrialForm.fryerVolumes[fn] ?? ''}
-                        onChange={e => setNewTrialForm(f => ({ ...f, fryerVolumes: { ...f.fryerVolumes, [fn]: e.target.value } }))}
-                        placeholder="20"
-                        style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
-                        onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                      />
-                      <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <div style={S.field}>
+          <label style={S.label}>NO. OF FRYER CHANGES/WEEK</label>
+          <input type="number" min="0" step="0.5" value={newTrialForm.fryerChangesPerWeek}
+            onChange={e => setNewTrialForm(f => ({ ...f, fryerChangesPerWeek: e.target.value }))}
+            placeholder="e.g. 2" style={inputStyle}
+            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
+      </div>
+
+      {/* Row 2: Fryer Count | Fryer Volumes */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
+        {/* Left: Fryer Count */}
+        <div style={S.field}>
+          <label style={S.label}>FRYER COUNT {req}</label>
+          <input type="number" min="1" max="20" value={newTrialForm.fryerCount}
+            onChange={e => {
+              const count = parseInt(e.target.value) || 1;
+              setNewTrialForm(f => {
+                const vols = { ...f.fryerVolumes };
+                for (let i = 1; i <= count; i++) { if (!vols[i]) vols[i] = ''; }
+                Object.keys(vols).forEach(k => { if (parseInt(k) > count) delete vols[k]; });
+                return { ...f, fryerCount: e.target.value, fryerVolumes: vols };
+              });
+            }}
+            style={inputStyle} required
+            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+        </div>
+        {/* Right: Fryer Volumes */}
+        {parseInt(newTrialForm.fryerCount) > 0 && (
+          <div style={S.field}>
+            <label style={S.label}>FRYER VOLUMES</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
+                <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '56px', flexShrink: 0 }}>Fryer {fn}</div>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <input
+                      type="number" min="1" step="1"
+                      value={newTrialForm.fryerVolumes[fn] ?? ''}
+                      onChange={e => setNewTrialForm(f => ({ ...f, fryerVolumes: { ...f.fryerVolumes, [fn]: e.target.value } }))}
+                      placeholder="20"
+                      style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
+                      onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                    <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Est. Start Date + Est. End Date — side by side on desktop */}
@@ -2522,6 +2589,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const avgOilAge = statsAvg(oilAgeVals);
     const tpmColor = (v) => v != null ? (v <= 14 ? '#059669' : v <= 18 ? '#d97706' : '#dc2626') : '#94a3b8';
 
+    // Parsed metadata from trialNotes — available to all sub-tabs
+    const _fryerChangesLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[FryerChanges:')) || '';
+    const fryerChangesPerWeek = _fryerChangesLine ? _fryerChangesLine.replace(/^\[FryerChanges:\s*/, '').replace(/\]$/, '').trim() : null;
+    const _goalsLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
+    const trialGoalsList = _goalsLine ? _goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
+    const _achievedLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[GoalsAchieved:')) || '';
+    const achievedGoals = _achievedLine ? _achievedLine.replace(/^\[GoalsAchieved:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
+
+    // Summary report computed values
+    const compObj = competitors.find(c => c.id === venue.competitor);
+    const compName = compObj?.name || '';
+    const compOilObj = oilTypes.find(o => o.id === venue.defaultOil);
+    const compOilName = compOilObj?.name || '';
+    const trialOilObj = oilTypes.find(o => o.id === venue.trialOilId);
+    const trialOilName = trialOilObj?.name || '';
+    const trialDuration = calDays.length;
+    const totalTrialLitres = allTrialReadings.reduce((sum, r) => sum + (parseFloat(r.litresFilled) || 0), 0);
+    const compWeeklySpend = preTrialAvg && currentPrice ? Math.round(preTrialAvg * currentPrice * 100) / 100 : null;
+    const trialWeeklySpend = liveTrialAvg !== null && trialPrice ? Math.round(liveTrialAvg * trialPrice * 100) / 100 : null;
+    const compYearlySpend = compWeeklySpend !== null ? Math.round(compWeeklySpend * 52 * 100) / 100 : null;
+    const trialYearlySpend = trialWeeklySpend !== null ? Math.round(trialWeeklySpend * 52 * 100) / 100 : null;
+    const pctLitresReduced = weekLitres !== null && preTrialAvg ? Math.round((weekLitres / preTrialAvg) * 1000) / 10 : null;
+    const pctCostSaved = weekSpend !== null && compWeeklySpend ? Math.round((weekSpend / compWeeklySpend) * 1000) / 10 : null;
+
     // Shared notes parser
     const parseNotes = () => {
       const notes = [];
@@ -2601,11 +2692,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const initCompOil = oilTypes.find(o => o.id === venue.defaultOil);
         const initGoalsLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
         const initGoals = initGoalsLine ? initGoalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
+        const initFCLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[FryerChanges:')) || '';
+        const initFryerChanges = initFCLine ? initFCLine.replace(/^\[FryerChanges:\s*/, '').replace(/\]$/, '').trim() : '';
         setManageEditForm({
           name: venue.name || '',
           notesText: initNotesText,
           trialType: initCompOil?.competitorId ? 'new' : 'existing',
           trialGoals: initGoals,
+          fryerChangesPerWeek: initFryerChanges,
           currentPricePerLitre: venue.currentPricePerLitre ? String(venue.currentPricePerLitre) : '',
           offeredPricePerLitre: venue.offeredPricePerLitre ? String(venue.offeredPricePerLitre) : '',
           trialStartDate: venue.trialStartDate || '', trialEndDate: venue.trialEndDate || '',
@@ -2634,11 +2728,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const handleMSave = async () => {
       setManageSaving(true);
       const avgL = mEditForm.avgLitresPerWeek ? parseFloat(mEditForm.avgLitresPerWeek) : null;
-      // Reconstruct trialNotes: keep TRL-ID + [Note ...] lines, rebuild Goals
+      // Reconstruct trialNotes: keep TRL-ID, rebuild Goals/FryerChanges, preserve GoalsAchieved + [Note...] lines
       const trialIdLines = (venue.trialNotes || '').split('\n').filter(l => /TRL-\d+/.test(l.trim()));
       const noteCommentLines = (venue.trialNotes || '').split('\n').filter(l => l.trim().match(/^\[Note /));
+      const savedAchievedLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[GoalsAchieved:')) || '';
       const newGoalsLine = (mEditForm.trialGoals || []).length > 0 ? `[Goals: ${mEditForm.trialGoals.join(', ')}]` : '';
-      const newTrialNotes = [...trialIdLines, newGoalsLine, mEditForm.notesText, ...noteCommentLines].filter(Boolean).join('\n');
+      const newFryerChangesLine = mEditForm.fryerChangesPerWeek ? `[FryerChanges: ${mEditForm.fryerChangesPerWeek}]` : '';
+      const newTrialNotes = [...trialIdLines, newGoalsLine, newFryerChangesLine, savedAchievedLine, mEditForm.notesText, ...noteCommentLines].filter(Boolean).join('\n');
       await handleSaveTrialEdits(venue.id, {
         name: mEditForm.name.trim() || venue.name,
         trialNotes: newTrialNotes,
@@ -2830,6 +2926,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
               const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes', 'extend-life': 'Extend oil life' };
               const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Palette, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
+              // fryerChangesPerWeek and achievedGoals are available from the outer scope
               // Type: new prospect (vs competitor) or existing customer
               const isNewProspect = !!comp;
               const typeBadge = isNewProspect
@@ -2904,10 +3001,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {fld('Fryer count', fc ? String(fc) : null)}
                           {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
                           {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
-                          {/* Row 4: Pre-trial weekly avg | Vol bracket */}
+                          {/* Row 4: Pre-trial weekly avg | Vol bracket | No. of fryer changes */}
                           {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
                           {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
-                          <div />
+                          {fld('Fryer changes / wk', fryerChangesPerWeek ? `${fryerChangesPerWeek}×` : null)}
                           {/* Row 5: Start date | End date */}
                           {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                           {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
@@ -3048,7 +3145,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         </div>
                       </div>
 
-                      {/* Avg litres/week (left) + Fryer count + volumes (right) */}
+                      {/* Row 1: Avg litres/week (left) | Fryer changes/week (right) */}
                       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
                         <div style={S.field}>
                           <label style={S.label}>CURRENT AVG LITRES / WEEK</label>
@@ -3060,44 +3157,53 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <div style={{ marginTop: '6px' }}><VolumePill bracket={calcVolumeBracket(mEditForm.avgLitresPerWeek)} /></div>
                           )}
                         </div>
-                        <div>
-                          <div style={S.field}>
-                            <label style={S.label}>FRYER COUNT</label>
-                            <input type="number" min="1" max="20" value={mEditForm.fryerCount}
-                              onChange={e => {
-                                const count = parseInt(e.target.value) || 1;
-                                setMEditForm(p => {
-                                  const vols = { ...p.fryerVolumes };
-                                  for (let i = 1; i <= count; i++) { if (!vols[i]) vols[i] = ''; }
-                                  Object.keys(vols).forEach(k => { if (parseInt(k) > count) delete vols[k]; });
-                                  return { ...p, fryerCount: e.target.value, fryerVolumes: vols };
-                                });
-                              }}
-                              style={inputStyle}
-                              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-                          </div>
-                          {parseInt(mEditForm.fryerCount) > 0 && (
-                            <div style={{ ...S.field, marginTop: '2px' }}>
-                              <label style={S.label}>FRYER VOLUMES</label>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                {Array.from({ length: parseInt(mEditForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
-                                  <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '76px', flexShrink: 0 }}>Fryer {fn}</div>
-                                    <div style={{ position: 'relative', flex: 1 }}>
-                                      <input type="number" min="1" step="1"
-                                        value={mEditForm.fryerVolumes?.[fn] ?? ''}
-                                        onChange={e => setMEditForm(p => ({ ...p, fryerVolumes: { ...p.fryerVolumes, [fn]: e.target.value } }))}
-                                        placeholder="20"
-                                        style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
-                                        onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-                                      <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                        <div style={S.field}>
+                          <label style={S.label}>NO. OF FRYER CHANGES / WEEK</label>
+                          <input type="number" min="0" step="0.5" value={mEditForm.fryerChangesPerWeek ?? ''}
+                            onChange={e => setMEditForm(p => ({ ...p, fryerChangesPerWeek: e.target.value }))}
+                            placeholder="e.g. 2" style={inputStyle}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                         </div>
+                      </div>
+
+                      {/* Row 2: Fryer count (left) | Fryer volumes (right) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
+                        <div style={S.field}>
+                          <label style={S.label}>FRYER COUNT</label>
+                          <input type="number" min="1" max="20" value={mEditForm.fryerCount}
+                            onChange={e => {
+                              const count = parseInt(e.target.value) || 1;
+                              setMEditForm(p => {
+                                const vols = { ...p.fryerVolumes };
+                                for (let i = 1; i <= count; i++) { if (!vols[i]) vols[i] = ''; }
+                                Object.keys(vols).forEach(k => { if (parseInt(k) > count) delete vols[k]; });
+                                return { ...p, fryerCount: e.target.value, fryerVolumes: vols };
+                              });
+                            }}
+                            style={inputStyle}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                        </div>
+                        {parseInt(mEditForm.fryerCount) > 0 && (
+                          <div style={S.field}>
+                            <label style={S.label}>FRYER VOLUMES</label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {Array.from({ length: parseInt(mEditForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
+                                <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '56px', flexShrink: 0 }}>Fryer {fn}</div>
+                                  <div style={{ position: 'relative', flex: 1 }}>
+                                    <input type="number" min="1" step="1"
+                                      value={mEditForm.fryerVolumes?.[fn] ?? ''}
+                                      onChange={e => setMEditForm(p => ({ ...p, fryerVolumes: { ...p.fryerVolumes, [fn]: e.target.value } }))}
+                                      placeholder="20"
+                                      style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
+                                      onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                                    <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Start date | End date */}
@@ -3203,10 +3309,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
               return (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Results</div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: fc > 1 ? '10px' : '0' }}>Trial Results</div>
                     {fc > 1 && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {fryerList.map(fn => (
                           <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
                             padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
@@ -3306,12 +3412,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
             })()}
 
-            {/* ── Trial Calendar (grid) ── */}
+            {/* ── Trial Calendar (fryer × day matrix) ── */}
             {manageSubTab === 'tpcal' && (() => {
-              const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-              const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-              const activeFryer = calFryerTab;
-
               if (calDays.length === 0) return (
                 <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                   <Calendar size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
@@ -3319,85 +3421,61 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
 
-              // Pad calDays to full weeks (Sun–Sat)
-              const firstDay = calDays[0];
-              const lastDay = calDays[calDays.length - 1];
-              const startSun = new Date(firstDay); startSun.setDate(startSun.getDate() - startSun.getDay());
-              const endSat = new Date(lastDay); endSat.setDate(endSat.getDate() + (6 - endSat.getDay()));
-              const weeks = [];
-              let d = new Date(startSun);
-              while (d <= endSat) {
-                const week = [];
-                for (let i = 0; i < 7; i++) { week.push(new Date(d)); d.setDate(d.getDate() + 1); }
-                weeks.push(week);
-              }
-              const trialStart = venue.trialStartDate || '';
-              const trialEnd = venue.trialEndDate || getTodayString();
-
-              const cellTpmBg = tpm => tpm == null ? 'transparent' : tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
-              const cellTpmColor = tpm => tpm == null ? '#94a3b8' : tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+              const cellTpmBg = tpm => tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
+              const cellTpmCol = tpm => tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+              const CELL_W = 48;
+              const CELL_H = 44;
+              const ROW_LABEL_W = 68;
 
               return (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Calendar</div>
-                    {fc > 1 && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {fryerList.map(fn => (
-                          <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
-                            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-                            border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
-                            background: activeFryer === fn ? '#1a428a' : 'white',
-                            color: activeFryer === fn ? 'white' : '#64748b',
-                          }}>Fryer {fn}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Trial Calendar</div>
 
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ borderCollapse: 'separate', borderSpacing: '4px', minWidth: '500px' }}>
+                    <table style={{ borderCollapse: 'separate', borderSpacing: '3px' }}>
                       <thead>
                         <tr>
-                          {DAY_NAMES.map(dn => (
-                            <th key={dn} style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', padding: '4px 8px', textAlign: 'center', width: '80px' }}>{dn}</th>
+                          {/* Empty corner cell */}
+                          <th style={{ width: `${ROW_LABEL_W}px`, minWidth: `${ROW_LABEL_W}px` }} />
+                          {calDays.map((_, idx) => (
+                            <th key={idx} style={{
+                              width: `${CELL_W}px`, minWidth: `${CELL_W}px`, textAlign: 'center',
+                              fontSize: '10px', fontWeight: '700', color: '#94a3b8',
+                              padding: '4px 2px', letterSpacing: '0.2px',
+                            }}>Day {idx + 1}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {weeks.map((week, wi) => (
-                          <tr key={wi}>
-                            {week.map((day, di) => {
-                              const ds = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
-                              const inTrial = ds >= trialStart && ds <= trialEnd;
-                              const dayRecs = inTrial ? (readingsByDate[ds] || []).filter(r => (r.fryerNumber || 1) === activeFryer) : [];
+                        {fryerList.map(fn => (
+                          <tr key={fn}>
+                            <td style={{
+                              width: `${ROW_LABEL_W}px`, minWidth: `${ROW_LABEL_W}px`,
+                              fontSize: '11px', fontWeight: '700', color: '#1a428a',
+                              paddingRight: '8px', whiteSpace: 'nowrap', verticalAlign: 'middle',
+                            }}>
+                              {fc > 1 ? `Fryer ${fn}` : 'TPM'}
+                            </td>
+                            {calDays.map((day, idx) => {
+                              const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+                              const dayRecs = (readingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === fn);
                               const r = dayRecs[dayRecs.length - 1] || null;
                               const isFuture = day > today;
-                              const missed = inTrial && !r && !isFuture;
-                              const isFresh = r?.oilAge === 1;
-                              const hasFill = r?.litresFilled > 0;
+                              const missed = !r && !isFuture;
                               return (
-                                <td key={di} style={{
-                                  width: '80px', height: '72px', minWidth: '80px',
-                                  background: inTrial ? (r?.tpmValue != null ? cellTpmBg(r.tpmValue) : 'white') : '#f8fafc',
-                                  border: inTrial ? '1px solid #e2e8f0' : '1px solid transparent',
-                                  borderRadius: '8px', padding: '5px 6px', verticalAlign: 'top',
-                                  opacity: isFuture ? 0.35 : 1,
+                                <td key={idx} style={{
+                                  width: `${CELL_W}px`, minWidth: `${CELL_W}px`,
+                                  height: `${CELL_H}px`,
+                                  background: r?.tpmValue != null ? cellTpmBg(r.tpmValue) : isFuture ? '#f8fafc' : 'white',
+                                  border: '1px solid #e2e8f0', borderRadius: '6px',
+                                  textAlign: 'center', verticalAlign: 'middle',
+                                  opacity: isFuture ? 0.3 : 1,
                                 }}>
-                                  {inTrial && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
-                                      <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8' }}>{day.getDate()} {MONTHS_SHORT[day.getMonth()]}</div>
-                                      {r?.tpmValue != null
-                                        ? <div style={{ fontSize: '24px', fontWeight: '800', color: cellTpmColor(r.tpmValue), textAlign: 'center', lineHeight: 1 }}>{r.tpmValue}</div>
-                                        : <div style={{ fontSize: '10px', color: '#cbd5e1', textAlign: 'center', fontStyle: 'italic' }}>{missed ? 'Missed' : '—'}</div>
-                                      }
-                                      {hasFill && (
-                                        <div style={{ fontSize: '8px', fontWeight: '700', textAlign: 'center', background: isFresh ? '#fed7aa' : '#dbeafe', color: isFresh ? '#c2410c' : '#1e40af', borderRadius: '3px', padding: '1px 4px', alignSelf: 'center' }}>
-                                          {isFresh ? `⬤ ${r.litresFilled}L` : `+${r.litresFilled}L`}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
+                                  {r?.tpmValue != null ? (
+                                    <span style={{ fontSize: '15px', fontWeight: '800', color: cellTpmCol(r.tpmValue) }}>{r.tpmValue}</span>
+                                  ) : missed ? (
+                                    <span style={{ fontSize: '9px', color: '#cbd5e1', fontStyle: 'italic' }}>—</span>
+                                  ) : null}
                                 </td>
                               );
                             })}
@@ -3407,7 +3485,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </table>
                   </div>
 
-                  {/* Calendar legend */}
+                  {/* Legend */}
                   <div style={{ display: 'flex', gap: '14px', marginTop: '14px', flexWrap: 'wrap' }}>
                     {[
                       { bg: '#d1fae5', color: '#059669', label: '≤14 TPM' },
@@ -3450,14 +3528,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const recordedTPMs = chartData.filter(d => d.tpm != null).map(d => d.tpm);
               const yMax = recordedTPMs.length > 0 ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, 24) : 24;
 
-              // SVG layout constants — larger chart
+              // SVG layout constants — wider chart
               const CHART_H = 280;
               const TOP_PAD = 56;
               const BOT_PAD = 56;
               const LEFT_PAD = 44;
-              const RIGHT_PAD = 16;
-              const BAR_W = 26;
-              const STEP = 34;
+              const RIGHT_PAD = 24;
+              const BAR_W = 36;
+              const STEP = 48;
               const N = chartData.length;
               const SVG_W = LEFT_PAD + N * STEP + RIGHT_PAD;
               const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
@@ -3472,10 +3550,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
               return (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>TPM Chart</div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: fc > 1 ? '10px' : '0' }}>TPM Chart</div>
                     {fc > 1 && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {fryerList.map(fn => (
                           <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
                             padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
@@ -3505,7 +3583,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </div>
 
                   {/* Chart */}
-                  <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+                  <div style={{ overflowX: 'auto', overflowY: 'visible', display: 'flex', justifyContent: 'center' }}>
                     <svg width={SVG_W} height={SVG_H} style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
 
                       {/* Y-axis gridlines + labels */}
@@ -3635,53 +3713,183 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             )}
 
             {/* ── Summary Report ── */}
-            {manageSubTab === 'summary' && (
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Summary Report</div>
-                <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    <TrialStatusBadge status={venue.trialStatus} />
-                    <StateBadge state={venue.state} />
-                    {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    {[
-                      { label: 'Trial Start', value: displayDate(venue.trialStartDate) || '—' },
-                      { label: 'Trial End', value: venue.trialEndDate ? displayDate(venue.trialEndDate) : '—' },
-                      { label: 'Competitor $/L', value: venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : '—' },
-                      { label: 'Offered $/L', value: venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : '—' },
-                      { label: 'Pre-trial L/wk', value: preTrialAvg ? `${preTrialAvg} L` : '—' },
-                      { label: 'Trial L/wk', value: liveTrialAvg !== null ? `${liveTrialAvg} L` : '—' },
-                      { label: 'Total Readings', value: allTrialReadings.length },
-                      { label: 'Avg TPM', value: avgTPM !== null ? avgTPM.toFixed(1) : '—' },
-                    ].map(item => (
-                      <div key={item.label} style={{ padding: '8px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{item.label}</div>
-                        <div style={{ fontSize: '14px', fontWeight: '700', color: '#1f2937' }}>{item.value}</div>
-                      </div>
-                    ))}
-                  </div>
+            {manageSubTab === 'summary' && (() => {
+              const GOAL_LABELS = {
+                'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste',
+                'food-quality': 'Better food quality', 'food-colour': 'Improve food colour',
+                'reduce-changes': 'Fewer fryer changes', 'extend-life': 'Extend oil life',
+              };
+              const sumFld = (label, value) => (
+                <div key={label} style={{ display: 'flex', flexDirection: 'column', padding: '7px 10px', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>{label}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>{value ?? '—'}</span>
                 </div>
-                {weekLitres !== null && (
-                  <div style={{ background: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0', padding: '16px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#059669', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '10px' }}>Projected Savings</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      {[
-                        { label: 'Weekly Litres', value: (weekLitres < 0 ? '-' : '') + Math.abs(weekLitres) + ' L' },
-                        { label: 'Weekly Spend', value: weekSpend !== null ? (weekSpend < 0 ? '-$' : '$') + Math.abs(weekSpend).toLocaleString() : '—' },
-                        { label: 'Annual Litres', value: (annualLitres < 0 ? '-' : '') + Math.abs(annualLitres) + ' L' },
-                        { label: 'Annual Spend', value: annualSpend !== null ? (annualSpend < 0 ? '-$' : '$') + Math.abs(annualSpend).toLocaleString() : '—' },
-                      ].map(item => (
-                        <div key={item.label} style={{ padding: '8px', background: 'white', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#059669', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{item.label}</div>
-                          <div style={{ fontSize: '14px', fontWeight: '700', color: '#065f46' }}>{item.value}</div>
-                        </div>
-                      ))}
+              );
+              const compWklyAvg = preTrialAvg || null;
+              const fmt$ = v => v != null ? `$${parseFloat(v).toFixed(2)}` : '—';
+              const fmtL = v => v != null ? `${v} L` : '—';
+
+              return (
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Summary Report</div>
+
+                  {/* ── Key Info ── */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', marginBottom: '16px' }}>
+                    <div style={{ padding: '8px 10px', background: '#1a428a', borderBottom: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '700', color: 'white', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Trial Overview</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', background: 'white' }}>
+                      {sumFld('Trial Start', displayDate(venue.trialStartDate))}
+                      {sumFld('Trial End', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
+                      {sumFld('Duration', trialDuration > 0 ? `${trialDuration} days` : null)}
+                      {sumFld('Competitor', compName || null)}
+                      {sumFld('Comp Oil', compOilName || null)}
+                      {sumFld('Comp Price', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
+                      {sumFld('Vol Bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
+                      {sumFld('Pre-trial Avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
+                      {sumFld('Fryer Changes/wk', fryerChangesPerWeek ? `${fryerChangesPerWeek}×` : null)}
+                      {sumFld('Fryers', fc)}
+                      {sumFld('Trial Oil', trialOilName || null)}
+                      {sumFld('Offered Price', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
+                      {sumFld('Trial Litres Total', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                      {sumFld('Trial Weekly Avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
+                      {sumFld('Avg TPM', avgTPM !== null ? avgTPM.toFixed(1) : null)}
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {/* ── Comparison Table ── */}
+                  {(compWklyAvg || liveTrialAvg !== null) && (
+                    <div style={{ marginBottom: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                      <div style={{ padding: '8px 10px', background: '#1a428a' }}>
+                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'white', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Comparison</span>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '480px' }}>
+                          <thead>
+                            <tr style={{ background: '#f8fafc' }}>
+                              {['', 'Oil', 'Price/L', 'Litres/wk', 'Spend/wk', 'Spend/yr'].map(h => (
+                                <th key={h} style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: h === '' ? 'left' : 'right', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Competitor row */}
+                            <tr>
+                              <td style={{ padding: '7px 10px', fontSize: '11px', fontWeight: '700', color: '#64748b', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>Competitor</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{compOilName || '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$(compWeeklySpend) : '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$(compYearlySpend) : '—'}</td>
+                            </tr>
+                            {/* Trial row */}
+                            <tr>
+                              <td style={{ padding: '7px 10px', fontSize: '11px', fontWeight: '700', color: '#1a428a', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>Trial</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{trialOilName || '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
+                              <td style={{ padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
+                            </tr>
+                            {/* Difference row */}
+                            {weekSpend !== null && (
+                              <tr style={{ background: weekSpend >= 0 ? '#f0fdf4' : '#fff7ed' }}>
+                                <td style={{ padding: '7px 10px', fontSize: '11px', fontWeight: '700', color: weekSpend >= 0 ? '#059669' : '#d97706', whiteSpace: 'nowrap' }}>Difference</td>
+                                <td style={{ padding: '7px 10px', textAlign: 'right' }} />
+                                <td style={{ padding: '7px 10px', textAlign: 'right' }} />
+                                <td style={{ padding: '7px 10px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                  {weekLitres != null ? `${weekLitres >= 0 ? '-' : '+'}${fmtL(Math.abs(weekLitres))}` : '—'}
+                                </td>
+                                <td style={{ padding: '7px 10px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                  {weekSpend >= 0 ? `-${fmt$(weekSpend)}` : `+${fmt$(Math.abs(weekSpend))}`}
+                                </td>
+                                <td style={{ padding: '7px 10px', fontSize: '12px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
+                                  {annualSpend != null ? (annualSpend >= 0 ? `-${fmt$(annualSpend)}` : `+${fmt$(Math.abs(annualSpend))}`) : '—'}
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Projected Consumption Reduction ── */}
+                  {weekLitres !== null && (
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', overflow: 'hidden', marginBottom: '16px' }}>
+                      <div style={{ padding: '8px 10px', background: '#059669' }}>
+                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'white', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Projected Consumption Reduction</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', background: 'white' }}>
+                        <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '3px' }}>Weekly Litres Reduced</div>
+                          <div style={{ fontSize: '16px', fontWeight: '800', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>{weekLitres >= 0 ? fmtL(weekLitres) : `+${fmtL(Math.abs(weekLitres))}`}</div>
+                        </div>
+                        <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '3px' }}>Yearly Litres Reduced</div>
+                          <div style={{ fontSize: '16px', fontWeight: '800', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>{annualLitres != null ? (annualLitres >= 0 ? fmtL(annualLitres) : `+${fmtL(Math.abs(annualLitres))}`) : '—'}</div>
+                        </div>
+                        <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '3px' }}>% Reduced Usage</div>
+                          <div style={{ fontSize: '16px', fontWeight: '800', color: pctLitresReduced != null && pctLitresReduced >= 0 ? '#059669' : '#dc2626' }}>{pctLitresReduced != null ? `${pctLitresReduced >= 0 ? '' : '+'}${Math.abs(pctLitresReduced).toFixed(1)}%` : '—'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Projected Cost Savings ── */}
+                  {weekSpend !== null && (
+                    <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', overflow: 'hidden', marginBottom: '16px' }}>
+                      <div style={{ padding: '8px 10px', background: '#ea580c' }}>
+                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'white', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Projected Cost Savings</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', background: 'white' }}>
+                        <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '3px' }}>Weekly Savings</div>
+                          <div style={{ fontSize: '16px', fontWeight: '800', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>{weekSpend >= 0 ? fmt$(weekSpend) : `-${fmt$(Math.abs(weekSpend))}`}</div>
+                        </div>
+                        <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '3px' }}>Yearly Savings</div>
+                          <div style={{ fontSize: '16px', fontWeight: '800', color: annualSpend != null && annualSpend >= 0 ? '#059669' : '#dc2626' }}>{annualSpend != null ? (annualSpend >= 0 ? fmt$(annualSpend) : `-${fmt$(Math.abs(annualSpend))}`) : '—'}</div>
+                        </div>
+                        <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '3px' }}>% Cost Savings</div>
+                          <div style={{ fontSize: '16px', fontWeight: '800', color: pctCostSaved != null && pctCostSaved >= 0 ? '#059669' : '#dc2626' }}>{pctCostSaved != null ? `${Math.abs(pctCostSaved).toFixed(1)}%` : '—'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Trial Goals Achieved ── */}
+                  {trialGoalsList.length > 0 && (
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                      <div style={{ padding: '8px 10px', background: '#1a428a' }}>
+                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'white', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Trial Goals Achieved</span>
+                      </div>
+                      <div style={{ background: 'white', padding: '4px 0' }}>
+                        {trialGoalsList.map(key => {
+                          const label = GOAL_LABELS[key] || key;
+                          const achieved = achievedGoals.includes(key);
+                          return (
+                            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderBottom: '1px solid #f8fafc' }}>
+                              <div style={{
+                                width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
+                                background: achieved ? '#10b981' : '#f1f5f9',
+                                border: `2px solid ${achieved ? '#10b981' : '#e2e8f0'}`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>
+                                {achieved && <Check size={12} color="white" strokeWidth={3} />}
+                              </div>
+                              <span style={{ fontSize: '13px', fontWeight: '500', color: achieved ? '#065f46' : '#94a3b8', textDecoration: achieved ? 'none' : 'none' }}>{label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
           </div>
         </div>
