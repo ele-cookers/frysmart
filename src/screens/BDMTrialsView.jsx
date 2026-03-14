@@ -2422,13 +2422,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const statusCounts = {};
     allTrials.forEach(v => { statusCounts[v.trialStatus] = (statusCounts[v.trialStatus] || 0) + 1; });
 
-    // Fixed width for all badge/value columns — name column fills remaining space
-    const VOL_W = '84px';
-    const SUPPLIER_W = '96px';
-    const OIL_W = '82px';
-    const PRICE_COL_W = '58px';
-    const DATE_W = '68px';
-    const STATUS_W = '90px';
+    // Name column fixed; every other column is exactly equal width
+    const NAME_W = '120px';
+    const COL_W = '84px'; // VOL, SUPPLIER, OIL×2, PRICE×2, DATE×2, STATUS
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -2500,16 +2496,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <table className="bdm-table" style={{ width: '100%', tableLayout: 'fixed' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
-              <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{}} />
-              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: VOL_W }} />}
-              {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: SUPPLIER_W }} />}
-              {mc('compOil') && <FilterableTh colKey="compOil" label="Curr. Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: OIL_W }} />}
-              {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: OIL_W }} />}
-              {mc('currentPrice') && <FilterableTh colKey="currentPrice" label="Curr. $/L" options={getUniqueValues(statusFiltered, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: PRICE_COL_W }} />}
-              {mc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Off $/L" options={getUniqueValues(statusFiltered, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: PRICE_COL_W }} />}
-              {mc('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(statusFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: DATE_W }} />}
-              {mc('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(statusFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: DATE_W }} />}
-              {mc('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: STATUS_W }} />}
+              <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: NAME_W }} />
+              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('compOil') && <FilterableTh colKey="compOil" label="Curr. Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('currentPrice') && <FilterableTh colKey="currentPrice" label="Curr. $/L" options={getUniqueValues(statusFiltered, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Off $/L" options={getUniqueValues(statusFiltered, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('start') && <FilterableTh colKey="start" label="Start" options={getUniqueValues(statusFiltered, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('end') && <FilterableTh colKey="end" label="End" options={getUniqueValues(statusFiltered, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('status') && <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
             </tr></thead>
             <tbody>
               {rows.length === 0 ? (
