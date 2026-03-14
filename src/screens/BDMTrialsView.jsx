@@ -1761,13 +1761,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
               <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', minWidth: '52px' }}>Fryer {fn}</div>
-                <div style={{ position: 'relative', flex: 1 }}>
+                <div style={{ position: 'relative', width: '140px' }}>
                   <input
                     type="number" min="1" step="1"
                     value={newTrialForm.fryerVolumes[fn] ?? ''}
                     onChange={e => setNewTrialForm(f => ({ ...f, fryerVolumes: { ...f.fryerVolumes, [fn]: e.target.value } }))}
                     placeholder="20"
-                    style={{ ...inputStyle, paddingRight: '28px' }}
+                    style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
                     onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                   />
                   <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
@@ -2714,19 +2714,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {/* Top sub-tab panel */}
         <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
           {/* Top tab bar */}
-          <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', overflowX: 'auto', background: '#f8fafc' }}>
+          <div style={{ display: 'flex', background: '#eef2f8', borderBottom: '2px solid #d1dce8' }}>
             {manageTabs.map(tab => {
               const TabIcon = tab.icon;
               const isActive = manageSubTab === tab.key;
               return (
                 <button key={tab.key} onClick={() => setManageSubTab(tab.key)} style={{
-                  flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '11px 16px', border: 'none', borderBottom: isActive ? '2px solid #1a428a' : '2px solid transparent',
-                  background: 'transparent', color: isActive ? '#1a428a' : '#64748b',
-                  fontSize: '13px', fontWeight: isActive ? '600' : '500',
-                  cursor: 'pointer', whiteSpace: 'nowrap',
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                  padding: '12px 8px', border: 'none',
+                  borderBottom: isActive ? '2px solid #1a428a' : '2px solid transparent',
+                  marginBottom: '-2px',
+                  background: isActive ? 'white' : 'transparent',
+                  color: isActive ? '#1a428a' : '#64748b',
+                  fontSize: '12px', fontWeight: isActive ? '700' : '500',
+                  cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s',
                 }}>
-                  <TabIcon size={14} />
+                  <TabIcon size={13} />
                   {tab.label}
                 </button>
               );
@@ -2878,11 +2881,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
               const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
               const activeFryer = calFryerTab;
-              const thStyle = { padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
-              const tdBase = { padding: '7px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' };
+              const EQ_W = '76px'; // equal width for Weekday → Filtered columns
+              const thBase = { padding: '8px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
+              const tdBase = { padding: '7px 6px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' };
               const badge = (label, bg, color) => (
-                <span style={{ fontSize: '10px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '2px 7px', whiteSpace: 'nowrap', display: 'inline-block' }}>{label}</span>
+                <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '2px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center' }}>{label}</span>
               );
               return (
                 <div>
@@ -2899,20 +2904,34 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   )}
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+                      <colgroup>
+                        <col style={{ width: '40px' }} />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: '90px' }} />
+                        <col style={{ width: EQ_W }} />
+                        <col style={{ width: EQ_W }} />
+                        <col />
+                        <col />
+                      </colgroup>
                       <thead>
                         <tr>
-                          <th style={thStyle}>Day</th>
-                          <th style={thStyle}>Weekday</th>
-                          <th style={{ ...thStyle, textAlign: 'left' }}>Date</th>
-                          <th style={thStyle}>TPM</th>
-                          <th style={thStyle}>Set °C</th>
-                          <th style={thStyle}>Actual °C</th>
-                          <th style={thStyle}>Variance</th>
-                          <th style={thStyle}>Fill Type</th>
-                          <th style={thStyle}>Litres</th>
-                          <th style={thStyle}>Filtered</th>
-                          <th style={thStyle}>Food</th>
-                          <th style={{ ...thStyle, textAlign: 'left' }}>Notes</th>
+                          <th style={thBase}>Day</th>
+                          <th style={thBase}>Weekday</th>
+                          <th style={thBase}>Date</th>
+                          <th style={thBase}>TPM</th>
+                          <th style={thBase}>Set °C</th>
+                          <th style={thBase}>Actual °C</th>
+                          <th style={thBase}>Variance °C</th>
+                          <th style={thBase}>Fill Type</th>
+                          <th style={thBase}>Litres</th>
+                          <th style={thBase}>Filtered</th>
+                          <th style={{ ...thBase, textAlign: 'left' }}>Food</th>
+                          <th style={{ ...thBase, textAlign: 'left' }}>Notes</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2925,37 +2944,40 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const isToppedUp = r && r.litresFilled > 0 && !isFresh;
                           const variance = (r?.actualTemperature != null && r?.setTemperature != null) ? (r.actualTemperature - r.setTemperature) : null;
                           const tpmCol = r?.tpmValue != null ? tpmColor(r.tpmValue) : '#1f2937';
+                          const tpmBg = r?.tpmValue != null ? (r.tpmValue <= 14 ? '#d1fae5' : r.tpmValue <= 18 ? '#fef3c7' : '#fee2e2') : 'transparent';
                           const missed = !r && !isFuture;
                           const varInRange = variance != null && Math.abs(variance) <= 5;
                           const varOutRange = variance != null && Math.abs(variance) > 5;
+                          const dash = missed ? '' : '—'; // blank for missed days, dash for future
+                          const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}`;
                           return (
                             <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1 }}>
-                              <td style={{ ...tdBase, fontWeight: '700', color: '#1a428a', fontSize: '13px' }}>{idx + 1}</td>
+                              <td style={{ ...tdBase, fontWeight: '500', color: '#64748b', fontSize: '13px' }}>{idx + 1}</td>
                               <td style={{ ...tdBase, color: '#64748b', fontWeight: '500' }}>{DAYS[day.getDay()]}</td>
-                              <td style={{ ...tdBase, textAlign: 'left', fontWeight: '500', whiteSpace: 'nowrap' }}>
-                                {String(day.getDate()).padStart(2,'0')}/{String(day.getMonth()+1).padStart(2,'0')}
+                              <td style={{ ...tdBase, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
+                              <td style={{ ...tdBase, fontWeight: '700', color: missed ? '#94a3b8' : tpmCol, background: r ? tpmBg : 'transparent' }}>
+                                {r ? (r.tpmValue ?? '—') : missed ? 'Missed' : '—'}
                               </td>
-                              <td style={{ ...tdBase, fontWeight: '700', color: missed ? '#fca5a5' : tpmCol }}>{r ? r.tpmValue ?? '—' : missed ? 'Missed' : '—'}</td>
-                              <td style={tdBase}>{r?.setTemperature ?? '—'}</td>
-                              <td style={tdBase}>{r?.actualTemperature ?? '—'}</td>
+                              <td style={tdBase}>{r ? (r.setTemperature ?? '—') : dash}</td>
+                              <td style={tdBase}>{r ? (r.actualTemperature ?? '—') : dash}</td>
                               <td style={{
                                 ...tdBase, fontWeight: '600',
                                 background: varInRange ? '#d1fae5' : varOutRange ? '#fee2e2' : 'transparent',
                                 color: varInRange ? '#059669' : varOutRange ? '#dc2626' : '#94a3b8',
                               }}>
-                                {variance != null ? (variance > 0 ? '+' : '') + variance + '°' : '—'}
+                                {variance != null ? (variance > 0 ? '+' : '') + variance + '°' : dash}
                               </td>
                               <td style={tdBase}>
                                 {isFresh ? badge('Fresh Fill', '#d1fae5', '#059669')
                                   : isToppedUp ? badge('Top Up', '#dbeafe', '#1e40af')
                                   : ''}
                               </td>
-                              <td style={tdBase}>{(r?.litresFilled > 0) ? `${r.litresFilled}L` : '—'}</td>
+                              <td style={tdBase}>{r ? ((r.litresFilled > 0) ? `${r.litresFilled}L` : '—') : dash}</td>
                               <td style={tdBase}>
                                 {r?.filtered ? badge('Filtered', '#fef3c7', '#d97706') : ''}
                               </td>
-                              <td style={{ ...tdBase, whiteSpace: 'nowrap' }}>
-                                {r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : '—'}
+                              <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>
+                                {r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}
                               </td>
                               <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word', minWidth: '120px', maxWidth: '200px' }}>{r?.notes || ''}</td>
                             </tr>
