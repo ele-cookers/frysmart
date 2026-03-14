@@ -2485,7 +2485,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={{ marginBottom: '8px' }}>
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
-        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 320px)', scrollbarGutter: 'stable' }}>
+        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 320px)', scrollbarGutter: 'stable', paddingRight: '8px' }}>
           <style>{`
             .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
             .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
@@ -2524,11 +2524,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <td style={{ fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{venue.name}</td>
                     {mc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
                     {mc('competitor') && <td style={{ textAlign: 'center' }}>
-                      {vComp ? <CompetitorPill comp={vComp} table /> : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      {vComp
+                        ? <CompetitorPill comp={vComp} table />
+                        : vCompOil && !vCompOil.competitorId
+                          ? <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />
+                          : <span style={{ color: '#cbd5e1' }}>—</span>}
                     </td>}
                     {mc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>
                       {vCompOil && compTier ? (
-                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '80px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vCompOil.name}</span>
+                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vCompOil.name}</span>
                       ) : <span style={{ color: '#cbd5e1' }}>—</span>}
                     </td>}
                     {mc('trialOil') && <td style={{ textAlign: 'center' }}>
