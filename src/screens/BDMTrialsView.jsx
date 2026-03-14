@@ -2582,10 +2582,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     const manageTabs = [
       { key: 'details',  label: 'Pre-trial Details', icon: ClipboardList },
-      { key: 'calendar', label: 'Trial Calendar',    icon: Calendar },
-      { key: 'notes',    label: 'TPM Chart',           icon: TrendingUp },
-      { key: 'results',  label: 'Trial Results',      icon: BarChart3 },
-      { key: 'summary',  label: 'Summary Report',     icon: FileText },
+      { key: 'calendar', label: 'Trial Results',     icon: BarChart3 },
+      { key: 'tpcal',    label: 'Trial Calendar',    icon: Calendar },
+      { key: 'notes',    label: 'TPM Chart',          icon: TrendingUp },
+      { key: 'summary',  label: 'Summary Report',    icon: FileText },
     ];
 
     // Use outer state for edit form
@@ -3184,36 +3184,40 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
             })()}
 
-            {/* ── Trial Calendar (table) ── */}
+            {/* ── Trial Results (table) ── */}
             {manageSubTab === 'calendar' && (() => {
               if (calDays.length === 0) return (
                 <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                  <Calendar size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
-                  <div style={{ fontSize: '13px', color: '#94a3b8' }}>{venue.trialStatus === 'pipeline' ? 'Calendar will appear once the trial starts' : 'No readings recorded yet'}</div>
+                  <BarChart3 size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
+                  <div style={{ fontSize: '13px', color: '#94a3b8' }}>{venue.trialStatus === 'pipeline' ? 'Results will appear once the trial starts' : 'No readings recorded yet'}</div>
                 </div>
               );
               const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
               const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
               const activeFryer = calFryerTab;
-              const EQ_W = '76px'; // equal width for Weekday → Filtered columns
+              const EQ_W = '76px';
               const thBase = { padding: '8px 6px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
-              const tdBase = { padding: '7px 6px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'top' };
+              const tdBase = { padding: '7px 6px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' };
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '2px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '68px', textAlign: 'center' }}>{label}</span>
               );
               return (
                 <div>
-                  {fc > 1 && (
-                    <div style={{ display: 'flex', gap: '0', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
-                      {fryerList.map(fn => (
-                        <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
-                          padding: '8px 16px', border: 'none', borderBottom: activeFryer === fn ? '2px solid #1a428a' : '2px solid transparent',
-                          background: 'transparent', color: activeFryer === fn ? '#1a428a' : '#64748b',
-                          fontSize: '13px', fontWeight: activeFryer === fn ? '600' : '500', cursor: 'pointer',
-                        }}>Fryer {fn}</button>
-                      ))}
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Results</div>
+                    {fc > 1 && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {fryerList.map(fn => (
+                          <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
+                            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                            border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
+                            background: activeFryer === fn ? '#1a428a' : 'white',
+                            color: activeFryer === fn ? 'white' : '#64748b',
+                          }}>Fryer {fn}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
                       <colgroup>
@@ -3302,6 +3306,124 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
             })()}
 
+            {/* ── Trial Calendar (grid) ── */}
+            {manageSubTab === 'tpcal' && (() => {
+              const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              const activeFryer = calFryerTab;
+
+              if (calDays.length === 0) return (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <Calendar size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
+                  <div style={{ fontSize: '13px', color: '#94a3b8' }}>{venue.trialStatus === 'pipeline' ? 'Calendar will appear once the trial starts' : 'No readings recorded yet'}</div>
+                </div>
+              );
+
+              // Pad calDays to full weeks (Sun–Sat)
+              const firstDay = calDays[0];
+              const lastDay = calDays[calDays.length - 1];
+              const startSun = new Date(firstDay); startSun.setDate(startSun.getDate() - startSun.getDay());
+              const endSat = new Date(lastDay); endSat.setDate(endSat.getDate() + (6 - endSat.getDay()));
+              const weeks = [];
+              let d = new Date(startSun);
+              while (d <= endSat) {
+                const week = [];
+                for (let i = 0; i < 7; i++) { week.push(new Date(d)); d.setDate(d.getDate() + 1); }
+                weeks.push(week);
+              }
+              const trialStart = venue.trialStartDate || '';
+              const trialEnd = venue.trialEndDate || getTodayString();
+
+              const cellTpmBg = tpm => tpm == null ? 'transparent' : tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
+              const cellTpmColor = tpm => tpm == null ? '#94a3b8' : tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+
+              return (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Calendar</div>
+                    {fc > 1 && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {fryerList.map(fn => (
+                          <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
+                            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                            border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
+                            background: activeFryer === fn ? '#1a428a' : 'white',
+                            color: activeFryer === fn ? 'white' : '#64748b',
+                          }}>Fryer {fn}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ borderCollapse: 'separate', borderSpacing: '4px', minWidth: '500px' }}>
+                      <thead>
+                        <tr>
+                          {DAY_NAMES.map(dn => (
+                            <th key={dn} style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', padding: '4px 8px', textAlign: 'center', width: '80px' }}>{dn}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {weeks.map((week, wi) => (
+                          <tr key={wi}>
+                            {week.map((day, di) => {
+                              const ds = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+                              const inTrial = ds >= trialStart && ds <= trialEnd;
+                              const dayRecs = inTrial ? (readingsByDate[ds] || []).filter(r => (r.fryerNumber || 1) === activeFryer) : [];
+                              const r = dayRecs[dayRecs.length - 1] || null;
+                              const isFuture = day > today;
+                              const missed = inTrial && !r && !isFuture;
+                              const isFresh = r?.oilAge === 1;
+                              const hasFill = r?.litresFilled > 0;
+                              return (
+                                <td key={di} style={{
+                                  width: '80px', height: '72px', minWidth: '80px',
+                                  background: inTrial ? (r?.tpmValue != null ? cellTpmBg(r.tpmValue) : 'white') : '#f8fafc',
+                                  border: inTrial ? '1px solid #e2e8f0' : '1px solid transparent',
+                                  borderRadius: '8px', padding: '5px 6px', verticalAlign: 'top',
+                                  opacity: isFuture ? 0.35 : 1,
+                                }}>
+                                  {inTrial && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                                      <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8' }}>{day.getDate()} {MONTHS_SHORT[day.getMonth()]}</div>
+                                      {r?.tpmValue != null
+                                        ? <div style={{ fontSize: '24px', fontWeight: '800', color: cellTpmColor(r.tpmValue), textAlign: 'center', lineHeight: 1 }}>{r.tpmValue}</div>
+                                        : <div style={{ fontSize: '10px', color: '#cbd5e1', textAlign: 'center', fontStyle: 'italic' }}>{missed ? 'Missed' : '—'}</div>
+                                      }
+                                      {hasFill && (
+                                        <div style={{ fontSize: '8px', fontWeight: '700', textAlign: 'center', background: isFresh ? '#fed7aa' : '#dbeafe', color: isFresh ? '#c2410c' : '#1e40af', borderRadius: '3px', padding: '1px 4px', alignSelf: 'center' }}>
+                                          {isFresh ? `⬤ ${r.litresFilled}L` : `+${r.litresFilled}L`}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Calendar legend */}
+                  <div style={{ display: 'flex', gap: '14px', marginTop: '14px', flexWrap: 'wrap' }}>
+                    {[
+                      { bg: '#d1fae5', color: '#059669', label: '≤14 TPM' },
+                      { bg: '#fef3c7', color: '#d97706', label: '15–18 TPM' },
+                      { bg: '#fee2e2', color: '#dc2626', label: '>18 TPM' },
+                    ].map(l => (
+                      <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <div style={{ width: '12px', height: '12px', background: l.bg, border: `1px solid ${l.color}44`, borderRadius: '3px' }} />
+                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* ── TPM Chart ── */}
             {manageSubTab === 'notes' && (() => {
               const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3328,14 +3450,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const recordedTPMs = chartData.filter(d => d.tpm != null).map(d => d.tpm);
               const yMax = recordedTPMs.length > 0 ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, 24) : 24;
 
-              // SVG layout constants
-              const CHART_H = 180;
-              const TOP_PAD = 52;   // space above bars for bubbles
-              const BOT_PAD = 52;   // space below bars for x-labels
-              const LEFT_PAD = 40;  // y-axis
+              // SVG layout constants — larger chart
+              const CHART_H = 280;
+              const TOP_PAD = 56;
+              const BOT_PAD = 56;
+              const LEFT_PAD = 44;
               const RIGHT_PAD = 16;
-              const BAR_W = 20;
-              const STEP = 26;      // bar width + gap
+              const BAR_W = 26;
+              const STEP = 34;
               const N = chartData.length;
               const SVG_W = LEFT_PAD + N * STEP + RIGHT_PAD;
               const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
@@ -3346,23 +3468,25 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const yTicks = [];
               for (let v = 0; v <= yMax; v += 5) yTicks.push(v);
 
-              // x-axis: label every day if ≤14, else every 7
               const labelStep = N <= 14 ? 1 : 7;
 
               return (
                 <div>
-                  {/* Fryer sub-tabs */}
-                  {fc > 1 && (
-                    <div style={{ display: 'flex', gap: '0', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
-                      {fryerList.map(fn => (
-                        <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
-                          padding: '8px 16px', border: 'none', borderBottom: activeFryer === fn ? '2px solid #1a428a' : '2px solid transparent',
-                          background: 'transparent', color: activeFryer === fn ? '#1a428a' : '#64748b',
-                          fontSize: '13px', fontWeight: activeFryer === fn ? '600' : '500', cursor: 'pointer',
-                        }}>Fryer {fn}</button>
-                      ))}
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>TPM Chart</div>
+                    {fc > 1 && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {fryerList.map(fn => (
+                          <button key={fn} onClick={() => setCalFryerTab(fn)} style={{
+                            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                            border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
+                            background: activeFryer === fn ? '#1a428a' : 'white',
+                            color: activeFryer === fn ? 'white' : '#64748b',
+                          }}>Fryer {fn}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Legend */}
                   <div style={{ display: 'flex', gap: '16px', marginBottom: '14px', flexWrap: 'wrap' }}>
@@ -3510,53 +3634,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               </div>
             )}
 
-            {/* ── Trial Results ── */}
-            {manageSubTab === 'results' && (
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '12px' }}>TPM Performance</div>
-                {tpmVals.length > 0 ? (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', marginBottom: '20px' }}>
-                      {[
-                        { label: 'Avg TPM', value: avgTPM !== null ? avgTPM.toFixed(1) : '—', color: tpmColor(avgTPM) },
-                        { label: 'Min TPM', value: minTPM !== null ? minTPM.toFixed(1) : '—', color: tpmColor(minTPM) },
-                        { label: 'Max TPM', value: maxTPM !== null ? maxTPM.toFixed(1) : '—', color: tpmColor(maxTPM) },
-                        { label: 'Avg Oil Age', value: avgOilAge !== null ? `${avgOilAge.toFixed(1)}d` : '—', color: '#1f2937' },
-                        { label: 'Readings', value: allTrialReadings.length, color: '#1f2937' },
-                      ].map(stat => (
-                        <div key={stat.label} style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '12px', textAlign: 'center' }}>
-                          <div style={{ fontSize: '20px', fontWeight: '700', color: stat.color, marginBottom: '2px' }}>{stat.value}</div>
-                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{stat.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '10px' }}>Reading Log</div>
-                    <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                      {allTrialReadings.slice().reverse().map((r, i) => (
-                        <div key={r.id || i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderBottom: i < allTrialReadings.length - 1 ? '1px solid #e2e8f0' : 'none', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
-                          <div style={{ fontSize: '11px', color: '#64748b', minWidth: '80px' }}>{displayDate(r.readingDate)}</div>
-                          {fc > 1 && <div style={{ fontSize: '11px', color: '#94a3b8', minWidth: '50px' }}>Fryer {r.fryerNumber}</div>}
-                          <div style={{ fontSize: '15px', fontWeight: '700', color: tpmColor(r.tpmValue), minWidth: '36px' }}>{r.tpmValue ?? '—'}</div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>{r.oilAge != null ? `${r.oilAge}d` : ''}</div>
-                          {r.filtered && <span style={{ fontSize: '9px', background: '#dbeafe', color: '#1e40af', borderRadius: '4px', padding: '1px 5px', fontWeight: '700' }}>FILT</span>}
-                          {r.notes && <div style={{ fontSize: '11px', color: '#94a3b8', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.notes}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                    <BarChart3 size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
-                    <div style={{ fontSize: '13px', color: '#94a3b8' }}>No readings recorded yet</div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* ── Summary Report ── */}
             {manageSubTab === 'summary' && (
               <div>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '12px' }}>Summary Report</div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Summary Report</div>
                 <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
                     <TrialStatusBadge status={venue.trialStatus} />
