@@ -1802,10 +1802,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           )}
         </div>
         <div style={S.field}>
-          <label style={S.label}>NO. OF FRYER CHANGES/WEEK</label>
-          <input type="number" min="0" step="0.5" value={newTrialForm.fryerChangesPerWeek}
+          <label style={S.label}>AVG OIL LIFESPAN (DAYS)</label>
+          <input type="number" min="0" step="1" value={newTrialForm.fryerChangesPerWeek}
             onChange={e => setNewTrialForm(f => ({ ...f, fryerChangesPerWeek: e.target.value }))}
-            placeholder="e.g. 2" style={inputStyle}
+            placeholder="e.g. 7" style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
       </div>
@@ -2677,6 +2677,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const trialYearlySpend = trialWeeklySpend !== null ? Math.round(trialWeeklySpend * 52 * 100) / 100 : null;
     const pctLitresReduced = weekLitres !== null && preTrialAvg ? Math.round((weekLitres / preTrialAvg) * 1000) / 10 : null;
     const pctCostSaved = weekSpend !== null && compWeeklySpend ? Math.round((weekSpend / compWeeklySpend) * 1000) / 10 : null;
+    const maxOilLifespan = oilAgeVals.length > 0 ? Math.max(...oilAgeVals) : null;
+    const maxOilLifespanByFryer = {};
+    fryerList.forEach(fn => {
+      const ages = allTrialReadings.filter(r => (r.fryerNumber || 1) === fn && r.oilAge != null && r.oilAge > 0).map(r => r.oilAge);
+      maxOilLifespanByFryer[fn] = ages.length > 0 ? Math.max(...ages) : null;
+    });
 
     // Shared notes parser
     const parseNotes = () => {
@@ -2741,7 +2747,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       { key: 'calendar', label: 'Trial Results',     icon: BarChart3 },
       { key: 'tpcal',    label: 'Trial Calendar',    icon: Calendar },
       { key: 'notes',    label: 'TPM Chart',          icon: TrendingUp },
-      { key: 'summary',  label: 'Summary Report',    icon: FileText },
+      ...(venue.trialEndDate ? [{ key: 'summary', label: 'Summary Report', icon: FileText }] : []),
     ];
 
     // Use outer state for edit form
@@ -3061,10 +3067,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {fld('Fryer count', fc ? String(fc) : null)}
                           {fld('Trial oil', cookersOil ? <OilBadge oil={cookersOil} competitors={competitors} compact /> : null)}
                           {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
-                          {/* Row 4: Pre-trial weekly avg | Vol bracket | No. of fryer changes */}
-                          {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                          {/* Row 4: Vol bracket | Pre-trial weekly avg | Avg oil lifespan */}
                           {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
-                          {fld('Fryer changes / wk', fryerChangesPerWeek ? `${fryerChangesPerWeek}×` : null)}
+                          {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                          {fld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
                           {/* Row 5: Start date | End date */}
                           {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                           {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
@@ -3218,10 +3224,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           )}
                         </div>
                         <div style={S.field}>
-                          <label style={S.label}>NO. OF FRYER CHANGES / WEEK</label>
-                          <input type="number" min="0" step="0.5" value={mEditForm.fryerChangesPerWeek ?? ''}
+                          <label style={S.label}>AVG OIL LIFESPAN (DAYS)</label>
+                          <input type="number" min="0" step="1" value={mEditForm.fryerChangesPerWeek ?? ''}
                             onChange={e => setMEditForm(p => ({ ...p, fryerChangesPerWeek: e.target.value }))}
-                            placeholder="e.g. 2" style={inputStyle}
+                            placeholder="e.g. 7" style={inputStyle}
                             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                         </div>
                       </div>
@@ -3816,84 +3822,91 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div style={{ padding: '0 24px' }}>
                   <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '20px' }}>Summary Report</div>
 
-                  {/* ── Top: Details (left 1fr) + Calendar (right 1fr) — matching pretrial tab layout ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '0', alignItems: 'start', marginBottom: '20px' }}>
-
-                    {/* Left: Trial details — 3-column grid, right border divider like pretrial tab */}
-                    <div style={{ paddingRight: '28px', borderRight: '1px solid #f0f4f8' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
-                        {sfld('Start date', displayDate(venue.trialStartDate))}
-                        {sfld('End date', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
-                        {sfld('Duration', trialDuration > 0 ? `${trialDuration} days` : null)}
-                        {sfld('Fryer count', fc ? String(fc) : null)}
-                        {sfld('Vol bracket', volBadge)}
-                        {sfld('Pre-trial avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
-                        {sfld('Changes / wk', fryerChangesPerWeek ? `${fryerChangesPerWeek}×` : null)}
-                        {sfld('Avg TPM', avgTPM !== null ? avgTPM.toFixed(1) : null)}
-                        {sfld('Total litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
-                        {sfld('Current supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
-                        {sfld('Current oil', compOilBadge)}
-                        {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
-                        {sfld('Trial oil', trialOilBadge)}
-                        {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
-                      </div>
-                    </div>
-
-                    {/* Right: Trial Calendar — full half, scrollable */}
-                    {isDesktop && (
-                      <div style={{ paddingLeft: '28px' }}>
-                        <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Trial Calendar</div>
-                        {calDays.length > 0 ? (
-                          <div style={{ overflowX: 'auto' }}>
-                            <table style={{ borderCollapse: 'separate', borderSpacing: '2px', tableLayout: 'auto' }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ minWidth: '32px' }} />
-                                  {calDays.map((_, i) => (
-                                    <th key={i} style={{ fontSize: '7px', color: '#94a3b8', textAlign: 'center', padding: '0 1px', fontWeight: '600', minWidth: '16px' }}>{i + 1}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {fryerList.map(fn => (
-                                  <tr key={fn}>
-                                    <td style={{ fontSize: '9px', fontWeight: '700', color: '#1a428a', paddingRight: '6px', whiteSpace: 'nowrap' }}>{fc > 1 ? `Fryer ${fn}` : 'TPM'}</td>
-                                    {calDays.map((day, idx) => {
-                                      const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
-                                      const dayRecs = (readingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === fn);
-                                      const r = dayRecs[dayRecs.length - 1] || null;
-                                      const isFuture = day > today;
-                                      return (
-                                        <td key={idx} style={{
-                                          width: '16px', height: '16px', minWidth: '16px',
-                                          background: r?.tpmValue != null ? miniCalBg(r.tpmValue) : isFuture ? '#f8fafc' : '#f1f5f9',
-                                          borderRadius: '3px', textAlign: 'center', verticalAlign: 'middle', opacity: isFuture ? 0.3 : 1,
-                                        }}>
-                                          {r?.tpmValue != null && (
-                                            <span style={{ fontSize: '7px', fontWeight: '800', color: miniCalCol(r.tpmValue), lineHeight: '1' }}>{r.tpmValue}</span>
-                                          )}
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>No readings yet</div>
-                        )}
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-                          {[{ bg: '#d1fae5', color: '#059669', label: '≤14 TPM' }, { bg: '#fef3c7', color: '#d97706', label: '15–18 TPM' }, { bg: '#fee2e2', color: '#dc2626', label: '>18 TPM' }].map(l => (
-                            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <div style={{ width: '10px', height: '10px', background: l.bg, border: `1px solid ${l.color}44`, borderRadius: '2px', flexShrink: 0 }} />
-                              <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  {/* ── Trial details — 3-col grid matching pre-trial tab order ── */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px', marginBottom: '24px' }}>
+                    {/* Row 1: Current supplier | Current oil | Current price/L */}
+                    {sfld('Current supplier', compPill || (comp ? null : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>))}
+                    {sfld('Current oil', compOilBadge)}
+                    {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
+                    {/* Row 2: Fryer count | Trial oil | Offered price/L */}
+                    {sfld('Fryer count', fc ? String(fc) : null)}
+                    {sfld('Trial oil', trialOilBadge)}
+                    {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
+                    {/* Row 3: Vol bracket | Pre-trial avg | Avg oil lifespan */}
+                    {sfld('Vol bracket', volBadge)}
+                    {sfld('Pre-trial avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
+                    {sfld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
+                    {/* Row 4 (trial actuals): Trial total litres | Trial weekly avg | Max oil lifespan */}
+                    {sfld('Trial total litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                    {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
+                    {sfld('Max oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
+                    {/* Row 5: Start date | End date | Trial duration */}
+                    {sfld('Start date', displayDate(venue.trialStartDate))}
+                    {sfld('End date', venue.trialEndDate ? displayDate(venue.trialEndDate) : 'Ongoing')}
+                    {sfld('Trial duration', trialDuration > 0 ? `${trialDuration} days` : null)}
                   </div>
+
+                  {/* ── Trial Calendar — full width below details ── */}
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Trial Calendar</div>
+                    {calDays.length > 0 ? (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ borderCollapse: 'separate', borderSpacing: '2px', tableLayout: 'auto' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ minWidth: '48px' }} />
+                              {calDays.map((_, i) => (
+                                <th key={i} style={{ fontSize: '7px', color: '#94a3b8', textAlign: 'center', padding: '0 1px', fontWeight: '600', minWidth: '16px' }}>{i + 1}</th>
+                              ))}
+                              <th style={{ fontSize: '7px', color: '#64748b', textAlign: 'center', padding: '0 4px', fontWeight: '700', whiteSpace: 'nowrap', minWidth: '36px' }}>Max Days</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fryerList.map(fn => (
+                              <tr key={fn}>
+                                <td style={{ fontSize: '9px', fontWeight: '700', color: '#1a428a', paddingRight: '6px', whiteSpace: 'nowrap' }}>{fc > 1 ? `Fryer ${fn}` : 'TPM'}</td>
+                                {calDays.map((day, idx) => {
+                                  const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+                                  const dayRecs = (readingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === fn);
+                                  const r = dayRecs[dayRecs.length - 1] || null;
+                                  const isFuture = day > today;
+                                  return (
+                                    <td key={idx} style={{
+                                      width: '16px', height: '16px', minWidth: '16px',
+                                      background: r?.tpmValue != null ? miniCalBg(r.tpmValue) : isFuture ? '#f8fafc' : '#f1f5f9',
+                                      borderRadius: '3px', textAlign: 'center', verticalAlign: 'middle', opacity: isFuture ? 0.3 : 1,
+                                    }}>
+                                      {r?.tpmValue != null && (
+                                        <span style={{ fontSize: '7px', fontWeight: '800', color: miniCalCol(r.tpmValue), lineHeight: '1' }}>{r.tpmValue}</span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                                <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingLeft: '4px' }}>
+                                  <span style={{ fontSize: '10px', fontWeight: '700', color: maxOilLifespanByFryer[fn] != null ? '#1a428a' : '#cbd5e1' }}>
+                                    {maxOilLifespanByFryer[fn] != null ? `${maxOilLifespanByFryer[fn]}d` : '—'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>No readings yet</div>
+                    )}
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                      {[{ bg: '#d1fae5', color: '#059669', label: '≤14 TPM' }, { bg: '#fef3c7', color: '#d97706', label: '15–18 TPM' }, { bg: '#fee2e2', color: '#dc2626', label: '>18 TPM' }].map(l => (
+                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ width: '10px', height: '10px', background: l.bg, border: `1px solid ${l.color}44`, borderRadius: '2px', flexShrink: 0 }} />
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── Divider ── */}
+                  <div style={{ height: '1px', background: '#e2e8f0', margin: '20px 0' }} />
 
                   {/* ── Comparison table ── */}
                   {(compWklyAvg || liveTrialAvg !== null) ? (
@@ -3930,7 +3943,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$(trialWeeklySpend) : '—'}</td>
                             <td style={{ padding: '9px 12px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$(trialYearlySpend) : '—'}</td>
                           </tr>
-                          {/* Difference row */}
+                          {/* Savings row */}
                           {weekSpend !== null && (
                             <tr style={{ background: '#f8fafc' }}>
                               <td style={{ padding: '9px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Savings</td>
@@ -3983,15 +3996,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     );
                   })()}
 
-                  {/* ── Goals Achieved ── */}
+                  {/* ── Trial Goals Achieved — label left, tick box far right ── */}
                   {trialGoalsList.length > 0 && (<>
                     {secLabel('Trial Goals Achieved')}
-                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '8px' }}>
                       {trialGoalsList.map(key => {
                         const label = GOAL_LABELS[key] || key;
                         const achieved = achievedGoals.includes(key);
                         return (
-                          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '500', color: achieved ? '#1f2937' : '#94a3b8' }}>{label}</span>
                             <div style={{
                               width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
                               background: achieved ? '#10b981' : '#f1f5f9',
@@ -4000,7 +4014,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             }}>
                               {achieved && <Check size={10} color="white" strokeWidth={3} />}
                             </div>
-                            <span style={{ fontSize: '13px', fontWeight: '500', color: achieved ? '#1f2937' : '#94a3b8' }}>{label}</span>
                           </div>
                         );
                       })}
