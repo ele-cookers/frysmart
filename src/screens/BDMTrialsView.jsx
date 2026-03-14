@@ -2597,9 +2597,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const initNotesText = (venue.trialNotes || '').split('\n')
           .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); }).join('\n');
         const initCompOil = oilTypes.find(o => o.id === venue.defaultOil);
+        const initGoalsLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
+        const initGoals = initGoalsLine ? initGoalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
         setManageEditForm({
           name: venue.name || '',
           notesText: initNotesText,
+          trialType: initCompOil?.competitorId ? 'new' : 'existing',
+          trialGoals: initGoals,
           currentPricePerLitre: venue.currentPricePerLitre ? String(venue.currentPricePerLitre) : '',
           offeredPricePerLitre: venue.offeredPricePerLitre ? String(venue.offeredPricePerLitre) : '',
           trialStartDate: venue.trialStartDate || '', trialEndDate: venue.trialEndDate || '',
@@ -2622,15 +2626,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       mEditForm.trialOilId !== (venue.trialOilId || '') || mEditForm.defaultOil !== (venue.defaultOil || '') ||
       String(mEditForm.fryerCount) !== String(venue.fryerCount || 1) ||
       mEditForm.avgLitresPerWeek !== (venue.currentWeeklyAvg ? String(venue.currentWeeklyAvg) : '') ||
-      JSON.stringify(mEditForm.fryerVolumes) !== JSON.stringify(venue.fryerVolumes || {})
+      JSON.stringify(mEditForm.fryerVolumes) !== JSON.stringify(venue.fryerVolumes || {}) ||
+      JSON.stringify(mEditForm.trialGoals || []) !== JSON.stringify((() => { const gl = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')); return gl ? gl.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : []; })())
     );
     const handleMSave = async () => {
       setManageSaving(true);
       const avgL = mEditForm.avgLitresPerWeek ? parseFloat(mEditForm.avgLitresPerWeek) : null;
-      // Reconstruct trialNotes preserving metadata (TRL-ID, Goals lines)
-      const metaLines = (venue.trialNotes || '').split('\n')
-        .filter(l => { const t = l.trim(); return t && (t.match(/^\[/) || /TRL-\d+/.test(t)); });
-      const newTrialNotes = [...metaLines, mEditForm.notesText].filter(Boolean).join('\n');
+      // Reconstruct trialNotes: keep TRL-ID + [Note ...] lines, rebuild Goals
+      const trialIdLines = (venue.trialNotes || '').split('\n').filter(l => /TRL-\d+/.test(l.trim()));
+      const noteCommentLines = (venue.trialNotes || '').split('\n').filter(l => l.trim().match(/^\[Note /));
+      const newGoalsLine = (mEditForm.trialGoals || []).length > 0 ? `[Goals: ${mEditForm.trialGoals.join(', ')}]` : '';
+      const newTrialNotes = [...trialIdLines, newGoalsLine, mEditForm.notesText, ...noteCommentLines].filter(Boolean).join('\n');
       await handleSaveTrialEdits(venue.id, {
         name: mEditForm.name.trim() || venue.name,
         trialNotes: newTrialNotes,
@@ -2948,7 +2954,27 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+                      {/* Trial Type toggle — same as create form */}
+                      <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px' }}>
+                        {[{ val: 'existing', label: 'Existing Customer' }, { val: 'new', label: 'New Prospect' }].map(opt => {
+                          const isActive = mEditForm.trialType === opt.val;
+                          return (
+                            <button key={opt.val} type="button"
+                              onClick={() => setMEditForm(p => ({ ...p, trialType: opt.val, competitor: '', defaultOil: '' }))}
+                              style={{
+                                flex: 1, padding: '9px 16px', fontWeight: '600', cursor: 'pointer',
+                                transition: 'all 0.15s', borderRadius: '8px', border: 'none',
+                                background: isActive ? 'white' : 'transparent',
+                                color: isActive ? BLUE : '#64748b', fontSize: '13px',
+                                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                              }}>
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
 
                       {/* Venue name */}
                       <div style={S.field}>
@@ -2959,19 +2985,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                       </div>
 
-                      {/* Competitor */}
-                      <div style={S.field}>
-                        <label style={S.label}>COMPETITOR</label>
-                        <select value={mEditForm.competitor}
-                          onChange={e => setMEditForm(p => ({ ...p, competitor: e.target.value, defaultOil: '' }))}
-                          style={selectStyle}
-                          onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-                          <option value="">None — existing Cookers customer</option>
-                          {competitors.filter(c => c.status === 'active').sort((a, b) => a.name.localeCompare(b.name)).map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
-                      </div>
+                      {/* Competitor — new prospect only */}
+                      {mEditForm.trialType === 'new' && (
+                        <div style={S.field}>
+                          <label style={S.label}>COMPETITOR</label>
+                          <select value={mEditForm.competitor}
+                            onChange={e => setMEditForm(p => ({ ...p, competitor: e.target.value, defaultOil: '' }))}
+                            style={{ ...selectStyle, color: mEditForm.competitor ? '#1f2937' : '#94a3b8' }}
+                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
+                            <option value="" disabled>Select competitor...</option>
+                            {competitors.filter(c => c.status === 'active').sort((a, b) => a.name.localeCompare(b.name)).map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       {/* Current oil | Current price/L */}
                       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px' }}>
@@ -2979,13 +3007,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <label style={S.label}>CURRENT OIL</label>
                           <select value={mEditForm.defaultOil}
                             onChange={e => setMEditForm(p => ({ ...p, defaultOil: e.target.value }))}
-                            style={selectStyle}
+                            style={{ ...selectStyle, color: mEditForm.defaultOil ? '#1f2937' : '#94a3b8' }}
                             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-                            <option value="">—</option>
-                            {mEditForm.competitor
-                              ? (allOilOptions.compGroups[competitors.find(c => c.id === mEditForm.competitor)?.name] || []).map(o => <option key={o.id} value={o.id}>{o.name}</option>)
-                              : <optgroup label="Cookers Oils">{allOilOptions.cookers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>
-                            }
+                            <option value="" disabled>{mEditForm.trialType === 'existing' ? 'Select Cookers oil...' : 'Select current oil...'}</option>
+                            {mEditForm.trialType === 'existing' ? (
+                              allOilOptions.cookers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)
+                            ) : mEditForm.competitor ? (
+                              (allOilOptions.compGroups[competitors.find(c => c.id === mEditForm.competitor)?.name] || []).map(o => <option key={o.id} value={o.id}>{o.name}</option>)
+                            ) : (
+                              Object.entries(allOilOptions.compGroups).sort(([a], [b]) => a.localeCompare(b)).map(([compName, oils]) => (
+                                <optgroup key={compName} label={compName}>{oils.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>
+                              ))
+                            )}
                           </select>
                         </div>
                         <div style={S.field}>
@@ -3096,13 +3129,63 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* Notes */}
                       <div style={S.field}>
-                        <label style={S.label}>WHAT DO WE KNOW GOING INTO THIS TRIAL?</label>
+                        <label style={S.label}>NOTES</label>
                         <textarea value={mEditForm.notesText}
                           onChange={e => setMEditForm(p => ({ ...p, notesText: e.target.value }))}
-                          rows={4} style={{ ...inputStyle, resize: 'vertical' }}
-                          placeholder="Background, goals, context..."
+                          rows={3} style={{ ...inputStyle, resize: 'vertical' }}
+                          placeholder="What do we know going into this trial?"
                           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                       </div>
+
+                      {/* Trial Goals — same as create form */}
+                      {(() => {
+                        const GOAL_OPTIONS = [
+                          { key: 'save-money',     label: 'Save money',          icon: DollarSign },
+                          { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
+                          { key: 'food-quality',   label: 'Better food quality', icon: Award      },
+                          { key: 'food-colour',    label: 'Improve food colour', icon: Palette    },
+                          { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
+                          { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
+                        ];
+                        const toggleGoal = (key) => setMEditForm(p => ({
+                          ...p,
+                          trialGoals: (p.trialGoals || []).includes(key)
+                            ? (p.trialGoals || []).filter(g => g !== key)
+                            : [...(p.trialGoals || []), key],
+                        }));
+                        return (
+                          <div style={S.field}>
+                            <label style={S.label}>TRIAL GOALS <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(select all that apply)</span></label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                              {GOAL_OPTIONS.map(opt => {
+                                const selected = (mEditForm.trialGoals || []).includes(opt.key);
+                                return (
+                                  <button key={opt.key} type="button" onClick={() => toggleGoal(opt.key)} style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '9px 12px', borderRadius: '8px', width: '100%', textAlign: 'left',
+                                    cursor: 'pointer', transition: 'all 0.15s',
+                                    border: selected ? '1.5px solid #1a428a' : '1.5px solid #e2e8f0',
+                                    background: selected ? '#eff6ff' : 'white',
+                                    color: selected ? '#1a428a' : '#64748b',
+                                    fontSize: '13px', fontWeight: selected ? '600' : '500',
+                                  }}>
+                                    <div style={{
+                                      width: '17px', height: '17px', borderRadius: '4px', flexShrink: 0,
+                                      background: selected ? '#1a428a' : 'white',
+                                      border: `2px solid ${selected ? '#1a428a' : '#cbd5e1'}`,
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}>
+                                      {selected && <Check size={10} color="white" strokeWidth={3} />}
+                                    </div>
+                                    <span style={{ flex: 1 }}>{opt.label}</span>
+                                    <opt.icon size={13} style={{ flexShrink: 0, opacity: selected ? 0.8 : 0.4 }} />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                     </div>
                   )}
