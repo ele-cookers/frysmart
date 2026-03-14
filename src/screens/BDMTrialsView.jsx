@@ -668,9 +668,27 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
     setAchievedGoals(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
+  // Mini trial calendar for end trial modal
+  const modalCalDays = (() => {
+    if (!venue.trialStartDate) return [];
+    const start = new Date(venue.trialStartDate + 'T00:00:00');
+    const end = new Date(); end.setHours(0, 0, 0, 0);
+    const days = []; const d = new Date(start);
+    while (d <= end) { days.push(new Date(d)); d.setDate(d.getDate() + 1); }
+    return days;
+  })();
+  const modalReadingsByDate = {};
+  venueReadings.forEach(r => {
+    if (!modalReadingsByDate[r.readingDate]) modalReadingsByDate[r.readingDate] = [];
+    modalReadingsByDate[r.readingDate].push(r);
+  });
+  const modalFryerList = Array.from({ length: Math.max(1, venue.fryerCount || 1) }, (_, i) => i + 1);
+  const cellBg = tpm => tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
+  const cellCol = tpm => tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+
   return (
     <div style={S.overlay} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
         <div style={{ padding: '14px 16px', borderLeft: '4px solid #f59e0b', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>End Trial</div>
@@ -679,25 +697,21 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} color="#94a3b8" /></button>
         </div>
         <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
-          {/* Start / End / Duration */}
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Start</div>
-              <div style={{ fontSize: '13px', color: '#1f2937' }}>{displayDate(venue.trialStartDate)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>End</div>
-              <div style={{ fontSize: '13px', color: '#1f2937' }}>{displayDate(getTodayString())}</div>
-            </div>
-            {daysElapsed > 0 && (
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Duration</div>
-                <div style={{ fontSize: '13px', color: '#1f2937' }}>{daysElapsed} days</div>
+          {/* Start / End / Duration — evenly distributed */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+            {[
+              { label: 'Start', value: displayDate(venue.trialStartDate) },
+              { label: 'End', value: displayDate(getTodayString()) },
+              { label: 'Duration', value: daysElapsed > 0 ? `${daysElapsed} days` : '—' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px' }}>{label}</div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>{value}</div>
               </div>
-            )}
+            ))}
           </div>
 
-          {/* Litres breakdown */}
+          {/* Oil usage — no decimal places, no total count */}
           <div style={{ marginBottom: '16px', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
@@ -711,72 +725,87 @@ const EndTrialModal = ({ venue, readings, onClose, onConfirm }) => {
                 <tr>
                   <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Fresh fills</td>
                   <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{freshFills.length}</td>
-                  <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{freshLitres.toFixed(1)}L</td>
+                  <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{Math.round(freshLitres)}L</td>
                 </tr>
                 <tr>
                   <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Top-ups</td>
                   <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{topUps.length}</td>
-                  <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{topUpLitres.toFixed(1)}L</td>
+                  <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{Math.round(topUpLitres)}L</td>
                 </tr>
                 <tr style={{ background: '#f8fafc' }}>
                   <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Total</td>
-                  <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'right' }}>{freshFills.length + topUps.length}</td>
-                  <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'right' }}>{systemTotal.toFixed(1)}L</td>
+                  <td style={{ padding: '6px 10px', fontSize: '12px', color: '#94a3b8', textAlign: 'right' }}>—</td>
+                  <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'right' }}>{Math.round(systemTotal)}L</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Live stats */}
-          {daysElapsed > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px', marginBottom: '16px' }}>
-              {[
-                { label: 'Trial duration', value: `${daysElapsed} days` },
-                { label: 'Litres/week', value: `${litresPerWeek} L` },
-                ...(offeredPrice > 0 ? [{ label: '$/week', value: `$${spendPerWeek.toFixed(2)}` }] : []),
-                ...(preTrialAvg > 0 ? [{ label: 'Pre-trial avg', value: `${preTrialAvg} L/wk` }] : []),
-                ...(litresSaved !== null ? [{ label: 'Litres saved/wk', value: `${litresSaved > 0 ? '+' : ''}${litresSaved} L`, color: litresSaved > 0 ? '#059669' : '#dc2626' }] : []),
-                ...(dollarsSaved !== null ? [{ label: '$ saved/wk', value: `${dollarsSaved > 0 ? '+' : ''}$${Math.abs(dollarsSaved).toFixed(2)}`, color: dollarsSaved > 0 ? '#059669' : '#dc2626' }] : []),
-              ].map((row, i) => (
-                <div key={i} style={{ padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>{row.label}</div>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: row.color || '#1f2937' }}>{row.value}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Trial goals achieved */}
-          {trialGoals.length > 0 && (
+          {/* Trial calendar */}
+          {modalCalDays.length > 0 && (
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px' }}>Goals Achieved?</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {trialGoals.map(key => {
-                  const opt = GOAL_OPTIONS.find(o => o.key === key);
-                  if (!opt) return null;
-                  const Icon = opt.icon;
-                  const checked = achievedGoals.includes(key);
-                  return (
-                    <button key={key} onClick={() => toggleGoal(key)} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '9px 12px', borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
-                      border: `1.5px solid ${checked ? '#10b981' : '#e2e8f0'}`,
-                      background: checked ? '#f0fdf4' : 'white',
-                      transition: 'all 0.1s',
-                    }}>
-                      <div style={{
-                        width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-                        border: `2px solid ${checked ? '#10b981' : '#d1d5db'}`,
-                        background: checked ? '#10b981' : 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {checked && <Check size={11} color="white" strokeWidth={3} />}
-                      </div>
-                      <Icon size={14} color={checked ? '#059669' : '#94a3b8'} />
-                      <span style={{ fontSize: '13px', fontWeight: '500', color: checked ? '#065f46' : '#64748b' }}>{opt.label}</span>
-                    </button>
-                  );
-                })}
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px' }}>Trial Calendar</div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px', minWidth: `${60 + modalCalDays.length * 30}px` }}>
+                  <colgroup>
+                    <col style={{ width: '60px' }} />
+                    {modalCalDays.map((_, i) => <col key={i} style={{ width: '28px' }} />)}
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th />
+                      {modalCalDays.map((_, idx) => (
+                        <th key={idx} style={{ textAlign: 'center', fontSize: '8px', fontWeight: '700', color: '#94a3b8', padding: '2px 1px' }}>{idx + 1}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalFryerList.map(fn => (
+                      <tr key={fn}>
+                        <td style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', paddingRight: '4px', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
+                          {(venue.fryerCount || 1) > 1 ? `Fryer ${fn}` : 'TPM'}
+                        </td>
+                        {modalCalDays.map((day, idx) => {
+                          const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+                          const dayRecs = (modalReadingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === fn);
+                          const r = dayRecs[dayRecs.length - 1] || null;
+                          const isFresh = r?.oilAge === 1;
+                          const isTopUp = r && r.litresFilled > 0 && !isFresh;
+                          const border = isFresh ? '2px solid #10b981' : isTopUp ? '2px solid #f59e0b' : '1px solid #e2e8f0';
+                          return (
+                            <td key={idx} style={{
+                              height: '32px', width: '28px',
+                              background: r?.tpmValue != null ? cellBg(r.tpmValue) : 'white',
+                              border, borderRadius: '4px',
+                              textAlign: 'center', verticalAlign: 'middle',
+                            }}>
+                              {r?.tpmValue != null ? (
+                                <span style={{ fontSize: '10px', fontWeight: '800', color: cellCol(r.tpmValue) }}>{r.tpmValue}</span>
+                              ) : r ? null : (
+                                <span style={{ fontSize: '7px', color: '#e2e8f0' }}>—</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Calendar legend */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { bg: '#d1fae5', color: '#059669', label: '≤14' },
+                  { bg: '#fef3c7', color: '#d97706', label: '15–18' },
+                  { bg: '#fee2e2', color: '#dc2626', label: '>18' },
+                  { border: '2px solid #10b981', label: 'Fresh fill' },
+                  { border: '2px solid #f59e0b', label: 'Top-up' },
+                ].map(l => (
+                  <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ width: '9px', height: '9px', borderRadius: '2px', background: l.bg || 'white', border: l.border || `1px solid ${l.color}44` }} />
+                    <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1157,7 +1186,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     }
   };
 
-  const handleEndTrial = async (venueId, _totalLitres, achievedGoalsList = []) => {
+  const handleEndTrial = (venueId, _totalLitres, achievedGoalsList = []) => {
     const v = venues.find(x => x.id === venueId);
     // Preserve existing trialNotes, replacing or appending [GoalsAchieved:] line
     const existingNotes = v?.trialNotes || '';
@@ -1166,9 +1195,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       lines.push(`[GoalsAchieved: ${achievedGoalsList.join(', ')}]`);
     }
     const newTrialNotes = lines.filter(Boolean).join('\n');
-    await updateVenue(venueId, { trialStatus: 'pending', trialEndDate: getTodayString(), trialNotes: newTrialNotes });
+    // Close immediately (optimistic), fire update in background
     setEndTrialModal(null);
     setSuccessMsg('Trial Ended');
+    updateVenue(venueId, { trialStatus: 'pending', trialEndDate: getTodayString(), trialNotes: newTrialNotes });
   };
 
   const handleCloseTrial = (venueId, outcomeData) => {
@@ -1609,6 +1639,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed Date" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
               {showCustomerCode && tc('customerCode') && <FilterableTh colKey="customerCode" label="Cust Code" options={getUniqueValues(allVenues, colAccessors.customerCode)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
+              <FilterableTh colKey="status" label="Status" options={[{value:'pipeline',label:'Pipeline'},{value:'active',label:'Active'},{value:'pending',label:'Pending'},{value:'accepted',label:'Accepted'},{value:'successful',label:'Successful'},{value:'unsuccessful',label:'Unsuccessful'}]} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />
             </tr></thead>
             <tbody>
               {rows.length === 0 ? (
@@ -1625,7 +1656,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                     {tc('volume') && <td style={{ textAlign: 'center' }}><VolumePill bracket={venue.volumeBracket} /></td>}
-                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <span style={{ color: '#1a428a', fontWeight: '700' }}>Cookers</span>}</td>}
+                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</td>}
                     {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('trialOil') && <td style={{ textAlign: 'center' }}><OilBadge oil={cookersOil} competitors={competitors} compact /></td>}
                     {tc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
@@ -1643,6 +1674,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{displayDate(venue.outcomeDate)}</td>}
                     {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{reasonObj ? reasonObj.label : '—'}</td>}
                     {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap' }}>{venue.customerCode || '—'}</td>}
+                    <td style={{ textAlign: 'center', paddingLeft: '2px', paddingRight: '2px' }}><TrialStatusBadge status={venue.trialStatus} /></td>
                   </tr>
                 );
               })}
@@ -3339,30 +3371,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '680px', fontSize: '11px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '32px' }} />
+                        <col style={{ width: '28px' }} />
+                        <col style={{ width: '44px' }} />
+                        <col style={{ width: '58px' }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
+                        <col style={{ width: '68px' }} />
                         <col style={{ width: EQ_W }} />
                         <col style={{ width: EQ_W }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: EQ_W }} />
-                        <col style={{ width: '90px' }} />
-                        <col style={{ width: '160px' }} />
+                        <col style={{ width: '80px' }} />
+                        <col />
                       </colgroup>
                       <thead>
                         <tr>
                           <th style={thBase}>Day</th>
-                          <th style={thBase}>Weekday</th>
+                          <th style={thBase}>Day</th>
                           <th style={thBase}>Date</th>
                           <th style={thBase}>TPM</th>
                           <th style={thBase}>Set °C</th>
                           <th style={thBase}>Actual °C</th>
-                          <th style={thBase}>Variance °C</th>
+                          <th style={thBase}>-/+ °C</th>
                           <th style={thBase}>Fill Type</th>
                           <th style={thBase}>Litres</th>
                           <th style={thBase}>Filtered</th>
@@ -3409,7 +3441,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706')
                                   : ''}
                               </td>
-                              <td style={tdBase}>{r ? ((r.litresFilled > 0) ? `${r.litresFilled}L` : '—') : dash}</td>
+                              <td style={tdBase}>{r && r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>
                               <td style={tdBase}>
                                 {r?.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}
                               </td>
@@ -3570,7 +3602,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
 
               const toY = val => TOP_PAD + CHART_H - (val / yMax) * CHART_H;
-              const barColor = tpm => tpm == null ? '#e2e8f0' : tpm <= 14 ? '#10b981' : tpm <= 18 ? '#f59e0b' : '#ef4444';
+              const barColor = tpm => tpm == null ? '#e2e8f0' : tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
+              const barTextColor = tpm => tpm == null ? '#94a3b8' : tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
 
               const yTicks = [];
               for (let v = 0; v <= yMax; v += 5) yTicks.push(v);
@@ -3599,20 +3632,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
                       {[
-                        { color: '#10b981', label: '≤14 (Good)', round: false },
-                        { color: '#f59e0b', label: '15–18 (Caution)', round: false },
-                        { color: '#ef4444', label: '>18 (Replace)', round: false },
+                        { bg: '#d1fae5', border: '#059669', label: '≤14 (Good)' },
+                        { bg: '#fef3c7', border: '#d97706', label: '15–18 (Caution)' },
+                        { bg: '#fee2e2', border: '#dc2626', label: '>18 (Replace)' },
                       ].map(l => (
                         <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.color, flexShrink: 0 }} />
+                          <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.bg, border: `1px solid ${l.border}44`, flexShrink: 0 }} />
                           <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
                         </div>
                       ))}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
                       {[
-                        { color: '#3b82f6', label: 'Fresh fill', round: true },
-                        { color: '#f97316', label: 'Top-up', round: true },
+                        { color: '#10b981', label: 'Fresh fill', round: true },
+                        { color: '#f59e0b', label: 'Top-up', round: true },
                       ].map(l => (
                         <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, flexShrink: 0 }} />
@@ -3662,7 +3695,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             {!d.isFuture && (d.tpm != null || d.missed) && (() => {
                               const barIsFresh = d.isFresh;
                               const barIsTopUp = d.litres > 0 && !d.isFresh;
-                              const barStroke = barIsFresh ? '#3b82f6' : barIsTopUp ? '#f97316' : 'none';
+                              const barStroke = barIsFresh ? '#10b981' : barIsTopUp ? '#f59e0b' : 'none';
                               const barSW = (barIsFresh || barIsTopUp) ? 2 : 0;
                               return (
                                 <rect
@@ -3676,16 +3709,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                             {/* TPM value inside tall bars, above short ones */}
                             {d.tpm != null && !d.isFuture && barH > 26 && (
-                              <text x={cx} y={barY + 14} textAnchor="middle" fontSize={9} fill="white" fontWeight="700">{d.tpm}</text>
+                              <text x={cx} y={barY + 14} textAnchor="middle" fontSize={9} fill={barTextColor(d.tpm)} fontWeight="700">{d.tpm}</text>
                             )}
                             {d.tpm != null && !d.isFuture && barH <= 26 && barH > 0 && (
-                              <text x={cx} y={barY - 4} textAnchor="middle" fontSize={9} fill={color} fontWeight="700">{d.tpm}</text>
+                              <text x={cx} y={barY - 4} textAnchor="middle" fontSize={9} fill={barTextColor(d.tpm)} fontWeight="700">{d.tpm}</text>
                             )}
 
                             {/* Litres bubble — single line e.g. "12L" */}
                             {d.litres > 0 && !d.isFuture && (() => {
                               const bubbleY = d.tpm != null ? barY - BUBBLE_R - 5 : TOP_PAD - BUBBLE_R - 2;
-                              const bColor = d.isFresh ? '#3b82f6' : '#f97316';
+                              const bColor = d.isFresh ? '#10b981' : '#f59e0b';
                               return (
                                 <g>
                                   <circle cx={cx} cy={bubbleY} r={BUBBLE_R} fill={bColor} />
@@ -3903,13 +3936,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       }
                       {rSecLabel('Trial Findings')}
                       {summaryEditMode ? (
-                        <textarea
-                          value={summaryFindingsText}
-                          onChange={e => setSummaryFindingsText(e.target.value)}
-                          rows={6}
-                          style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #bfdbfe', borderRadius: '7px', fontSize: '13px', color: '#1f2937', resize: 'vertical', lineHeight: 1.6 }}
-                          placeholder="Trial findings..."
-                        />
+                        <>
+                          <textarea
+                            value={summaryFindingsText}
+                            onChange={e => setSummaryFindingsText(e.target.value)}
+                            rows={6}
+                            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #bfdbfe', borderRadius: '7px', fontSize: '13px', color: '#1f2937', resize: 'vertical', lineHeight: 1.6 }}
+                            placeholder="Trial findings..."
+                          />
+                          <button onClick={async () => {
+                            const existingLines = (venue.trialNotes || '').split('\n');
+                            const firstMatch = existingLines.find(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
+                            const prefix = firstMatch
+                              ? firstMatch.trim().match(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/)[0]
+                              : `[Successful ${getTodayString()}]`;
+                            const nonFindingLines = existingLines.filter(l => !l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
+                            const newFindingLines = summaryFindingsText.trim()
+                              ? summaryFindingsText.split('\n').map(t => t.trim() ? `${prefix} ${t.trim()}` : '').filter(Boolean)
+                              : [];
+                            const newNotes = [...nonFindingLines, ...newFindingLines].join('\n').trim();
+                            await updateVenue(venue.id, { trialNotes: newNotes });
+                            setSummaryEditMode(false);
+                          }} style={{ marginTop: '8px', padding: '6px 14px', background: '#1a428a', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Save size={11} /> Save Findings
+                          </button>
+                        </>
                       ) : (
                         trialFindings
                           ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
@@ -4016,9 +4067,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {/* ── Bottom: Internal Use section ── */}
                   <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
-                    {/* Header row: label + edit findings button */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                      <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Internal Use</div>
+                    {/* Edit Findings button — right aligned */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
                       <button
                         onClick={() => { if (!summaryEditMode) setSummaryFindingsText(trialFindings); setSummaryEditMode(prev => !prev); }}
                         style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -4027,29 +4077,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </button>
                     </div>
 
-                    {/* Save button when in edit mode */}
-                    {summaryEditMode && (
-                      <div style={{ marginBottom: '14px' }}>
-                        <button onClick={async () => {
-                          const existingLines = (venue.trialNotes || '').split('\n');
-                          const firstMatch = existingLines.find(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
-                          const prefix = firstMatch
-                            ? firstMatch.trim().match(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/)[0]
-                            : `[Successful ${getTodayString()}]`;
-                          const nonFindingLines = existingLines.filter(l => !l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
-                          const newFindingLines = summaryFindingsText.trim()
-                            ? summaryFindingsText.split('\n').map(t => t.trim() ? `${prefix} ${t.trim()}` : '').filter(Boolean)
-                            : [];
-                          const newNotes = [...nonFindingLines, ...newFindingLines].join('\n').trim();
-                          await updateVenue(venue.id, { trialNotes: newNotes });
-                          setSummaryEditMode(false);
-                        }} style={{ padding: '6px 14px', background: '#1a428a', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Save size={11} /> Save Findings
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Metadata grid */}
+                    {/* Metadata grid — 7 fields */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 20px' }}>
                       {[
                         { label: 'Status', value: <TrialStatusBadge status={venue.trialStatus} /> },
@@ -4059,9 +4087,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         { label: 'Customer code', value: venue.customerCode || null },
                         { label: 'Days to cust code', value: daysToCustCode !== null ? `${daysToCustCode} days` : null },
                         { label: 'Outcome reason', value: reasonLabel || null },
-                        { label: 'Created', value: trialCreatedDate ? displayDate(trialCreatedDate) : null },
-                        { label: 'Last recording', value: lastRecDate ? displayDate(lastRecDate) : null },
-                        { label: 'Last edited', value: lastEditedDate ? displayDate(lastEditedDate) : null },
                       ].map(({ label, value }) => (
                         <div key={label}>
                           <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label}</div>
@@ -4086,6 +4111,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         </div>
                       </div>
                     )}
+
+                    {/* Footer — created / last recording / last edited as small grey text */}
+                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Created', value: trialCreatedDate ? displayDate(trialCreatedDate) : null },
+                        { label: 'Last recording', value: lastRecDate ? displayDate(lastRecDate) : null },
+                        { label: 'Last edited', value: lastEditedDate ? displayDate(lastEditedDate) : null },
+                      ].filter(f => f.value).map(({ label, value }) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>{label}:</span>
+                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div style={{ height: '20px' }} />
@@ -4636,6 +4675,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       {rowActionVenue && (() => {
         const { venue: rv, tabType: rt } = rowActionVenue;
+        const stageCfg = TRIAL_STATUS_COLORS[rt] || TRIAL_STATUS_COLORS['pipeline'];
         const btnPrimary = { padding: '10px 16px', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: BLUE };
         const btnSecondary = { padding: '10px 16px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#374151', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: 'white' };
         const btnGreen = { ...btnPrimary, background: '#10b981' };
@@ -4644,8 +4684,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
             <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '14px', padding: '20px', width: '100%', maxWidth: '320px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>{rv.name}</div>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '16px', textTransform: 'capitalize' }}>{rt} stage</div>
+              {/* Header: venue name + stage badge on same row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{rv.name}</div>
+                <span style={{ fontSize: '10px', fontWeight: '700', background: stageCfg.bg, color: stageCfg.text, border: `1px solid ${stageCfg.border}`, borderRadius: '6px', padding: '2px 8px', textTransform: 'capitalize', whiteSpace: 'nowrap', marginLeft: '8px' }}>{rt}</span>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* Manage trial — all tabs */}
                 <button style={btnSecondary} onClick={() => { close(); setManageVenueId(rv.id); setActiveTab('manage'); }}>
@@ -4659,11 +4702,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 )}
                 {/* Active: Log reading + End trial */}
                 {rt === 'active' && (<>
-                  <button style={btnPrimary} onClick={() => { close(); setReadingModal(rv); }}>
-                    <BarChart3 size={14} /> Log reading
+                  <button style={btnSecondary} onClick={() => { close(); setReadingModal(rv); }}>
+                    <Edit3 size={14} /> Log reading
                   </button>
                   <button style={btnSecondary} onClick={() => { close(); setEndTrialModal(rv); }}>
-                    <XCircle size={14} /> End trial
+                    <CheckCircle2 size={14} /> End trial
                   </button>
                 </>)}
                 {/* Pending: Successful + Unsuccessful */}
