@@ -1072,6 +1072,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [decisionModal, setDecisionModal] = useState(null); // venue object for won/lost decision popup
   const [custCodeModal, setCustCodeModal] = useState(null); // venue object for cust code popup
   const [rowActionVenue, setRowActionVenue] = useState(null); // { venue, tabType } for pipeline row-click popup
+  const [showTrialTableModal, setShowTrialTableModal] = useState(false); // mobile: trial results table full-screen modal
   // ── Column toggle state ──
   const BDM_TRIAL_COLS = [
     { key: 'name', label: 'Venue Name', locked: true },
@@ -1817,15 +1818,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-              {tc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
+              {tc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '86px' }} />}
               {tc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(allVenues, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} />}
-              {tc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(allVenues, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-              {tc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(allVenues, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-              {tc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(allVenues, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-              {tc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Offered $/L" options={getUniqueValues(allVenues, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-              {showSold && tc('soldPrice') && <FilterableTh colKey="soldPrice" label="Sold $/L" options={getUniqueValues(allVenues, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center' }} />}
-              {showStart && tc('start') && <FilterableTh colKey="start" label={tabType === 'pipeline' ? 'Est. Start' : 'Start'} options={getUniqueValues(allVenues, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '62px' } : {}} />}
-              {showEnd && tc('end') && <FilterableTh colKey="end" label={(tabType === 'pipeline' || tabType === 'active') ? 'Est. End' : 'End'} options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '62px' } : {}} />}
+              {tc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(allVenues, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '100px' }} />}
+              {tc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(allVenues, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '100px' }} />}
+              {tc('currentPrice') && <FilterableTh colKey="currentPrice" label="Current $/L" options={getUniqueValues(allVenues, colAccessors.currentPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '74px' }} />}
+              {tc('offeredPrice') && <FilterableTh colKey="offeredPrice" label="Offered $/L" options={getUniqueValues(allVenues, colAccessors.offeredPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '74px' }} />}
+              {showSold && tc('soldPrice') && <FilterableTh colKey="soldPrice" label="Sold $/L" options={getUniqueValues(allVenues, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '66px' }} />}
+              {showStart && tc('start') && <FilterableTh colKey="start" label={tabType === 'pipeline' ? 'Est. Start' : 'Start'} options={getUniqueValues(allVenues, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '76px' } : {}} />}
+              {showEnd && tc('end') && <FilterableTh colKey="end" label={(tabType === 'pipeline' || tabType === 'active') ? 'Est. End' : 'End'} options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={isArchiveTab(tabType) ? { textAlign: 'center', width: '76px' } : {}} />}
               {(tabType === 'pending' || isAccepted) && tc('days') && <th style={{ textAlign: 'center', width: '50px' }}>Days</th>}
               {tabType === 'active' && tc('today') && <th style={{ textAlign: 'center', width: '50px' }}>Today</th>}
               {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '62px' }} />}
@@ -1848,7 +1849,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <td style={{ width: '4px', padding: 0, background: statusCfg.accent }}></td>
                     <td style={{ fontWeight: '600', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{venue.name}</td>
                     {tc('volume') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><VolumePill bracket={venue.volumeBracket} /></span></td>}
-                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</td>}
+                    {tc('competitor') && <td style={{ whiteSpace: 'nowrap' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}>{comp ? <CompetitorPill comp={comp} table /> : <CompetitorPill comp={{ name: 'Cookers', color: '#1a428a' }} table />}</span></td>}
                     {tc('compOil') && <td style={{ textAlign: 'center', paddingLeft: '4px', paddingRight: '4px' }}>{compOil ? <span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''} style={{ fontSize: '10px', fontWeight: '700', padding: '2px 0', borderRadius: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', background: compTier.bg, color: compTier.text, border: `1px solid ${compTier.border}`, display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle' }}>{compOil.name}</span> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
                     {tc('trialOil') && <td style={{ textAlign: 'center' }}><span className={isArchiveTab(tabType) ? 'bdm-badge-wrap' : ''}><OilBadge oil={cookersOil} competitors={competitors} compact /></span></td>}
                     {tc('currentPrice') && <td style={{ textAlign: 'center', fontWeight: '600', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{venue.currentPricePerLitre ? `$${parseFloat(venue.currentPricePerLitre).toFixed(2)}` : <span style={{ color: '#cbd5e1' }}>—</span>}</td>}
@@ -1902,7 +1903,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
     <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #94a3b8; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: #f8fafc !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
+    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #94a3b8; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: white !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
       {/* Customer code — only for existing */}
@@ -1948,8 +1949,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <select
             value={newTrialForm.defaultOil}
             onChange={e => setNewTrialForm(f => ({ ...f, defaultOil: e.target.value }))}
-            disabled={trialType === 'new' && !newTrialForm.competitor}
-            style={{ ...selectStyle, color: newTrialForm.defaultOil ? '#1f2937' : '#94a3b8', opacity: (trialType === 'new' && !newTrialForm.competitor) ? 0.5 : 1, cursor: (trialType === 'new' && !newTrialForm.competitor) ? 'not-allowed' : 'pointer' }}
+            style={{ ...selectStyle, color: newTrialForm.defaultOil ? '#1f2937' : '#94a3b8' }}
             required>
             <option value="" disabled>
               {trialType === 'existing' ? 'Select Cookers oil...' : (trialType === 'new' && !newTrialForm.competitor) ? 'Select competitor first…' : 'Select current oil...'}
@@ -3183,7 +3183,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const fld = (label, value) => (
                 <div>
                   <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
-                  <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
+                  <div style={{ fontSize: isDesktop ? '13px' : '11px', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>{value || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                 </div>
               );
               const sectionLabel = (text) => (
@@ -3311,7 +3311,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     </div>
                   ) : (
-                    <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '20px 24px', maxWidth: '600px', margin: '0 auto' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                       {/* Venue name */}
                       <div style={S.field}>
@@ -3543,9 +3544,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                         marginTop: '4px',
                       }}>
-                        <Save size={14} /> {mSaving ? 'Saving…' : 'Save Changes'}
+                        {mSaving ? 'Saving…' : 'Save Changes'}
                       </button>
 
+                    </div>
                     </div>
                   )}
                 </div>
@@ -3586,12 +3588,34 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
                     )}
                   </div>
-                  <div style={{ overflowX: 'auto' }}>
+                  {!isDesktop && !showTrialTableModal ? (
+                    <button onClick={() => setShowTrialTableModal(true)} style={{
+                      width: '100%', padding: '14px 16px', borderRadius: '10px',
+                      background: '#eff6ff', border: '1.5px solid #bfdbfe',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', gap: '8px',
+                      fontSize: '14px', fontWeight: '600', color: '#1a428a'
+                    }}>
+                      📊 Tap to View Full Trial Table
+                    </button>
+                  ) : (
+                    <div style={(!isDesktop && showTrialTableModal) ? {
+                      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                      zIndex: 9999, background: 'rgba(0,0,0,0.88)',
+                      display: 'flex', flexDirection: 'column'
+                    } : {}}>
+                      {(!isDesktop && showTrialTableModal) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#1a428a', flexShrink: 0 }}>
+                          <div style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>Trial Results</div>
+                          <button onClick={() => setShowTrialTableModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '22px', lineHeight: '1', padding: '4px 8px' }}>✕</button>
+                        </div>
+                      )}
+                    <div style={{ overflowX: 'auto', ...( (!isDesktop && showTrialTableModal) ? { flex: 1, background: 'white', overflowY: 'auto' } : {}) }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '860px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '30px' }} />  {/* # */}
                         <col style={{ width: '36px' }} />  {/* Day */}
-                        <col style={{ width: '66px' }} />  {/* Date */}
+                        <col style={{ width: '78px' }} />  {/* Date */}
                         <col style={{ width: '44px' }} />  {/* TPM */}
                         <col style={{ width: '46px' }} />  {/* Set°C */}
                         <col style={{ width: '64px' }} />  {/* Actual°C */}
@@ -3670,7 +3694,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         })}
                       </tbody>
                     </table>
-                  </div>
+                    </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -3847,7 +3873,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                     {/* Legend — centered above chart */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
                         {[
                           { bg: '#d1fae5', border: '#059669', label: '≤14 (Good)' },
@@ -3873,7 +3899,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
-                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="320" preserveAspectRatio="xMinYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
+                    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="280" preserveAspectRatio="xMinYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible' }}>
 
                       {/* Y-axis gridlines + labels */}
                       {yTicks.map(v => {
@@ -3980,7 +4006,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           {daysWithNotes.map(({ idx, note, day }) => {
-                            const dateLabel = day ? `${String(day.getDate()).padStart(2,'0')}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getFullYear()).slice(-2)}` : `D${idx + 1}`;
+                            const MNTHS_N = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                            const dateLabel = day ? `${String(day.getDate()).padStart(2,'0')}-${MNTHS_N[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}` : `D${idx + 1}`;
                             return (
                             <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                               <span style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '4px', padding: '1px 5px', flexShrink: 0, lineHeight: '16px' }}>{dateLabel}</span>
@@ -4072,7 +4099,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const sfld = (label, value, valueColor) => (
                 <div key={label}>
                   <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
-                  <div style={{ fontSize: '13px', color: valueColor || '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: isDesktop ? '13px' : '11px', color: valueColor || '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     {(value !== null && value !== undefined && value !== '') ? value : <span style={{ color: '#cbd5e1' }}>—</span>}
                   </div>
                 </div>
@@ -4168,7 +4195,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       paddingBottom: isDesktop ? '0' : '20px',
                       marginBottom: isDesktop ? '0' : '20px',
                     }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '16px 20px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
                         {/* Row 1: Type | Venue name (spans 2 cols) */}
                         {sfld('Type', typeBadge)}
                         <div style={{ gridColumn: 'span 2' }}>
@@ -4271,14 +4298,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                               <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Metric</th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Metric</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f1f5f9' }}>
                                     {compOilName || 'Current'}
                                   </th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', background: '#eff6ff' }}>
                                     {trialOilName || 'Trial'}
                                   </th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Diff</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>±</th>
                                 </tr>
                               </thead>
                               <tbody>
