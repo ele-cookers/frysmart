@@ -4785,7 +4785,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Pipeline</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials you're lining up. When the customer is ready, hit Start Trial to kick it off.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials you're planning to start. Hit Start Trial on a venue when you're ready to begin.</p>
             {pipelineTrials.length === 0
               ? emptyState(Clock, 'Pipeline empty', 'Create a new trial to add to your pipeline')
               : isTableView ? renderTrialTable(pipelineTrials, 'pipeline')
