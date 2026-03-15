@@ -3212,7 +3212,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
               const sectionLabel = (text) => (
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#b0bac9', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>{text}</div>
+                <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>{text}</div>
               );
               const fldGrid = (children) => (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>{children}</div>
@@ -4219,7 +4219,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
               // Section label helper (no top margin — use marginTop inline when needed)
               const rSecLabel = (text, mt = 20) => (
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: `${mt}px` }}>{text}</div>
+                <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', marginTop: `${mt}px` }}>{text}</div>
               );
 
               // Internal use metadata
