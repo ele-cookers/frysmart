@@ -10,7 +10,7 @@ import {
   XCircle, ChevronDown,
   ArrowUpDown, CheckCircle2,
   ArrowDown, Filter,
-  Edit3, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
+  Edit3, Pencil, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
   Star, MessageSquare, Target,
   DollarSign, Droplets, Palette, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
 } from 'lucide-react';
@@ -1708,11 +1708,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     fontSize: '12px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
   });
-  // Mobile card action buttons — light bg, compact, auto width
-  const btnMobileBlue  = { padding: '7px 14px', background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#1a428a', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
-  const btnMobileGhost = { padding: '7px 14px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
-  const btnMobileGreen = { padding: '7px 14px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#166534', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
-  const btnMobileRed   = { padding: '7px 14px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
+  // Mobile card action buttons — light bg, flex:1 to fill width evenly
+  const btnMobileBlue  = { flex: 1, padding: '8px 12px', background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
+  const btnMobileGhost = { flex: 1, padding: '8px 12px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
+  const btnMobileGreen = { flex: 1, padding: '8px 12px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
+  const btnMobileRed   = { flex: 1, padding: '8px 12px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
 
   // Card base style
   const cardBase = (accent) => ({ ...S.card, borderLeft: `4px solid ${accent}`, marginBottom: '10px', cursor: 'pointer' });
@@ -1744,13 +1744,24 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // -- PIPELINE CARD --
   const renderPipelineCard = (venue) => (
     <div key={venue.id} style={{ ...cardBase(TRIAL_STATUS_COLORS['pipeline'].accent), cursor: 'default' }}>
-      {cardHeader(venue)}
+      {cardHeader(venue, isDesktop ? undefined : null)}
       {cardOilRow(venue)}
       {pricingRow(venue)}
       {dateRow([['Fryers', venue.fryerCount || 1], ['Created', venue.trialCreatedAt ? displayDate(venue.trialCreatedAt.split('T')[0]) : '—']])}
-      <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={isDesktop ? { ...btnPrimary(), width: '100%', flex: 'none' } : btnMobileBlue}>
-        <Play size={13} /> Start Trial
-      </button>
+      {isDesktop ? (
+        <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={{ ...btnPrimary(), width: '100%', flex: 'none' }}>
+          <Play size={13} /> Start Trial
+        </button>
+      ) : (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={btnMobileBlue}>
+            <Play size={13} /> Start Trial
+          </button>
+          <button onClick={() => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
+            <Pencil size={13} /> Manage
+          </button>
+        </div>
+      )}
     </div>
   );
 
