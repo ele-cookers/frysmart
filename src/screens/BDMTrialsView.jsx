@@ -3314,12 +3314,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {/* ── Right: notes + goals ── */}
                       <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px', paddingBottom: isDesktop ? '0' : '20px', marginBottom: isDesktop ? '0' : '20px', borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8' }}>
                         {sectionLabel('What do we know going into this trial?')}
-                        <div style={{ background: '#f8fafc', border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '20px', minHeight: '44px' }}>
-                          {initialNote
-                            ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                            : <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No notes entered.</p>
-                          }
-                        </div>
+                        {initialNote
+                          ? <div style={{ border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '20px' }}>
+                              <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                            </div>
+                          : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 20px 0' }}>No notes entered.</p>
+                        }
                         {sectionLabel('Trial goals')}
                         {parsedGoals.length > 0 ? (
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -4309,12 +4309,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {/* Right: what we know + findings */}
                     <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px' }}>
                       {rSecLabel('What do we know going into this trial?', 0)}
-                      <div style={{ background: '#f8fafc', border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '4px', minHeight: '44px' }}>
-                        {initialNote
-                          ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                          : <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No notes entered.</p>
-                        }
-                      </div>
+                      {initialNote
+                        ? <div style={{ border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '4px' }}>
+                            <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                          </div>
+                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No notes entered.</p>
+                      }
                       {rSecLabel('Trial Findings')}
                       {summaryEditMode ? (
                         <>
@@ -4339,12 +4339,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </button>
                         </>
                       ) : (
-                        <div style={{ background: '#f8fafc', border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '4px', minHeight: '44px' }}>
-                          {trialFindings
-                            ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
-                            : <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No trial findings recorded.</p>
-                          }
-                        </div>
+                        trialFindings
+                          ? <div style={{ border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '4px' }}>
+                              <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
+                            </div>
+                          : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No trial findings recorded.</p>
                       )}
                     </div>
                   </div>
