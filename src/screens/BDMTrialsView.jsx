@@ -3633,16 +3633,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
-                        <col style={{ width: '55px' }} />  {/* Day */}
+                        <col style={{ width: '53px' }} />  {/* Day */}
                         <col style={{ width: '92px' }} />  {/* Date */}
                         <col style={{ width: '60px' }} />  {/* TPM */}
                         <col style={{ width: '60px' }} />  {/* Set°C */}
                         <col style={{ width: '70px' }} />  {/* Actual°C */}
                         <col style={{ width: '60px' }} />  {/* -/+°C */}
-                        <col style={{ width: '83px' }} />  {/* Fill Type */}
+                        <col style={{ width: '82px' }} />  {/* Fill Type */}
                         <col style={{ width: '46px' }} />  {/* Litres */}
-                        <col style={{ width: '83px' }} />  {/* Filtered */}
-                        <col style={{ width: '115px' }} /> {/* Food */}
+                        <col style={{ width: '82px' }} />  {/* Filtered */}
+                        <col style={{ width: '118px' }} /> {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
