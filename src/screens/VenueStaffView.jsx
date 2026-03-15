@@ -43,6 +43,11 @@ const DEFAULT_FOOD_TYPES = [
   'High Starch',
   'Mixed Service'
 ];
+const FOOD_TYPE_EMOJIS = {
+  'Chips/Fries': '🍟', 'Crumbed Items': '🍗', 'Battered Items': '🐟',
+  'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🌽', 'Mixed Service': '🍽️',
+};
+const getFoodEmoji = (type) => FOOD_TYPE_EMOJIS[type] || '🍽️';
 
 // Group a flat array of readings (DB shape) into { [dateString]: [...readings] }
 const groupReadingsByDate = (readings) => {
@@ -453,7 +458,7 @@ const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, 
               onFocus={(e) => e.target.style.borderColor = '#1a428a'}
               onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
             >
-              {foodTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
+              {foodTypeOptions.map(type => <option key={type} value={type}>{getFoodEmoji(type)} {type}</option>)}
             </select>
           </div>
 
@@ -876,7 +881,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                     onFocus={(e) => e.target.style.borderColor = '#1a428a'}
                     onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-foodType`] ? '#ef4444' : '#e2e8f0'}
                   >
-                    {foodTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
+                    {foodTypeOptions.map(type => <option key={type} value={type}>{getFoodEmoji(type)} {type}</option>)}
                   </select>
                 </div>
 
@@ -1086,7 +1091,7 @@ const RecordingCard = ({ recording, allReadings = [], showDate = false, recordin
         }}>
           {(recording.foodType || recording.fryingType) ? (
             <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '10px' }}>🍟</span> {recording.foodType || recording.fryingType}
+              <span style={{ fontSize: '10px' }}>{getFoodEmoji(recording.foodType || recording.fryingType)}</span> {recording.foodType || recording.fryingType}
             </div>
           ) : <div />}
           {(recording.staffName || recording.takenByName) && (

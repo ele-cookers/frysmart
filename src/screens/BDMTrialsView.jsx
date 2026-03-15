@@ -91,6 +91,7 @@ const FOOD_EMOJIS = {
   'High Starch': '🍞',
   'Mixed Service': '🍽️',
 };
+const getFoodEmoji = (type) => FOOD_EMOJIS[type] || '🍽️';
 
 const inputStyle = {
   width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px',
@@ -546,7 +547,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
               style={selectSt}
               onFocus={e => e.target.style.borderColor = '#1a428a'}
               onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-              {foodTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
+              {foodTypeOptions.map(type => <option key={type} value={type}>{getFoodEmoji(type)} {type}</option>)}
             </select>
           </div>
 

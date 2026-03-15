@@ -103,6 +103,11 @@ const FOOD_TYPES = [
   'Chips/Fries', 'Crumbed Items', 'Battered Items',
   'Plain Proteins', 'Pastries/Donuts', 'High Starch', 'Mixed Service',
 ];
+const FOOD_TYPE_EMOJIS = {
+  'Chips/Fries': '🍟', 'Crumbed Items': '🍗', 'Battered Items': '🐟',
+  'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🌽', 'Mixed Service': '🍽️',
+};
+const getFoodEmoji = (type) => FOOD_TYPE_EMOJIS[type] || '🍽️';
 
 
 // ColumnToggle imported from ../components/ColumnToggle
@@ -2687,7 +2692,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                   <select value={fd.foodType || ''} onChange={e => setFryer(activeFryerTab, { foodType: e.target.value })}
                     style={{ ...selectStyle, fontSize: '14px', width: '100%', boxSizing: 'border-box', color: fd.foodType ? '#1f2937' : '#94a3b8' }}>
                     <option value="" disabled>Select...</option>
-                    {FOOD_TYPES.map(ft => <option key={ft} value={ft}>{ft}</option>)}
+                    {FOOD_TYPES.map(ft => <option key={ft} value={ft}>{getFoodEmoji(ft)} {ft}</option>)}
                   </select>
                 </div>
 
@@ -3364,7 +3369,7 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
                 </div>
                 {(foodTypeOptions || []).map((b, i) => (
                   <div key={b} style={{ display: 'grid', gridTemplateColumns: '1fr 40px', alignItems: 'center', padding: '8px 12px', borderBottom: i < foodTypeOptions.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{b}</span>
+                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{getFoodEmoji(b)} {b}</span>
                     <button onClick={() => removeFoodType(b)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', justifyContent: 'center' }}>
                       <X size={14} color="#cbd5e1" />
                     </button>
