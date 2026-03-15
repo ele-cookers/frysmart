@@ -1372,10 +1372,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       lines.push(`[TrialOutcome: ${trialOutcomeKey}]`);
     }
     const newTrialNotes = lines.filter(Boolean).join('\n');
+    const endedToday = getTodayString();
     // Close immediately (optimistic), fire update in background
     setEndTrialModal(null);
     setSuccessMsg('Trial Ended');
-    updateVenue(venueId, { trialStatus: 'pending', trialEndDate: getTodayString(), trialNotes: newTrialNotes });
+    updateVenue(venueId, { trialStatus: 'pending', trialEndDate: endedToday, trialNotes: newTrialNotes });
+    // Navigate straight to the summary report for the just-ended trial
+    setSelectedTrialVenue({ ...v, trialStatus: 'pending', trialEndDate: endedToday, trialNotes: newTrialNotes });
+    setManageSubTab('summary');
+    setActiveTab('pending');
   };
 
   const handleCloseTrial = (venueId, outcomeData) => {
