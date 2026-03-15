@@ -4566,85 +4566,35 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   <td style={{ ...pfTd(row.avgLife != null), fontWeight: row.avgLife != null ? '600' : '400' }}>{pfN(row.avgLife)}</td>
                                 </tr>
                               ))}
-                              {/* Total row (navy) + Avg row (light blue) */}
+                              {/* Total row (navy) — fills only */}
                               {(() => {
-                                const n = pfRows.length || 1;
                                 const tFreshCount = pfRows.reduce((s, r) => s + r.freshCount, 0);
                                 const tFreshLitres = pfRows.reduce((s, r) => s + r.freshLitres, 0);
                                 const tTopUpCount = pfRows.reduce((s, r) => s + r.topUpCount, 0);
                                 const tTopUpLitres = pfRows.reduce((s, r) => s + r.topUpLitres, 0);
                                 const tTotalLitres = pfRows.reduce((s, r) => s + r.totalLitres, 0);
-                                const tpmMins = pfRows.map(r => r.minTPM).filter(v => v != null);
-                                const tpmMaxs = pfRows.map(r => r.maxTPM).filter(v => v != null);
-                                const tpmAvgs = pfRows.map(r => r.avgTPM).filter(v => v != null);
-                                const tempMins = pfRows.map(r => r.minActualTemp).filter(v => v != null);
-                                const tempMaxs = pfRows.map(r => r.maxActualTemp).filter(v => v != null);
-                                const varAvgs = pfRows.map(r => r.avgTempVar).filter(v => v != null);
-                                const lifeMins = pfRows.map(r => r.minLife).filter(v => v != null);
-                                const lifeMaxs = pfRows.map(r => r.maxLife).filter(v => v != null);
-                                const lifeAvgs = pfRows.map(r => r.avgLife).filter(v => v != null);
-                                const tMinTPM = tpmMins.length > 0 ? Math.min(...tpmMins) : null;
-                                const tMaxTPM = tpmMaxs.length > 0 ? Math.max(...tpmMaxs) : null;
-                                const tAvgTPM = tpmAvgs.length > 0 ? Math.round(tpmAvgs.reduce((a, b) => a + b, 0) / tpmAvgs.length * 10) / 10 : null;
-                                const tMinTemp = tempMins.length > 0 ? Math.min(...tempMins) : null;
-                                const tMaxTemp = tempMaxs.length > 0 ? Math.max(...tempMaxs) : null;
-                                const tAvgVar = varAvgs.length > 0 ? Math.round(varAvgs.reduce((a, b) => a + b, 0) / varAvgs.length * 10) / 10 : null;
-                                const tMinLife = lifeMins.length > 0 ? Math.min(...lifeMins) : null;
-                                const tMaxLife = lifeMaxs.length > 0 ? Math.max(...lifeMaxs) : null;
-                                const tAvgLife = lifeAvgs.length > 0 ? Math.round(lifeAvgs.reduce((a, b) => a + b, 0) / lifeAvgs.length) : null;
-                                // Averages per fryer
-                                const aFreshCount = Math.round(tFreshCount / n * 10) / 10;
-                                const aFreshLitres = Math.round(tFreshLitres / n * 10) / 10;
-                                const aTopUpCount = Math.round(tTopUpCount / n * 10) / 10;
-                                const aTopUpLitres = Math.round(tTopUpLitres / n * 10) / 10;
-                                const aTotalLitres = Math.round(tTotalLitres / n * 10) / 10;
-                                // Navy total row style
+                                // Navy total row style — fills only
                                 const totTd = (hasVal, extra = {}) => ({ padding: '6px 6px', textAlign: 'center', fontSize: '11px', fontWeight: '700', borderTop: '2px solid #e2e8f0', color: hasVal ? '#1a428a' : '#cbd5e1', background: '#eef2fb', ...extra });
                                 const totL = (v) => v > 0 ? `${v}L` : '—';
-                                // Light blue avg row style
-                                const avgTd = (hasVal, extra = {}) => ({ padding: '6px 6px', textAlign: 'center', fontSize: '11px', fontWeight: '600', borderTop: '1px solid #e2e8f0', color: hasVal ? '#2563eb' : '#cbd5e1', background: '#f0f7ff', ...extra });
-                                const avgL = (v) => v > 0 ? `${v}L` : '—';
                                 return (
-                                  <>
-                                    {/* Total row — sums for fills, overall min/max for TPM/Temp/Life */}
-                                    <tr>
-                                      <td style={{ padding: '6px 10px', color: '#1a428a', fontWeight: '700', fontSize: '11px', borderTop: '2px solid #e2e8f0', background: '#eef2fb', whiteSpace: 'nowrap' }}>Total</td>
-                                      <td style={totTd(false)}>—</td>
-                                      <td style={totTd(tFreshCount > 0, { borderLeft: '1px solid #dde4f0' })}>{tFreshCount > 0 ? tFreshCount : '—'}</td>
-                                      <td style={totTd(tFreshLitres > 0)}>{totL(Math.round(tFreshLitres * 10) / 10)}</td>
-                                      <td style={totTd(tTopUpCount > 0)}>{tTopUpCount > 0 ? tTopUpCount : '—'}</td>
-                                      <td style={totTd(tTopUpLitres > 0)}>{totL(Math.round(tTopUpLitres * 10) / 10)}</td>
-                                      <td style={totTd(tTotalLitres > 0)}>{totL(Math.round(tTotalLitres * 10) / 10)}</td>
-                                      <td style={{ ...totTd(tMinTPM != null, { borderLeft: '1px solid #dde4f0' }), color: tpmCol(tMinTPM) }}>{pfN(tMinTPM)}</td>
-                                      <td style={{ ...totTd(tMaxTPM != null), color: tpmCol(tMaxTPM) }}>{pfN(tMaxTPM)}</td>
-                                      <td style={totTd(false)}>—</td>
-                                      <td style={totTd(tMinTemp != null, { borderLeft: '1px solid #dde4f0' })}>{pfN(tMinTemp, 0, '°')}</td>
-                                      <td style={totTd(tMaxTemp != null)}>{pfN(tMaxTemp, 0, '°')}</td>
-                                      <td style={totTd(false)}>—</td>
-                                      <td style={totTd(tMinLife != null, { borderLeft: '1px solid #dde4f0' })}>{pfN(tMinLife)}</td>
-                                      <td style={totTd(tMaxLife != null)}>{pfN(tMaxLife)}</td>
-                                      <td style={totTd(false)}>—</td>
-                                    </tr>
-                                    {/* Avg row — per-fryer averages for fills, avg TPM/Temp/Life */}
-                                    <tr>
-                                      <td style={{ padding: '6px 10px', color: '#2563eb', fontWeight: '700', fontSize: '11px', borderTop: '1px solid #e2e8f0', background: '#f0f7ff', whiteSpace: 'nowrap' }}>Avg</td>
-                                      <td style={avgTd(false)}>—</td>
-                                      <td style={avgTd(aFreshCount > 0, { borderLeft: '1px solid #dbeafe' })}>{aFreshCount > 0 ? aFreshCount : '—'}</td>
-                                      <td style={avgTd(aFreshLitres > 0)}>{avgL(aFreshLitres)}</td>
-                                      <td style={avgTd(aTopUpCount > 0)}>{aTopUpCount > 0 ? aTopUpCount : '—'}</td>
-                                      <td style={avgTd(aTopUpLitres > 0)}>{avgL(aTopUpLitres)}</td>
-                                      <td style={avgTd(aTotalLitres > 0)}>{avgL(aTotalLitres)}</td>
-                                      <td style={avgTd(false, { borderLeft: '1px solid #dbeafe' })}>—</td>
-                                      <td style={avgTd(false)}>—</td>
-                                      <td style={{ ...avgTd(tAvgTPM != null), color: tpmCol(tAvgTPM) }}>{pfN(tAvgTPM)}</td>
-                                      <td style={avgTd(false, { borderLeft: '1px solid #dbeafe' })}>—</td>
-                                      <td style={avgTd(false)}>—</td>
-                                      <td style={{ ...avgTd(tAvgVar != null), color: varCol(tAvgVar) }}>{pfN(tAvgVar, 1, '°')}</td>
-                                      <td style={avgTd(false, { borderLeft: '1px solid #dbeafe' })}>—</td>
-                                      <td style={avgTd(false)}>—</td>
-                                      <td style={avgTd(tAvgLife != null)}>{pfN(tAvgLife)}</td>
-                                    </tr>
-                                  </>
+                                  <tr>
+                                    <td style={{ padding: '6px 10px', color: '#1a428a', fontWeight: '700', fontSize: '11px', borderTop: '2px solid #e2e8f0', background: '#eef2fb', whiteSpace: 'nowrap' }}>Total</td>
+                                    <td style={totTd(false)}>—</td>
+                                    <td style={totTd(tFreshCount > 0, { borderLeft: '1px solid #dde4f0' })}>{tFreshCount > 0 ? tFreshCount : '—'}</td>
+                                    <td style={totTd(tFreshLitres > 0)}>{totL(Math.round(tFreshLitres * 10) / 10)}</td>
+                                    <td style={totTd(tTopUpCount > 0)}>{tTopUpCount > 0 ? tTopUpCount : '—'}</td>
+                                    <td style={totTd(tTopUpLitres > 0)}>{totL(Math.round(tTopUpLitres * 10) / 10)}</td>
+                                    <td style={totTd(tTotalLitres > 0)}>{totL(Math.round(tTotalLitres * 10) / 10)}</td>
+                                    <td style={totTd(false, { borderLeft: '1px solid #dde4f0' })}>—</td>
+                                    <td style={totTd(false)}>—</td>
+                                    <td style={totTd(false)}>—</td>
+                                    <td style={totTd(false, { borderLeft: '1px solid #dde4f0' })}>—</td>
+                                    <td style={totTd(false)}>—</td>
+                                    <td style={totTd(false)}>—</td>
+                                    <td style={totTd(false, { borderLeft: '1px solid #dde4f0' })}>—</td>
+                                    <td style={totTd(false)}>—</td>
+                                    <td style={totTd(false)}>—</td>
+                                  </tr>
                                 );
                               })()}
                             </tbody>
@@ -4693,9 +4643,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Outcome Notes</div>
                         <button
                           onClick={() => { if (!summaryOutcomeEditMode) setSummaryOutcomeText(outcomeNotes); setSummaryOutcomeEditMode(prev => !prev); }}
-                          style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '3px 8px', fontSize: '10px', fontWeight: '600', color: summaryOutcomeEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                          style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryOutcomeEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
-                          <Edit3 size={10} /> {summaryOutcomeEditMode ? 'Cancel' : 'Edit'}
+                          <Edit3 size={12} /> {summaryOutcomeEditMode ? 'Cancel Edit' : 'Edit Notes'}
                         </button>
                       </div>
                       {summaryOutcomeEditMode ? (
