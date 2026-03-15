@@ -585,6 +585,26 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
 };
 
 // ─────────────────────────────────────────────
+// TRIAL REASON DEFAULTS (fallback if DB table is empty)
+// ─────────────────────────────────────────────
+const DEFAULT_TRIAL_REASONS = [
+  { key: 'cost_savings',           label: 'Cost Savings',           type: 'successful' },
+  { key: 'oil_lasted_longer',      label: 'Oil Lasted Longer',      type: 'successful' },
+  { key: 'better_food_quality',    label: 'Better Food Quality',    type: 'successful' },
+  { key: 'operational_efficiency', label: 'Operational Efficiency', type: 'successful' },
+  { key: 'strong_trial_results',   label: 'Strong Trial Results',   type: 'successful' },
+  { key: 'supplier_relationship',  label: 'Supplier Relationship',  type: 'successful' },
+  { key: 'no_savings',             label: 'No Savings',             type: 'unsuccessful' },
+  { key: 'price_too_high',         label: 'Price Too High',         type: 'unsuccessful' },
+  { key: 'loyal_to_competitor',    label: 'Loyal to Competitor',    type: 'unsuccessful' },
+  { key: 'oil_quality_concerns',   label: 'Oil Quality Concerns',   type: 'unsuccessful' },
+  { key: 'not_interested',         label: 'Not Interested',         type: 'unsuccessful' },
+  { key: 'resistance_to_change',   label: 'Resistance to Change',   type: 'unsuccessful' },
+  { key: 'ownership_change',       label: 'Ownership Change',       type: 'unsuccessful' },
+  { key: 'venue_closed',           label: 'Venue Closed',           type: 'unsuccessful' },
+];
+
+// ─────────────────────────────────────────────
 // CLOSE TRIAL MODAL (Won / Lost)
 // ─────────────────────────────────────────────
 const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
@@ -1169,7 +1189,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         setCompetitors((compData || []).map(mapCompetitor));
 
         const { data: reasonData } = await supabase.from('trial_reasons').select('*');
-        setTrialReasons((reasonData || []).map(mapTrialReason));
+        const mappedReasons = (reasonData || []).map(mapTrialReason);
+        setTrialReasons(mappedReasons.length > 0 ? mappedReasons : DEFAULT_TRIAL_REASONS);
 
         const { data: settingsData } = await supabase.from('system_settings').select('*').single();
         if (settingsData) setSystemSettings(mapSystemSettings(settingsData));
