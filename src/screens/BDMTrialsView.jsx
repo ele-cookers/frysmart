@@ -390,11 +390,11 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
 
         <form onSubmit={handleSaveAndContinue} style={{ padding: '16px 24px' }}>
           {/* Reading Date */}
-          <div style={fld}>
+          <div style={{ ...fld, overflow: 'hidden' }}>
             <label style={lbl}>Reading Date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
               max={getTodayString()}
-              style={inputSt} />
+              style={{ ...inputSt, display: 'block', WebkitAppearance: 'none', appearance: 'none' }} />
           </div>
 
           {/* Fryer operation toggle */}
@@ -1663,6 +1663,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   };
 
   const pricingRow = (venue, showSold) => {
+    if (!isDesktop) return null;
     if (!venue.currentPricePerLitre && !venue.offeredPricePerLitre) return null;
     return (
       <div style={{ display: 'flex', gap: '14px', fontSize: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
@@ -1673,21 +1674,24 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     );
   };
 
-  // Date info row — inline flex instead of grid
-  const dateRow = (items) => (
-    <div style={{ display: 'flex', gap: '14px', fontSize: '11px', marginBottom: '10px', flexWrap: 'wrap' }}>
-      {items.map(([label, value]) => (
-        <div key={label}><span style={{ color: COLORS.textMuted, fontWeight: '600' }}>{label}: </span><span style={{ fontWeight: '600', color: COLORS.text }}>{value}</span></div>
-      ))}
-    </div>
-  );
+  // Date info row — inline flex instead of grid (desktop only)
+  const dateRow = (items) => {
+    if (!isDesktop) return null;
+    return (
+      <div style={{ display: 'flex', gap: '14px', fontSize: '11px', marginBottom: '10px', flexWrap: 'wrap' }}>
+        {items.map(([label, value]) => (
+          <div key={label}><span style={{ color: COLORS.textMuted, fontWeight: '600' }}>{label}: </span><span style={{ fontWeight: '600', color: COLORS.text }}>{value}</span></div>
+        ))}
+      </div>
+    );
+  };
 
-  // Card header — name + volume pill + status badge
+  // Card header — name + volume pill (desktop only) + status badge
   const cardHeader = (venue, statusOverride) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: '14px', fontWeight: '700', color: COLORS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{venue.name}</div>
-        {venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
+        {isDesktop && venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
       </div>
       {statusOverride || <TrialStatusBadge status={venue.trialStatus} />}
     </div>
@@ -1704,6 +1708,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     fontSize: '12px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
   });
+  // Mobile card action buttons — light bg, compact, auto width
+  const btnMobileBlue  = { padding: '7px 14px', background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#1a428a', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
+  const btnMobileGhost = { padding: '7px 14px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
+  const btnMobileGreen = { padding: '7px 14px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#166534', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
+  const btnMobileRed   = { padding: '7px 14px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' };
 
   // Card base style
   const cardBase = (accent) => ({ ...S.card, borderLeft: `4px solid ${accent}`, marginBottom: '10px', cursor: 'pointer' });
@@ -1721,10 +1730,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {pricingRow(venue)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['Days', daysIn ?? '—'], ['Readings', venueReadings.length], ['Litres', `${totalLitres.toFixed(0)}L`]])}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnPrimary()}>
+          <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={isDesktop ? btnPrimary() : btnMobileBlue}>
             <ClipboardList size={13} /> Log Reading
           </button>
-          <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={btnSecondary()}>
+          <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={isDesktop ? btnSecondary() : btnMobileGhost}>
             <XCircle size={13} /> End Trial
           </button>
         </div>
@@ -1739,7 +1748,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       {cardOilRow(venue)}
       {pricingRow(venue)}
       {dateRow([['Fryers', venue.fryerCount || 1], ['Created', venue.trialCreatedAt ? displayDate(venue.trialCreatedAt.split('T')[0]) : '—']])}
-      <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={{ ...btnPrimary(), width: '100%', flex: 'none' }}>
+      <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={isDesktop ? { ...btnPrimary(), width: '100%', flex: 'none' } : btnMobileBlue}>
         <Play size={13} /> Start Trial
       </button>
     </div>
@@ -1755,8 +1764,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {pricingRow(venue)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={btnPrimary('#10b981')}><Trophy size={13} /> Won</button>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={btnPrimary('#ef4444')}><XCircle size={13} /> Lost</button>
+          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={isDesktop ? btnPrimary('#10b981') : btnMobileGreen}><Trophy size={13} /> Won</button>
+          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={isDesktop ? btnPrimary('#ef4444') : btnMobileRed}><XCircle size={13} /> Lost</button>
         </div>
       </div>
     );
