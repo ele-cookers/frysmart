@@ -3176,7 +3176,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><RotateCcw size={10} /> Back to Pending</button>
             </>)}
-            {((venue.trialStatus === 'unsuccessful') || (venue.trialStatus === 'successful' && !venue.customerCode)) && (
+            {venue.trialStatus === 'unsuccessful' && (
               <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }} style={{
                 padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
