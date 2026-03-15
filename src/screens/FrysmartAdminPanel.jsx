@@ -3179,20 +3179,45 @@ const CollapsibleCard = ({ title, defaultOpen = false, children }) => {
   );
 };
 
+const ReasonTable = ({ title, titleColor, titleBg, type, trialReasons, setTrialReasons }) => {
+  const [newLabel, setNewLabel] = useState('');
+  const filtered = [...trialReasons].filter(r => r.type === type).sort((a, b) => a.label.localeCompare(b.label));
+  const handleAdd = () => {
+    if (!newLabel.trim()) return;
+    const key = newLabel.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    setTrialReasons(prev => [...prev, { key, label: newLabel.trim(), type }]);
+    setNewLabel('');
+  };
+  return (
+    <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+      <div style={{ padding: '8px 12px', background: titleBg, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '11px', fontWeight: '700', color: titleColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{filtered.length}</span>
+      </div>
+      {filtered.map((r, i) => (
+        <div key={r.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+          <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{r.label}</span>
+          <button onClick={() => setTrialReasons(prev => prev.filter(x => x.key !== r.key))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+            <X size={14} color="#cbd5e1" />
+          </button>
+        </div>
+      ))}
+      <div style={{ padding: '8px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
+        <input style={{ ...inputStyle, flex: 1 }} placeholder="ADD REASON" value={newLabel}
+          onChange={e => setNewLabel(e.target.value.toUpperCase())}
+          onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+          onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
+        />
+        <button onClick={handleAdd} style={{ padding: '0 14px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+      </div>
+    </div>
+  );
+};
+
 const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, setVolumeBrackets, systemSettings, setSystemSettings, oilTypeOptions, setOilTypeOptions }) => {
   const [activeTab, setActiveTab] = useState('reasons');
-  const [newReason, setNewReason] = useState('');
-  const [newReasonType, setNewReasonType] = useState('successful');
   const [newBracket, setNewBracket] = useState({ label: '', color: '#64748b' });
   const [newOilType, setNewOilType] = useState('');
-
-  const addReason = () => {
-    if (!newReason.trim()) return;
-    const key = newReason.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    setTrialReasons(prev => [...prev, { key, label: newReason.trim(), type: newReasonType }]);
-    setNewReason('');
-  };
-  const removeReason = (key) => setTrialReasons(prev => prev.filter(r => r.key !== key));
 
   const addBracket = () => {
     if (!newBracket.label.trim()) return;
@@ -3255,51 +3280,15 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
         {/* Tab content */}
         <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
 
-          {activeTab === 'reasons' && (() => {
-            const ReasonTable = ({ title, titleColor, titleBg, type }) => {
-              const [newLabel, setNewLabel] = useState('');
-              const filtered = [...trialReasons].filter(r => r.type === type).sort((a, b) => a.label.localeCompare(b.label));
-              const handleAdd = () => {
-                if (!newLabel.trim()) return;
-                const key = newLabel.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                setTrialReasons(prev => [...prev, { key, label: newLabel.trim(), type }]);
-                setNewLabel('');
-              };
-              return (
-                <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                  <div style={{ padding: '8px 12px', background: titleBg, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: titleColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>{filtered.length}</span>
-                  </div>
-                  {filtered.map((r, i) => (
-                    <div key={r.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{r.label}</span>
-                      <button onClick={() => removeReason(r.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                        <X size={14} color="#cbd5e1" />
-                      </button>
-                    </div>
-                  ))}
-                  <div style={{ padding: '8px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
-                    <input style={{ ...inputStyle, flex: 1 }} placeholder="ADD REASON" value={newLabel}
-                      onChange={e => setNewLabel(e.target.value.toUpperCase())}
-                      onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                      onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
-                    />
-                    <button onClick={handleAdd} style={{ padding: '0 14px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
-                  </div>
-                </div>
-              );
-            };
-            return (
-              <div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>When a trial outcome is recorded, the BDM selects a reason. Helps track why trials succeed or fail.</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                  <ReasonTable title="Successful Reasons" titleColor="#065f46" titleBg="#dcfce7" type="successful" />
-                  <ReasonTable title="Unsuccessful Reasons" titleColor="#991b1b" titleBg="#fee2e2" type="unsuccessful" />
-                </div>
+          {activeTab === 'reasons' && (
+            <div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>When a trial outcome is recorded, the BDM selects a reason. Helps track why trials succeed or fail.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                <ReasonTable title="Successful Reasons" titleColor="#065f46" titleBg="#dcfce7" type="successful" trialReasons={trialReasons} setTrialReasons={setTrialReasons} />
+                <ReasonTable title="Unsuccessful Reasons" titleColor="#991b1b" titleBg="#fee2e2" type="unsuccessful" trialReasons={trialReasons} setTrialReasons={setTrialReasons} />
               </div>
-            );
-          })()}
+            </div>
+          )}
 
           {activeTab === 'brackets' && (
             <div>
