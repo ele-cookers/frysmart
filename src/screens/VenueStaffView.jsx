@@ -14,10 +14,14 @@ const formatDate = (date) => {
 
 const getTodayString = () => formatDate(new Date());
 
-const getTPMStatus = (tpm, warningThreshold = 18, criticalThreshold = 24) => {
+// Module-level thresholds — updated at the top of VenueStaffView render
+// so every sub-component picks up the DB values without prop-drilling.
+const _tpmThresholds = { warning: 18, critical: 24 };
+
+const getTPMStatus = (tpm) => {
   if (tpm == null) return { color: '#94a3b8', text: 'No reading', bg: '#f1f5f9', level: 'none', icon: 'none' };
-  if (tpm < warningThreshold) return { color: '#10b981', text: 'Oil quality good', bg: '#d1fae5', level: 'good', icon: 'check' };
-  if (tpm < criticalThreshold) return { color: '#f59e0b', text: 'Recommended to change', bg: '#fef3c7', level: 'warning', icon: 'alert' };
+  if (tpm < _tpmThresholds.warning) return { color: '#10b981', text: 'Oil quality good', bg: '#d1fae5', level: 'good', icon: 'check' };
+  if (tpm < _tpmThresholds.critical) return { color: '#f59e0b', text: 'Recommended to change', bg: '#fef3c7', level: 'warning', icon: 'alert' };
   return { color: '#ef4444', text: 'Must change oil', bg: '#fee2e2', level: 'critical', icon: 'x' };
 };
 
@@ -1537,7 +1541,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
         <div style={{ background: 'white', borderRadius: '10px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
           <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Avg TPM</div>
           <div style={{ fontSize: '20px', fontWeight: '700', color: getTPMStatus(parseFloat(stats.avgTPM)).color }}>{stats.avgTPM}</div>
-          <div style={{ fontSize: '10px', color: '#94a3b8' }}>target &lt;18</div>
+          <div style={{ fontSize: '10px', color: '#94a3b8' }}>target &lt;{_tpmThresholds.warning}</div>
         </div>
         <div style={{ background: 'white', borderRadius: '10px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
           <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Temp Variance</div>
@@ -2704,6 +2708,9 @@ export default function VenueStaffView({
     criticalThreshold: 24,
     ...systemSettings
   };
+  // Sync module-level thresholds so all sub-components use DB values
+  _tpmThresholds.warning = settings.warningThreshold;
+  _tpmThresholds.critical = settings.criticalThreshold;
   const fryerCount = venue?.fryerCount || 4;
 
   // Responsive breakpoint
@@ -2741,7 +2748,7 @@ export default function VenueStaffView({
     const critical = [];
     Object.entries(fryerGroups).forEach(([fryerNum, recs]) => {
       const mostRecent = recs[recs.length - 1];
-      const status = getTPMStatus(mostRecent.tpmValue, settings.warningThreshold, settings.criticalThreshold);
+      const status = getTPMStatus(mostRecent.tpmValue);
       if (status.level === 'critical') critical.push(parseInt(fryerNum));
     });
     setCriticalFryers(critical.sort((a, b) => a - b));
@@ -2771,7 +2778,7 @@ export default function VenueStaffView({
     const warnings = [];
     readingsToSave.forEach(rec => {
       if (rec.notInUse) return;
-      const status = getTPMStatus(rec.tpmValue, settings.warningThreshold, settings.criticalThreshold);
+      const status = getTPMStatus(rec.tpmValue);
       if (status.level === 'warning' || status.level === 'critical') warnings.push(rec.fryerNumber);
     });
 

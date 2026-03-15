@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { mapVenue, unMapVenue, mapTrial, unMapTrial, mapOilType, mapCompetitor, mapReading, unMapReading, mapTrialReason, mapSystemSettings, mergeTrialIntoVenue, splitTrialFromVenue, TRIAL_FIELDS } from '../lib/mappers';
+import { mapVenue, unMapVenue, mapTrial, unMapTrial, mapOilType, mapCompetitor, mapReading, unMapReading, mapTrialReason, mapVolumeBracket, mapSystemSettings, mergeTrialIntoVenue, splitTrialFromVenue, TRIAL_FIELDS } from '../lib/mappers';
 import {
   TRIAL_STATUS_COLORS, COMPETITOR_TIER_COLORS,
 } from '../lib/badgeConfig';
@@ -1043,6 +1043,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [competitors, setCompetitors] = useState([]);
   const [tpmReadings, setTpmReadings] = useState([]);
   const [trialReasons, setTrialReasons] = useState([]);
+  const [volumeBrackets, setVolumeBrackets] = useState(VOLUME_BRACKETS); // defaults to hardcoded; replaced by DB on load
   const [systemSettings, setSystemSettings] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -1192,6 +1193,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const mappedReasons = (reasonData || []).map(mapTrialReason);
         setTrialReasons(mappedReasons.length > 0 ? mappedReasons : DEFAULT_TRIAL_REASONS);
 
+        const { data: vbData } = await supabase.from('volume_brackets').select('*');
+        const mappedVB = (vbData || []).map(mapVolumeBracket);
+        setVolumeBrackets(mappedVB.length > 0 ? mappedVB : VOLUME_BRACKETS);
+
         const { data: settingsData } = await supabase.from('system_settings').select('*').single();
         if (settingsData) setSystemSettings(mapSystemSettings(settingsData));
 
@@ -1214,10 +1219,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ── Refresh helper ──
   const refreshData = async () => {
     try {
-      const [{ data: venueData }, { data: trialData }] = await Promise.all([
+      const [
+        { data: venueData }, { data: trialData },
+        { data: oilData }, { data: compData },
+        { data: settingsData }, { data: vbData },
+      ] = await Promise.all([
         supabase.from('venues').select('*').eq('status', 'trial-only'),
         supabase.from('trials').select('*'),
+        supabase.from('oil_types').select('*'),
+        supabase.from('competitors').select('*'),
+        supabase.from('system_settings').select('*').single(),
+        supabase.from('volume_brackets').select('*'),
       ]);
+
       const mappedVenues = (venueData || []).map(mapVenue);
       const mappedTrials = (trialData || []).map(mapTrial);
       const merged = mappedVenues.map(v => {
@@ -1225,6 +1239,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return mergeTrialIntoVenue(v, trial);
       });
       setVenues(merged);
+      setOilTypes((oilData || []).map(mapOilType));
+      setCompetitors((compData || []).map(mapCompetitor));
+      if (settingsData) setSystemSettings(mapSystemSettings(settingsData));
+      const mappedVB = (vbData || []).map(mapVolumeBracket);
+      setVolumeBrackets(mappedVB.length > 0 ? mappedVB : VOLUME_BRACKETS);
 
       if (merged.length > 0) {
         const venueIds = merged.map(v => v.id);
@@ -1256,7 +1275,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     city: v => { const m = v.trialNotes?.match(/^TRL-\d+\s*\|\s*([^\n]*)/); return m ? m[1].trim() : ''; },
     state: v => v.state || '',
     volume: v => {
-      const b = VOLUME_BRACKETS.find(x => x.key === v.volumeBracket);
+      const b = volumeBrackets.find(x => x.key === v.volumeBracket);
       return b ? b.label : '';
     },
     competitor: v => {
@@ -1828,7 +1847,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
-              {tc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '78px' }} />}
+              {tc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={volumeBrackets.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '78px' }} />}
               {tc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(allVenues, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '106px' }} />}
               {tc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(allVenues, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '90px' }} />}
               {tc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(allVenues, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '90px' }} />}
@@ -2701,7 +2720,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: NAME_W }} />
-              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: VOL_W }} />}
+              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={volumeBrackets.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: VOL_W }} />}
               {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: SUPP_W }} />}
               {mc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
               {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
