@@ -4155,11 +4155,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               // Outcome reason label
               const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
 
-              // Trial findings: [Successful DATE] or [Unsuccessful DATE] lines from trialNotes
+              // Trial findings: [Successful DATE] / [Unsuccessful DATE] lines (from Close modal)
+              // AND [TrialFindings: text] lines (from End Trial modal)
               const trialFindings = venue.trialNotes
                 ? venue.trialNotes.split('\n')
-                    .filter(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/))
-                    .map(l => l.replace(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]\s*/, '').trim())
+                    .flatMap(l => {
+                      const t = l.trim();
+                      if (t.match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/)) {
+                        return [t.replace(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]\s*/, '').trim()];
+                      }
+                      if (t.match(/^\[TrialFindings:/)) {
+                        return [t.replace(/^\[TrialFindings:\s*/, '').replace(/\]\s*$/, '').trim()];
+                      }
+                      return [];
+                    })
                     .filter(Boolean)
                     .join('\n')
                 : '';
@@ -4302,8 +4311,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {/* ── Fryer oil lifespan table ── */}
                       {(() => {
                         const freshTrialFills = allTrialReadings
-                          .filter(r => r.oilAge === 1)
+                          .filter(r => Number(r.oilAge) === 1)
                           .sort((a, b) => a.readingDate.localeCompare(b.readingDate));
+                        if (freshTrialFills.length === 0) return null;
                         const fryerGaps = {};
                         freshTrialFills.forEach(r => {
                           const fn = r.fryerNumber;
@@ -4312,7 +4322,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         });
                         const rows = Object.entries(fryerGaps)
                           .map(([fn, dates]) => {
-                            if (dates.length < 2) return null;
+                            if (dates.length < 2) return { fryer: Number(fn), min: null, max: null, avg: null };
                             const gaps = [];
                             for (let i = 1; i < dates.length; i++) {
                               const prev = new Date(dates[i - 1] + 'T00:00:00');
@@ -4326,7 +4336,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               avg: Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length),
                             };
                           })
-                          .filter(Boolean)
                           .sort((a, b) => a.fryer - b.fryer);
                         if (rows.length === 0) return null;
                         return (
@@ -4345,9 +4354,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 {rows.map((row, i) => (
                                   <tr key={row.fryer} style={{ background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
                                     <td style={{ padding: '5px 10px', color: '#374151', fontWeight: '600', borderBottom: '1px solid #f1f5f9' }}>Fryer {row.fryer}</td>
-                                    <td style={{ padding: '5px 10px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.min}</td>
-                                    <td style={{ padding: '5px 10px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.max}</td>
-                                    <td style={{ padding: '5px 10px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{row.avg}</td>
+                                    <td style={{ padding: '5px 10px', color: row.min != null ? '#374151' : '#cbd5e1', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.min != null ? row.min : '—'}</td>
+                                    <td style={{ padding: '5px 10px', color: row.max != null ? '#374151' : '#cbd5e1', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.max != null ? row.max : '—'}</td>
+                                    <td style={{ padding: '5px 10px', color: row.avg != null ? '#374151' : '#cbd5e1', textAlign: 'center', borderBottom: '1px solid #f1f5f9', fontWeight: row.avg != null ? '600' : '400' }}>{row.avg != null ? row.avg : '—'}</td>
                                   </tr>
                                 ))}
                               </tbody>
