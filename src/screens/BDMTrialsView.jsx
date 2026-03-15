@@ -2615,11 +2615,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     // Name column fixed; narrower for price/date, wider for status
     const NAME_W = '86px';
-    const VOL_W = '57px';    // Vol bracket — 82px badge
-    const COL_W = '60px';    // OIL×2 — 88px badge
-    const SUPP_W = '68px';   // Supplier — 104px badge
-    const PRICE_W = '52px';  // Current $/L, Offered $/L
-    const DATE_W = '58px';   // Start, End
+    const VOL_W = '63px';    // Vol bracket — 82px badge
+    const COL_W = '67px';    // OIL×2 — 88px badge
+    const SUPP_W = '75px';   // Supplier — 104px badge
+    const PRICE_W = '46px';  // Current $/L, Offered $/L
+    const DATE_W = '50px';   // Start, End
     const STATUS_W = '64px'; // Status — extra width keeps badge from scrollbar edge
 
     return (
