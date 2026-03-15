@@ -4665,9 +4665,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table-sm tbody td .bdm-badge-wrap { transform: scale(0.82); transform-origin: center; display: inline-block; }
         .bdm-table-sm tbody td .bdm-badge-wrap-supplier { transform: scale(0.72); transform-origin: center; display: inline-block; }
         .bdm-table-archive thead th { padding: 4px 5px !important; font-size: 9px !important; }
-        .bdm-table-archive tbody td { padding: 4px 5px !important; font-size: 11px !important; }
-        .bdm-table-archive thead th:first-child { padding: 0 !important; width: 4px !important; max-width: 4px !important; }
-        .bdm-table-archive tbody td:first-child { padding: 0 !important; width: 4px !important; max-width: 4px !important; }
+        .bdm-table-archive tbody td { padding: 4px 5px !important; font-size: 10px !important; }
+        .bdm-table-archive thead th:first-child { padding: 0 !important; width: 6px !important; max-width: 6px !important; }
+        .bdm-table-archive tbody td:first-child { padding: 0 !important; width: 6px !important; max-width: 6px !important; }
         .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: white; width: 100%; transition: all 0.15s; }
         .bdm-row-btn:hover { background: #eef2ff; color: #1a428a; border-color: #c7d2fe; }
         .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
