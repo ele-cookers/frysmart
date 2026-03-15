@@ -84,7 +84,7 @@ const DEFAULT_FOOD_TYPES = [
 ];
 const FOOD_EMOJIS = {
   'Chips/Fries': '🍟',
-  'Crumbed Items': '🍗',
+  'Crumbed Items': '🍤',
   'Battered Items': '🐟',
   'Plain Proteins': '🥩',
   'Pastries/Donuts': '🍩',
