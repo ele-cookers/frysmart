@@ -17,7 +17,7 @@ export const TrialStatusBadge = ({ status }) => {
     <span style={{
       padding: '2px 0', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
       background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: '0.3px', whiteSpace: 'nowrap',
-      display: 'inline-block', width: '82px', textAlign: 'center', verticalAlign: 'middle',
+      display: 'inline-block', width: '88px', textAlign: 'center', verticalAlign: 'middle',
     }}>{c.label}</span>
   );
 };

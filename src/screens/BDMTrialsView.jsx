@@ -2620,7 +2620,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const SUPP_W = '68px';   // Supplier — 104px badge
     const PRICE_W = '52px';  // Current $/L, Offered $/L
     const DATE_W = '58px';   // Start, End
-    const STATUS_W = '60px'; // Status
+    const STATUS_W = '64px'; // Status — extra width keeps badge from scrollbar edge
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
