@@ -1816,7 +1816,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
         <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
-          <table className="bdm-table" style={{ width: '100%', tableLayout: 'auto' }}>
+          <table className={`bdm-table${isArchiveTab(tabType) ? ' bdm-table-archive' : ''}`} style={{ width: '100%', tableLayout: 'auto' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
@@ -3634,7 +3634,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
-                        <col style={{ width: '48px' }} />  {/* Day */}
+                        <col style={{ width: '50px' }} />  {/* Day */}
                         <col style={{ width: '92px' }} />  {/* Date */}
                         <col style={{ width: '60px' }} />  {/* TPM */}
                         <col style={{ width: '60px' }} />  {/* Set°C */}
@@ -4664,6 +4664,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table-sm tbody td { padding: 5px 4px !important; font-size: 10px !important; }
         .bdm-table-sm tbody td .bdm-badge-wrap { transform: scale(0.82); transform-origin: center; display: inline-block; }
         .bdm-table-sm tbody td .bdm-badge-wrap-supplier { transform: scale(0.72); transform-origin: center; display: inline-block; }
+        .bdm-table-archive thead th { padding: 5px 6px !important; font-size: 9px !important; }
+        .bdm-table-archive tbody td { padding: 5px 6px !important; font-size: 11px !important; }
         .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: white; width: 100%; transition: all 0.15s; }
         .bdm-row-btn:hover { background: #eef2ff; color: #1a428a; border-color: #c7d2fe; }
         .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
