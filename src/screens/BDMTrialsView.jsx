@@ -784,7 +784,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} color="#94a3b8" /></button>
         </div>
-        <div style={{ padding: '12px 20px 12px 14px', overflowY: 'auto', flex: 1 }}>
+        <div style={{ padding: '12px 20px 24px 14px', overflowY: 'auto', flex: 1 }}>
           {/* Start / End / Duration — evenly distributed */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '20px' }}>
             {[
@@ -962,8 +962,8 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                       border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`,
                       transition: 'all 0.1s',
                     }}>
-                      <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
-                      <span style={{ flex: 1, fontSize: '11px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
+                      <GoalIcon size={14} color={achieved ? '#1a428a' : '#94a3b8'} />
+                      <span style={{ flex: 1, fontSize: '13px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
                       <div style={{
                         width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
                         border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`,
@@ -992,7 +992,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           </div>
 
           {/* Confirm button — centred, fixed width */}
-          <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '8px' }}>
             <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, null)} style={{ padding: '11px 36px', background: '#f59e0b', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
               Confirm End Trial
             </button>
