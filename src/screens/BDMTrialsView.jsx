@@ -4223,9 +4223,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       marginBottom: isDesktop ? '0' : '20px',
                     }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
-                        {/* Row 1: Type | Venue name (spans 2 cols) */}
-                        {sfld('Type', typeBadge)}
-                        <div style={{ gridColumn: 'span 2' }}>
+                        {/* Row 1: Venue name (spans all 3 cols) */}
+                        <div style={{ gridColumn: 'span 3' }}>
                           <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Venue name</div>
                           <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '600' }}>{venue.name || <span style={{ color: '#cbd5e1' }}>—</span>}</div>
                         </div>
@@ -4359,45 +4358,53 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                               <thead>
                                 <tr style={{ background: '#f8fafc' }}>
+                                  <th style={{ padding: '4px 10px', borderBottom: '1px solid #f0f4f8' }} />
+                                  <th style={{ padding: '4px 10px', borderBottom: '1px solid #f0f4f8' }} />
+                                  <th colSpan={2} style={{ padding: '4px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', borderBottom: '1px solid #f0f4f8', borderLeft: '1px solid #e2e8f0' }}>Weekly</th>
+                                  <th colSpan={2} style={{ padding: '4px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', borderBottom: '1px solid #f0f4f8', borderLeft: '1px solid #e2e8f0' }}>Yearly</th>
+                                </tr>
+                                <tr style={{ background: '#f8fafc' }}>
                                   <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Comparison</th>
-                                  {['Price / L', 'Litres/Wk', 'Litres/Yr', 'Cost / Wk', 'Cost / Yr'].map(h => (
-                                    <th key={h} style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
-                                  ))}
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Price / L</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', borderLeft: '1px solid #e2e8f0' }}>Litres/Wk</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Cost / Wk</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', borderLeft: '1px solid #e2e8f0' }}>Litres/Yr</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Cost / Yr</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                <tr style={{ background: '#fafafa' }}>
+                                <tr style={{ background: 'white' }}>
                                   <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
                                     {compOilBadge || <span style={{ fontSize: '11px', color: '#64748b' }}>{compOilName || '—'}</span>}
                                   </td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', borderLeft: '1px solid #f0f4f8' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$nd(compWeeklySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', borderLeft: '1px solid #f0f4f8' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
                                   <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlySpend != null ? fmt$nd(compYearlySpend) : '—'}</td>
                                 </tr>
-                                <tr style={{ background: '#eff6ff' }}>
-                                  <td style={{ padding: '8px 10px', borderBottom: '1px solid #dbeafe', whiteSpace: 'nowrap' }}>
+                                <tr style={{ background: 'white' }}>
+                                  <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
                                     {trialOilBadge || <span style={{ fontSize: '11px', color: '#1f2937' }}>{trialOilName || '—'}</span>}
                                   </td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialWeeklySpend != null ? fmt$nd(trialWeeklySpend) : '—'}</td>
-                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #dbeafe' }}>{trialYearlySpend != null ? fmt$nd(trialYearlySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', borderLeft: '1px solid #f0f4f8' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialWeeklySpend != null ? fmt$nd(trialWeeklySpend) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9', borderLeft: '1px solid #f0f4f8' }}>{trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—'}</td>
+                                  <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialYearlySpend != null ? fmt$nd(trialYearlySpend) : '—'}</td>
                                 </tr>
                                 {weekSpend !== null && (
                                   <tr style={{ background: '#f8fafc' }}>
                                     <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Difference</td>
                                     <td style={{ padding: '8px 10px' }} />
-                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626' }}>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626', borderLeft: '1px solid #f0f4f8' }}>
                                       {weekLitres != null ? `${Math.round(Math.abs(weekLitres)).toLocaleString('en-AU')} L` : '—'}
-                                    </td>
-                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualLitres >= 0 ? '#059669' : '#dc2626' }}>
-                                      {annualLitres != null ? `${Math.round(Math.abs(annualLitres)).toLocaleString('en-AU')} L` : '—'}
                                     </td>
                                     <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekSpend >= 0 ? '#059669' : '#dc2626' }}>
                                       {weekSpend != null ? `$${Math.round(Math.abs(weekSpend)).toLocaleString('en-AU')}` : '—'}
+                                    </td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualLitres >= 0 ? '#059669' : '#dc2626', borderLeft: '1px solid #f0f4f8' }}>
+                                      {annualLitres != null ? `${Math.round(Math.abs(annualLitres)).toLocaleString('en-AU')} L` : '—'}
                                     </td>
                                     <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualSpend >= 0 ? '#059669' : '#dc2626' }}>
                                       {annualSpend != null ? `$${Math.round(Math.abs(annualSpend)).toLocaleString('en-AU')}` : '—'}
@@ -4445,8 +4452,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {/* ── Bottom: Internal Use section ── */}
                   <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
-                    {/* Header row — button in normal flow, right-aligned */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                    {/* Header row — type on left, edit button on right */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Type</span>
+                        {typeBadge}
+                      </div>
                       <button
                         onClick={() => { if (!summaryEditMode) setSummaryFindingsText(trialFindings); setSummaryEditMode(prev => !prev); }}
                         style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
