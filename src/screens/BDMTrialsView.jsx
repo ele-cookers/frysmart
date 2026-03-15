@@ -4468,15 +4468,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         .map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
                       const avgTempVar = varVals.length > 0 ? Math.round(varVals.reduce((a, b) => a + b, 0) / varVals.length * 10) / 10 : null;
 
-                      const freshDates = [...freshRdgs].sort((a, b) => a.readingDate.localeCompare(b.readingDate)).map(r => r.readingDate);
-                      const gaps = [];
-                      for (let j = 1; j < freshDates.length; j++) {
-                        const days = Math.round((new Date(freshDates[j] + 'T00:00:00') - new Date(freshDates[j - 1] + 'T00:00:00')) / 86400000);
-                        if (days > 0) gaps.push(days);
+                      // Oil lifespan: group readings into runs (each run starts at oilAge===1),
+                      // then take max oilAge per run = duration of that oil load.
+                      // This matches how the top-section "Trial Oil Lifespan" is calculated.
+                      const frdgsSorted = [...frdgs].sort((a, b) => a.readingDate.localeCompare(b.readingDate));
+                      const runs = [];
+                      let curRun = [];
+                      for (const r of frdgsSorted) {
+                        const age = Number(r.oilAge);
+                        if (age === 1 && curRun.length > 0) { runs.push(curRun); curRun = [r]; }
+                        else if (age >= 1) curRun.push(r);
                       }
-                      const minLife = gaps.length > 0 ? Math.min(...gaps) : null;
-                      const maxLife = gaps.length > 0 ? Math.max(...gaps) : null;
-                      const avgLife = gaps.length > 0 ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
+                      if (curRun.length > 0) runs.push(curRun);
+                      const lifespans = runs.map(run => Math.max(...run.map(r => Number(r.oilAge))));
+                      const minLife = lifespans.length > 0 ? Math.min(...lifespans) : null;
+                      const maxLife = lifespans.length > 0 ? Math.max(...lifespans) : null;
+                      const avgLife = lifespans.length > 0 ? Math.round(lifespans.reduce((a, b) => a + b, 0) / lifespans.length) : null;
 
                       return { fn, fryerVol, freshCount, freshLitres, topUpCount, topUpLitres, totalLitres, minTPM, maxTPM, avgTPM, avgTempVar, minLife, maxLife, avgLife };
                     });
@@ -4497,7 +4504,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 <th rowSpan={2} style={{ ...pfTh({ verticalAlign: 'bottom', borderBottom: '1px solid #e2e8f0' }) }}>Vol</th>
                                 <th colSpan={5} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Fills</th>
                                 <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>TPM</th>
-                                <th rowSpan={2} style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', verticalAlign: 'bottom' }) }}>Avg ΔTemp</th>
+                                <th rowSpan={2} style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', verticalAlign: 'bottom' }) }}>Avg Temp Variance</th>
                                 <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Oil Lifespan (days)</th>
                               </tr>
                               <tr style={{ background: '#f8fafc' }}>
@@ -4527,7 +4534,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   <td style={pfTd(row.minTPM != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.minTPM, 1)}</td>
                                   <td style={pfTd(row.maxTPM != null)}>{pfN(row.maxTPM, 1)}</td>
                                   <td style={{ ...pfTd(row.avgTPM != null), fontWeight: row.avgTPM != null ? '600' : '400' }}>{pfN(row.avgTPM, 1)}</td>
-                                  <td style={pfTd(row.avgTempVar != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.avgTempVar, 1, row.avgTempVar != null ? '°' : '')}</td>
+                                  <td style={pfTd(row.avgTempVar != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.avgTempVar, 1, '°')}</td>
                                   <td style={pfTd(row.minLife != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.minLife)}</td>
                                   <td style={pfTd(row.maxLife != null)}>{pfN(row.maxLife)}</td>
                                   <td style={{ ...pfTd(row.avgLife != null), fontWeight: row.avgLife != null ? '600' : '400' }}>{pfN(row.avgLife)}</td>
