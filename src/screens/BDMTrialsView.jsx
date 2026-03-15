@@ -1649,6 +1649,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // Oil comparison row — matches trial detail modal format
   const cardOilRow = (venue) => {
+    if (!isDesktop) return null;
     const compOil = oilTypes.find(o => o.id === venue.defaultOil);
     const cookersOil = oilTypes.find(o => o.id === venue.trialOilId);
     const comp = compOil?.competitorId ? competitors.find(c => c.id === compOil.competitorId) : null;
@@ -1686,14 +1687,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     );
   };
 
-  // Card header — name + volume pill (desktop only) + status badge
+  // Card header — name + volume pill (desktop only) + status badge (desktop only)
   const cardHeader = (venue, statusOverride) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: '14px', fontWeight: '700', color: COLORS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{venue.name}</div>
         {isDesktop && venue.volumeBracket && <VolumePill bracket={venue.volumeBracket} />}
       </div>
-      {statusOverride || <TrialStatusBadge status={venue.trialStatus} />}
+      {isDesktop && (statusOverride || <TrialStatusBadge status={venue.trialStatus} />)}
     </div>
   );
 
@@ -1729,14 +1730,25 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {cardOilRow(venue)}
         {pricingRow(venue)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['Days', daysIn ?? '—'], ['Readings', venueReadings.length], ['Litres', `${totalLitres.toFixed(0)}L`]])}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={isDesktop ? btnPrimary() : btnMobileBlue}>
-            <ClipboardList size={13} /> Log Reading
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={isDesktop ? btnSecondary() : btnMobileGhost}>
-            <XCircle size={13} /> End Trial
-          </button>
-        </div>
+        {isDesktop ? (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnPrimary()}>
+              <ClipboardList size={13} /> Log Reading
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={btnSecondary()}>
+              <XCircle size={13} /> End Trial
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
+              <Pencil size={13} /> Manage
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnMobileBlue}>
+              <ClipboardList size={13} /> Log
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -1744,7 +1756,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // -- PIPELINE CARD --
   const renderPipelineCard = (venue) => (
     <div key={venue.id} style={{ ...cardBase(TRIAL_STATUS_COLORS['pipeline'].accent), cursor: 'default' }}>
-      {cardHeader(venue, isDesktop ? undefined : null)}
+      {cardHeader(venue)}
       {cardOilRow(venue)}
       {pricingRow(venue)}
       {dateRow([['Fryers', venue.fryerCount || 1], ['Created', venue.trialCreatedAt ? displayDate(venue.trialCreatedAt.split('T')[0]) : '—']])}
