@@ -1917,7 +1917,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // -- NEW TRIAL FORM --
   const renderNewTrialForm = () => (
     <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h3 style={{ fontSize: '15px', fontWeight: '700', color: COLORS.text, marginBottom: '12px', marginTop: 0 }}>Create New Trial</h3>
+      <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Create Trial</h2>
+      <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Set up a new oil trial for an existing customer or a new prospect.</p>
 
       {/* Trial Type — segmented control */}
       <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px', marginBottom: '12px' }}>
@@ -4784,6 +4785,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const sorted = sortList(pipelineTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Pipeline</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials you're planning to start. Move a venue to Active once the trial begins.</p>
             {pipelineTrials.length === 0
               ? emptyState(Clock, 'Pipeline empty', 'Create a new trial to add to your pipeline')
               : isTableView ? renderTrialTable(pipelineTrials, 'pipeline')
@@ -4796,6 +4799,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const sorted = sortList(activeTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Active Trials</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials currently in progress. Log daily TPM readings and end the trial when complete.</p>
             {activeTrials.length === 0
               ? emptyState(Play, 'No active trials', 'Start a trial from your pipeline')
               : isTableView ? renderTrialTable(activeTrials, 'active')
@@ -4808,6 +4813,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const sorted = sortList(pendingOutcomeTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Pending Outcome</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that have ended and need a decision. Mark each as Successful or Unsuccessful.</p>
             {pendingOutcomeTrials.length === 0
               ? emptyState(Clock, 'No pending outcomes', 'Trials awaiting a won/lost decision will appear here')
               : isTableView ? renderTrialTable(pendingOutcomeTrials, 'pending')
@@ -4820,6 +4827,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const sorted = sortList(acceptedTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Accepted</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Customer has agreed to switch. Enter their customer code to complete the conversion.</p>
             {acceptedTrials.length === 0
               ? emptyState(ClipboardList, 'No trials awaiting codes', 'Accepted trials needing a customer code will appear here')
               : isTableView ? renderTrialTable(acceptedTrials, 'accepted')
@@ -4832,6 +4841,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const sorted = sortList(wonTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Successful</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that converted — venues now using Cookers oil.</p>
             {wonTrials.length === 0
               ? emptyState(Trophy, 'No successful trials yet', 'Won trials will appear here')
               : isTableView ? renderTrialTable(wonTrials, 'successful')
@@ -4844,6 +4855,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const sorted = sortList(lostTrials);
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Unsuccessful</h2>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that didn't convert. Review the reasons to improve your approach next time.</p>
             {lostTrials.length === 0
               ? emptyState(XCircle, 'No unsuccessful trials', 'Lost trials will appear here')
               : isTableView ? renderTrialTable(lostTrials, 'unsuccessful')
