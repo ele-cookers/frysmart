@@ -4968,11 +4968,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table-archive thead th:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
         .bdm-table-archive tbody td:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
         .bdm-table-archive tbody td > span { display: inline-block; transform: scale(0.75); transform-origin: center; }
-        .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: white; width: 100%; transition: all 0.15s; }
-        .bdm-row-btn:hover { background: #eef2ff; color: #1a428a; border-color: #c7d2fe; }
+        .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #dce6f5; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: #f0f4fb; width: 100%; transition: all 0.15s; }
+        .bdm-row-btn:hover { background: #dce6f5; color: #1a428a; border-color: #b5c8e2; }
         .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
         .bdm-log-save-btn:hover { background: #143270 !important; }
+        .bdm-row-btn.green { background: #f0fdf4; border-color: #bbf7d0; color: #065f46; }
         .bdm-row-btn.green:hover { background: #10b981; color: white; border-color: #10b981; }
+        .bdm-row-btn.red { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
         .bdm-row-btn.red:hover { background: #ef4444; color: white; border-color: #ef4444; }
         .bdm-undo-btn { padding: 4px 8px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; background: white; transition: all 0.15s; }
         .bdm-undo-btn:hover { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
