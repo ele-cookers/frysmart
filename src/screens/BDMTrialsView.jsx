@@ -2615,8 +2615,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
     // Name column fixed; narrower for price/date, wider for status
     const NAME_W = '120px';
-    const COL_W = '60px';    // VOL, OIL×2 — small badge content
-    const SUPP_W = '78px';   // Supplier
+    const VOL_W = '57px';    // Vol bracket — 82px badge
+    const COL_W = '60px';    // OIL×2 — 88px badge
+    const SUPP_W = '68px';   // Supplier — 104px badge
     const PRICE_W = '52px';  // Current $/L, Offered $/L
     const DATE_W = '58px';   // Start, End
     const STATUS_W = '60px'; // Status
@@ -2692,7 +2693,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: NAME_W }} />
-              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
+              {mc('volume') && <FilterableTh colKey="volume" label="Vol Bracket" options={VOLUME_BRACKETS.map(b => ({ value: b.label, label: b.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: VOL_W }} />}
               {mc('competitor') && <FilterableTh colKey="competitor" label="Supplier" options={getUniqueValues(statusFiltered, colAccessors.competitor)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: SUPP_W }} />}
               {mc('compOil') && <FilterableTh colKey="compOil" label="Current Oil" options={getUniqueValues(statusFiltered, colAccessors.compOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
               {mc('trialOil') && <FilterableTh colKey="trialOil" label="Trial Oil" options={getUniqueValues(statusFiltered, colAccessors.trialOil)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: COL_W }} />}
