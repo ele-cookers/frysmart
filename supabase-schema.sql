@@ -31,6 +31,7 @@ create table system_settings (
   report_frequency text not null default 'weekly',
   reminder_days int not null default 7,
   oil_type_options text[] not null default array['canola','palm','sunflower','soybean','cottonseed','tallow','blend','unknown'],
+  food_type_options text[] not null default array['Chips/Fries','Crumbed Items','Battered Items','Plain Proteins','Pastries/Donuts','High Starch','Mixed Service'],
   permissions_config jsonb not null default '{}'::jsonb,
   target_win_rate numeric not null default 75,
   target_avg_time_to_decision int not null default 14,
