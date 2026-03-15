@@ -4146,9 +4146,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const fmtL = v => v != null ? `${parseFloat(v).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} L` : '—';
 
               // Shared helpers matching pre-trial tab style
-              const secLabel = (text) => (
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px', marginTop: '18px' }}>{text}</div>
-              );
               const sfld = (label, value, valueColor) => (
                 <div key={label}>
                   <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{label}</div>
