@@ -1766,11 +1766,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </button>
       ) : (
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={btnMobileBlue}>
-            <Play size={13} /> Start Trial
-          </button>
           <button onClick={() => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
             <Pencil size={13} /> Manage
+          </button>
+          <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={btnMobileBlue}>
+            <Play size={13} /> Start Trial
           </button>
         </div>
       )}
