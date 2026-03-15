@@ -2724,7 +2724,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             .bdm-table tbody tr:hover { background: #eef2ff; }
             .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
           `}</style>
-          <table className="bdm-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+          <table className="bdm-table" style={{ width: '100%', tableLayout: 'auto' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(statusFiltered, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ width: NAME_W }} />
