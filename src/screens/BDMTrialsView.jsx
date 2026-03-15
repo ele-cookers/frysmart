@@ -93,6 +93,11 @@ const FOOD_EMOJIS = {
 };
 const getFoodEmoji = (type) => FOOD_EMOJIS[type] || '🍽️';
 
+// Module-level TPM thresholds — updated from systemSettings on each render of BDMTrialsView
+const _tpmThresholds = { warning: 18, critical: 24 };
+const tpmBg  = tpm => tpm <= _tpmThresholds.warning ? '#d1fae5' : tpm <= _tpmThresholds.critical ? '#fef3c7' : '#fee2e2';
+const tpmCol = tpm => tpm <= _tpmThresholds.warning ? '#059669' : tpm <= _tpmThresholds.critical ? '#d97706' : '#dc2626';
+
 const inputStyle = {
   width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px',
   border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none',
@@ -765,8 +770,8 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
     modalReadingsByDate[r.readingDate].push(r);
   });
   const modalFryerList = Array.from({ length: Math.max(1, venue.fryerCount || 1) }, (_, i) => i + 1);
-  const cellBg = tpm => tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
-  const cellCol = tpm => tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+  const cellBg = tpmBg;
+  const cellCol = tpmCol;
 
   return (
     <div style={S.overlay} onClick={onClose}>
@@ -1046,6 +1051,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [trialReasons, setTrialReasons] = useState([]);
   const [volumeBrackets, setVolumeBrackets] = useState(VOLUME_BRACKETS); // defaults to hardcoded; replaced by DB on load
   const [systemSettings, setSystemSettings] = useState({});
+  _tpmThresholds.warning  = systemSettings?.warningThreshold  || 18;
+  _tpmThresholds.critical = systemSettings?.criticalThreshold || 24;
   const [loading, setLoading] = useState(true);
 
   // ── UI state ──
@@ -2874,7 +2881,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const minTPM = tpmVals.length > 0 ? Math.min(...tpmVals) : null;
     const maxTPM = tpmVals.length > 0 ? Math.max(...tpmVals) : null;
     const avgOilAge = statsAvg(oilAgeVals);
-    const tpmColor = (v) => v != null ? (v <= 14 ? '#059669' : v <= 18 ? '#d97706' : '#dc2626') : '#94a3b8';
+    const tpmColor = (v) => v != null ? tpmCol(v) : '#94a3b8';
 
     // Parsed metadata from trialNotes — available to all sub-tabs
     const _fryerChangesLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[FryerChanges:')) || '';
@@ -3070,7 +3077,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const hasFiltered = recs.some(r => r.filtered === true);
               const hasNotes = recs.some(r => r.notes);
               const cellBg = isFuture ? 'white' : recs.length > 0 ? '#d1fae5' : '#fee2e2';
-              const tpmColor = latest ? (latest.tpmValue <= 14 ? '#059669' : latest.tpmValue <= 18 ? '#d97706' : '#dc2626') : '#cbd5e1';
+              const tpmColor = latest ? tpmCol(latest.tpmValue) : '#cbd5e1';
               return (
                 <div key={idx} style={{
                   background: cellBg, borderRadius: '6px', padding: '3px 2px', minHeight: '80px',
@@ -3704,7 +3711,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const isToppedUp = r && r.litresFilled > 0 && !isFresh;
                           const variance = (r?.actualTemperature != null && r?.setTemperature != null) ? (r.actualTemperature - r.setTemperature) : null;
                           const tpmCol = r?.tpmValue != null ? tpmColor(r.tpmValue) : '#1f2937';
-                          const tpmBg = r?.tpmValue != null ? (r.tpmValue <= 14 ? '#d1fae5' : r.tpmValue <= 18 ? '#fef3c7' : '#fee2e2') : 'transparent';
+                          const cellTpmBgColor = r?.tpmValue != null ? tpmBg(r.tpmValue) : 'transparent';
                           const missed = !r && !isFuture;
                           const varZero = variance === 0;
                           const varInRange = variance != null && variance !== 0 && Math.abs(variance) <= 5;
@@ -3716,7 +3723,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               <td style={{ ...tdBase, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
                               <td style={{ ...tdBase, color: '#64748b', fontWeight: '500' }}>{DAYS[day.getDay()]}</td>
                               <td style={{ ...tdBase, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
-                              <td style={{ ...tdBase, fontWeight: '700', color: missed ? '#94a3b8' : tpmCol, background: r ? tpmBg : 'transparent' }}>
+                              <td style={{ ...tdBase, fontWeight: '700', color: missed ? '#94a3b8' : tpmCol, background: cellTpmBgColor }}>
                                 {r ? (r.tpmValue ?? '—') : missed ? 'Missed' : '—'}
                               </td>
                               <td style={tdBase}>{r ? (r.setTemperature ?? '—') : dash}</td>
@@ -3762,8 +3769,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
 
-              const cellTpmBg = tpm => tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
-              const cellTpmCol = tpm => tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+              const cellTpmBg = tpmBg;
+              const cellTpmCol = tpmCol;
               // Min cell width: 32px each + 68px label col; allow horizontal scroll if needed
               const MIN_CELL = 32;
               const ROW_LABEL_W = 60;
@@ -3896,8 +3903,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
 
               const toY = val => TOP_PAD + CHART_H - (val / yMax) * CHART_H;
-              const barColor = tpm => tpm == null ? '#e2e8f0' : tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
-              const barTextColor = tpm => tpm == null ? '#94a3b8' : tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+              const barColor = tpm => tpm == null ? '#e2e8f0' : tpmBg(tpm);
+              const barTextColor = tpm => tpm == null ? '#94a3b8' : tpmCol(tpm);
 
               const yTicks = [];
               for (let v = 0; v <= yMax; v += 5) yTicks.push(v);
@@ -4171,8 +4178,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const volBadge = venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null;
 
               // Mini calendar helpers (same colour logic as Trial Calendar tab)
-              const miniCalBg = tpm => tpm <= 14 ? '#d1fae5' : tpm <= 18 ? '#fef3c7' : '#fee2e2';
-              const miniCalCol = tpm => tpm <= 14 ? '#059669' : tpm <= 18 ? '#d97706' : '#dc2626';
+              const miniCalBg = tpmBg;
+              const miniCalCol = tpmCol;
 
               // Yearly litres (kept for comparison table savings row)
               const compYearlyLitres = compWklyAvg ? compWklyAvg * 52 : null;
@@ -4561,7 +4568,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const pfTd = (hasVal, extra = {}) => ({ padding: '5px 6px', textAlign: 'center', fontSize: '11px', borderBottom: '1px solid #f1f5f9', color: hasVal ? '#374151' : '#cbd5e1', ...extra });
                     const pfN = (v, d = 0, suffix = '') => v != null ? `${d > 0 ? Number(v).toFixed(d) : Math.round(v)}${suffix}` : '—';
                     const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : '—';
-                    const tpmCol = (v) => v == null ? '#cbd5e1' : v <= 14 ? '#059669' : v <= 18 ? '#d97706' : '#dc2626';
                     const varCol = (v) => v == null ? '#cbd5e1' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
 
                     return (
