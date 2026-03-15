@@ -84,8 +84,8 @@ const DEFAULT_FOOD_TYPES = [
 ];
 const FOOD_EMOJIS = {
   'Chips/Fries': '🍟',
-  'Crumbed Items': '🍤',
-  'Battered Items': '🐟',
+  'Crumbed Items': '🍗',
+  'Battered Items': '🐠',
   'Plain Proteins': '🥩',
   'Pastries/Donuts': '🍩',
   'High Starch': '🥔',
@@ -715,9 +715,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
     { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
     { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
   ];
-  const goalsLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
-  const trialGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
-  const [achievedGoals, setAchievedGoals] = useState(trialGoals); // default: all ticked
+  const [achievedGoals, setAchievedGoals] = useState(() => GOAL_OPTIONS.map(g => g.key)); // default: all ticked
 
   const toggleGoal = (key) => {
     setAchievedGoals(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -933,9 +931,9 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
               {/* Calendar legend */}
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
                 {[
-                  { bg: '#d1fae5', color: '#059669', label: '≤14' },
-                  { bg: '#fef3c7', color: '#d97706', label: '15–18' },
-                  { bg: '#fee2e2', color: '#dc2626', label: '>18' },
+                  { bg: '#d1fae5', color: '#059669', label: `≤${_tpmThresholds.warning}` },
+                  { bg: '#fef3c7', color: '#d97706', label: `${_tpmThresholds.warning + 1}–${_tpmThresholds.critical}` },
+                  { bg: '#fee2e2', color: '#dc2626', label: `>${_tpmThresholds.critical}` },
                   { border: '2px solid #10b981', label: 'Fresh fill' },
                   { border: '2px solid #f59e0b', label: 'Top-up' },
                 ].map(l => (
@@ -948,12 +946,12 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
           )}
 
-          {/* Trial Goals Achieved */}
-          {trialGoals.length > 0 && (
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Trial Goals Achieved</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                {GOAL_OPTIONS.filter(g => trialGoals.includes(g.key)).map((goal) => {
+          {/* Trial Goals Achieved — always show all options */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px' }}>Trial Goals Achieved</div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>Tick which goals the trial delivered</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              {GOAL_OPTIONS.map((goal) => {
                   const GoalIcon = goal.icon;
                   const achieved = achievedGoals.includes(goal.key);
                   return (
@@ -980,7 +978,6 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                 })}
               </div>
             </div>
-          )}
 
           {/* Trial Findings */}
           <div style={{ marginBottom: '16px' }}>
@@ -994,10 +991,9 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             />
           </div>
 
-          {/* Buttons */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, null)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+          {/* Confirm button — centred, fixed width */}
+          <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '4px' }}>
+            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, null)} style={{ padding: '11px 36px', background: '#f59e0b', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
               Confirm End Trial
             </button>
           </div>
@@ -5367,11 +5363,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <XCircle size={14} /> Unsuccessful
                   </button>
                 </>)}
-                {/* Accepted: Enter cust code */}
+                {/* Accepted: Enter cust code inline */}
                 {rt === 'accepted' && (
-                  <button className="bdm-row-btn green" onClick={() => { close(); setCustCodeModal(rv); }}>
-                    <Award size={14} /> Enter cust code
-                  </button>
+                  <CustomerCodeInput
+                    venueId={rv.id}
+                    onSave={async (venueId, code) => { await handleSaveCustomerCode(venueId, code); close(); }}
+                  />
                 )}
               </div>
             </div>

@@ -104,7 +104,7 @@ const FOOD_TYPES = [
   'Plain Proteins', 'Pastries/Donuts', 'High Starch', 'Mixed Service',
 ];
 const FOOD_TYPE_EMOJIS = {
-  'Chips/Fries': '🍟', 'Crumbed Items': '🍤', 'Battered Items': '🐟',
+  'Chips/Fries': '🍟', 'Crumbed Items': '🍗', 'Battered Items': '🐠',
   'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🥔', 'Mixed Service': '🍽️',
 };
 const getFoodEmoji = (type) => FOOD_TYPE_EMOJIS[type] || '🍽️';
@@ -3478,6 +3478,40 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
 
 
 
+// ── OverviewCard: module-level so React hook identity is stable across renders ──
+const OverviewCard = ({ title, icon: Icon, iconColor, items, emptyMsg, onVenueClick, getBdmName }) => {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? items : items.slice(0, 5);
+  return (
+    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+        <Icon size={16} color={iconColor} />
+        <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', flex: 1 }}>{title}</span>
+        <span style={{ fontSize: '22px', fontWeight: '800', color: iconColor }}>{items.length}</span>
+      </div>
+      {items.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {shown.map(v => (
+            <div key={v.id} onClick={() => onVenueClick(v)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', minWidth: 0, cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#e8eef6'} onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
+              <span style={{ fontWeight: '600', color: '#1f2937', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+              <StateBadge state={v.state} />
+              <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500', flexShrink: 0 }}>{getBdmName(v)}</span>
+            </div>
+          ))}
+          {items.length > 5 && !expanded && (
+            <button onClick={() => setExpanded(true)} style={{ background: 'none', border: 'none', color: '#1a428a', fontSize: '11px', fontWeight: '600', cursor: 'pointer', padding: '4px 0', textAlign: 'left' }}>See all {items.length} →</button>
+          )}
+          {expanded && items.length > 5 && (
+            <button onClick={() => setExpanded(false)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '11px', fontWeight: '600', cursor: 'pointer', padding: '4px 0', textAlign: 'left' }}>Show less</button>
+          )}
+        </div>
+      ) : (
+        <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>{emptyMsg}</div>
+      )}
+    </div>
+  );
+};
+
 // ==================== MAIN ADMIN PANEL ====================
 export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMode = 'admin' }) {
   const [activeSection, setActiveSection] = useState('overview');
@@ -4885,46 +4919,15 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
             const awaitingDecision = allTrials.filter(v => v.trialStatus === 'pending');
             const getBdmName = (v) => { const u = users.find(u => u.id === v.bdmId); return u ? u.name : '—'; };
 
-            const OverviewCard = ({ title, icon: Icon, iconColor, items, emptyMsg }) => {
-              const [expanded, setExpanded] = React.useState(false);
-              const shown = expanded ? items : items.slice(0, 5);
-              return (
-                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Icon size={16} color={iconColor} />
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', flex: 1 }}>{title}</span>
-                    <span style={{ fontSize: '22px', fontWeight: '800', color: iconColor }}>{items.length}</span>
-                  </div>
-                  {items.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {shown.map(v => (
-                        <div key={v.id} onClick={() => { setPendingTrialId(v.id); setActiveSection('trials'); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', minWidth: 0, cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#e8eef6'} onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
-                          <span style={{ fontWeight: '600', color: '#1f2937', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
-                          <StateBadge state={v.state} />
-                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500', flexShrink: 0 }}>{getBdmName(v)}</span>
-                        </div>
-                      ))}
-                      {items.length > 5 && !expanded && (
-                        <button onClick={() => setExpanded(true)} style={{ background: 'none', border: 'none', color: '#1a428a', fontSize: '11px', fontWeight: '600', cursor: 'pointer', padding: '4px 0', textAlign: 'left' }}>See all {items.length} →</button>
-                      )}
-                      {expanded && items.length > 5 && (
-                        <button onClick={() => setExpanded(false)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '11px', fontWeight: '600', cursor: 'pointer', padding: '4px 0', textAlign: 'left' }}>Show less</button>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px 0' }}>{emptyMsg}</div>
-                  )}
-                </div>
-              );
-            };
+            const handleOverviewCardClick = (v) => { setPendingTrialId(v.id); setActiveSection('trials'); };
 
             return (
               <>
                 <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', marginBottom: '8px', marginTop: '10px' }}>ACTION ITEMS</div>
                 <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '12px', marginBottom: '16px' }}>
-                  <OverviewCard title="Awaiting Start" icon={Clock} iconColor="#64748b" items={awaitingStart} emptyMsg="No trials awaiting start" />
-                  <OverviewCard title="Awaiting Recording Today" icon={ClipboardList} iconColor="#1e40af" items={awaitingRecording} emptyMsg="All active trials recorded today" />
-                  <OverviewCard title="Awaiting Decision" icon={Target} iconColor="#d97706" items={awaitingDecision} emptyMsg="No trials awaiting decision" />
+                  <OverviewCard title="Awaiting Start" icon={Clock} iconColor="#64748b" items={awaitingStart} emptyMsg="No trials awaiting start" onVenueClick={handleOverviewCardClick} getBdmName={getBdmName} />
+                  <OverviewCard title="Awaiting Recording Today" icon={ClipboardList} iconColor="#1e40af" items={awaitingRecording} emptyMsg="All active trials recorded today" onVenueClick={handleOverviewCardClick} getBdmName={getBdmName} />
+                  <OverviewCard title="Awaiting Decision" icon={Target} iconColor="#d97706" items={awaitingDecision} emptyMsg="No trials awaiting decision" onVenueClick={handleOverviewCardClick} getBdmName={getBdmName} />
                 </div>
 
                 {/* TPM Recording Health Check */}
