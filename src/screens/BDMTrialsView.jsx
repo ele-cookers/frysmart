@@ -4418,8 +4418,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               </colgroup>
                               <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                  <th style={{ padding: '4px 10px', borderBottom: '1px solid #f0f4f8' }} />
-                                  <th style={{ padding: '4px 10px', borderBottom: '1px solid #f0f4f8' }} />
+                                  <th colSpan={2} style={{ padding: '4px 10px', borderBottom: '1px solid #f0f4f8' }} />
                                   <th colSpan={2} style={{ padding: '4px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', borderBottom: '1px solid #f0f4f8', borderLeft: '1px solid #e2e8f0' }}>Weekly</th>
                                   <th colSpan={2} style={{ padding: '4px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', borderBottom: '1px solid #f0f4f8', borderLeft: '1px solid #e2e8f0' }}>Yearly</th>
                                 </tr>
@@ -4455,8 +4454,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 </tr>
                                 {weekSpend !== null && (
                                   <tr style={{ background: '#f8fafc' }}>
-                                    <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Difference</td>
-                                    <td style={{ padding: '8px 10px' }} />
+                                    <td colSpan={2} style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Difference</td>
                                     <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: weekLitres >= 0 ? '#059669' : '#dc2626', borderLeft: '1px solid #f0f4f8' }}>
                                       {weekLitres != null ? `${Math.round(Math.abs(weekLitres)).toLocaleString('en-AU')} L` : '—'}
                                     </td>
