@@ -1049,6 +1049,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
   const [summaryEditMode, setSummaryEditMode] = useState(false); // edit mode for trial findings in summary
   const [summaryFindingsText, setSummaryFindingsText] = useState(''); // editable findings text
+  const [summaryOutcomeEditMode, setSummaryOutcomeEditMode] = useState(false); // edit mode for outcome notes
+  const [summaryOutcomeText, setSummaryOutcomeText] = useState(''); // editable outcome notes text
   const [manageStatusFilter, setManageStatusFilter] = useState([]); // Manage screen status filter pills
   const [manageSearchQuery, setManageSearchQuery] = useState(''); // Manage screen keyword search
   const [decisionModal, setDecisionModal] = useState(null); // venue object for won/lost decision popup
@@ -4279,19 +4281,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           />
                           <button onClick={async () => {
                             const existingLines = (venue.trialNotes || '').split('\n');
-                            const firstMatch = existingLines.find(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
-                            const prefix = firstMatch
-                              ? firstMatch.trim().match(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/)[0]
-                              : `[Successful ${getTodayString()}]`;
-                            const nonFindingLines = existingLines.filter(l => !l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
+                            const nonFindingLines = existingLines.filter(l => !l.trim().match(/^\[TrialFindings:/));
                             const newFindingLines = summaryFindingsText.trim()
-                              ? summaryFindingsText.split('\n').map(t => t.trim() ? `${prefix} ${t.trim()}` : '').filter(Boolean)
+                              ? summaryFindingsText.split('\n').filter(l => l.trim()).map(t => `[TrialFindings: ${t.trim()}]`)
                               : [];
                             const newNotes = [...nonFindingLines, ...newFindingLines].join('\n').trim();
                             await updateVenue(venue.id, { trialNotes: newNotes });
                             setSummaryEditMode(false);
-                          }} style={{ marginTop: '8px', padding: '6px 14px', background: '#1a428a', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Save size={11} /> Save Findings
+                          }} style={{ marginTop: '8px', padding: '6px 14px', background: '#1a428a', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                            Save Findings
                           </button>
                         </>
                       ) : (
@@ -4602,12 +4600,48 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* Outcome notes — from Close as Successful/Unsuccessful modal */}
-                    {outcomeNotes && (
-                      <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
-                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Outcome Notes</div>
-                        <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{outcomeNotes}</div>
+                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Outcome Notes</div>
+                        <button
+                          onClick={() => { if (!summaryOutcomeEditMode) setSummaryOutcomeText(outcomeNotes); setSummaryOutcomeEditMode(prev => !prev); }}
+                          style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '3px 8px', fontSize: '10px', fontWeight: '600', color: summaryOutcomeEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                        >
+                          <Edit3 size={10} /> {summaryOutcomeEditMode ? 'Cancel' : 'Edit'}
+                        </button>
                       </div>
-                    )}
+                      {summaryOutcomeEditMode ? (
+                        <>
+                          <textarea
+                            value={summaryOutcomeText}
+                            onChange={e => setSummaryOutcomeText(e.target.value)}
+                            rows={3}
+                            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #bfdbfe', borderRadius: '7px', fontSize: '13px', color: '#1f2937', resize: 'vertical', lineHeight: 1.6 }}
+                            placeholder="Outcome notes..."
+                          />
+                          <button onClick={async () => {
+                            const existingLines = (venue.trialNotes || '').split('\n');
+                            const existingOutcomeLine = existingLines.find(l => l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
+                            const outcomePrefix = existingOutcomeLine
+                              ? existingOutcomeLine.trim().match(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/)[0]
+                              : `[${venue.trialStatus === 'accepted' ? 'Successful' : 'Unsuccessful'} ${getTodayString()}]`;
+                            const nonOutcomeLines = existingLines.filter(l => !l.trim().match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/));
+                            const newOutcomeLines = summaryOutcomeText.trim()
+                              ? summaryOutcomeText.split('\n').filter(l => l.trim()).map(t => `${outcomePrefix} ${t.trim()}`)
+                              : [];
+                            const newNotes = [...nonOutcomeLines, ...newOutcomeLines].join('\n').trim();
+                            await updateVenue(venue.id, { trialNotes: newNotes });
+                            setSummaryOutcomeEditMode(false);
+                          }} style={{ marginTop: '6px', padding: '5px 12px', background: '#1a428a', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                            Save Notes
+                          </button>
+                        </>
+                      ) : outcomeNotes ? (
+                        <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{outcomeNotes}</div>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: 0 }}>No outcome notes.</p>
+                      )}
+                    </div>
 
                     {/* Customer code input — only for accepted status */}
                     {venue.trialStatus === 'accepted' && (
@@ -4615,7 +4649,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Enter Customer Code</div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <input type="text" value={summaryCustCode} onChange={e => setSummaryCustCode(e.target.value)} placeholder="e.g. CKR-0123"
-                            style={{ flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', fontWeight: '600', color: '#1f2937', outline: 'none' }} />
+                            style={{ width: '180px', padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', fontWeight: '600', color: '#1f2937', outline: 'none' }} />
                           <button onClick={() => { if (summaryCustCode.trim()) { handleSaveCustomerCode(venue.id, summaryCustCode.trim()); setSummaryCustCode(''); } }}
                             style={{ padding: '7px 14px', background: summaryCustCode.trim() ? '#1a428a' : '#e2e8f0', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', color: summaryCustCode.trim() ? 'white' : '#94a3b8', cursor: summaryCustCode.trim() ? 'pointer' : 'not-allowed' }}>
                             Save
