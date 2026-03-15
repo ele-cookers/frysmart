@@ -697,12 +697,13 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
   })();
 
   // Oil lifespan per fryer: days between consecutive fresh fills
+  // Oil lifespan: only recorded fill-to-fill intervals, pooled across all fryers
   const oilLifespans = (() => {
     const spans = [];
     const fc = Math.max(1, venue.fryerCount || 1);
     for (let fn = 1; fn <= fc; fn++) {
       const fills = venueReadings
-        .filter(r => (r.fryerNumber || 1) === fn && r.oilAge === 1)
+        .filter(r => (r.fryerNumber || 1) === fn && Number(r.oilAge) === 1)
         .sort((a, b) => a.readingDate.localeCompare(b.readingDate));
       for (let i = 0; i < fills.length - 1; i++) {
         const d1 = new Date(fills[i].readingDate + 'T00:00:00');
@@ -710,12 +711,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
         const days = Math.round((d2 - d1) / 86400000);
         if (days > 0) spans.push(days);
       }
-      if (fills.length > 0) {
-        const lastFresh = new Date(fills[fills.length - 1].readingDate + 'T00:00:00');
-        const endD = new Date(); endD.setHours(0, 0, 0, 0);
-        const days = Math.round((endD - lastFresh) / 86400000);
-        if (days > 0) spans.push(days);
-      }
+      // Do NOT add "last fill → today" — we only count completed intervals
     }
     return spans;
   })();
@@ -749,7 +745,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
         </div>
         <div style={{ padding: '12px 20px 12px 14px', overflowY: 'auto', flex: 1 }}>
           {/* Start / End / Duration — evenly distributed */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '20px' }}>
             {[
               { label: 'Start', value: displayDate(venue.trialStartDate) },
               { label: 'End', value: displayDate(getTodayString()) },
@@ -763,10 +759,10 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           </div>
 
           {/* Oil usage + Oil lifespan — side by side */}
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
             {/* Oil usage table */}
             <div style={{ flex: 1, borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <colgroup><col style={{ width: '50%' }} /><col style={{ width: '25%' }} /><col style={{ width: '25%' }} /></colgroup>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
@@ -796,7 +792,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
             {/* Trial oil lifespan table */}
             <div style={{ flex: 1, borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <colgroup><col style={{ width: '50%' }} /><col style={{ width: '25%' }} /><col style={{ width: '25%' }} /></colgroup>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
@@ -841,8 +837,8 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
 
           {/* Trial calendar */}
           {modalCalDays.length > 0 && (
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ overflowX: 'auto' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ overflowX: 'auto', paddingBottom: '14px' }}>
                 <table style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px', minWidth: `${60 + modalCalDays.length * 30}px` }}>
                   <colgroup>
                     <col style={{ width: '60px' }} />
