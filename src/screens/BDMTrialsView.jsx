@@ -4385,9 +4385,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         ) : (
                           /* ── Desktop: original wide table ── */
                           <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0', tableLayout: 'fixed' }}>
                               <colgroup>
-                                <col style={{ width: '1%' }} />
+                                <col style={{ width: '115px' }} />
                                 <col /><col /><col /><col /><col />
                               </colgroup>
                               <thead>
