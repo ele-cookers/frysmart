@@ -697,10 +697,11 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
   })();
 
   // Oil lifespan per fryer: days between consecutive fresh fills
-  // Oil lifespan: only recorded fill-to-fill intervals, pooled across all fryers
+  // Oil lifespan: fill-to-fill intervals + current run (last fill → today, the actual trial end)
   const oilLifespans = (() => {
     const spans = [];
     const fc = Math.max(1, venue.fryerCount || 1);
+    const trialEnd = new Date(); trialEnd.setHours(0, 0, 0, 0); // today = actual end being confirmed
     for (let fn = 1; fn <= fc; fn++) {
       const fills = venueReadings
         .filter(r => (r.fryerNumber || 1) === fn && Number(r.oilAge) === 1)
@@ -711,7 +712,12 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
         const days = Math.round((d2 - d1) / 86400000);
         if (days > 0) spans.push(days);
       }
-      // Do NOT add "last fill → today" — we only count completed intervals
+      // Include current run: last fill → today (trial ending now, so this is a real completed interval)
+      if (fills.length > 0) {
+        const lastFresh = new Date(fills[fills.length - 1].readingDate + 'T00:00:00');
+        const days = Math.round((trialEnd - lastFresh) / 86400000);
+        if (days > 0) spans.push(days);
+      }
     }
     return spans;
   })();
