@@ -245,7 +245,7 @@ const SuccessToast = ({ message, onClose }) => {
 // ─────────────────────────────────────────────
 // LOG READING MODAL (no staff name for BDM)
 // ─────────────────────────────────────────────
-const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, initialFryer }) => {
+const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, initialFryer, existingReadings = [] }) => {
   const fryerCount = venue.fryerCount || 1;
   const fryerNums = Array.from({ length: fryerCount }, (_, i) => i + 1);
   const startIdx = initialFryer ? Math.max(0, fryerNums.indexOf(initialFryer)) : 0;
@@ -293,6 +293,17 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const isNoFill = fryer.fillType === 'no_fill';
   const canSave = fryer.notInUse || !!fryer.tpmValue;
 
+  // Calculate running oil age (days since last fresh fill for this fryer)
+  const calcOilAge = (fryerNumber) => {
+    if (isFreshOil) return 1;
+    const lastFresh = existingReadings
+      .filter(r => (Number(r.fryerNumber) || 1) === fryerNumber && Number(r.oilAge) === 1 && r.readingDate <= date)
+      .sort((a, b) => b.readingDate.localeCompare(a.readingDate))[0];
+    if (!lastFresh) return 0;
+    const days = Math.round((new Date(date + 'T00:00:00') - new Date(lastFresh.readingDate + 'T00:00:00')) / 86400000);
+    return days + 1;
+  };
+
   const inputSt = { width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: 'white', color: '#1f2937' };
   const chevronBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`;
   const selectSt = { ...inputSt, WebkitAppearance: 'none', appearance: 'none', backgroundImage: chevronBg, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '32px', cursor: 'pointer' };
@@ -328,7 +339,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
       readingNumber: 1,
       takenBy: currentUser?.id || null,
       staffName: currentUser?.name || '',
-      oilAge: isFreshOil ? 1 : isNoFill ? 0 : 2,
+      oilAge: calcOilAge(fryer.fryerNumber),
       litresFilled: isNoFill ? 0 : (fryer.litresFilled ? parseFloat(fryer.litresFilled) : 0),
       tpmValue: parseFloat(fryer.tpmValue),
       setTemperature: fryer.setTemperature ? parseFloat(fryer.setTemperature) : null,
@@ -5087,6 +5098,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           currentUser={currentUser}
           onClose={() => setReadingModal(null)}
           onSave={handleSaveReading}
+          existingReadings={tpmReadings.filter(r => r.venueId === readingModal.id)}
         />
       )}
 
