@@ -45,7 +45,7 @@ const DEFAULT_FOOD_TYPES = [
 ];
 const FOOD_TYPE_EMOJIS = {
   'Chips/Fries': '🍟', 'Crumbed Items': '🍗', 'Battered Items': '🐟',
-  'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🌽', 'Mixed Service': '🍽️',
+  'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🥔', 'Mixed Service': '🍽️',
 };
 const getFoodEmoji = (type) => FOOD_TYPE_EMOJIS[type] || '🍽️';
 

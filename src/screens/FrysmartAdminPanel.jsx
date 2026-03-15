@@ -105,7 +105,7 @@ const FOOD_TYPES = [
 ];
 const FOOD_TYPE_EMOJIS = {
   'Chips/Fries': '🍟', 'Crumbed Items': '🍗', 'Battered Items': '🐟',
-  'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🌽', 'Mixed Service': '🍽️',
+  'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🥔', 'Mixed Service': '🍽️',
 };
 const getFoodEmoji = (type) => FOOD_TYPE_EMOJIS[type] || '🍽️';
 
@@ -2134,7 +2134,7 @@ const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTi
   );
 };
 
-const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, pendingTrialId, clearPendingTrialId }) => {
+const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, pendingTrialId, clearPendingTrialId, foodTypeOptions }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [search, setSearch] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
@@ -2692,7 +2692,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                   <select value={fd.foodType || ''} onChange={e => setFryer(activeFryerTab, { foodType: e.target.value })}
                     style={{ ...selectStyle, fontSize: '14px', width: '100%', boxSizing: 'border-box', color: fd.foodType ? '#1f2937' : '#94a3b8' }}>
                     <option value="" disabled>Select...</option>
-                    {FOOD_TYPES.map(ft => <option key={ft} value={ft}>{getFoodEmoji(ft)} {ft}</option>)}
+                    {(foodTypeOptions?.length ? foodTypeOptions : FOOD_TYPES).map(ft => <option key={ft} value={ft}>{getFoodEmoji(ft)} {ft}</option>)}
                   </select>
                 </div>
 
@@ -3771,7 +3771,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
     switch (activeSection) {
       case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} />;
       case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} />;
-      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} pendingTrialId={pendingTrialId} clearPendingTrialId={() => setPendingTrialId(null)} />;
+      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} pendingTrialId={pendingTrialId} clearPendingTrialId={() => setPendingTrialId(null)} foodTypeOptions={foodTypeOptions} />;
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [

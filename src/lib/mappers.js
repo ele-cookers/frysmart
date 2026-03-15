@@ -277,6 +277,7 @@ export const unMapSystemSettings = (s) => ({
   report_frequency: s.reportFrequency,
   reminder_days: s.reminderDays,
   oil_type_options: s.oilTypeOptions,
+  food_type_options: s.foodTypeOptions,
   permissions_config: s.permissionsConfig,
   target_win_rate: s.targetWinRate,
   target_avg_time_to_decision: s.targetAvgTimeToDecision,
