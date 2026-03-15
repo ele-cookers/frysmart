@@ -668,8 +668,6 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
 
   // Trial findings text (new field)
   const [trialFindings, setTrialFindings] = useState('');
-  // Trial outcome — 'successful' | 'unsuccessful' | null
-  const [trialOutcome, setTrialOutcome] = useState(null);
 
   // Trial goals — parse from trialNotes
   const GOAL_OPTIONS = [
@@ -749,7 +747,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} color="#94a3b8" /></button>
         </div>
-        <div style={{ padding: '12px 14px', overflowY: 'auto', flex: 1 }}>
+        <div style={{ padding: '12px 20px 12px 14px', overflowY: 'auto', flex: 1 }}>
           {/* Start / End / Duration — evenly distributed */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
             {[
@@ -769,6 +767,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             {/* Oil usage table */}
             <div style={{ flex: 1, borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <colgroup><col style={{ width: '50%' }} /><col style={{ width: '25%' }} /><col style={{ width: '25%' }} /></colgroup>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Oil Usage</th>
@@ -798,11 +797,12 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             {/* Trial oil lifespan table */}
             <div style={{ flex: 1, borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <colgroup><col style={{ width: '50%' }} /><col style={{ width: '25%' }} /><col style={{ width: '25%' }} /></colgroup>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Oil Lifespan</th>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>Days</th>
-                    <th style={{ padding: '7px 8px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'right', borderBottom: '2px solid #e2e8f0' }}>+/−</th>
+                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>Days</th>
+                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>+/−</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -812,24 +812,24 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                       return val - preTrialLifespan;
                     };
                     const deltaCell = (delta, bold) => {
-                      if (delta === null) return <td style={{ padding: '6px 8px', fontSize: '11px', textAlign: 'right', color: '#94a3b8' }}>—</td>;
+                      if (delta === null) return <td style={{ padding: '6px 10px', fontSize: '11px', textAlign: 'center', color: '#94a3b8' }}>—</td>;
                       const pos = delta >= 0;
-                      return <td style={{ padding: bold ? '6px 8px' : '6px 8px', fontSize: bold ? '12px' : '11px', fontWeight: bold ? '700' : '500', textAlign: 'right', color: pos ? '#059669' : '#dc2626', borderBottom: bold ? 'none' : '1px solid #f1f5f9' }}>{pos ? '+' : ''}{delta}d</td>;
+                      return <td style={{ padding: '6px 10px', fontSize: bold ? '12px' : '11px', fontWeight: bold ? '700' : '500', textAlign: 'center', color: pos ? '#059669' : '#dc2626', borderBottom: bold ? 'none' : '1px solid #f1f5f9' }}>{pos ? '+' : ''}{delta}d</td>;
                     };
                     return (<>
                   <tr>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Min</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{lifespanMin !== null ? `${lifespanMin}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{lifespanMin !== null ? `${lifespanMin}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
                     {deltaCell(lifespanDelta(lifespanMin), false)}
                   </tr>
                   <tr>
                     <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', borderBottom: '1px solid #f1f5f9' }}>Max</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{lifespanMax !== null ? `${lifespanMax}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{lifespanMax !== null ? `${lifespanMax}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
                     {deltaCell(lifespanDelta(lifespanMax), false)}
                   </tr>
                   <tr style={{ background: '#f8fafc' }}>
                     <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Avg</td>
-                    <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'right' }}>{lifespanAvg !== null ? `${lifespanAvg}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
+                    <td style={{ padding: '6px 10px', fontSize: '12px', fontWeight: '700', color: '#1f2937', textAlign: 'center' }}>{lifespanAvg !== null ? `${lifespanAvg}d` : <span style={{ color: '#94a3b8' }}>—</span>}</td>
                     {deltaCell(lifespanDelta(lifespanAvg), true)}
                   </tr>
                     </>);
@@ -907,41 +907,6 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
           )}
 
-          {/* Trial Outcome */}
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Trial Outcome</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              {[
-                { key: 'successful',   label: 'Successful',   icon: Trophy },
-                { key: 'unsuccessful', label: 'Unsuccessful', icon: AlertTriangle },
-              ].map(opt => {
-                const OptIcon = opt.icon;
-                const selected = trialOutcome === opt.key;
-                return (
-                  <div key={opt.key} onClick={() => setTrialOutcome(selected ? null : opt.key)} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px',
-                    cursor: 'pointer', borderRadius: '8px',
-                    background: selected ? '#dbeafe' : '#f8fafc',
-                    border: `1px solid ${selected ? '#93c5fd' : '#e2e8f0'}`,
-                    transition: 'all 0.1s',
-                  }}>
-                    <OptIcon size={13} color={selected ? '#1a428a' : '#94a3b8'} />
-                    <span style={{ flex: 1, fontSize: '11px', fontWeight: '600', color: selected ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{opt.label}</span>
-                    <div style={{
-                      width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                      border: `2px solid ${selected ? '#f59e0b' : '#d1d5db'}`,
-                      background: selected ? '#f59e0b' : 'white',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.1s',
-                    }}>
-                      {selected && <Check size={9} color="white" strokeWidth={3} />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Trial Goals Achieved */}
           {trialGoals.length > 0 && (
             <div style={{ marginBottom: '16px' }}>
@@ -991,7 +956,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, trialOutcome)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, null)} style={{ flex: 1, padding: '10px', background: '#f59e0b', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
               Confirm End Trial
             </button>
           </div>
