@@ -659,15 +659,14 @@ const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
               rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Any final notes on the outcome..."
               onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button disabled={!canSubmit} onClick={() => onSave({
               trialStatus: outcome === 'successful' ? 'accepted' : outcome,
               trialReason: form.reason,
               outcomeDate: form.outcomeDate,
               trialNotes: [venue.trialNotes, form.notes ? `[${outcome === 'successful' ? 'Successful' : 'Unsuccessful'} ${form.outcomeDate}] ${form.notes}` : ''].filter(Boolean).join('\n'),
               ...(isWon ? { soldPricePerLitre: parseFloat(form.soldPrice) } : {}),
-            })} style={{ flex: 1, padding: '10px', background: canSubmit ? (isWon ? '#10b981' : '#ef4444') : '#94a3b8', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
+            })} style={{ padding: '11px 36px', background: canSubmit ? (isWon ? '#10b981' : '#ef4444') : '#94a3b8', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'white', cursor: canSubmit ? 'pointer' : 'not-allowed', letterSpacing: '0.2px' }}>
               {isWon ? 'Mark as Successful' : 'Mark as Unsuccessful'}
             </button>
           </div>
@@ -784,7 +783,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} color="#94a3b8" /></button>
         </div>
-        <div style={{ padding: '12px 20px 24px 14px', overflowY: 'auto', flex: 1 }}>
+        <div style={{ padding: '16px 20px 32px 16px', overflowY: 'auto', flex: 1 }}>
           {/* Start / End / Duration — evenly distributed */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '20px' }}>
             {[
@@ -947,7 +946,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           )}
 
           {/* Trial Goals Achieved — always show all options */}
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '24px' }}>
             <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px' }}>Trial Goals Achieved</div>
             <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>Tick which goals the trial delivered</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
