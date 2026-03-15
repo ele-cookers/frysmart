@@ -587,7 +587,7 @@ const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
       <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
         <div style={{ padding: '14px 16px', borderLeft: `4px solid ${isWon ? '#10b981' : '#ef4444'}`, borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>{isWon ? 'Close as Won' : 'Close as Lost'}</div>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937' }}>{isWon ? 'Mark as Successful' : 'Mark as Unsuccessful'}</div>
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{venue.name}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} color="#94a3b8" /></button>
@@ -631,7 +631,7 @@ const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
               trialNotes: [venue.trialNotes, form.notes ? `[${outcome === 'successful' ? 'Successful' : 'Unsuccessful'} ${form.outcomeDate}] ${form.notes}` : ''].filter(Boolean).join('\n'),
               ...(isWon ? { soldPricePerLitre: parseFloat(form.soldPrice) } : {}),
             })} style={{ flex: 1, padding: '10px', background: canSubmit ? (isWon ? '#10b981' : '#ef4444') : '#94a3b8', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
-              {isWon ? 'Mark as Won' : 'Mark as Lost'}
+              {isWon ? 'Mark as Successful' : 'Mark as Unsuccessful'}
             </button>
           </div>
         </div>
@@ -844,7 +844,8 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
           {/* Trial calendar */}
           {modalCalDays.length > 0 && (
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ overflowX: 'auto', paddingBottom: '14px' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <div style={{ paddingBottom: '16px' }}>
                 <table style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px', minWidth: `${60 + modalCalDays.length * 30}px` }}>
                   <colgroup>
                     <col style={{ width: '60px' }} />
@@ -890,6 +891,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
               {/* Calendar legend */}
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -4122,17 +4124,27 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               // Outcome reason label
               const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
 
-              // Trial findings: [Successful DATE] / [Unsuccessful DATE] lines (from Close modal)
-              // AND [TrialFindings: text] lines (from End Trial modal)
+              // Trial findings: only [TrialFindings: text] lines (from End Trial modal)
               const trialFindings = venue.trialNotes
+                ? venue.trialNotes.split('\n')
+                    .flatMap(l => {
+                      const t = l.trim();
+                      if (t.match(/^\[TrialFindings:/)) {
+                        return [t.replace(/^\[TrialFindings:\s*/, '').replace(/\]\s*$/, '').trim()];
+                      }
+                      return [];
+                    })
+                    .filter(Boolean)
+                    .join('\n')
+
+              // Outcome notes: [Successful DATE] / [Unsuccessful DATE] lines (from Close as Successful/Unsuccessful modal)
+              // — shown in the Internal Use section, not Trial Findings
+              const outcomeNotes = venue.trialNotes
                 ? venue.trialNotes.split('\n')
                     .flatMap(l => {
                       const t = l.trim();
                       if (t.match(/^\[(Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]/)) {
                         return [t.replace(/^\[(?:Successful|Unsuccessful)\s+\d{4}-\d{2}-\d{2}\]\s*/, '').trim()];
-                      }
-                      if (t.match(/^\[TrialFindings:/)) {
-                        return [t.replace(/^\[TrialFindings:\s*/, '').replace(/\]\s*$/, '').trim()];
                       }
                       return [];
                     })
@@ -4517,6 +4529,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       ))}
                     </div>
 
+                    {/* Outcome notes — from Close as Successful/Unsuccessful modal */}
+                    {outcomeNotes && (
+                      <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Outcome Notes</div>
+                        <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{outcomeNotes}</div>
+                      </div>
+                    )}
+
                     {/* Customer code input — only for accepted status */}
                     {venue.trialStatus === 'accepted' && (
                       <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
@@ -4708,8 +4728,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table-sm tbody td .bdm-badge-wrap-supplier { transform: scale(0.72); transform-origin: center; display: inline-block; }
         .bdm-table-archive thead th { padding: 4px 5px !important; font-size: 9px !important; }
         .bdm-table-archive tbody td { padding: 4px 5px !important; font-size: 10px !important; }
-        .bdm-table-archive thead th:first-child { padding: 0 !important; width: 6px !important; max-width: 6px !important; }
-        .bdm-table-archive tbody td:first-child { padding: 0 !important; width: 6px !important; max-width: 6px !important; }
+        .bdm-table-archive thead th:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
+        .bdm-table-archive tbody td:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
+        .bdm-table-archive tbody td > span { display: inline-block; transform: scale(0.82); transform-origin: center; }
         .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: white; width: 100%; transition: all 0.15s; }
         .bdm-row-btn:hover { background: #eef2ff; color: #1a428a; border-color: #c7d2fe; }
         .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
