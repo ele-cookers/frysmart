@@ -3147,7 +3147,36 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}><RotateCcw size={10} /> Back to Pipeline</button>
             </>)}
-            {((venue.trialStatus === 'unsuccessful' || venue.trialStatus === 'accepted') || (venue.trialStatus === 'successful' && !venue.customerCode)) && (
+            {venue.trialStatus === 'pending' && (<>
+              <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{
+                padding: '5px 10px', background: '#10b981', border: 'none', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><Trophy size={12} /> Successful</button>
+              <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{
+                padding: '5px 10px', background: '#ef4444', border: 'none', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><XCircle size={12} /> Unsuccessful</button>
+              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'active'); }} style={{
+                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><RotateCcw size={10} /> Back to Active</button>
+            </>)}
+            {venue.trialStatus === 'accepted' && (<>
+              <button onClick={() => setCustCodeModal(venue)} style={{
+                padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><Award size={12} /> Enter Cust Code</button>
+              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pending?`)) handlePushBack(venue.id, 'pending'); }} style={{
+                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
+                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}><RotateCcw size={10} /> Back to Pending</button>
+            </>)}
+            {((venue.trialStatus === 'unsuccessful') || (venue.trialStatus === 'successful' && !venue.customerCode)) && (
               <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }} style={{
                 padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
                 fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
