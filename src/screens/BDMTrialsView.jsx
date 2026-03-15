@@ -4963,8 +4963,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table-sm tbody td { padding: 5px 4px !important; font-size: 10px !important; }
         .bdm-table-sm tbody td .bdm-badge-wrap { transform: scale(0.82); transform-origin: center; display: inline-block; }
         .bdm-table-sm tbody td .bdm-badge-wrap-supplier { transform: scale(0.72); transform-origin: center; display: inline-block; }
-        .bdm-table-archive thead th { padding: 5px 6px !important; font-size: 10px !important; }
-        .bdm-table-archive tbody td { padding: 5px 6px !important; font-size: 11px !important; }
+        .bdm-table-archive thead th { padding: 4px 5px !important; font-size: 9px !important; }
+        .bdm-table-archive tbody td { padding: 4px 5px !important; font-size: 10px !important; }
         .bdm-table-archive thead th:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
         .bdm-table-archive tbody td:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
         .bdm-table-archive tbody td > span { display: inline-block; transform: scale(0.88); transform-origin: center; }
