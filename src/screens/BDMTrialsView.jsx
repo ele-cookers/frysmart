@@ -2614,7 +2614,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     allTrials.forEach(v => { statusCounts[v.trialStatus] = (statusCounts[v.trialStatus] || 0) + 1; });
 
     // Name column fixed; narrower for price/date, wider for status
-    const NAME_W = '100px';
+    const NAME_W = '86px';
     const VOL_W = '57px';    // Vol bracket — 82px badge
     const COL_W = '60px';    // OIL×2 — 88px badge
     const SUPP_W = '68px';   // Supplier — 104px badge
