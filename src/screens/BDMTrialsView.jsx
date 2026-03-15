@@ -81,6 +81,11 @@ const FOOD_TYPES = [
   'Chips/Fries', 'Crumbed Items', 'Battered Items',
   'Plain Proteins', 'Pastries/Donuts', 'High Starch', 'Mixed Service',
 ];
+const FOOD_TYPE_EMOJIS = {
+  'Chips/Fries': '🍟', 'Crumbed Items': '🍗', 'Battered Items': '🐟',
+  'Plain Proteins': '🥩', 'Pastries/Donuts': '🍩', 'High Starch': '🌽', 'Mixed Service': '🍽️',
+};
+const getFoodEmoji = (type) => FOOD_TYPE_EMOJIS[type] || '🍽️';
 
 const inputStyle = {
   width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px',
@@ -507,7 +512,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
               style={{ ...inputSt, background: 'white', appearance: 'none', WebkitAppearance: 'none' }}
               onFocus={e => e.target.style.borderColor = '#1a428a'}
               onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-              {FOOD_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+              {FOOD_TYPES.map(type => <option key={type} value={type}>{getFoodEmoji(type)} {type}</option>)}
             </select>
           </div>
 
