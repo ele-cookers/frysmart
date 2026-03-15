@@ -2798,7 +2798,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       return (
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 16px' }}>Manage Trial</h2>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Manage Trial</h2>
           <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Select a venue to manage its trial details, edit information, or change its status.</p>
           {/* Results */}
           {isTableView ? renderManageTable(allTrials) : (
