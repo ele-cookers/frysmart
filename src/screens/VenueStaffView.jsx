@@ -34,7 +34,7 @@ const getOilStatus = (oilAge, notInUse, colors = OIL_STATUS_COLORS) => {
 };
 
 // Food type options — matches admin panel
-const FOOD_TYPES = [
+const DEFAULT_FOOD_TYPES = [
   'Chips/Fries',
   'Crumbed Items',
   'Battered Items',
@@ -158,7 +158,7 @@ const WarningModal = ({ fryers, onClose }) => (
 // ─────────────────────────────────────────────
 // Critical Oil Change Modal
 // ─────────────────────────────────────────────
-const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, venueId }) => {
+const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, venueId, foodTypeOptions = DEFAULT_FOOD_TYPES }) => {
   const [currentFryerIndex, setCurrentFryerIndex] = useState(0);
   const currentFryerNumber = criticalFryers[currentFryerIndex];
   const [critStaffName, setCritStaffName] = useState('');
@@ -453,7 +453,7 @@ const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, 
               onFocus={(e) => e.target.style.borderColor = '#1a428a'}
               onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
             >
-              {FOOD_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+              {foodTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
             </select>
           </div>
 
@@ -517,7 +517,7 @@ const CriticalBanner = ({ criticalFryers, onChangeOil, isDesktop }) => (
 // ─────────────────────────────────────────────
 // Recording Form — aligned with tpm_readings schema
 // ─────────────────────────────────────────────
-const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [] }) => {
+const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], foodTypeOptions = DEFAULT_FOOD_TYPES }) => {
   const fryerCount = venue?.fryerCount || 4;
   const [staffName, setStaffName] = useState('');
   const [date, setDate] = useState(getTodayString());
@@ -876,7 +876,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [] }) =>
                     onFocus={(e) => e.target.style.borderColor = '#1a428a'}
                     onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-foodType`] ? '#ef4444' : '#e2e8f0'}
                   >
-                    {FOOD_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                    {foodTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
 
@@ -2708,6 +2708,7 @@ export default function VenueStaffView({
     criticalThreshold: 24,
     ...systemSettings
   };
+  const foodTypeOptions = settings.foodTypeOptions?.length ? settings.foodTypeOptions : DEFAULT_FOOD_TYPES;
   // Sync module-level thresholds so all sub-components use DB values
   _tpmThresholds.warning = settings.warningThreshold;
   _tpmThresholds.critical = settings.criticalThreshold;
@@ -2900,6 +2901,7 @@ export default function VenueStaffView({
           onSave={(recs) => commitSave(recs)}
           currentUser={currentUser}
           venueId={venue?.id}
+          foodTypeOptions={foodTypeOptions}
         />
       )}
 
@@ -3019,7 +3021,7 @@ export default function VenueStaffView({
             )}
             {currentView === 'record' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
-                venue={venue} existingReadings={readings}
+                venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
               />
             )}
             {/* Calendar views — sub-tab selected from sidebar */}
@@ -3117,7 +3119,7 @@ export default function VenueStaffView({
             )}
             {currentView === 'record' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
-                venue={venue} existingReadings={readings}
+                venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
               />
             )}
             {currentView === 'calendar' && calendarView === 'day' && (

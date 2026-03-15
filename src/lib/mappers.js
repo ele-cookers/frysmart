@@ -261,6 +261,7 @@ export const mapSystemSettings = (r) => ({
   reportFrequency: r.report_frequency,
   reminderDays: r.reminder_days,
   oilTypeOptions: r.oil_type_options ?? [],
+  foodTypeOptions: r.food_type_options ?? [],
   permissionsConfig: r.permissions_config ?? {},
   targetWinRate: r.target_win_rate ?? 75,
   targetAvgTimeToDecision: r.target_avg_time_to_decision ?? 14,

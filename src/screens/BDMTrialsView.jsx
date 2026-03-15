@@ -78,7 +78,7 @@ const COLORS = {
   white:        '#ffffff',
 };
 
-const FOOD_TYPES = [
+const DEFAULT_FOOD_TYPES = [
   'Chips/Fries', 'Crumbed Items', 'Battered Items',
   'Plain Proteins', 'Pastries/Donuts', 'High Starch', 'Mixed Service',
 ];
@@ -245,7 +245,7 @@ const SuccessToast = ({ message, onClose }) => {
 // ─────────────────────────────────────────────
 // LOG READING MODAL (no staff name for BDM)
 // ─────────────────────────────────────────────
-const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, initialFryer, existingReadings = [] }) => {
+const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, initialFryer, existingReadings = [], foodTypeOptions = DEFAULT_FOOD_TYPES }) => {
   const fryerCount = venue.fryerCount || 1;
   const fryerNums = Array.from({ length: fryerCount }, (_, i) => i + 1);
   const startIdx = initialFryer ? Math.max(0, fryerNums.indexOf(initialFryer)) : 0;
@@ -546,7 +546,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
               style={selectSt}
               onFocus={e => e.target.style.borderColor = '#1a428a'}
               onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-              {FOOD_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+              {foodTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
             </select>
           </div>
 
@@ -588,20 +588,31 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
 // TRIAL REASON DEFAULTS (fallback if DB table is empty)
 // ─────────────────────────────────────────────
 const DEFAULT_TRIAL_REASONS = [
-  { key: 'cost_savings',           label: 'Cost Savings',           type: 'successful' },
-  { key: 'oil_lasted_longer',      label: 'Oil Lasted Longer',      type: 'successful' },
-  { key: 'better_food_quality',    label: 'Better Food Quality',    type: 'successful' },
-  { key: 'operational_efficiency', label: 'Operational Efficiency', type: 'successful' },
-  { key: 'strong_trial_results',   label: 'Strong Trial Results',   type: 'successful' },
-  { key: 'supplier_relationship',  label: 'Supplier Relationship',  type: 'successful' },
-  { key: 'no_savings',             label: 'No Savings',             type: 'unsuccessful' },
-  { key: 'price_too_high',         label: 'Price Too High',         type: 'unsuccessful' },
-  { key: 'loyal_to_competitor',    label: 'Loyal to Competitor',    type: 'unsuccessful' },
-  { key: 'oil_quality_concerns',   label: 'Oil Quality Concerns',   type: 'unsuccessful' },
-  { key: 'not_interested',         label: 'Not Interested',         type: 'unsuccessful' },
-  { key: 'resistance_to_change',   label: 'Resistance to Change',   type: 'unsuccessful' },
-  { key: 'ownership_change',       label: 'Ownership Change',       type: 'unsuccessful' },
-  { key: 'venue_closed',           label: 'Venue Closed',           type: 'unsuccessful' },
+  { key: 'oil-lasted-longer',    label: 'Oil Lasted Longer',                   type: 'successful' },
+  { key: 'better-food-quality',  label: 'Better Food Quality',                 type: 'successful' },
+  { key: 'cost-savings',         label: 'Cost Savings on Oil Usage',           type: 'successful' },
+  { key: 'cleaner-frying',       label: 'Cleaner Frying / Less Residue',       type: 'successful' },
+  { key: 'bdm-relationship',     label: 'BDM Relationship / Service',          type: 'successful' },
+  { key: 'healthier-oil',        label: 'Healthier Oil Option',                type: 'successful' },
+  { key: 'easier-to-manage',     label: 'Easier to Manage',                    type: 'successful' },
+  { key: 'consistent-results',   label: 'Consistent Frying Results',           type: 'successful' },
+  { key: 'better-value',         label: 'Better Value for Money',              type: 'successful' },
+  { key: 'recommended',          label: 'Recommended by Others',               type: 'successful' },
+  { key: 'trial-results',        label: 'Trial Results Spoke for Themselves',  type: 'successful' },
+  { key: 'reduced-oil-smell',    label: 'Reduced Oil Smell',                   type: 'successful' },
+  { key: 'other-successful',     label: 'Other',                               type: 'successful' },
+  { key: 'no-savings',           label: 'No Savings Found',                    type: 'unsuccessful' },
+  { key: 'price-too-high',       label: 'Price Too High',                      type: 'unsuccessful' },
+  { key: 'preferred-current',    label: 'Preferred Current Supplier',          type: 'unsuccessful' },
+  { key: 'quality-concern',      label: 'Oil Quality Concerns',                type: 'unsuccessful' },
+  { key: 'staff-resistance',     label: 'Staff Resistance to Change',          type: 'unsuccessful' },
+  { key: 'contract-locked',      label: 'Locked Into Existing Contract',       type: 'unsuccessful' },
+  { key: 'ownership-change',     label: 'Ownership / Management Change',       type: 'unsuccessful' },
+  { key: 'venue-closed',         label: 'Venue Closed',                        type: 'unsuccessful' },
+  { key: 'chose-competitor',     label: 'Chose Competitor',                    type: 'unsuccessful' },
+  { key: 'owner-not-interested', label: 'Owner Not Interested',                type: 'unsuccessful' },
+  { key: 'no-response',          label: 'No Response / Ghosted',               type: 'unsuccessful' },
+  { key: 'other-unsuccessful',   label: 'Other',                               type: 'unsuccessful' },
 ];
 
 // ─────────────────────────────────────────────
@@ -1371,17 +1382,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       // Update venues table if venue fields changed
       if (Object.keys(venueUpdates).length > 0) {
         const dbVenue = unMapVenue({ ...venue, ...venueUpdates });
-        await supabase.from('venues').update(dbVenue).eq('id', venueId);
+        const { error: venueErr } = await supabase.from('venues').update(dbVenue).eq('id', venueId);
+        if (venueErr) throw venueErr;
       }
 
       // Update trials table if trial fields changed
       if (Object.keys(trialUpdates).length > 0 && venue?.trialId) {
         const currentTrial = splitTrialFromVenue(venue);
         const dbTrial = unMapTrial({ ...currentTrial, ...trialUpdates });
-        await supabase.from('trials').update(dbTrial).eq('id', venue.trialId);
+        const { error: trialErr } = await supabase.from('trials').update(dbTrial).eq('id', venue.trialId);
+        if (trialErr) throw trialErr;
       }
     } catch (err) {
       console.error('Update venue error:', err);
+      setSuccessMsg(`Save failed: ${err.message}`);
     }
     setSaving(false);
   };
@@ -1490,7 +1504,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         const venueId = readings[0]?.venueId;
         const readingDate = readings[0]?.readingDate;
         if (venueId && readingDate) {
-          await supabase.from('venues').update({ last_tpm_date: readingDate }).eq('id', venueId);
+          const { error: tpmVenueErr } = await supabase.from('venues').update({ last_tpm_date: readingDate }).eq('id', venueId);
+          if (tpmVenueErr) console.error('Failed to update last_tpm_date:', tpmVenueErr);
           setVenues(prev => prev.map(v => v.id === venueId ? { ...v, lastTpmDate: readingDate } : v));
         }
         // Full refresh first (updates venues/trials), then targeted re-fetch runs last
@@ -5226,6 +5241,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           onClose={() => setReadingModal(null)}
           onSave={handleSaveReading}
           existingReadings={tpmReadings.filter(r => r.venueId === readingModal.id)}
+          foodTypeOptions={systemSettings?.foodTypeOptions?.length ? systemSettings.foodTypeOptions : DEFAULT_FOOD_TYPES}
         />
       )}
 

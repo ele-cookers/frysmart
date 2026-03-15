@@ -12,7 +12,7 @@ import {
   mapSystemSettings,
   mergeTrialIntoVenue, splitTrialFromVenue,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Shield, UserPlus, Zap, ClipboardList, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Shield, UserPlus, Zap, ClipboardList, LayoutDashboard, UtensilsCrossed } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
 import { TrialDetailModal } from '../components/TrialDetailModal';
@@ -99,7 +99,7 @@ const PACK_SIZES = [
   { key: '4l', label: '4L BOTTLE' },
 ];
 
-const FOOD_TYPES = [
+const DEFAULT_FOOD_TYPES = [
   'Chips/Fries', 'Crumbed Items', 'Battered Items',
   'Plain Proteins', 'Pastries/Donuts', 'High Starch', 'Mixed Service',
 ];
@@ -2129,7 +2129,7 @@ const CalendarIconPicker = ({ dateFrom, dateTo, setDateFrom, setDateTo, setAllTi
   );
 };
 
-const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, pendingTrialId, clearPendingTrialId }) => {
+const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitors, users, groups, trialReasons, volumeBrackets, isDesktop, tpmReadings, setTpmReadings, dateFrom, setDateFrom, dateTo, setDateTo, allTime, setAllTime, currentUser, pendingTrialId, clearPendingTrialId, foodTypeOptions = DEFAULT_FOOD_TYPES }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [search, setSearch] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
@@ -2535,7 +2535,8 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                     rawSetVenues(prev => prev.map(v => v.id === t.id ? { ...v, ...trialUpdates } : v));
                     if (t.trialId) {
                       const dbTrial = unMapTrial({ ...splitTrialFromVenue(t), ...trialUpdates });
-                      await supabase.from('trials').update(dbTrial).eq('id', t.trialId);
+                      const { error: closeTrialErr } = await supabase.from('trials').update(dbTrial).eq('id', t.trialId);
+                      if (closeTrialErr) { console.error('Failed to close trial:', closeTrialErr); return; }
                     }
                     setCloseTrialModal(null);
                   }} style={{ flex: 2, padding: '10px', background: canSubmit ? (isWon ? '#10b981' : '#ef4444') : '#94a3b8', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: 'white', cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
@@ -2687,7 +2688,7 @@ const TrialManagement = ({ venues, setVenues, rawSetVenues, oilTypes, competitor
                   <select value={fd.foodType || ''} onChange={e => setFryer(activeFryerTab, { foodType: e.target.value })}
                     style={{ ...selectStyle, fontSize: '14px', width: '100%', boxSizing: 'border-box', color: fd.foodType ? '#1f2937' : '#94a3b8' }}>
                     <option value="" disabled>Select...</option>
-                    {FOOD_TYPES.map(ft => <option key={ft} value={ft}>{ft}</option>)}
+                    {foodTypeOptions.map(ft => <option key={ft} value={ft}>{ft}</option>)}
                   </select>
                 </div>
 
@@ -3179,12 +3180,13 @@ const CollapsibleCard = ({ title, defaultOpen = false, children }) => {
   );
 };
 
-const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, setVolumeBrackets, systemSettings, setSystemSettings, oilTypeOptions, setOilTypeOptions }) => {
+const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, setVolumeBrackets, systemSettings, setSystemSettings, oilTypeOptions, setOilTypeOptions, foodTypeOptions, setFoodTypeOptions }) => {
   const [activeTab, setActiveTab] = useState('reasons');
   const [newReason, setNewReason] = useState('');
   const [newReasonType, setNewReasonType] = useState('successful');
   const [newBracket, setNewBracket] = useState({ label: '', color: '#64748b' });
   const [newOilType, setNewOilType] = useState('');
+  const [newFoodType, setNewFoodType] = useState('');
 
   const addReason = () => {
     if (!newReason.trim()) return;
@@ -3193,6 +3195,15 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
     setNewReason('');
   };
   const removeReason = (key) => setTrialReasons(prev => prev.filter(r => r.key !== key));
+
+  const addFoodType = () => {
+    if (!newFoodType.trim()) return;
+    const val = newFoodType.trim();
+    if (foodTypeOptions.includes(val)) return;
+    setFoodTypeOptions(prev => [...prev, val]);
+    setNewFoodType('');
+  };
+  const removeFoodType = (val) => setFoodTypeOptions(prev => prev.filter(f => f !== val));
 
   const addBracket = () => {
     if (!newBracket.label.trim()) return;
@@ -3212,14 +3223,15 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
   const removeOilType = (val) => setOilTypeOptions(prev => prev.filter(b => b !== val));
 
   const tabs = [
-    { key: 'reasons',  label: 'Reason Codes',     icon: CheckCircle, group: 'Trials' },
-    { key: 'brackets', label: 'Volume Brackets',   icon: BarChart3,   group: 'Trials' },
-    { key: 'oiltypes', label: 'Oil Types',         icon: Droplets,    group: 'Trials' },
-    { key: 'defaults', label: 'Trial Defaults',    icon: Target,      group: 'Trials' },
-    { key: 'targets',  label: 'Performance Targets', icon: TrendingUp, group: 'Trials' },
-    { key: 'tpm',      label: 'TPM Thresholds',    icon: AlertCircle, group: 'System' },
-    { key: 'fryers',   label: 'Default Fryers',    icon: Settings,    group: 'System' },
-    { key: 'reporting',label: 'Reporting',         icon: RefreshCw,   group: 'System' },
+    { key: 'reasons',       label: 'Reason Codes',       icon: CheckCircle, group: 'Trials' },
+    { key: 'foodcategories',label: 'Food Categories',    icon: UtensilsCrossed, group: 'Trials' },
+    { key: 'brackets',      label: 'Volume Brackets',    icon: BarChart3,   group: 'Trials' },
+    { key: 'oiltypes',      label: 'Oil Types',          icon: Droplets,    group: 'Trials' },
+    { key: 'defaults',      label: 'Trial Defaults',     icon: Target,      group: 'Trials' },
+    { key: 'targets',       label: 'Performance Targets',icon: TrendingUp,  group: 'Trials' },
+    { key: 'tpm',           label: 'TPM Thresholds',     icon: AlertCircle, group: 'System' },
+    { key: 'fryers',        label: 'Default Fryers',     icon: Settings,    group: 'System' },
+    { key: 'reporting',     label: 'Reporting',          icon: RefreshCw,   group: 'System' },
   ];
 
   return (
@@ -3256,9 +3268,10 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
         <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
 
           {activeTab === 'reasons' && (() => {
-            const ReasonTable = ({ title, titleColor, titleBg, type }) => {
-              const [newLabel, setNewLabel] = useState('');
-              const filtered = [...trialReasons].filter(r => r.type === type).sort((a, b) => a.label.localeCompare(b.label));
+            const successReasons = [...trialReasons].filter(r => r.type === 'successful').sort((a, b) => a.label.localeCompare(b.label));
+            const failReasons = [...trialReasons].filter(r => r.type === 'unsuccessful').sort((a, b) => a.label.localeCompare(b.label));
+
+            const ReasonList = ({ reasons, accentColor, accentBg, type, newLabel, setNewLabel }) => {
               const handleAdd = () => {
                 if (!newLabel.trim()) return;
                 const key = newLabel.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -3266,40 +3279,105 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
                 setNewLabel('');
               };
               return (
-                <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                  <div style={{ padding: '8px 12px', background: titleBg, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: titleColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>{filtered.length}</span>
-                  </div>
-                  {filtered.map((r, i) => (
-                    <div key={r.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{r.label}</span>
-                      <button onClick={() => removeReason(r.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                        <X size={14} color="#cbd5e1" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {reasons.length === 0 && (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #e2e8f0' }}>
+                      No reasons yet — add one below
+                    </div>
+                  )}
+                  {reasons.map(r => (
+                    <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: accentColor, flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: '13px', color: '#1f2937' }}>{r.label}</span>
+                      <button onClick={() => removeReason(r.key)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', color: '#cbd5e1' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}>
+                        <X size={13} />
                       </button>
                     </div>
                   ))}
-                  <div style={{ padding: '8px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
-                    <input style={{ ...inputStyle, flex: 1 }} placeholder="ADD REASON" value={newLabel}
-                      onChange={e => setNewLabel(e.target.value.toUpperCase())}
-                      onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <input
+                      style={{ ...inputStyle, flex: 1, background: accentBg, borderColor: 'transparent' }}
+                      placeholder="New reason..."
+                      value={newLabel}
+                      onChange={e => setNewLabel(e.target.value)}
+                      onFocus={e => { e.target.style.borderColor = accentColor; e.target.style.background = 'white'; }}
+                      onBlur={e => { e.target.style.borderColor = 'transparent'; e.target.style.background = accentBg; }}
                       onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
                     />
-                    <button onClick={handleAdd} style={{ padding: '0 14px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+                    <button onClick={handleAdd} style={{ padding: '0 14px', background: accentColor, color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      Add
+                    </button>
                   </div>
                 </div>
               );
             };
+
+            const [newSuccess, setNewSuccess] = useState('');
+            const [newFail, setNewFail] = useState('');
+
             return (
               <div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>When a trial outcome is recorded, the BDM selects a reason. Helps track why trials succeed or fail.</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                  <ReasonTable title="Successful Reasons" titleColor="#065f46" titleBg="#dcfce7" type="successful" />
-                  <ReasonTable title="Unsuccessful Reasons" titleColor="#991b1b" titleBg="#fee2e2" type="unsuccessful" />
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>
+                  When a BDM records a trial outcome, they select a reason. These options drive outcome reporting.
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Successful</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '2px' }}>{successReasons.length}</span>
+                    </div>
+                    <ReasonList reasons={successReasons} accentColor="#10b981" accentBg="#f0fdf4" type="successful" newLabel={newSuccess} setNewLabel={setNewSuccess} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} />
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unsuccessful</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '2px' }}>{failReasons.length}</span>
+                    </div>
+                    <ReasonList reasons={failReasons} accentColor="#ef4444" accentBg="#fef2f2" type="unsuccessful" newLabel={newFail} setNewLabel={setNewFail} />
+                  </div>
                 </div>
               </div>
             );
           })()}
+
+          {activeTab === 'foodcategories' && (
+            <div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>
+                The "What are you frying?" options shown to staff when recording TPM readings.
+              </div>
+              <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 40px', background: '#f8fafc', padding: '6px 12px', borderBottom: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b' }}>CATEGORY</span>
+                  <span />
+                </div>
+                {foodTypeOptions.length === 0 && (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '12px' }}>No categories yet</div>
+                )}
+                {foodTypeOptions.map((f, i) => (
+                  <div key={f} style={{ display: 'grid', gridTemplateColumns: '1fr 40px', alignItems: 'center', padding: '8px 12px', borderBottom: i < foodTypeOptions.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{f}</span>
+                    <button onClick={() => removeFoodType(f)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', justifyContent: 'center', color: '#cbd5e1' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input style={{ ...inputStyle, flex: 1 }} placeholder="e.g. Chips/Fries" value={newFoodType}
+                  onChange={e => setNewFoodType(e.target.value)}
+                  onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  onKeyDown={e => e.key === 'Enter' && addFoodType()} />
+                <button onClick={addFoodType} style={{ padding: '8px 16px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+              </div>
+            </div>
+          )}
 
           {activeTab === 'brackets' && (
             <div>
@@ -3477,6 +3555,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
   const [dataLoaded, setDataLoaded] = useState(false);
   const [tpmReadings, setTpmReadings] = useState([]);
   const [oilTypeOptions, setOilTypeOptions] = useState([]);
+  const [foodTypeOptions, setFoodTypeOptions] = useState([]);
   const [systemSettings, setSystemSettings] = useState({
     warningThreshold: 18, criticalThreshold: 24, defaultFryerCount: 4,
     reportFrequency: 'weekly', reminderDays: 7, trialDuration: 7,
@@ -3530,6 +3609,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
         const s = mapSystemSettings(settingsRows[0]);
         setSystemSettings(s);
         setOilTypeOptions(s.oilTypeOptions || []);
+        setFoodTypeOptions(s.foodTypeOptions?.length ? s.foodTypeOptions : DEFAULT_FOOD_TYPES);
       }
       setDataLoaded(true);
     };
@@ -3683,6 +3763,23 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
     }
   }, []);
 
+  const dbSetFoodTypeOptions = useCallback((updater) => {
+    if (typeof updater === 'function') {
+      setFoodTypeOptions(prev => {
+        const next = updater(prev);
+        supabase.from('system_settings').update({ food_type_options: next }).eq('id', 1).then(({ error }) => {
+          if (error) console.error('Failed to save food type options:', error.message);
+        });
+        return next;
+      });
+    } else {
+      setFoodTypeOptions(updater);
+      supabase.from('system_settings').update({ food_type_options: updater }).eq('id', 1).then(({ error }) => {
+        if (error) console.error('Failed to save food type options:', error.message);
+      });
+    }
+  }, []);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
   // currentView controls which role interface is shown in the role switcher.
@@ -3723,7 +3820,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
     switch (activeSection) {
       case 'oil-types': return <OilTypeConfig oilTypes={oilTypes} setOilTypes={dbSetOilTypes} competitors={competitors} oilTypeOptions={oilTypeOptions} />;
       case 'competitors': return <CompetitorManagement competitors={competitors} setCompetitors={dbSetCompetitors} oilTypes={oilTypes} setOilTypes={dbSetOilTypes} oilTypeOptions={oilTypeOptions} />;
-      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} pendingTrialId={pendingTrialId} clearPendingTrialId={() => setPendingTrialId(null)} />;
+      case 'trials': return <TrialManagement venues={venues} setVenues={dbSetVenues} rawSetVenues={setVenues} oilTypes={oilTypes} competitors={competitors} users={users} groups={groups} trialReasons={trialReasons} volumeBrackets={volumeBrackets} isDesktop={isDesktop} tpmReadings={tpmReadings} setTpmReadings={dbSetTpmReadings} dateFrom={trialsDateFrom} setDateFrom={setTrialsDateFrom} dateTo={trialsDateTo} setDateTo={setTrialsDateTo} allTime={trialsAllTime} setAllTime={setTrialsAllTime} currentUser={currentUser} pendingTrialId={pendingTrialId} clearPendingTrialId={() => setPendingTrialId(null)} foodTypeOptions={foodTypeOptions} />;
       case 'trial-analysis': return (() => {
         const allTrials = venues.filter(v => v.status === 'trial-only');
         const statuses = [
@@ -4544,7 +4641,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
       case 'users': return <UserManagement users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} venues={venues} groups={groups} currentUser={currentUser} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} isDesktop={isDesktop} />;
       case 'permissions': return <PermissionsAccess users={users} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} />;
       case 'onboarding': return <OnboardingFlow oilTypes={oilTypes} venues={venues} groups={groups} users={users} setVenues={dbSetVenues} setGroups={dbSetGroups} setUsers={dbSetUsers} defaultFryerCount={systemSettings.defaultFryerCount} />;
-      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} />;
+      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} foodTypeOptions={foodTypeOptions} setFoodTypeOptions={dbSetFoodTypeOptions} />;
       default: return (
         <div>
           <SectionHeader icon={BarChart3} title="Admin Overview" />
