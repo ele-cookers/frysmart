@@ -2616,10 +2616,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     // Name column fixed; narrower for price/date, wider for status
     const NAME_W = '120px';
     const COL_W = '60px';    // VOL, OIL×2 — small badge content
-    const SUPP_W = '100px';  // Supplier — wider
+    const SUPP_W = '78px';   // Supplier
     const PRICE_W = '52px';  // Current $/L, Offered $/L
     const DATE_W = '58px';   // Start, End
-    const STATUS_W = '74px'; // Status
+    const STATUS_W = '60px'; // Status
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -3633,7 +3633,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
-                        <col style={{ width: '53px' }} />  {/* Day */}
+                        <col style={{ width: '48px' }} />  {/* Day */}
                         <col style={{ width: '92px' }} />  {/* Date */}
                         <col style={{ width: '60px' }} />  {/* TPM */}
                         <col style={{ width: '60px' }} />  {/* Set°C */}
@@ -3642,7 +3642,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <col style={{ width: '82px' }} />  {/* Fill Type */}
                         <col style={{ width: '46px' }} />  {/* Litres */}
                         <col style={{ width: '82px' }} />  {/* Filtered */}
-                        <col style={{ width: '118px' }} /> {/* Food */}
+                        <col style={{ width: '123px' }} /> {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
