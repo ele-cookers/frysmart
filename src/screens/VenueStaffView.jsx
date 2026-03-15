@@ -2027,9 +2027,9 @@ const SummaryView = ({ readings, isWide }) => {
   const daysRecorded = last30Days.filter(ds => (grouped[ds] || []).length > 0).length;
   const complianceRate = Math.round((daysRecorded / 30) * 100);
 
-  const criticalCount = allActive.filter(r => r.tpmValue >= 24).length;
-  const warningCount = allActive.filter(r => r.tpmValue >= 18 && r.tpmValue < 24).length;
-  const goodCount = allActive.filter(r => r.tpmValue < 18).length;
+  const criticalCount = allActive.filter(r => r.tpmValue >= _tpmThresholds.critical).length;
+  const warningCount = allActive.filter(r => r.tpmValue >= _tpmThresholds.warning && r.tpmValue < _tpmThresholds.critical).length;
+  const goodCount = allActive.filter(r => r.tpmValue < _tpmThresholds.warning).length;
   const criticalRate = Math.round((criticalCount / allActive.length) * 100);
   const avgTPM = (allActive.reduce((s, r) => s + r.tpmValue, 0) / allActive.length).toFixed(1);
 
@@ -2057,7 +2057,7 @@ const SummaryView = ({ readings, isWide }) => {
         if (recs.some(r => (r.oilAge === 1 || r.oilAge === '1')) && i > 0) {
           let reached = false;
           for (let j = i - 1; j >= 0; j--) {
-            if (fryerDates[sortedDates[j]].some(r => r.tpmValue >= 18)) { reached = true; break; }
+            if (fryerDates[sortedDates[j]].some(r => r.tpmValue >= _tpmThresholds.warning)) { reached = true; break; }
           }
           if (!reached) count++;
         }
@@ -2080,7 +2080,7 @@ const SummaryView = ({ readings, isWide }) => {
       for (let i = 0; i < sortedDates.length; i++) {
         const recs = fryerDates[sortedDates[i]];
         if (recs.some(r => (r.oilAge === 1 || r.oilAge === '1')) && i > 0) {
-          if (fryerDates[sortedDates[i - 1]].some(r => r.tpmValue >= 24)) count++;
+          if (fryerDates[sortedDates[i - 1]].some(r => r.tpmValue >= _tpmThresholds.critical)) count++;
         }
       }
     });
@@ -2101,7 +2101,7 @@ const SummaryView = ({ readings, isWide }) => {
     if (!foodTypeData[r.foodType]) foodTypeData[r.foodType] = { count: 0, totalTPM: 0, criticalCount: 0 };
     foodTypeData[r.foodType].count++;
     foodTypeData[r.foodType].totalTPM += r.tpmValue;
-    if (r.tpmValue >= 24) foodTypeData[r.foodType].criticalCount++;
+    if (r.tpmValue >= _tpmThresholds.critical) foodTypeData[r.foodType].criticalCount++;
   });
   const foodTypeAnalysis = Object.entries(foodTypeData).map(([type, d]) => ({
     type, count: d.count, avgTPM: (d.totalTPM / d.count).toFixed(1), criticalRate: Math.round((d.criticalCount / d.count) * 100)
@@ -2418,7 +2418,7 @@ const DashboardView = ({ readings, isWide }) => {
   const totalRecs = allActive.length;
   const filteredTotal = allActive.filter(r => r.filtered).length;
   const filteringRate = totalRecs > 0 ? (filteredTotal / totalRecs) * 100 : 0;
-  const criticalReadings = allActive.filter(r => r.tpmValue >= 24).length;
+  const criticalReadings = allActive.filter(r => r.tpmValue >= _tpmThresholds.critical).length;
   const criticalPct = totalRecs > 0 ? (criticalReadings / totalRecs) * 100 : 0;
   const avgTPMVal = totalRecs > 0 ? allActive.reduce((s, r) => s + r.tpmValue, 0) / totalRecs : 0;
   const tempRecsHabits = allActive.filter(r => r.setTemperature && r.actualTemperature);

@@ -27,7 +27,7 @@ const displayDate = (dateStr) => {
 
 const calcTrialWeeklyAvg = (venueId, trialStartDate, readings, trialEndDate) => {
   if (!venueId || !trialStartDate || !readings) return null;
-  const fills = readings.filter(r => r.venueId === venueId && r.oilAge === 1 && r.litresFilled > 0);
+  const fills = readings.filter(r => r.venueId === venueId && r.oilAge === 1 && r.litresFilled > 0 && r.readingDate >= trialStartDate);
   if (fills.length === 0) return null;
   const totalLitres = fills.reduce((sum, r) => sum + r.litresFilled, 0);
   const start = new Date(trialStartDate + 'T00:00:00');
