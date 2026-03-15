@@ -1786,10 +1786,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {cardOilRow(venue)}
         {pricingRow(venue)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={isDesktop ? btnPrimary('#10b981') : btnMobileGreen}><Trophy size={13} /> Won</button>
-          <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={isDesktop ? btnPrimary('#ef4444') : btnMobileRed}><XCircle size={13} /> Lost</button>
-        </div>
+        {isDesktop ? (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={btnPrimary('#10b981')}><Trophy size={13} /> Won</button>
+            <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={btnPrimary('#ef4444')}><XCircle size={13} /> Lost</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}><Pencil size={13} /> Manage</button>
+            <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={btnMobileGreen}><Trophy size={13} /> Won</button>
+            <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={btnMobileRed}><XCircle size={13} /> Lost</button>
+          </div>
+        )}
       </div>
     );
   };
@@ -2845,6 +2853,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return (
                   <div key={v.id} onClick={() => setManageVenueId(v.id)} style={cardBase(sc.accent)}>
                     {cardHeader(v)}
+                    {/* Mobile-only: status badge + date context since this is a mixed-status list */}
+                    {!isDesktop && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                        <TrialStatusBadge status={v.trialStatus} />
+                        {v.trialStartDate && (
+                          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>
+                            Started {displayDate(v.trialStartDate)}
+                            {v.trialEndDate ? ` · Ended ${displayDate(v.trialEndDate)}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {cardOilRow(v)}
                     {pricingRow(v, isWonOrAccepted)}
                     {dateRow([
