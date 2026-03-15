@@ -4512,12 +4512,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {/* ── Bottom: Internal Use section ── */}
                   <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
-                    {/* Header row — type on left, edit button on right */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Type</span>
-                        {typeBadge}
-                      </div>
+                    {/* Header row — edit button on right */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
                       <button
                         onClick={() => { if (!summaryEditMode) setSummaryFindingsText(trialFindings); setSummaryEditMode(prev => !prev); }}
                         style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', color: summaryEditMode ? '#dc2626' : '#1a428a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -4526,16 +4522,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </button>
                     </div>
 
-                    {/* Metadata grid — 7 fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 20px' }}>
+                    {/* Metadata grid — 4 columns, 2 rows */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px 20px' }}>
                       {[
+                        { label: 'Type', value: typeBadge },
                         { label: 'Status', value: <TrialStatusBadge status={venue.trialStatus} /> },
                         { label: 'Decision date', value: venue.outcomeDate ? displayDate(venue.outcomeDate) : null },
                         { label: 'Days to decision', value: daysToDecision !== null ? `${daysToDecision} days` : null },
                         { label: 'Sold price / L', value: venue.soldPricePerLitre ? `$${parseFloat(venue.soldPricePerLitre).toFixed(2)}` : null },
+                        { label: 'Outcome reason', value: reasonLabel || null },
                         { label: 'Customer code', value: venue.customerCode || null },
                         { label: 'Days to cust code', value: daysToCustCode !== null ? `${daysToCustCode} days` : null },
-                        { label: 'Outcome reason', value: reasonLabel || null },
                       ].map(({ label, value }) => (
                         <div key={label}>
                           <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{label}</div>
