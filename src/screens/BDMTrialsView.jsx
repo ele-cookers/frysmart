@@ -3124,64 +3124,24 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {/* Inline action buttons */}
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
             {venue.trialStatus === 'pipeline' && (
-              <button onClick={() => { if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }} style={{
-                padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><Play size={12} /> Start</button>
+              <button className="mhdr-btn mhdr-btn-blue" onClick={() => { if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }}><Play size={12} /> Start</button>
             )}
             {venue.trialStatus === 'active' && (<>
-              <button onClick={() => setReadingModal(venue)} style={{
-                padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><ClipboardList size={12} /> Log</button>
-              <button onClick={() => setEndTrialModal(venue)} style={{
-                padding: '5px 10px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: '#475569', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><Check size={12} /> End</button>
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) handlePushBack(venue.id, 'pipeline'); }} style={{
-                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><RotateCcw size={10} /> Back to Pipeline</button>
+              <button className="mhdr-btn mhdr-btn-blue" onClick={() => setReadingModal(venue)}><ClipboardList size={12} /> Log</button>
+              <button className="mhdr-btn mhdr-btn-ghost" onClick={() => setEndTrialModal(venue)}><Check size={12} /> End</button>
+              <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) handlePushBack(venue.id, 'pipeline'); }}><RotateCcw size={10} /> Back to Pipeline</button>
             </>)}
             {venue.trialStatus === 'pending' && (<>
-              <button onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })} style={{
-                padding: '5px 10px', background: '#10b981', border: 'none', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><Trophy size={12} /> Successful</button>
-              <button onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })} style={{
-                padding: '5px 10px', background: '#ef4444', border: 'none', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><XCircle size={12} /> Unsuccessful</button>
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'active'); }} style={{
-                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><RotateCcw size={10} /> Back to Active</button>
+              <button className="mhdr-btn mhdr-btn-green" onClick={() => setCloseTrialModal({ venue, outcome: 'successful' })}><Trophy size={12} /> Successful</button>
+              <button className="mhdr-btn mhdr-btn-red" onClick={() => setCloseTrialModal({ venue, outcome: 'unsuccessful' })}><XCircle size={12} /> Unsuccessful</button>
+              <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'active'); }}><RotateCcw size={10} /> Back to Active</button>
             </>)}
             {venue.trialStatus === 'accepted' && (<>
-              <button onClick={() => setCustCodeModal(venue)} style={{
-                padding: '5px 10px', background: '#1a428a', border: 'none', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: 'white', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><Award size={12} /> Enter Cust Code</button>
-              <button onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pending?`)) handlePushBack(venue.id, 'pending'); }} style={{
-                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><RotateCcw size={10} /> Back to Pending</button>
+              <button className="mhdr-btn mhdr-btn-blue" onClick={() => setCustCodeModal(venue)}><Award size={12} /> Enter Cust Code</button>
+              <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pending?`)) handlePushBack(venue.id, 'pending'); }}><RotateCcw size={10} /> Back to Pending</button>
             </>)}
             {venue.trialStatus === 'unsuccessful' && (
-              <button onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }} style={{
-                padding: '5px 10px', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: '6px',
-                fontSize: '11px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px',
-              }}><RotateCcw size={10} /> Reopen</button>
+              <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }}><RotateCcw size={10} /> Reopen</button>
             )}
           </div>
         </div>
@@ -3354,10 +3314,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {/* ── Right: notes + goals ── */}
                       <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px', paddingBottom: isDesktop ? '0' : '20px', marginBottom: isDesktop ? '0' : '20px', borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8' }}>
                         {sectionLabel('What do we know going into this trial?')}
-                        {initialNote
-                          ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 20px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                          : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 16px 0' }}>No notes entered.</p>
-                        }
+                        <div style={{ background: '#f8fafc', border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '20px', minHeight: '44px' }}>
+                          {initialNote
+                            ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                            : <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No notes entered.</p>
+                          }
+                        </div>
                         {sectionLabel('Trial goals')}
                         {parsedGoals.length > 0 ? (
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -4347,10 +4309,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {/* Right: what we know + findings */}
                     <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px' }}>
                       {rSecLabel('What do we know going into this trial?', 0)}
-                      {initialNote
-                        ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{initialNote}</p>
-                        : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No notes entered.</p>
-                      }
+                      <div style={{ background: '#f8fafc', border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '4px', minHeight: '44px' }}>
+                        {initialNote
+                          ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{initialNote}</p>
+                          : <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No notes entered.</p>
+                        }
+                      </div>
                       {rSecLabel('Trial Findings')}
                       {summaryEditMode ? (
                         <>
@@ -4375,9 +4339,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </button>
                         </>
                       ) : (
-                        trialFindings
-                          ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
-                          : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No trial findings recorded.</p>
+                        <div style={{ background: '#f8fafc', border: '1px solid #e8edf2', borderRadius: '8px', padding: '10px 12px', marginBottom: '4px', minHeight: '44px' }}>
+                          {trialFindings
+                            ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
+                            : <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No trial findings recorded.</p>
+                          }
+                        </div>
                       )}
                     </div>
                   </div>
@@ -4976,6 +4943,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-row-btn.green:hover { background: #10b981; color: white; border-color: #10b981; }
         .bdm-row-btn.red { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
         .bdm-row-btn.red:hover { background: #ef4444; color: white; border-color: #ef4444; }
+        .mhdr-btn { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.15s; }
+        .mhdr-btn-green { background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534; }
+        .mhdr-btn-green:hover { background: #10b981; color: white; border-color: #10b981; }
+        .mhdr-btn-red { background: #fef2f2; border: 1.5px solid #fecaca; color: #991b1b; }
+        .mhdr-btn-red:hover { background: #ef4444; color: white; border-color: #ef4444; }
+        .mhdr-btn-blue { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; }
+        .mhdr-btn-blue:hover { background: #1a428a; color: white; border-color: #1a428a; }
+        .mhdr-btn-ghost { background: transparent; border: 1px solid #e2e8f0; color: #94a3b8; }
+        .mhdr-btn-ghost:hover { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
         .bdm-undo-btn { padding: 4px 8px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; background: white; transition: all 0.15s; }
         .bdm-undo-btn:hover { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
       `}</style>
