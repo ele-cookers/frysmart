@@ -4472,6 +4472,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const maxTPM = tpmVals.length > 0 ? Math.max(...tpmVals) : null;
                       const avgTPM = tpmVals.length > 0 ? Math.round(tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length * 10) / 10 : null;
 
+                      const actualTempVals = frdgs
+                        .filter(r => r.actualTemperature != null && String(r.actualTemperature) !== '')
+                        .map(r => parseFloat(r.actualTemperature));
+                      const minActualTemp = actualTempVals.length > 0 ? Math.round(Math.min(...actualTempVals)) : null;
+                      const maxActualTemp = actualTempVals.length > 0 ? Math.round(Math.max(...actualTempVals)) : null;
+
                       const varVals = frdgs
                         .filter(r => r.setTemperature != null && r.actualTemperature != null && String(r.setTemperature) !== '' && String(r.actualTemperature) !== '')
                         .map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
@@ -4494,13 +4500,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const maxLife = lifespans.length > 0 ? Math.max(...lifespans) : null;
                       const avgLife = lifespans.length > 0 ? Math.round(lifespans.reduce((a, b) => a + b, 0) / lifespans.length) : null;
 
-                      const minTempVar = varVals.length > 0 ? Math.round(Math.min(...varVals) * 10) / 10 : null;
-                      const maxTempVar = varVals.length > 0 ? Math.round(Math.max(...varVals) * 10) / 10 : null;
-
-                      return { fn, fryerVol, freshCount, freshLitres, topUpCount, topUpLitres, totalLitres, minTPM, maxTPM, avgTPM, minTempVar, maxTempVar, avgTempVar, minLife, maxLife, avgLife };
+                      return { fn, fryerVol, freshCount, freshLitres, topUpCount, topUpLitres, totalLitres, minTPM, maxTPM, avgTPM, minActualTemp, maxActualTemp, avgTempVar, minLife, maxLife, avgLife };
                     });
 
-                    const pfTh = (extra = {}) => ({ padding: '4px 6px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', whiteSpace: 'nowrap', ...extra });
+                    const pfTh = (extra = {}) => ({ padding: '7px 6px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', whiteSpace: 'nowrap', ...extra });
                     const pfTd = (hasVal, extra = {}) => ({ padding: '5px 6px', textAlign: 'center', fontSize: '11px', borderBottom: '1px solid #f1f5f9', color: hasVal ? '#374151' : '#cbd5e1', ...extra });
                     const pfN = (v, d = 0, suffix = '') => v != null ? `${d > 0 ? Number(v).toFixed(d) : Math.round(v)}${suffix}` : '—';
                     const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : '—';
@@ -4518,7 +4521,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 <th rowSpan={2} style={{ ...pfTh({ verticalAlign: 'bottom', borderBottom: '1px solid #e2e8f0' }) }}>Vol</th>
                                 <th colSpan={5} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Fills</th>
                                 <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>TPM</th>
-                                <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Temp Variance</th>
+                                <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Temp</th>
                                 <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Oil Lifespan (days)</th>
                               </tr>
                               <tr style={{ background: '#f8fafc' }}>
@@ -4532,7 +4535,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Avg</th>
                                 <th style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }) }}>Min</th>
                                 <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Max</th>
-                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Avg</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Avg Var</th>
                                 <th style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }) }}>Min</th>
                                 <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Max</th>
                                 <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Avg</th>
@@ -4551,8 +4554,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   <td style={{ ...pfTd(row.minTPM != null, { borderLeft: '1px solid #f0f4f8' }), color: tpmCol(row.minTPM), fontWeight: row.minTPM != null ? '600' : '400' }}>{pfN(row.minTPM)}</td>
                                   <td style={{ ...pfTd(row.maxTPM != null), color: tpmCol(row.maxTPM), fontWeight: row.maxTPM != null ? '600' : '400' }}>{pfN(row.maxTPM)}</td>
                                   <td style={{ ...pfTd(row.avgTPM != null), color: tpmCol(row.avgTPM), fontWeight: row.avgTPM != null ? '700' : '400' }}>{pfN(row.avgTPM)}</td>
-                                  <td style={{ ...pfTd(row.minTempVar != null, { borderLeft: '1px solid #f0f4f8' }), color: varCol(row.minTempVar), fontWeight: row.minTempVar != null ? '600' : '400' }}>{pfN(row.minTempVar, 1, '°')}</td>
-                                  <td style={{ ...pfTd(row.maxTempVar != null), color: varCol(row.maxTempVar), fontWeight: row.maxTempVar != null ? '600' : '400' }}>{pfN(row.maxTempVar, 1, '°')}</td>
+                                  <td style={pfTd(row.minActualTemp != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.minActualTemp, 0, '°')}</td>
+                                  <td style={pfTd(row.maxActualTemp != null)}>{pfN(row.maxActualTemp, 0, '°')}</td>
                                   <td style={{ ...pfTd(row.avgTempVar != null), color: varCol(row.avgTempVar), fontWeight: row.avgTempVar != null ? '700' : '400' }}>{pfN(row.avgTempVar, 1, '°')}</td>
                                   <td style={pfTd(row.minLife != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.minLife)}</td>
                                   <td style={pfTd(row.maxLife != null)}>{pfN(row.maxLife)}</td>
