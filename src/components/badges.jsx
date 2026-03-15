@@ -121,7 +121,7 @@ export const CompetitorPill = ({ comp, table }) => {
   return (
     <span style={{
       display: 'inline-block', padding: '2px 8px', borderRadius: '6px',
-      background: bgColor, color: textColor,
+      background: bgColor, color: textColor, border: `1px solid ${color}40`,
       fontSize: '10px', fontWeight: '600', letterSpacing: '0.2px',
       ...(table ? {
         width: '104px', whiteSpace: 'nowrap', overflow: 'hidden',
