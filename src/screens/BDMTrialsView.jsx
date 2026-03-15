@@ -4136,6 +4136,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     })
                     .filter(Boolean)
                     .join('\n')
+                : '';
 
               // Outcome notes: [Successful DATE] / [Unsuccessful DATE] lines (from Close as Successful/Unsuccessful modal)
               // — shown in the Internal Use section, not Trial Findings
