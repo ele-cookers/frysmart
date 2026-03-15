@@ -3625,10 +3625,10 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
         const next = updater(prev);
         const prevKeys = new Set(prev.map(r => r.key));
         const added = next.filter(r => !prevKeys.has(r.key));
-        added.forEach(r => { supabase.from('trial_reasons').insert(r); });
+        added.forEach(r => { supabase.from('trial_reasons').insert(r).then(({ error }) => { if (error) console.error('Failed to insert trial reason:', error); }); });
         const nextKeys = new Set(next.map(r => r.key));
         const removed = prev.filter(r => !nextKeys.has(r.key));
-        removed.forEach(r => { supabase.from('trial_reasons').delete().eq('key', r.key); });
+        removed.forEach(r => { supabase.from('trial_reasons').delete().eq('key', r.key).then(({ error }) => { if (error) console.error('Failed to delete trial reason:', error); }); });
         return next;
       });
     } else { setTrialReasons(updater); }
@@ -3640,10 +3640,10 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
         const next = updater(prev);
         const prevKeys = new Set(prev.map(b => b.key));
         const added = next.filter(b => !prevKeys.has(b.key));
-        added.forEach(b => { supabase.from('volume_brackets').insert(b); });
+        added.forEach(b => { supabase.from('volume_brackets').insert(b).then(({ error }) => { if (error) console.error('Failed to insert volume bracket:', error); }); });
         const nextKeys = new Set(next.map(b => b.key));
         const removed = prev.filter(b => !nextKeys.has(b.key));
-        removed.forEach(b => { supabase.from('volume_brackets').delete().eq('key', b.key); });
+        removed.forEach(b => { supabase.from('volume_brackets').delete().eq('key', b.key).then(({ error }) => { if (error) console.error('Failed to delete volume bracket:', error); }); });
         return next;
       });
     } else { setVolumeBrackets(updater); }
