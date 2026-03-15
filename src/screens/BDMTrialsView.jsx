@@ -4287,62 +4287,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
                           : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No trial findings recorded.</p>
                       )}
-                      {/* ── Fryer oil lifespan table ── */}
-                      {(() => {
-                        const freshTrialFills = allTrialReadings
-                          .filter(r => Number(r.oilAge) === 1)
-                          .sort((a, b) => a.readingDate.localeCompare(b.readingDate));
-                        if (freshTrialFills.length === 0) return null;
-                        const fryerGaps = {};
-                        freshTrialFills.forEach(r => {
-                          const fn = r.fryerNumber;
-                          if (!fryerGaps[fn]) fryerGaps[fn] = [];
-                          fryerGaps[fn].push(r.readingDate);
-                        });
-                        const rows = Object.entries(fryerGaps)
-                          .map(([fn, dates]) => {
-                            if (dates.length < 2) return { fryer: Number(fn), min: null, max: null, avg: null };
-                            const gaps = [];
-                            for (let i = 1; i < dates.length; i++) {
-                              const prev = new Date(dates[i - 1] + 'T00:00:00');
-                              const curr = new Date(dates[i] + 'T00:00:00');
-                              gaps.push(Math.round((curr - prev) / 86400000));
-                            }
-                            return {
-                              fryer: Number(fn),
-                              min: Math.min(...gaps),
-                              max: Math.max(...gaps),
-                              avg: Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length),
-                            };
-                          })
-                          .sort((a, b) => a.fryer - b.fryer);
-                        if (rows.length === 0) return null;
-                        return (
-                          <>
-                            <hr style={{ border: 'none', borderTop: '1px solid #f0f4f8', margin: '16px 0 14px 0' }} />
-                            {rSecLabel('Oil Lifespan Per Fryer (days between fresh fills)')}
-                            <table style={{ borderCollapse: 'collapse', fontSize: '11px', width: '100%' }}>
-                              <thead>
-                                <tr>
-                                  {['Fryer', 'Min', 'Max', 'Avg'].map(h => (
-                                    <th key={h} style={{ padding: '4px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: h === 'Fryer' ? 'left' : 'center', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {rows.map((row, i) => (
-                                  <tr key={row.fryer} style={{ background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
-                                    <td style={{ padding: '5px 10px', color: '#374151', fontWeight: '600', borderBottom: '1px solid #f1f5f9' }}>Fryer {row.fryer}</td>
-                                    <td style={{ padding: '5px 10px', color: row.min != null ? '#374151' : '#cbd5e1', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.min != null ? row.min : '—'}</td>
-                                    <td style={{ padding: '5px 10px', color: row.max != null ? '#374151' : '#cbd5e1', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.max != null ? row.max : '—'}</td>
-                                    <td style={{ padding: '5px 10px', color: row.avg != null ? '#374151' : '#cbd5e1', textAlign: 'center', borderBottom: '1px solid #f1f5f9', fontWeight: row.avg != null ? '600' : '400' }}>{row.avg != null ? row.avg : '—'}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </>
-                        );
-                      })()}
                     </div>
                   </div>
 
@@ -4495,6 +4439,105 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {/* ── Second divider ── */}
                   <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
+
+                  {/* ── Per-Fryer Trial Stats ── */}
+                  {allTrialReadings.length > 0 && (() => {
+                    const fc2 = Math.max(1, venue.fryerCount || 1);
+                    const pfRows = Array.from({ length: fc2 }, (_, i) => {
+                      const fn = i + 1;
+                      const fryerVol = (venue.fryerVolumes || {})[fn] ?? (venue.fryerVolumes || {})[String(fn)];
+                      const frdgs = allTrialReadings.filter(r => (Number(r.fryerNumber) || 1) === fn);
+
+                      const freshRdgs = frdgs.filter(r => Number(r.oilAge) === 1);
+                      const freshCount = freshRdgs.length;
+                      const freshLitres = freshRdgs.reduce((s, r) => s + (parseFloat(r.litresFilled) || 0), 0);
+
+                      const topUpRdgs = frdgs.filter(r => Number(r.oilAge) > 1 && (parseFloat(r.litresFilled) || 0) > 0);
+                      const topUpCount = topUpRdgs.length;
+                      const topUpLitres = topUpRdgs.reduce((s, r) => s + (parseFloat(r.litresFilled) || 0), 0);
+                      const totalLitres = freshLitres + topUpLitres;
+
+                      const tpmVals = frdgs.filter(r => parseFloat(r.tpmValue) > 0).map(r => parseFloat(r.tpmValue));
+                      const minTPM = tpmVals.length > 0 ? Math.min(...tpmVals) : null;
+                      const maxTPM = tpmVals.length > 0 ? Math.max(...tpmVals) : null;
+                      const avgTPM = tpmVals.length > 0 ? Math.round(tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length * 10) / 10 : null;
+
+                      const varVals = frdgs
+                        .filter(r => r.setTemperature != null && r.actualTemperature != null && String(r.setTemperature) !== '' && String(r.actualTemperature) !== '')
+                        .map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
+                      const avgTempVar = varVals.length > 0 ? Math.round(varVals.reduce((a, b) => a + b, 0) / varVals.length * 10) / 10 : null;
+
+                      const freshDates = [...freshRdgs].sort((a, b) => a.readingDate.localeCompare(b.readingDate)).map(r => r.readingDate);
+                      const gaps = [];
+                      for (let j = 1; j < freshDates.length; j++) {
+                        const days = Math.round((new Date(freshDates[j] + 'T00:00:00') - new Date(freshDates[j - 1] + 'T00:00:00')) / 86400000);
+                        if (days > 0) gaps.push(days);
+                      }
+                      const minLife = gaps.length > 0 ? Math.min(...gaps) : null;
+                      const maxLife = gaps.length > 0 ? Math.max(...gaps) : null;
+                      const avgLife = gaps.length > 0 ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
+
+                      return { fn, fryerVol, freshCount, freshLitres, topUpCount, topUpLitres, totalLitres, minTPM, maxTPM, avgTPM, avgTempVar, minLife, maxLife, avgLife };
+                    });
+
+                    const pfTh = (extra = {}) => ({ padding: '4px 6px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', whiteSpace: 'nowrap', ...extra });
+                    const pfTd = (hasVal, extra = {}) => ({ padding: '5px 6px', textAlign: 'center', fontSize: '11px', borderBottom: '1px solid #f1f5f9', color: hasVal ? '#374151' : '#cbd5e1', ...extra });
+                    const pfN = (v, d = 0, suffix = '') => v != null ? `${d > 0 ? Number(v).toFixed(d) : v}${suffix}` : '—';
+                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : '—';
+
+                    return (
+                      <>
+                        {rSecLabel('Per-Fryer Trial Stats', 0)}
+                        <div style={{ overflowX: 'auto', marginBottom: '20px' }}>
+                          <table style={{ borderCollapse: 'collapse', fontSize: '11px', minWidth: '820px', width: '100%' }}>
+                            <thead>
+                              <tr style={{ background: '#f8fafc' }}>
+                                <th rowSpan={2} style={{ ...pfTh({ textAlign: 'left', verticalAlign: 'bottom', borderBottom: '1px solid #e2e8f0', paddingLeft: '10px' }) }}>Fryer</th>
+                                <th rowSpan={2} style={{ ...pfTh({ verticalAlign: 'bottom', borderBottom: '1px solid #e2e8f0' }) }}>Vol</th>
+                                <th colSpan={5} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Fills</th>
+                                <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>TPM</th>
+                                <th rowSpan={2} style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', verticalAlign: 'bottom' }) }}>Avg ΔTemp</th>
+                                <th colSpan={3} style={{ ...pfTh({ color: '#64748b', borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e8edf2', paddingBottom: '2px' }) }}>Oil Lifespan (days)</th>
+                              </tr>
+                              <tr style={{ background: '#f8fafc' }}>
+                                <th style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }) }}>Fresh #</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Fresh L</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Top Up #</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Top Up L</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Total L</th>
+                                <th style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }) }}>Min</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Max</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Avg</th>
+                                <th style={{ ...pfTh({ borderLeft: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }) }}>Min</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Max</th>
+                                <th style={{ ...pfTh({ borderBottom: '1px solid #e2e8f0' }) }}>Avg</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pfRows.map((row, i) => (
+                                <tr key={row.fn} style={{ background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
+                                  <td style={{ padding: '5px 10px', color: '#374151', fontWeight: '600', fontSize: '11px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>Fryer {row.fn}</td>
+                                  <td style={pfTd(!!row.fryerVol)}>{row.fryerVol ? `${row.fryerVol}L` : '—'}</td>
+                                  <td style={pfTd(row.freshCount > 0, { borderLeft: '1px solid #f0f4f8' })}>{row.freshCount > 0 ? row.freshCount : '—'}</td>
+                                  <td style={pfTd(row.freshLitres > 0)}>{pfL(row.freshLitres)}</td>
+                                  <td style={pfTd(row.topUpCount > 0)}>{row.topUpCount > 0 ? row.topUpCount : '—'}</td>
+                                  <td style={pfTd(row.topUpLitres > 0)}>{pfL(row.topUpLitres)}</td>
+                                  <td style={{ ...pfTd(row.totalLitres > 0), fontWeight: row.totalLitres > 0 ? '600' : '400' }}>{pfL(row.totalLitres)}</td>
+                                  <td style={pfTd(row.minTPM != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.minTPM, 1)}</td>
+                                  <td style={pfTd(row.maxTPM != null)}>{pfN(row.maxTPM, 1)}</td>
+                                  <td style={{ ...pfTd(row.avgTPM != null), fontWeight: row.avgTPM != null ? '600' : '400' }}>{pfN(row.avgTPM, 1)}</td>
+                                  <td style={pfTd(row.avgTempVar != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.avgTempVar, 1, row.avgTempVar != null ? '°' : '')}</td>
+                                  <td style={pfTd(row.minLife != null, { borderLeft: '1px solid #f0f4f8' })}>{pfN(row.minLife)}</td>
+                                  <td style={pfTd(row.maxLife != null)}>{pfN(row.maxLife)}</td>
+                                  <td style={{ ...pfTd(row.avgLife != null), fontWeight: row.avgLife != null ? '600' : '400' }}>{pfN(row.avgLife)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {/* ── Bottom: Internal Use section ── */}
                   <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
