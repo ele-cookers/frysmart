@@ -3247,10 +3247,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {/* Row 4: Vol bracket | Pre-trial weekly avg | Avg oil lifespan */}
                           {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
                           {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
-                          {fld('Avg oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
+                          {fld('Pre-trial oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
                           {/* Row 5: Start date | End date — desktop only (moved to bottom on mobile), with dashed separator */}
                           {isDesktop && <div style={{ gridColumn: 'span 3', borderTop: '1.5px dashed #e2e8f0', marginTop: '6px' }} />}
-                          {isDesktop && fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
+                          {isDesktop && fld(hasStarted ? 'Start' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                           {isDesktop && fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
                           {isDesktop && <div />}
                         </div>
@@ -3266,7 +3266,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         {/* Start/End dates — mobile only, in fld-style 3-col grid */}
                         {!isDesktop && (venue.trialStartDate || venue.trialEndDate) && (
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px', marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed #e2e8f0' }}>
-                            {fld(hasStarted ? 'Start date' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
+                            {fld(hasStarted ? 'Start' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
                             {fld(hasEnded ? 'End date' : 'Est. end', venue.trialEndDate ? displayDate(venue.trialEndDate) : null)}
                             <div />
                           </div>
@@ -4299,6 +4299,62 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0 0 4px 0', whiteSpace: 'pre-wrap' }}>{trialFindings}</p>
                           : <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0 0 4px 0' }}>No trial findings recorded.</p>
                       )}
+                      {/* ── Fryer oil lifespan table ── */}
+                      {(() => {
+                        const freshTrialFills = allTrialReadings
+                          .filter(r => r.oilAge === 1)
+                          .sort((a, b) => a.readingDate.localeCompare(b.readingDate));
+                        const fryerGaps = {};
+                        freshTrialFills.forEach(r => {
+                          const fn = r.fryerNumber;
+                          if (!fryerGaps[fn]) fryerGaps[fn] = [];
+                          fryerGaps[fn].push(r.readingDate);
+                        });
+                        const rows = Object.entries(fryerGaps)
+                          .map(([fn, dates]) => {
+                            if (dates.length < 2) return null;
+                            const gaps = [];
+                            for (let i = 1; i < dates.length; i++) {
+                              const prev = new Date(dates[i - 1] + 'T00:00:00');
+                              const curr = new Date(dates[i] + 'T00:00:00');
+                              gaps.push(Math.round((curr - prev) / 86400000));
+                            }
+                            return {
+                              fryer: Number(fn),
+                              min: Math.min(...gaps),
+                              max: Math.max(...gaps),
+                              avg: Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length),
+                            };
+                          })
+                          .filter(Boolean)
+                          .sort((a, b) => a.fryer - b.fryer);
+                        if (rows.length === 0) return null;
+                        return (
+                          <>
+                            <hr style={{ border: 'none', borderTop: '1px solid #f0f4f8', margin: '16px 0 14px 0' }} />
+                            {rSecLabel('Oil Lifespan Per Fryer (days between fresh fills)')}
+                            <table style={{ borderCollapse: 'collapse', fontSize: '11px', width: '100%' }}>
+                              <thead>
+                                <tr>
+                                  {['Fryer', 'Min', 'Max', 'Avg'].map(h => (
+                                    <th key={h} style={{ padding: '4px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: h === 'Fryer' ? 'left' : 'center', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {rows.map((row, i) => (
+                                  <tr key={row.fryer} style={{ background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
+                                    <td style={{ padding: '5px 10px', color: '#374151', fontWeight: '600', borderBottom: '1px solid #f1f5f9' }}>Fryer {row.fryer}</td>
+                                    <td style={{ padding: '5px 10px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.min}</td>
+                                    <td style={{ padding: '5px 10px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>{row.max}</td>
+                                    <td style={{ padding: '5px 10px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{row.avg}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -4366,10 +4422,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 <tr style={{ background: '#f8fafc' }}>
                                   <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Comparison</th>
                                   <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Price / L</th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', borderLeft: '1px solid #e2e8f0' }}>Litres/Wk</th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Cost / Wk</th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', borderLeft: '1px solid #e2e8f0' }}>Litres/Yr</th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Cost / Yr</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', borderLeft: '1px solid #e2e8f0' }}>Litres</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Cost</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', borderLeft: '1px solid #e2e8f0' }}>Litres</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Cost</th>
                                 </tr>
                               </thead>
                               <tbody>
