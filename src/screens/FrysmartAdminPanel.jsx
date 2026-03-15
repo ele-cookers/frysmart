@@ -12,7 +12,7 @@ import {
   mapSystemSettings,
   mergeTrialIntoVenue, splitTrialFromVenue,
 } from '../lib/mappers';
-import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Shield, UserPlus, Zap, ClipboardList, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, X, Check, AlertTriangle, Edit3, Settings, Building, Eye, ArrowLeft, Users, Droplets, Archive, Filter, Layers, BarChart3, RefreshCw, AlertCircle, ArrowUpDown, ArrowDown, Trophy, Clock, Target, Calendar, ChevronLeft, ChevronRight, LogOut, RotateCcw, TrendingUp, Copy, CheckCircle, Globe, Shield, UserPlus, Zap, ClipboardList, LayoutDashboard, UtensilsCrossed } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
 import { TrialDetailModal } from '../components/TrialDetailModal';
@@ -3214,10 +3214,11 @@ const ReasonTable = ({ title, titleColor, titleBg, type, trialReasons, setTrialR
   );
 };
 
-const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, setVolumeBrackets, systemSettings, setSystemSettings, oilTypeOptions, setOilTypeOptions }) => {
+const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, setVolumeBrackets, systemSettings, setSystemSettings, oilTypeOptions, setOilTypeOptions, foodTypeOptions, setFoodTypeOptions }) => {
   const [activeTab, setActiveTab] = useState('reasons');
   const [newBracket, setNewBracket] = useState({ label: '', color: '#64748b' });
   const [newOilType, setNewOilType] = useState('');
+  const [newFoodType, setNewFoodType] = useState('');
 
   const addBracket = () => {
     if (!newBracket.label.trim()) return;
@@ -3236,9 +3237,19 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
   };
   const removeOilType = (val) => setOilTypeOptions(prev => prev.filter(b => b !== val));
 
+  const addFoodType = () => {
+    if (!newFoodType.trim()) return;
+    const val = newFoodType.trim();
+    if (foodTypeOptions.includes(val)) return;
+    setFoodTypeOptions(prev => [...prev, val]);
+    setNewFoodType('');
+  };
+  const removeFoodType = (val) => setFoodTypeOptions(prev => prev.filter(b => b !== val));
+
   const tabs = [
     { key: 'reasons',  label: 'Reason Codes',     icon: CheckCircle, group: 'Trials' },
     { key: 'brackets', label: 'Volume Brackets',   icon: BarChart3,   group: 'Trials' },
+    { key: 'foodtypes', label: 'Food Categories',  icon: UtensilsCrossed, group: 'Trials' },
     { key: 'oiltypes', label: 'Oil Types',         icon: Droplets,    group: 'Trials' },
     { key: 'defaults', label: 'Trial Defaults',    icon: Target,      group: 'Trials' },
     { key: 'targets',  label: 'Performance Targets', icon: TrendingUp, group: 'Trials' },
@@ -3283,7 +3294,7 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
           {activeTab === 'reasons' && (
             <div>
               <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>When a trial outcome is recorded, the BDM selects a reason. Helps track why trials succeed or fail.</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <ReasonTable title="Successful Reasons" titleColor="#065f46" titleBg="#dcfce7" type="successful" trialReasons={trialReasons} setTrialReasons={setTrialReasons} />
                 <ReasonTable title="Unsuccessful Reasons" titleColor="#991b1b" titleBg="#fee2e2" type="unsuccessful" trialReasons={trialReasons} setTrialReasons={setTrialReasons} />
               </div>
@@ -3339,6 +3350,30 @@ const TrialSettingsConfig = ({ trialReasons, setTrialReasons, volumeBrackets, se
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input style={{ ...inputStyle, flex: 1 }} placeholder="RICE BRAN" value={newOilType} onChange={e => setNewOilType(e.target.value.toUpperCase())} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} onKeyDown={e => e.key === 'Enter' && addOilType()} />
                 <button onClick={addOilType} style={{ padding: '8px 16px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'foodtypes' && (
+            <div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>What BDMs can select as the food type being fried during a trial. Appears in trial logs and TPM readings.</div>
+              <div style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 40px', background: '#f8fafc', padding: '6px 12px', borderBottom: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b' }}>CATEGORY</span>
+                  <span />
+                </div>
+                {(foodTypeOptions || []).map((b, i) => (
+                  <div key={b} style={{ display: 'grid', gridTemplateColumns: '1fr 40px', alignItems: 'center', padding: '8px 12px', borderBottom: i < foodTypeOptions.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>{b}</span>
+                    <button onClick={() => removeFoodType(b)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', justifyContent: 'center' }}>
+                      <X size={14} color="#cbd5e1" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input style={{ ...inputStyle, flex: 1 }} placeholder="Chips/Fries" value={newFoodType} onChange={e => setNewFoodType(e.target.value)} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} onKeyDown={e => e.key === 'Enter' && addFoodType()} />
+                <button onClick={addFoodType} style={{ padding: '8px 16px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
               </div>
             </div>
           )}
@@ -3466,6 +3501,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
   const [dataLoaded, setDataLoaded] = useState(false);
   const [tpmReadings, setTpmReadings] = useState([]);
   const [oilTypeOptions, setOilTypeOptions] = useState([]);
+  const [foodTypeOptions, setFoodTypeOptions] = useState([]);
   const [systemSettings, setSystemSettings] = useState({
     warningThreshold: 18, criticalThreshold: 24, defaultFryerCount: 4,
     reportFrequency: 'weekly', reminderDays: 7, trialDuration: 7,
@@ -3519,6 +3555,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
         const s = mapSystemSettings(settingsRows[0]);
         setSystemSettings(s);
         setOilTypeOptions(s.oilTypeOptions || []);
+        setFoodTypeOptions(s.foodTypeOptions?.length ? s.foodTypeOptions : FOOD_TYPES);
       }
       setDataLoaded(true);
     };
@@ -3668,6 +3705,23 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
       setOilTypeOptions(updater);
       supabase.from('system_settings').update({ oil_type_options: updater }).eq('id', 1).then(({ error }) => {
         if (error) console.error('Failed to save oil type options:', error.message);
+      });
+    }
+  }, []);
+
+  const dbSetFoodTypeOptions = useCallback((updater) => {
+    if (typeof updater === 'function') {
+      setFoodTypeOptions(prev => {
+        const next = updater(prev);
+        supabase.from('system_settings').update({ food_type_options: next }).eq('id', 1).then(({ error }) => {
+          if (error) console.error('Failed to save food type options:', error.message);
+        });
+        return next;
+      });
+    } else {
+      setFoodTypeOptions(updater);
+      supabase.from('system_settings').update({ food_type_options: updater }).eq('id', 1).then(({ error }) => {
+        if (error) console.error('Failed to save food type options:', error.message);
       });
     }
   }, []);
@@ -4533,7 +4587,7 @@ export default function FrysmartAdminPanel({ currentUser, onPreviewVenue, viewMo
       case 'users': return <UserManagement users={users} setUsers={dbSetUsers} rawSetUsers={setUsers} venues={venues} groups={groups} currentUser={currentUser} autoOpenForm={quickActionForm === 'users'} clearAutoOpen={() => setQuickActionForm(null)} isDesktop={isDesktop} />;
       case 'permissions': return <PermissionsAccess users={users} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} />;
       case 'onboarding': return <OnboardingFlow oilTypes={oilTypes} venues={venues} groups={groups} users={users} setVenues={dbSetVenues} setGroups={dbSetGroups} setUsers={dbSetUsers} defaultFryerCount={systemSettings.defaultFryerCount} />;
-      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} />;
+      case 'settings': return <TrialSettingsConfig trialReasons={trialReasons} setTrialReasons={dbSetTrialReasons} volumeBrackets={volumeBrackets} setVolumeBrackets={dbSetVolumeBrackets} systemSettings={systemSettings} setSystemSettings={dbSetSystemSettings} oilTypeOptions={oilTypeOptions} setOilTypeOptions={dbSetOilTypeOptions} foodTypeOptions={foodTypeOptions} setFoodTypeOptions={dbSetFoodTypeOptions} />;
       default: return (
         <div>
           <SectionHeader icon={BarChart3} title="Admin Overview" />
