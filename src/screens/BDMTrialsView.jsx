@@ -4008,26 +4008,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {mkSel('tpmTrends', [
                         'Stable and low — good oil performance',
                         'Gradual rise — typical oil degradation',
-                        'Peaked then stabilised after oil change',
-                        'Peaked then dropped after intervention',
                         'Inconsistent — volatile readings',
-                        'Consistently high throughout',
                       ], '#1a428a')}
                       {subLbl('Change Patterns')}
                       {mkSel('tpmChangePatterns', [
-                        'Regular scheduled oil changes',
-                        'Mostly scheduled, some reactive',
+                        'Regular scheduled changes',
                         'Mostly reactive, minimal schedule',
                         'Entirely reactive — no schedule',
-                      ], '#1a428a')}
-                      {subLbl('Notable Events')}
-                      {mkSel('tpmAnomalies', [
-                        'None recorded',
-                        'One spike — cause identified',
-                        'One spike — cause unknown',
-                        'Multiple spike events',
-                        'Consistently elevated readings',
-                        'Equipment-related spikes',
                       ], '#1a428a')}
                     </div>
 
@@ -4038,21 +4025,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
                         ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
                       ], '#f0f9ff', '#e0f2fe')}
-                      {subLbl('vs Benchmark')}
+                      {subLbl('Lifespan vs Competitor Oil')}
                       {mkSel('oilBenchmark', [
-                        'Significantly longer than competitor oil',
-                        'Slightly longer than competitor oil',
+                        'Longer than competitor oil',
                         'On par with competitor oil',
-                        'Slightly shorter than competitor oil',
-                        'No benchmark data available',
+                        'Shorter than competitor oil',
                       ], '#0ea5e9')}
-                      {subLbl('Top-up Frequency')}
+                      {subLbl('Top-up Frequency vs Competitor')}
                       {mkSel('oilTopUpFreq', [
-                        'No top-ups required',
-                        '1 top-up per change cycle',
-                        '2 top-ups per change cycle',
-                        '3+ top-ups per change cycle',
-                        'Inconsistent top-up pattern',
+                        'Fewer top-ups needed',
+                        'About the same',
+                        'More top-ups needed',
                       ], '#0ea5e9')}
                       {subLbl('Fryer Consistency')}
                       {mkSel('oilNotes', [
@@ -4074,19 +4057,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       }
                       {subLbl('Set vs Actual')}
                       {mkSel('tempSetVsActual', [
-                        'All fryers within ±2° — well calibrated',
-                        'Minor variance on one fryer (≤5°)',
-                        'Significant variance on one fryer (>5°)',
-                        'Multiple fryers with notable variance',
-                        'Temperature data not recorded',
+                        'Well calibrated',
+                        'Minor variance',
+                        'Significant variance',
                       ], '#f97316')}
                       {subLbl('Calibration')}
                       {mkSel('tempCalibration', [
                         'No calibration needed',
                         'Minor adjustment recommended',
-                        'Fryer 1 needs calibration',
-                        'Fryer 2 needs calibration',
-                        'Multiple fryers need calibration',
                         'Professional service required',
                       ], '#f97316')}
                       {subLbl('Impact on Oil')}
@@ -4098,93 +4076,53 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       ], '#f97316')}
                     </div>
 
-                    {/* ── Oil Management Habits ── */}
+                    {/* ── Oil Management ── */}
                     <div style={qCard}>
-                      {qHead(Cog, '#64748b', 'Oil Management Habits')}
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>How does this venue currently manage their oil day-to-day?</div>
-                      {subLbl('Change Method')}
-                      {mkSel('oilMgmtCurrentPractice', [
-                        'TPM-guided — data-driven approach',
-                        'Time-based — weekly schedule',
-                        'Time-based — fortnightly schedule',
-                        'Sensory-based — colour or smell',
-                        'Reactive — no schedule',
-                        'No consistent practice observed',
-                      ], '#64748b')}
-                      {subLbl('Discipline Level')}
-                      {mkSel('oilMgmtChangeSchedule', [
-                        'Fixed schedule strictly followed',
-                        'Schedule in place, inconsistently followed',
-                        'Loose schedule — mostly reactive',
-                        'No schedule — entirely reactive',
-                        'New schedule introduced during trial',
-                      ], '#64748b')}
-                      {subLbl('Staff Involvement')}
+                      {qHead(Cog, '#64748b', 'Oil Management')}
+                      {subLbl('Training & Education Provided')}
                       {mkSel('oilMgmtStaffTraining', [
-                        'All staff trained on oil management',
-                        'Owner only — staff not involved',
-                        'Some awareness — inconsistent practice',
-                        'Staff unaware of oil management',
+                        'Yes',
+                        'No',
+                      ], '#64748b')}
+                      {subLbl('Value Demonstrated During Trial')}
+                      {mkSel('oilMgmtCurrentPractice', [
+                        'Yes — clear savings identified',
+                        'Potentially — further data needed',
+                        'Not yet clear',
                       ], '#64748b')}
                     </div>
 
                     {/* ── Food Quality ── */}
                     <div style={qCard}>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>Impact on the quality of food being produced during the trial.</div>
-                      {subLbl('Customer Feedback')}
+                      {subLbl('Taste & Texture')}
                       {mkSel('foodQualityFeedback', [
-                        'Significant improvement noticed by customers',
-                        'Positive feedback — subtle improvement',
-                        'No change in customer feedback',
-                        'Mixed feedback — inconclusive',
-                        'No customer feedback collected',
+                        'Improved',
+                        'Same',
+                        'Worse',
                       ], '#f59e0b')}
-                      {subLbl('Visual Quality')}
+                      {subLbl('Visual')}
                       {mkSel('foodQualityVisual', [
-                        'Clear improvement — better colour and finish',
-                        'Subtle improvement in appearance',
-                        'No visible change',
-                        'Inconsistent across fryers',
-                        'Slight degradation observed',
-                      ], '#f59e0b')}
-                      {subLbl('Consistency')}
-                      {mkSel('foodQualityConsistency', [
-                        'Highly consistent across all fryers',
-                        'Mostly consistent, minor variation',
-                        'Improved vs pre-trial baseline',
-                        'Inconsistent results across fryers',
+                        'Improved',
+                        'Same',
+                        'Worse',
                       ], '#f59e0b')}
                     </div>
 
-                    {/* ── Overall & Next Steps ── */}
+                    {/* ── Next Steps ── */}
                     <div style={qCard}>
-                      {qHead(Target, '#8b5cf6', 'Overall & Next Steps')}
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>Your read on where this trial is heading and what happens next.</div>
-                      {subLbl('Recommendation')}
+                      {qHead(Target, '#8b5cf6', 'Next Steps')}
+                      {subLbl('Interested in Testo')}
                       {mkSel('overallRecommendation', [
-                        'Strong case — push for close now',
-                        'Continue trial for more data',
-                        'Revisit pricing first',
-                        'Address equipment issues before close',
-                        'Needs more engagement before proceeding',
-                        'Not recommended to continue',
+                        'Yes',
+                        'No',
+                        'Not sure',
                       ], '#8b5cf6')}
-                      {subLbl('Next Visit')}
+                      {subLbl('Interested in FrySmart')}
                       {mkSel('overallNextVisit', [
-                        'Within 1 week',
-                        'Within 2 weeks',
-                        'Within 1 month',
-                        'After customer reviews the proposal',
-                        'No follow-up required',
-                      ], '#8b5cf6')}
-                      {subLbl('Conversion Readiness')}
-                      {mkSel('overallConversionRead', [
-                        'Owner ready — initiate close conversation',
-                        'Owner interested — needs more data',
-                        'Owner interested — price negotiation needed',
-                        'Owner hesitant — continue building value',
-                        'Owner not engaged at this stage',
+                        'Yes',
+                        'No',
+                        'Not sure',
                       ], '#8b5cf6')}
                     </div>
 
@@ -4911,7 +4849,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ['Avg TPM', avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
                           ['Min TPM', minTPM, tpmColor(minTPM)],
                         ], '#f0f4ff', '#e0e7ff') : null,
-                        fields: [['TPM Trends', tpmD.trends], ['Change Patterns', tpmD.changePatterns], ['Notable Events', tpmD.anomalies]],
+                        fields: [['TPM Trends', tpmD.trends], ['Change Patterns', tpmD.changePatterns]],
                       },
                       {
                         icon: Droplets, iconColor: '#0ea5e9', title: 'Oil Longevity',
@@ -4919,7 +4857,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
                           ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
                         ], '#f0f9ff', '#e0f2fe') : null,
-                        fields: [['vs Benchmark', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq], ['Fryer Consistency', oilD.notes]],
+                        fields: [['Lifespan vs Competitor', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq], ['Fryer Consistency', oilD.notes]],
                       },
                       {
                         icon: Flame, iconColor: '#f97316', title: 'Temperature Control',
@@ -4929,19 +4867,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration], ['Impact on Oil', tmpD.oilImpact]],
                       },
                       {
-                        icon: Cog, iconColor: '#64748b', title: 'Oil Management Habits',
+                        icon: Cog, iconColor: '#64748b', title: 'Oil Management',
                         stats: null,
-                        fields: [['Change Method', mgmtD.currentPractice], ['Discipline Level', mgmtD.changeSchedule], ['Staff Involvement', mgmtD.staffTraining]],
+                        fields: [['Training & Education', mgmtD.staffTraining], ['Value Demonstrated', mgmtD.currentPractice]],
                       },
                       {
                         icon: Award, iconColor: '#f59e0b', title: 'Food Quality',
                         stats: null,
-                        fields: [['Customer Feedback', fqD.feedback], ['Visual Quality', fqD.visual], ['Consistency', fqD.consistency]],
+                        fields: [['Taste & Texture', fqD.feedback], ['Visual', fqD.visual]],
                       },
                       {
-                        icon: Target, iconColor: '#8b5cf6', title: 'Overall & Next Steps',
+                        icon: Target, iconColor: '#8b5cf6', title: 'Next Steps',
                         stats: null,
-                        fields: [['Recommendation', ovrD.recommendation], ['Next Visit', ovrD.nextVisit], ['Conversion Readiness', ovrD.conversionRead]],
+                        fields: [['Interested in Testo', ovrD.recommendation], ['Interested in FrySmart', ovrD.nextVisit]],
                       },
                     ].filter(q => q.stats || q.fields.some(([,v]) => v));
 
