@@ -1070,7 +1070,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [calFryerTab, setCalFryerTab] = useState(1); // Fryer tab within calendar sub-tab
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
-  const [insightForm, setInsightForm] = useState({ tpmPerformance: '', tpmRating: '', oilLongevity: '', oilRating: '', tempObservations: '', tempRating: '', recommendations: '', overallRating: '' }); // BDM assessment form on Trial Calendar tab
+  const [insightForm, setInsightForm] = useState({
+    tpmRating: '', tpmTrends: '', tpmChangePatterns: '', tpmAnomalies: '',
+    oilRating: '', oilBenchmark: '', oilTopUpFreq: '', oilNotes: '',
+    tempRating: '', tempSetVsActual: '', tempCalibration: '', tempOilImpact: '',
+    overallRating: '', overallRecommendation: '', overallNextVisit: '', overallConversionRead: '',
+  }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
   const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
   const [summaryEditMode, setSummaryEditMode] = useState(false); // edit mode for trial findings in summary
@@ -1162,15 +1167,28 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageEditForm({});
       const v = venues.find(x => x.id === manageVenueId);
       setManageNoteText(v?.trialNotes || '');
+      const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch { return {}; } };
+      const tpmD  = parseSafe(v?.insightTpmPerformance);
+      const oilD  = parseSafe(v?.insightOilLongevity);
+      const tmpD  = parseSafe(v?.insightTempObservations);
+      const ovrD  = parseSafe(v?.insightRecommendations);
       setInsightForm({
-        tpmPerformance:   v?.insightTpmPerformance   || '',
-        tpmRating:        v?.insightTpmRating        || '',
-        oilLongevity:     v?.insightOilLongevity     || '',
-        oilRating:        v?.insightOilRating        || '',
-        tempObservations: v?.insightTempObservations || '',
-        tempRating:       v?.insightTempRating       || '',
-        recommendations:  v?.insightRecommendations  || '',
-        overallRating:    v?.insightOverallRating    || '',
+        tpmRating:           v?.insightTpmRating     || '',
+        tpmTrends:           tpmD.trends             || '',
+        tpmChangePatterns:   tpmD.changePatterns      || '',
+        tpmAnomalies:        tpmD.anomalies           || '',
+        oilRating:           v?.insightOilRating      || '',
+        oilBenchmark:        oilD.benchmark           || '',
+        oilTopUpFreq:        oilD.topUpFreq           || '',
+        oilNotes:            oilD.notes               || '',
+        tempRating:          v?.insightTempRating     || '',
+        tempSetVsActual:     tmpD.setVsActual         || '',
+        tempCalibration:     tmpD.calibration         || '',
+        tempOilImpact:       tmpD.oilImpact           || '',
+        overallRating:       v?.insightOverallRating  || '',
+        overallRecommendation: ovrD.recommendation   || '',
+        overallNextVisit:    ovrD.nextVisit           || '',
+        overallConversionRead: ovrD.conversionRead   || '',
       });
     }
   }, [manageVenueId]); // eslint-disable-line
@@ -2770,6 +2788,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </div>
         <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 320px)' }}>
           <style>{`
+            .insight-ta::placeholder { color: #c4cad4; }
             .bdm-table { width: 100%; border-collapse: separate; border-spacing: 0; }
             .bdm-table thead th { position: sticky; top: 0; z-index: 20; padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
             .bdm-table tbody tr { transition: background 0.1s; }
@@ -3919,23 +3938,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     // ── render helpers (called as functions, NOT as <Components>,
                     //    to prevent React from remounting inputs on every keystroke)
-                    const taStyle = {
-                      width: '100%', minHeight: '58px', padding: '8px 10px',
+                    const taS = {
+                      width: '100%', minHeight: '42px', padding: '7px 10px',
                       border: '1.5px solid #e8edf2', borderRadius: '7px',
                       fontSize: '12px', color: '#374151', fontFamily: 'inherit',
                       fontWeight: '500', resize: 'vertical', outline: 'none',
                       boxSizing: 'border-box', lineHeight: '1.5', background: 'white',
-                      transition: 'border-color 0.12s',
                     };
-                    const qCardStyle = { background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' };
+                    const qCard = { background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' };
                     const GREEN = { color: '#059669', bg: '#d1fae5', text: '#065f46' };
                     const BLUE  = { color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' };
                     const AMBER = { color: '#f59e0b', bg: '#fef3c7', text: '#92400e' };
                     const RED   = { color: '#ef4444', bg: '#fee2e2', text: '#991b1b' };
 
-                    // Render function (not a component) — avoids React unmounting inputs on re-render
                     const ratingPills = (fieldKey, options) => (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
                         {options.map(opt => {
                           const active = insightForm[fieldKey] === opt.value;
                           return (
@@ -3949,14 +3966,35 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
                     );
 
-                    const qCardHead = (Icon, iconColor, title, hint) => (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: hint ? '4px' : '10px' }}>
-                          <Icon size={14} color={iconColor} strokeWidth={2.5} />
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{title}</span>
-                        </div>
-                        {hint && <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', marginBottom: '10px' }}>{hint}</div>}
-                      </>
+                    // Prominent stat band — large coloured numbers the BDM sees at a glance
+                    const statBand = (stats, bg, border) => (
+                      <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '8px', marginBottom: '12px', overflow: 'hidden' }}>
+                        {stats.map(([label, value, color], i) => (
+                          <div key={label} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${border}` : 'none' }}>
+                            <div style={{ fontSize: '20px', fontWeight: '800', color: color || '#374151', lineHeight: 1 }}>{value ?? '—'}</div>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '3px' }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+
+                    const subLabel = (text) => (
+                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
+                    );
+
+                    const qHead = (Icon, iconColor, title) => (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+                        <Icon size={14} color={iconColor} strokeWidth={2.5} />
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{title}</span>
+                      </div>
+                    );
+
+                    const mkTa = (fieldKey, placeholder, accentColor) => (
+                      <textarea className="insight-ta" style={taS} placeholder={placeholder}
+                        value={insightForm[fieldKey]}
+                        onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
+                        onFocus={e => { e.target.style.borderColor = accentColor; }}
+                        onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
                     );
 
                     return (
@@ -3966,70 +4004,84 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
-                          {/* TPM Performance */}
-                          <div style={qCardStyle}>
-                            {qCardHead(Activity, '#1a428a', 'TPM Performance',
-                              (maxTPM != null || avgTPM != null) ? `Peak: ${maxTPM ?? '—'} · Avg: ${avgTPM != null ? avgTPM.toFixed(1) : '—'}` : null)}
+                          {/* ── TPM Performance ── */}
+                          <div style={qCard}>
+                            {qHead(Activity, '#1a428a', 'TPM Performance')}
+                            {(maxTPM != null || avgTPM != null || minTPM != null) && statBand([
+                              ['Peak TPM', maxTPM, tpmColor(maxTPM)],
+                              ['Avg TPM',  avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
+                              ['Min TPM',  minTPM, tpmColor(minTPM)],
+                            ], '#f0f4ff', '#e0e7ff')}
                             {ratingPills('tpmRating', [
                               { value: 'excellent',         label: 'Excellent',         ...GREEN },
                               { value: 'good',              label: 'Good',              ...BLUE  },
                               { value: 'needs-improvement', label: 'Needs Improvement', ...AMBER },
                               { value: 'critical',          label: 'Critical',          ...RED   },
                             ])}
-                            <textarea style={taStyle} placeholder="Add notes on TPM trends, change patterns, anomalies..."
-                              value={insightForm.tpmPerformance}
-                              onChange={e => setInsightForm(f => ({ ...f, tpmPerformance: e.target.value }))}
-                              onFocus={e => { e.target.style.borderColor = '#1a428a'; }}
-                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                            {subLabel('TPM Trends')}
+                            {mkTa('tpmTrends', 'e.g. Rising in week 2, stabilised after oil change', '#1a428a')}
+                            {subLabel('Change Patterns')}
+                            {mkTa('tpmChangePatterns', 'e.g. Reactive only — no scheduled rotation in place', '#1a428a')}
+                            {subLabel('Anomalies')}
+                            {mkTa('tpmAnomalies', 'e.g. Spike to 28 on 15 Mar — fryer was overloaded', '#1a428a')}
                           </div>
 
-                          {/* Oil Longevity */}
-                          <div style={qCardStyle}>
-                            {qCardHead(Droplets, '#0ea5e9', 'Oil Longevity',
-                              maxOilAge != null ? `Max lifespan recorded: ${maxOilAge} days` : null)}
+                          {/* ── Oil Longevity ── */}
+                          <div style={qCard}>
+                            {qHead(Droplets, '#0ea5e9', 'Oil Longevity')}
+                            {(maxOilAge != null || avgOilAge != null) && statBand([
+                              ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
+                              ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
+                            ], '#f0f9ff', '#e0f2fe')}
                             {ratingPills('oilRating', [
                               { value: 'extended',      label: 'Extended Life', ...GREEN },
                               { value: 'on-track',      label: 'On Track',      ...BLUE  },
                               { value: 'below-average', label: 'Below Average', ...AMBER },
                             ])}
-                            <textarea style={taStyle} placeholder="How did oil lifespan compare to their current practice?"
-                              value={insightForm.oilLongevity}
-                              onChange={e => setInsightForm(f => ({ ...f, oilLongevity: e.target.value }))}
-                              onFocus={e => { e.target.style.borderColor = '#0ea5e9'; }}
-                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                            {subLabel('vs Benchmark')}
+                            {mkTa('oilBenchmark', 'e.g. Avg 12 days vs 8 days on current competitor oil', '#0ea5e9')}
+                            {subLabel('Top-up Frequency')}
+                            {mkTa('oilTopUpFreq', 'e.g. 2 top-ups per change cycle on fryer 1', '#0ea5e9')}
+                            {subLabel('Notes')}
+                            {mkTa('oilNotes', 'e.g. Fryer 2 consistently shorter — may be temperature-related', '#0ea5e9')}
                           </div>
 
-                          {/* Temperature Control */}
-                          <div style={qCardStyle}>
-                            {qCardHead(Flame, '#f97316', 'Temperature Control',
-                              avgTempVar != null ? `Avg set vs actual variance: ${avgTempVar.toFixed(1)}°` : 'No temperature data recorded')}
+                          {/* ── Temperature Control ── */}
+                          <div style={qCard}>
+                            {qHead(Flame, '#f97316', 'Temperature Control')}
+                            {avgTempVar != null
+                              ? statBand([['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626']], '#fff7ed', '#fed7aa')
+                              : <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>No temperature data recorded yet.</div>
+                            }
                             {ratingPills('tempRating', [
                               { value: 'well-calibrated',   label: 'Well Calibrated',  ...GREEN },
                               { value: 'minor-variance',    label: 'Minor Variance',    ...AMBER },
                               { value: 'needs-calibration', label: 'Needs Calibration', ...RED   },
                             ])}
-                            <textarea style={taStyle} placeholder="Note any set vs actual temp gaps, fryer-specific issues..."
-                              value={insightForm.tempObservations}
-                              onChange={e => setInsightForm(f => ({ ...f, tempObservations: e.target.value }))}
-                              onFocus={e => { e.target.style.borderColor = '#f97316'; }}
-                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                            {subLabel('Set vs Actual')}
+                            {mkTa('tempSetVsActual', 'e.g. Fryer 1 ±2°, Fryer 2 running ~8° below set temp', '#f97316')}
+                            {subLabel('Calibration')}
+                            {mkTa('tempCalibration', 'e.g. Fryer 2 likely needs thermostat service', '#f97316')}
+                            {subLabel('Impact on Oil')}
+                            {mkTa('tempOilImpact', 'e.g. Low temp on F2 may explain faster TPM rise', '#f97316')}
                           </div>
 
-                          {/* Overall & Next Steps */}
-                          <div style={qCardStyle}>
-                            {qCardHead(Target, '#8b5cf6', 'Overall & Next Steps',
-                              'Your read on where this trial is heading and what needs to happen next.')}
+                          {/* ── Overall & Next Steps ── */}
+                          <div style={qCard}>
+                            {qHead(Target, '#8b5cf6', 'Overall & Next Steps')}
+                            <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>Your read on where this trial is heading and what happens next.</div>
                             {ratingPills('overallRating', [
                               { value: 'ready-to-convert', label: 'Ready to Convert', ...GREEN },
                               { value: 'progressing',      label: 'Progressing Well', ...BLUE  },
                               { value: 'needs-attention',  label: 'Needs Attention',  ...AMBER },
                               { value: 'not-viable',       label: 'Not Viable',       ...RED   },
                             ])}
-                            <textarea style={taStyle} placeholder="Key recommendations, next visit actions, pricing conversation timing..."
-                              value={insightForm.recommendations}
-                              onChange={e => setInsightForm(f => ({ ...f, recommendations: e.target.value }))}
-                              onFocus={e => { e.target.style.borderColor = '#8b5cf6'; }}
-                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                            {subLabel('Recommendation')}
+                            {mkTa('overallRecommendation', 'e.g. Weekly fills, recalibrate F2, push for close', '#8b5cf6')}
+                            {subLabel('Next Visit')}
+                            {mkTa('overallNextVisit', 'e.g. Follow up in 2 weeks with pricing proposal', '#8b5cf6')}
+                            {subLabel('Conversion Readiness')}
+                            {mkTa('overallConversionRead', 'e.g. Owner is engaged — good timing to have the close conversation', '#8b5cf6')}
                           </div>
 
                         </div>
@@ -4041,13 +4093,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             onClick={async () => {
                               setInsightSaving(true);
                               await updateVenue(venue.id, {
-                                insightTpmPerformance:   insightForm.tpmPerformance,
+                                insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns, anomalies: insightForm.tpmAnomalies }),
                                 insightTpmRating:        insightForm.tpmRating,
-                                insightOilLongevity:     insightForm.oilLongevity,
+                                insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq, notes: insightForm.oilNotes }),
                                 insightOilRating:        insightForm.oilRating,
-                                insightTempObservations: insightForm.tempObservations,
+                                insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration, oilImpact: insightForm.tempOilImpact }),
                                 insightTempRating:       insightForm.tempRating,
-                                insightRecommendations:  insightForm.recommendations,
+                                insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit, conversionRead: insightForm.overallConversionRead }),
                                 insightOverallRating:    insightForm.overallRating,
                               });
                               setInsightSaving(false);
@@ -4725,40 +4777,102 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       venue.insightTempObservations || venue.insightRecommendations;
                     if (!hasAssessment) return null;
 
-                    const RATING_LABELS = {
+                    const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch { return {}; } };
+                    const tpmD = parseSafe(venue.insightTpmPerformance);
+                    const oilD = parseSafe(venue.insightOilLongevity);
+                    const tmpD = parseSafe(venue.insightTempObservations);
+                    const ovrD = parseSafe(venue.insightRecommendations);
+
+                    const RL = {
                       'excellent':          { label: 'Excellent',         color: '#059669', bg: '#d1fae5', text: '#065f46' },
-                      'good':               { label: 'Good',               color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
-                      'needs-improvement':  { label: 'Needs Improvement',  color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
-                      'critical':           { label: 'Critical',           color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
-                      'extended':           { label: 'Extended Life',      color: '#059669', bg: '#d1fae5', text: '#065f46' },
-                      'on-track':           { label: 'On Track',           color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
-                      'below-average':      { label: 'Below Average',      color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
-                      'well-calibrated':    { label: 'Well Calibrated',    color: '#059669', bg: '#d1fae5', text: '#065f46' },
-                      'minor-variance':     { label: 'Minor Variance',     color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
-                      'needs-calibration':  { label: 'Needs Calibration',  color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
-                      'ready-to-convert':   { label: 'Ready to Convert',   color: '#059669', bg: '#d1fae5', text: '#065f46' },
-                      'progressing':        { label: 'Progressing Well',   color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
-                      'needs-attention':    { label: 'Needs Attention',    color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
-                      'not-viable':         { label: 'Not Viable',         color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                      'good':               { label: 'Good',              color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
+                      'needs-improvement':  { label: 'Needs Improvement', color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'critical':           { label: 'Critical',          color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                      'extended':           { label: 'Extended Life',     color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'on-track':           { label: 'On Track',          color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
+                      'below-average':      { label: 'Below Average',     color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'well-calibrated':    { label: 'Well Calibrated',   color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'minor-variance':     { label: 'Minor Variance',    color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'needs-calibration':  { label: 'Needs Calibration', color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                      'ready-to-convert':   { label: 'Ready to Convert',  color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'progressing':        { label: 'Progressing Well',  color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
+                      'needs-attention':    { label: 'Needs Attention',   color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'not-viable':         { label: 'Not Viable',        color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
                     };
 
+                    // Stat band: prominent computed numbers
+                    const rStatBand = (stats, bg, border) => (
+                      <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '8px', marginBottom: '12px', overflow: 'hidden' }}>
+                        {stats.filter(([,v]) => v != null && v !== '—').map(([label, value, color], i) => (
+                          <div key={label} style={{ flex: 1, padding: '8px 6px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${border}` : 'none' }}>
+                            <div style={{ fontSize: '18px', fontWeight: '800', color: color || '#374151', lineHeight: 1 }}>{value}</div>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '2px' }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+
+                    // Sub-field row: label + value
+                    const rField = (label, value) => value ? (
+                      <div style={{ marginBottom: '8px' }}>
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{label}</div>
+                        <p style={{ fontSize: '12px', color: '#374151', lineHeight: '1.6', margin: 0 }}>{value}</p>
+                      </div>
+                    ) : null;
+
+                    // Computed values available from outer scope: maxTPM, avgTPM, minTPM, maxOilAge, avgOilAge
+                    const tempVarValsSum = allTrialReadings
+                      .filter(r => r.setTemperature != null && r.actualTemperature != null && String(r.setTemperature) !== '' && String(r.actualTemperature) !== '')
+                      .map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
+                    const avgTempVarSum = tempVarValsSum.length > 0 ? tempVarValsSum.reduce((a,b) => a+b,0) / tempVarValsSum.length : null;
+
                     const quadrants = [
-                      { icon: Activity,  iconColor: '#1a428a', title: 'TPM Performance',     rating: venue.insightTpmRating,     notes: venue.insightTpmPerformance    },
-                      { icon: Droplets,  iconColor: '#0ea5e9', title: 'Oil Longevity',        rating: venue.insightOilRating,     notes: venue.insightOilLongevity      },
-                      { icon: Flame,     iconColor: '#f97316', title: 'Temperature Control',  rating: venue.insightTempRating,    notes: venue.insightTempObservations  },
-                      { icon: Target,    iconColor: '#8b5cf6', title: 'Overall & Next Steps', rating: venue.insightOverallRating, notes: venue.insightRecommendations   },
-                    ].filter(q => q.rating || q.notes);
+                      {
+                        icon: Activity, iconColor: '#1a428a', title: 'TPM Performance',
+                        rating: venue.insightTpmRating,
+                        stats: (maxTPM != null || avgTPM != null || minTPM != null) ? rStatBand([
+                          ['Peak TPM', maxTPM, tpmColor(maxTPM)],
+                          ['Avg TPM', avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
+                          ['Min TPM', minTPM, tpmColor(minTPM)],
+                        ], '#f0f4ff', '#e0e7ff') : null,
+                        fields: [['TPM Trends', tpmD.trends], ['Change Patterns', tpmD.changePatterns], ['Anomalies', tpmD.anomalies]],
+                      },
+                      {
+                        icon: Droplets, iconColor: '#0ea5e9', title: 'Oil Longevity',
+                        rating: venue.insightOilRating,
+                        stats: (maxOilAge != null || avgOilAge != null) ? rStatBand([
+                          ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
+                          ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
+                        ], '#f0f9ff', '#e0f2fe') : null,
+                        fields: [['vs Benchmark', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq], ['Notes', oilD.notes]],
+                      },
+                      {
+                        icon: Flame, iconColor: '#f97316', title: 'Temperature Control',
+                        rating: venue.insightTempRating,
+                        stats: avgTempVarSum != null ? rStatBand([
+                          ['Avg Variance', `${avgTempVarSum.toFixed(1)}°`, avgTempVarSum === 0 ? '#059669' : avgTempVarSum <= 5 ? '#d97706' : '#dc2626'],
+                        ], '#fff7ed', '#fed7aa') : null,
+                        fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration], ['Impact on Oil', tmpD.oilImpact]],
+                      },
+                      {
+                        icon: Target, iconColor: '#8b5cf6', title: 'Overall & Next Steps',
+                        rating: venue.insightOverallRating,
+                        stats: null,
+                        fields: [['Recommendation', ovrD.recommendation], ['Next Visit', ovrD.nextVisit], ['Conversion Readiness', ovrD.conversionRead]],
+                      },
+                    ].filter(q => q.rating || q.stats || q.fields.some(([,v]) => v));
 
                     return (
                       <>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
                         {rSecLabel('Trial Assessment', 0)}
                         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '8px' }}>
-                          {quadrants.map(({ icon: Icon, iconColor, title, rating, notes }) => {
-                            const rc = rating ? RATING_LABELS[rating] : null;
+                          {quadrants.map(({ icon: Icon, iconColor, title, rating, stats, fields }) => {
+                            const rc = rating ? RL[rating] : null;
                             return (
                               <div key={title} style={{ background: '#fafbfc', border: '1.5px solid #e8edf2', borderRadius: '10px', padding: '12px 14px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: rc || notes ? '8px' : '0' }}>
+                                {/* Header */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
                                   <Icon size={13} color={iconColor} strokeWidth={2.5} />
                                   <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', flex: 1 }}>{title}</span>
                                   {rc && (
@@ -4767,9 +4881,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                     </span>
                                   )}
                                 </div>
-                                {notes && (
-                                  <p style={{ fontSize: '12px', color: '#374151', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>{notes}</p>
-                                )}
+                                {/* Computed stats */}
+                                {stats}
+                                {/* BDM sub-fields */}
+                                {fields.map(([lbl, val]) => rField(lbl, val))}
                               </div>
                             );
                           })}
