@@ -4011,7 +4011,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
                         <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Trial Assessment</div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '10px', marginBottom: '8px' }}>
 
                           {/* ── TPM Performance ── */}
                           <div style={qCard}>
@@ -4198,7 +4198,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '4px' }}>Trial Assessment</div>
                   <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>Fill in each section — this will appear in the Summary Report for the customer.</div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
                     {/* ── TPM Performance ── */}
                     <div style={qCard}>
@@ -5222,7 +5222,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       <>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
                         {rSecLabel('Trial Assessment', 0)}
-                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '10px', marginBottom: '8px' }}>
                           {quadrants.map(({ icon: Icon, iconColor, title, rating, stats, fields }) => {
                             const rc = rating ? RL[rating] : null;
                             return (
