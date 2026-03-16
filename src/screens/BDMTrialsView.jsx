@@ -3937,34 +3937,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     ))}
                   </div>
 
-                  {/* ── Per-Fryer Stat Cards ── */}
+                  {/* ── Per-Fryer Stat Table (transposed: stats=rows, fryers=cols) ── */}
                   {allTrialReadings.length > 0 && (() => {
                     const varCol = (v) => v == null ? '#94a3b8' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
+                    const pfN = (v, decimals = 0, suffix = '') => v != null ? `${decimals > 0 ? Number(v).toFixed(decimals) : Math.round(v)}${suffix}` : '—';
+                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : '—';
 
-                    // Single stat row: label left, value right
-                    const sRow = (label, value, color) => (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>{label}</span>
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: color || '#374151' }}>{value}</span>
-                      </div>
-                    );
-
-                    // Section group header inside a card
-                    const grpHdr = (text) => (
-                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '12px', marginBottom: '2px', paddingTop: '10px', borderTop: '1px solid #f0f4f8' }}>{text}</div>
-                    );
-
-                    const cards = fryerList.map(fn => {
+                    const rows = fryerList.map(fn => {
                       const frdgs = allTrialReadings.filter(r => (Number(r.fryerNumber) || 1) === fn);
                       if (frdgs.length === 0) return null;
 
-                      // TPM
                       const tpmVals = frdgs.filter(r => parseFloat(r.tpmValue) > 0).map(r => parseFloat(r.tpmValue));
                       const fPeak = tpmVals.length > 0 ? Math.max(...tpmVals) : null;
                       const fMin  = tpmVals.length > 0 ? Math.min(...tpmVals) : null;
                       const fAvg  = tpmVals.length > 0 ? tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length : null;
 
-                      // Oil lifespan
                       const frdgsSorted = [...frdgs].sort((a, b) => a.readingDate.localeCompare(b.readingDate));
                       const runs = []; let curRun = [];
                       for (const r of frdgsSorted) {
@@ -3978,7 +3965,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const fMaxLife = lifespans.length > 0 ? Math.max(...lifespans) : null;
                       const fAvgLife = lifespans.length > 0 ? Math.round(lifespans.reduce((a, b) => a + b, 0) / lifespans.length) : null;
 
-                      // Oil usage
                       const freshRdgs = frdgs.filter(r => Number(r.oilAge) === 1);
                       const topUpRdgs = frdgs.filter(r => Number(r.oilAge) > 1 && (parseFloat(r.litresFilled) || 0) > 0);
                       const freshCount = freshRdgs.length;
@@ -3987,62 +3973,74 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const topUpLitres = topUpRdgs.reduce((s, r) => s + (parseFloat(r.litresFilled) || 0), 0);
                       const totalLitres = freshLitres + topUpLitres;
 
-                      // Temperature
                       const varVals = frdgs.filter(r => r.setTemperature != null && r.actualTemperature != null && String(r.setTemperature) !== '' && String(r.actualTemperature) !== '').map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
                       const fAvgVar = varVals.length > 0 ? varVals.reduce((a, b) => a + b, 0) / varVals.length : null;
                       const actualTemps = frdgs.filter(r => r.actualTemperature != null && String(r.actualTemperature) !== '').map(r => parseFloat(r.actualTemperature));
                       const fMinTemp = actualTemps.length > 0 ? Math.round(Math.min(...actualTemps)) : null;
                       const fMaxTemp = actualTemps.length > 0 ? Math.round(Math.max(...actualTemps)) : null;
 
-                      return (
-                        <div key={fn} style={{ background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' }}>
-                          {/* Card header */}
-                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a', paddingBottom: '10px', borderBottom: '2px solid #e8edf2', marginBottom: '4px' }}>
-                            {fc > 1 ? `Fryer ${fn}` : 'Trial Stats'}
-                          </div>
-
-                          {/* TPM */}
-                          {fPeak != null && (<>
-                            {grpHdr('TPM')}
-                            {sRow('Peak', fPeak, tpmColor(fPeak))}
-                            {sRow('Average', fAvg != null ? fAvg.toFixed(1) : '—', tpmColor(fAvg))}
-                            {sRow('Min', fMin, tpmColor(fMin))}
-                          </>)}
-
-                          {/* Oil Lifespan */}
-                          {fMaxLife != null && (<>
-                            {grpHdr('Oil Lifespan')}
-                            {sRow('Max', `${fMaxLife} days`, '#0ea5e9')}
-                            {fAvgLife != null && sRow('Average', `${fAvgLife} days`, '#0ea5e9')}
-                          </>)}
-
-                          {/* Oil Usage */}
-                          {totalLitres > 0 && (<>
-                            {grpHdr('Oil Usage')}
-                            {freshCount > 0 && sRow('Fresh fills', `${freshCount}×${freshLitres > 0 ? `  ${Math.round(freshLitres * 10) / 10}L` : ''}`, '#374151')}
-                            {topUpCount > 0 && sRow('Top-ups', `${topUpCount}×${topUpLitres > 0 ? `  ${Math.round(topUpLitres * 10) / 10}L` : ''}`, '#374151')}
-                            {sRow('Total oil', `${Math.round(totalLitres * 10) / 10}L`, '#1a428a')}
-                          </>)}
-
-                          {/* Temperature */}
-                          {fMinTemp != null && (<>
-                            {grpHdr('Temperature')}
-                            {sRow('Min actual', `${fMinTemp}°`, '#64748b')}
-                            {sRow('Max actual', `${fMaxTemp}°`, '#64748b')}
-                            {fAvgVar != null && sRow('Avg variance', `${fAvgVar.toFixed(1)}°`, varCol(fAvgVar))}
-                          </>)}
-                        </div>
-                      );
+                      return { fn, fPeak, fMin, fAvg, fMaxLife, fAvgLife, freshCount, freshLitres, topUpCount, topUpLitres, totalLitres, fMinTemp, fMaxTemp, fAvgVar };
                     }).filter(Boolean);
 
-                    if (cards.length === 0) return null;
-                    const cols = isDesktop ? Math.min(cards.length, 3) : 1;
+                    if (rows.length === 0) return null;
+
+                    const colCount = rows.length;
+                    const thS = (extra = {}) => ({ padding: '7px 12px', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', background: '#f8fafc', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', ...extra });
+                    const tdV = (value, color = '#374151', extra = {}) => (
+                      <td style={{ padding: '7px 12px', fontSize: '12px', fontWeight: '600', textAlign: 'center', color: value === '—' || value == null ? '#cbd5e1' : color, borderBottom: '1px solid #f1f5f9', ...extra }}>{value ?? '—'}</td>
+                    );
+                    const grpRow = (label) => (
+                      <tr key={label + '_grp'}>
+                        <td colSpan={colCount + 1} style={{ padding: '8px 12px 3px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', background: '#f8fafc', borderTop: '1px solid #e8edf2' }}>{label}</td>
+                      </tr>
+                    );
+                    const rowLbl = (text, bold = false) => (
+                      <td style={{ padding: '7px 12px', fontSize: '12px', color: bold ? '#374151' : '#64748b', fontWeight: bold ? '700' : '400', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{text}</td>
+                    );
+
+                    const hasTpm      = rows.some(r => r.fPeak != null);
+                    const hasOilLife  = rows.some(r => r.fMaxLife != null);
+                    const hasOilUsage = rows.some(r => r.totalLitres > 0);
+                    const hasTemp     = rows.some(r => r.fMinTemp != null);
+
                     return (
                       <div style={{ marginTop: '20px' }}>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Fryer Stats</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '12px' }}>
-                          {cards}
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: `${160 + colCount * 100}px` }}>
+                            <thead>
+                              <tr>
+                                <th style={thS({ textAlign: 'left', background: 'white', color: 'transparent' })}>—</th>
+                                {rows.map(r => <th key={r.fn} style={thS({ color: '#1a428a' })}>{fc > 1 ? `Fryer ${r.fn}` : 'Value'}</th>)}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {hasTpm && (<>
+                                {grpRow('TPM')}
+                                <tr>{rowLbl('Peak')}{rows.map(r => tdV(pfN(r.fPeak), tpmColor(r.fPeak)))}</tr>
+                                <tr>{rowLbl('Average')}{rows.map(r => tdV(pfN(r.fAvg, 1), tpmColor(r.fAvg)))}</tr>
+                                <tr>{rowLbl('Min')}{rows.map(r => tdV(pfN(r.fMin), tpmColor(r.fMin)))}</tr>
+                              </>)}
+                              {hasOilLife && (<>
+                                {grpRow('Oil Lifespan')}
+                                <tr>{rowLbl('Max')}{rows.map(r => tdV(r.fMaxLife != null ? `${r.fMaxLife}d` : '—', '#0ea5e9'))}</tr>
+                                <tr>{rowLbl('Average')}{rows.map(r => tdV(r.fAvgLife != null ? `${r.fAvgLife}d` : '—', '#0ea5e9'))}</tr>
+                              </>)}
+                              {hasOilUsage && (<>
+                                {grpRow('Oil Usage')}
+                                {rows.some(r => r.freshCount > 0) && <tr>{rowLbl('Fresh fills')}{rows.map(r => tdV(r.freshCount > 0 ? `${r.freshCount}× · ${pfL(r.freshLitres)}` : '—'))}</tr>}
+                                {rows.some(r => r.topUpCount > 0) && <tr>{rowLbl('Top-ups')}{rows.map(r => tdV(r.topUpCount > 0 ? `${r.topUpCount}× · ${pfL(r.topUpLitres)}` : '—'))}</tr>}
+                                <tr>{rowLbl('Total oil', true)}{rows.map(r => tdV(pfL(r.totalLitres), '#1a428a'))}</tr>
+                              </>)}
+                              {hasTemp && (<>
+                                {grpRow('Temperature')}
+                                <tr>{rowLbl('Min actual')}{rows.map(r => tdV(pfN(r.fMinTemp, 0, '°'), '#64748b'))}</tr>
+                                <tr>{rowLbl('Max actual')}{rows.map(r => tdV(pfN(r.fMaxTemp, 0, '°'), '#64748b'))}</tr>
+                                <tr>{rowLbl('Avg variance')}{rows.map(r => tdV(pfN(r.fAvgVar, 1, '°'), varCol(r.fAvgVar)))}</tr>
+                              </>)}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     );
@@ -4899,11 +4897,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
                   </div>
 
-                  {/* ── Trial Assessment (read-only summary) ── */}
-                  {(() => {
-                    const hasAssessment = venue.insightTpmPerformance || venue.insightOilLongevity ||
-                      venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations;
-                    if (!hasAssessment) return null;
+                  {false && (() => {
+                    const hasAssessment = false;
 
                     const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
                     const tpmD  = parseSafe(venue.insightTpmPerformance);
