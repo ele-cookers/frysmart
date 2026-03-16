@@ -1070,7 +1070,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [calFryerTab, setCalFryerTab] = useState(1); // Fryer tab within calendar sub-tab
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
-  const [insightForm, setInsightForm] = useState({ tpmPerformance: '', oilLongevity: '', tempObservations: '', recommendations: '' }); // BDM assessment form on Trial Calendar tab
+  const [insightForm, setInsightForm] = useState({ tpmPerformance: '', tpmRating: '', oilLongevity: '', oilRating: '', tempObservations: '', tempRating: '', recommendations: '', overallRating: '' }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
   const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
   const [summaryEditMode, setSummaryEditMode] = useState(false); // edit mode for trial findings in summary
@@ -1164,9 +1164,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageNoteText(v?.trialNotes || '');
       setInsightForm({
         tpmPerformance:   v?.insightTpmPerformance   || '',
+        tpmRating:        v?.insightTpmRating        || '',
         oilLongevity:     v?.insightOilLongevity     || '',
+        oilRating:        v?.insightOilRating        || '',
         tempObservations: v?.insightTempObservations || '',
+        tempRating:       v?.insightTempRating       || '',
         recommendations:  v?.insightRecommendations  || '',
+        overallRating:    v?.insightOverallRating    || '',
       });
     }
   }, [manageVenueId]); // eslint-disable-line
@@ -3913,64 +3917,106 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const avgTempVar = tempVarVals.length > 0
                       ? tempVarVals.reduce((a, b) => a + b, 0) / tempVarVals.length : null;
 
-                    const fieldLabel = (text) => (
-                      <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{text}</div>
+                    const taStyle = {
+                      width: '100%', minHeight: '58px', padding: '8px 10px',
+                      border: '1.5px solid #e8edf2', borderRadius: '7px',
+                      fontSize: '12px', color: '#374151', fontFamily: 'inherit',
+                      fontWeight: '500', resize: 'vertical', outline: 'none',
+                      boxSizing: 'border-box', lineHeight: '1.5', background: '#fafbfc',
+                    };
+
+                    // Rating pill helper — renders selectable pills for a given field key
+                    const RatingPills = ({ fieldKey, options }) => (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                        {options.map(opt => {
+                          const active = insightForm[fieldKey] === opt.value;
+                          return (
+                            <button key={opt.value} onClick={() => setInsightForm(f => ({ ...f, [fieldKey]: active ? '' : opt.value }))}
+                              style={{ padding: '4px 11px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', border: `1.5px solid ${active ? opt.color : '#e2e8f0'}`, background: active ? opt.bg : 'white', color: active ? opt.text : '#94a3b8', transition: 'all 0.12s' }}>
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     );
-                    const hint = (text) => (
-                      <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '500', marginBottom: '6px' }}>{text}</div>
+
+                    // Quadrant card wrapper
+                    const QCard = ({ icon: Icon, iconColor, title, hint, children }) => (
+                      <div style={{ background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: hint ? '4px' : '10px' }}>
+                          <Icon size={14} color={iconColor} strokeWidth={2.5} />
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{title}</span>
+                        </div>
+                        {hint && <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', marginBottom: '10px' }}>{hint}</div>}
+                        {children}
+                      </div>
                     );
-                    const taStyle = { width: '100%', minHeight: '68px', padding: '9px 11px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', resize: 'vertical', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5' };
+
+                    const GREEN  = { color: '#059669', bg: '#d1fae5', text: '#065f46' };
+                    const BLUE   = { color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' };
+                    const AMBER  = { color: '#f59e0b', bg: '#fef3c7', text: '#92400e' };
+                    const RED    = { color: '#ef4444', bg: '#fee2e2', text: '#991b1b' };
 
                     return (
                       <div style={{ marginTop: '24px' }}>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
-                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px' }}>Trial Assessment</div>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '14px' }}>Trial Assessment</div>
 
-                        {/* TPM Performance */}
-                        <div style={{ marginBottom: '14px' }}>
-                          {fieldLabel('TPM Performance')}
-                          {(maxTPM != null || avgTPM != null) && hint(`Peak: ${maxTPM ?? '—'}  ·  Avg: ${avgTPM != null ? avgTPM.toFixed(1) : '—'}`)}
-                          <textarea
-                            style={taStyle}
-                            placeholder="e.g. Oil peaked at 26 TPM in week 2 — pushed into critical range. Venue changes oil reactively rather than on a schedule..."
-                            value={insightForm.tpmPerformance}
-                            onChange={e => setInsightForm(f => ({ ...f, tpmPerformance: e.target.value }))}
-                          />
-                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
-                        {/* Oil Longevity */}
-                        <div style={{ marginBottom: '14px' }}>
-                          {fieldLabel('Oil Longevity')}
-                          {maxOilAge != null && hint(`Max lifespan recorded: ${maxOilAge} days`)}
-                          <textarea
-                            style={taStyle}
-                            placeholder="e.g. Oil lasted an average of 11 days before change — above their current practice with competitor oil..."
-                            value={insightForm.oilLongevity}
-                            onChange={e => setInsightForm(f => ({ ...f, oilLongevity: e.target.value }))}
-                          />
-                        </div>
+                          {/* TPM Performance */}
+                          <QCard icon={Activity} iconColor="#1a428a" title="TPM Performance"
+                            hint={(maxTPM != null || avgTPM != null) ? `Peak: ${maxTPM ?? '—'} · Avg: ${avgTPM != null ? avgTPM.toFixed(1) : '—'}` : null}>
+                            <RatingPills fieldKey="tpmRating" options={[
+                              { value: 'excellent',        label: 'Excellent',         ...GREEN  },
+                              { value: 'good',             label: 'Good',              ...BLUE   },
+                              { value: 'needs-improvement',label: 'Needs Improvement', ...AMBER  },
+                              { value: 'critical',         label: 'Critical',          ...RED    },
+                            ]} />
+                            <textarea style={taStyle} placeholder="Add notes on TPM trends, change patterns, anomalies..."
+                              value={insightForm.tpmPerformance}
+                              onChange={e => setInsightForm(f => ({ ...f, tpmPerformance: e.target.value }))} />
+                          </QCard>
 
-                        {/* Temperature Observations */}
-                        <div style={{ marginBottom: '14px' }}>
-                          {fieldLabel('Temperature Observations')}
-                          {avgTempVar != null && hint(`Avg set vs actual variance: ${avgTempVar.toFixed(1)}°`)}
-                          <textarea
-                            style={taStyle}
-                            placeholder="e.g. Actual temp consistently running ~8° below set temp on fryer 2 — may need thermostat calibration before next visit..."
-                            value={insightForm.tempObservations}
-                            onChange={e => setInsightForm(f => ({ ...f, tempObservations: e.target.value }))}
-                          />
-                        </div>
+                          {/* Oil Longevity */}
+                          <QCard icon={Droplets} iconColor="#0ea5e9" title="Oil Longevity"
+                            hint={maxOilAge != null ? `Max lifespan recorded: ${maxOilAge} days` : null}>
+                            <RatingPills fieldKey="oilRating" options={[
+                              { value: 'extended',        label: 'Extended Life',     ...GREEN },
+                              { value: 'on-track',        label: 'On Track',          ...BLUE  },
+                              { value: 'below-average',   label: 'Below Average',     ...AMBER },
+                            ]} />
+                            <textarea style={taStyle} placeholder="How did oil lifespan compare to their current practice?"
+                              value={insightForm.oilLongevity}
+                              onChange={e => setInsightForm(f => ({ ...f, oilLongevity: e.target.value }))} />
+                          </QCard>
 
-                        {/* Recommendations */}
-                        <div style={{ marginBottom: '18px' }}>
-                          {fieldLabel('Recommendations')}
-                          <textarea
-                            style={taStyle}
-                            placeholder="e.g. Suggest moving to weekly scheduled top-ups, recalibrate fryer 2, and revisit pricing conversation once 30 days of data is in..."
-                            value={insightForm.recommendations}
-                            onChange={e => setInsightForm(f => ({ ...f, recommendations: e.target.value }))}
-                          />
+                          {/* Temperature Control */}
+                          <QCard icon={Flame} iconColor="#f97316" title="Temperature Control"
+                            hint={avgTempVar != null ? `Avg set vs actual variance: ${avgTempVar.toFixed(1)}°` : 'No temperature data recorded'}>
+                            <RatingPills fieldKey="tempRating" options={[
+                              { value: 'well-calibrated',   label: 'Well Calibrated',   ...GREEN },
+                              { value: 'minor-variance',    label: 'Minor Variance',     ...AMBER },
+                              { value: 'needs-calibration', label: 'Needs Calibration',  ...RED   },
+                            ]} />
+                            <textarea style={taStyle} placeholder="Note any set vs actual temp gaps, fryer-specific issues..."
+                              value={insightForm.tempObservations}
+                              onChange={e => setInsightForm(f => ({ ...f, tempObservations: e.target.value }))} />
+                          </QCard>
+
+                          {/* Overall & Next Steps */}
+                          <QCard icon={Target} iconColor="#8b5cf6" title="Overall & Next Steps" hint={null}>
+                            <RatingPills fieldKey="overallRating" options={[
+                              { value: 'ready-to-convert', label: 'Ready to Convert',  ...GREEN },
+                              { value: 'progressing',      label: 'Progressing Well',  ...BLUE  },
+                              { value: 'needs-attention',  label: 'Needs Attention',   ...AMBER },
+                              { value: 'not-viable',       label: 'Not Viable',        ...RED   },
+                            ]} />
+                            <textarea style={taStyle} placeholder="Key recommendations, next visit actions, pricing conversation timing..."
+                              value={insightForm.recommendations}
+                              onChange={e => setInsightForm(f => ({ ...f, recommendations: e.target.value }))} />
+                          </QCard>
+
                         </div>
 
                         {/* Save button */}
@@ -3981,9 +4027,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               setInsightSaving(true);
                               await updateVenue(venue.id, {
                                 insightTpmPerformance:   insightForm.tpmPerformance,
+                                insightTpmRating:        insightForm.tpmRating,
                                 insightOilLongevity:     insightForm.oilLongevity,
+                                insightOilRating:        insightForm.oilRating,
                                 insightTempObservations: insightForm.tempObservations,
+                                insightTempRating:       insightForm.tempRating,
                                 insightRecommendations:  insightForm.recommendations,
+                                insightOverallRating:    insightForm.overallRating,
                               });
                               setInsightSaving(false);
                               setSuccessMsg('Assessment saved');
