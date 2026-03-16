@@ -3893,6 +3893,105 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
                     ))}
                   </div>
+
+                  {/* ── Trial Insights ── */}
+                  {allTrialReadings.length > 0 && (() => {
+                    const warn = _tpmThresholds.warning;
+                    const crit = _tpmThresholds.critical;
+
+                    // Temperature variance
+                    const tempVarVals = allTrialReadings
+                      .filter(r => r.setTemperature != null && r.actualTemperature != null &&
+                        String(r.setTemperature) !== '' && String(r.actualTemperature) !== '')
+                      .map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
+                    const avgTempVar = tempVarVals.length > 0
+                      ? tempVarVals.reduce((a, b) => a + b, 0) / tempVarVals.length : null;
+
+                    // Oil longevity
+                    const maxOilAge = oilAgeVals.length > 0 ? Math.max(...oilAgeVals) : null;
+
+                    // Reading coverage
+                    const expectedReadings = calDays.length * fc;
+                    const coverage = expectedReadings > 0
+                      ? Math.round((tpmVals.length / expectedReadings) * 100) : null;
+
+                    // Build insights list
+                    const insights = [];
+
+                    // 1. Peak TPM
+                    if (maxTPM != null) {
+                      if (maxTPM > crit) {
+                        insights.push({ color: '#ef4444', title: `Peak TPM: ${maxTPM}`, body: `Oil reached critical levels (>${crit}). More frequent top-ups or earlier changes would help.` });
+                      } else if (maxTPM > warn) {
+                        insights.push({ color: '#f59e0b', title: `Peak TPM: ${maxTPM}`, body: `Oil approached warning range. Keep monitoring closely.` });
+                      } else {
+                        insights.push({ color: '#10b981', title: `Peak TPM: ${maxTPM}`, body: `Oil quality stayed well within safe limits throughout the trial.` });
+                      }
+                    }
+
+                    // 2. Average TPM
+                    if (avgTPM != null) {
+                      if (avgTPM > crit) {
+                        insights.push({ color: '#ef4444', title: `Avg TPM: ${avgTPM.toFixed(1)}`, body: `Above critical threshold — oil was consistently degraded. Shorter change cycles are recommended.` });
+                      } else if (avgTPM > warn) {
+                        insights.push({ color: '#f59e0b', title: `Avg TPM: ${avgTPM.toFixed(1)}`, body: `In warning range on average — consider shortening change intervals.` });
+                      } else {
+                        insights.push({ color: '#10b981', title: `Avg TPM: ${avgTPM.toFixed(1)}`, body: `Oil quality was consistently healthy across the trial period.` });
+                      }
+                    }
+
+                    // 3. Oil longevity
+                    if (maxOilAge != null) {
+                      if (maxOilAge >= 14) {
+                        insights.push({ color: '#10b981', title: `Oil lifespan: ${maxOilAge} days`, body: `Strong longevity — the product is extending oil life well above typical change cycles.` });
+                      } else if (maxOilAge >= 7) {
+                        insights.push({ color: '#f59e0b', title: `Oil lifespan: ${maxOilAge} days`, body: `Solid mid-range lifespan. There may be room to extend change cycles further.` });
+                      } else {
+                        insights.push({ color: '#ef4444', title: `Oil lifespan: ${maxOilAge} days`, body: `Short change cycles — could indicate high-volume usage, degraded quality, or early disposal habits.` });
+                      }
+                    }
+
+                    // 4. Temperature variance
+                    if (avgTempVar != null) {
+                      if (avgTempVar >= 10) {
+                        insights.push({ color: '#ef4444', title: `Temp variance: ${avgTempVar.toFixed(1)}°`, body: `Significant gap between set and actual temperature. Fryer calibration or thermostat check is recommended.` });
+                      } else if (avgTempVar >= 5) {
+                        insights.push({ color: '#f59e0b', title: `Temp variance: ${avgTempVar.toFixed(1)}°`, body: `Minor variance between set and actual temperature — worth keeping an eye on.` });
+                      } else {
+                        insights.push({ color: '#10b981', title: `Temp variance: ${avgTempVar.toFixed(1)}°`, body: `Fryer is well-calibrated — set and actual temperatures are closely aligned.` });
+                      }
+                    }
+
+                    // 5. Reading coverage
+                    if (coverage != null) {
+                      if (coverage < 60) {
+                        insights.push({ color: '#ef4444', title: `Coverage: ${coverage}%`, body: `Significant gaps in readings. Insights above may not reflect the full trial. Encourage daily logging.` });
+                      } else if (coverage < 90) {
+                        insights.push({ color: '#f59e0b', title: `Coverage: ${coverage}%`, body: `Some missed readings. Daily logs will improve accuracy of trial data.` });
+                      } else {
+                        insights.push({ color: '#10b981', title: `Coverage: ${coverage}%`, body: `Excellent data quality — near-complete readings across the trial period.` });
+                      }
+                    }
+
+                    if (insights.length === 0) return null;
+                    return (
+                      <div style={{ marginTop: '24px' }}>
+                        <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Trial Insights</div>
+                        <div>
+                          {insights.map((ins, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '9px 0', borderBottom: i < insights.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: ins.color, marginTop: '4px', flexShrink: 0 }} />
+                              <div>
+                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>{ins.title} — </span>
+                                <span style={{ fontSize: '12px', color: '#64748b' }}>{ins.body}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
