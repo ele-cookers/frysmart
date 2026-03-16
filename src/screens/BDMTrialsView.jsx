@@ -3988,10 +3988,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     // Column group definitions — each group gets a tinted header
                     const groups = [
-                      hasTpm     && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg', 'Min'] },
-                      hasOilLife && { label: 'Oil Lifespan', bg: '#e0f2fe', color: '#0284c7', cols: ['Max', 'Avg'] },
-                      hasOilUsage && { label: 'Oil Usage',   bg: '#f0fdf4', color: '#16a34a', cols: [...(hasFresh ? ['Fresh fills'] : []), ...(hasTopUp ? ['Top-ups'] : []), 'Total'] },
-                      hasTemp    && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Min', 'Max', 'Variance'] },
+                      hasTpm      && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg', 'Min'] },
+                      hasOilLife  && { label: 'Oil Lifespan', bg: '#e0f2fe', color: '#0284c7', cols: ['Max', 'Avg'] },
+                      hasOilUsage && { label: 'Oil Usage',    bg: '#f0fdf4', color: '#16a34a', cols: [
+                        ...(hasFresh  ? ['Fresh #', 'Fresh L']  : []),
+                        ...(hasTopUp  ? ['Top-up #', 'Top-up L'] : []),
+                        'Total L',
+                      ]},
+                      hasTemp     && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Avg Variance'] },
                     ].filter(Boolean);
 
                     // Cell value + color extractor per column
@@ -4006,14 +4010,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         if (col === 'Avg') return { val: r.fAvgLife != null ? `${r.fAvgLife}d` : null, color: '#0ea5e9' };
                       }
                       if (grpLabel === 'Oil Usage') {
-                        if (col === 'Fresh fills') return { val: r.freshCount > 0 ? `${r.freshCount}×  ${pfL(r.freshLitres) || ''}`.trim() : null, color: '#374151' };
-                        if (col === 'Top-ups')     return { val: r.topUpCount > 0 ? `${r.topUpCount}×  ${pfL(r.topUpLitres) || ''}`.trim() : null, color: '#374151' };
-                        if (col === 'Total')       return { val: pfL(r.totalLitres), color: '#1a428a', bold: true };
+                        if (col === 'Fresh #')  return { val: r.freshCount > 0 ? `${r.freshCount}` : null,       color: '#374151' };
+                        if (col === 'Fresh L')  return { val: pfL(r.freshLitres),                                 color: '#374151' };
+                        if (col === 'Top-up #') return { val: r.topUpCount > 0 ? `${r.topUpCount}` : null,       color: '#374151' };
+                        if (col === 'Top-up L') return { val: pfL(r.topUpLitres),                                 color: '#374151' };
+                        if (col === 'Total L')  return { val: pfL(r.totalLitres),                                 color: '#1a428a', bold: true };
                       }
                       if (grpLabel === 'Temperature') {
-                        if (col === 'Min')      return { val: pfN(r.fMinTemp, 0, '°'), color: '#64748b' };
-                        if (col === 'Max')      return { val: pfN(r.fMaxTemp, 0, '°'), color: '#64748b' };
-                        if (col === 'Variance') return { val: pfN(r.fAvgVar, 1, '°'), color: varCol(r.fAvgVar) };
+                        if (col === 'Avg Variance') return { val: pfN(r.fAvgVar, 1, '°'), color: varCol(r.fAvgVar) };
                       }
                       return { val: null };
                     };
