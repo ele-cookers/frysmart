@@ -4037,15 +4037,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         'About the same',
                         'More top-ups needed',
                       ], '#0ea5e9')}
-                      {subLbl('Fryer Consistency')}
-                      {mkSel('oilNotes', [
-                        'Consistent lifespan across all fryers',
-                        'Fryer 1 showed shorter lifespan',
-                        'Fryer 2 showed shorter lifespan',
-                        'Multiple fryers with reduced lifespan',
-                        'Temperature likely impacting lifespan',
-                        'No notable lifespan issues',
-                      ], '#0ea5e9')}
                     </div>
 
                     {/* ── Temperature Control ── */}
@@ -4066,13 +4057,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         'No calibration needed',
                         'Minor adjustment recommended',
                         'Professional service required',
-                      ], '#f97316')}
-                      {subLbl('Impact on Oil')}
-                      {mkSel('tempOilImpact', [
-                        'No impact detected',
-                        'Minor impact on TPM trends',
-                        'Likely contributing to faster TPM rise',
-                        'Direct correlation to oil degradation',
                       ], '#f97316')}
                     </div>
 
@@ -4857,14 +4841,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
                           ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
                         ], '#f0f9ff', '#e0f2fe') : null,
-                        fields: [['Lifespan vs Competitor', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq], ['Fryer Consistency', oilD.notes]],
+                        fields: [['Lifespan vs Competitor', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq]],
                       },
                       {
                         icon: Flame, iconColor: '#f97316', title: 'Temperature Control',
                         stats: avgTempVar != null ? rStatBand([
                           ['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626'],
                         ], '#fff7ed', '#fed7aa') : null,
-                        fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration], ['Impact on Oil', tmpD.oilImpact]],
+                        fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration]],
                       },
                       {
                         icon: Cog, iconColor: '#64748b', title: 'Oil Management',
