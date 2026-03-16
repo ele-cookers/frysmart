@@ -3939,31 +3939,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {/* ── Per-Fryer Stat Cards ── */}
                   {allTrialReadings.length > 0 && (() => {
-                    const varCol = (v) => v == null ? '#cbd5e1' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
+                    const varCol = (v) => v == null ? '#94a3b8' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
 
-                    // Horizontal stat band inside a card
-                    const miniStatBand = (stats, bg, border) => (
-                      <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '7px', overflow: 'hidden', marginBottom: '10px' }}>
-                        {stats.filter(([, v]) => v != null).map(([label, value, color], i) => (
-                          <div key={label} style={{ flex: 1, padding: '7px 4px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${border}` : 'none' }}>
-                            <div style={{ fontSize: '17px', fontWeight: '800', color: color || '#374151', lineHeight: 1 }}>{value}</div>
-                            <div style={{ fontSize: '8px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '2px' }}>{label}</div>
-                          </div>
-                        ))}
+                    // Single stat row: label left, value right
+                    const sRow = (label, value, color) => (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>{label}</span>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: color || '#374151' }}>{value}</span>
                       </div>
                     );
 
-                    const secLbl = (text) => (
-                      <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>{text}</div>
-                    );
-
-                    const usageRow = (label, count, litres) => (count > 0 || litres > 0) && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>{label}</span>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#374151' }}>
-                          {count > 0 ? `${count}×` : ''}{count > 0 && litres > 0 ? ' · ' : ''}{litres > 0 ? `${Math.round(litres * 10) / 10}L` : ''}
-                        </span>
-                      </div>
+                    // Section group header inside a card
+                    const grpHdr = (text) => (
+                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '12px', marginBottom: '2px', paddingTop: '10px', borderTop: '1px solid #f0f4f8' }}>{text}</div>
                     );
 
                     const cards = fryerList.map(fn => {
@@ -3974,7 +3962,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const tpmVals = frdgs.filter(r => parseFloat(r.tpmValue) > 0).map(r => parseFloat(r.tpmValue));
                       const fPeak = tpmVals.length > 0 ? Math.max(...tpmVals) : null;
                       const fMin  = tpmVals.length > 0 ? Math.min(...tpmVals) : null;
-                      const fAvg  = tpmVals.length > 0 ? (tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length) : null;
+                      const fAvg  = tpmVals.length > 0 ? tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length : null;
 
                       // Oil lifespan
                       const frdgsSorted = [...frdgs].sort((a, b) => a.readingDate.localeCompare(b.readingDate));
@@ -4006,62 +3994,43 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const fMinTemp = actualTemps.length > 0 ? Math.round(Math.min(...actualTemps)) : null;
                       const fMaxTemp = actualTemps.length > 0 ? Math.round(Math.max(...actualTemps)) : null;
 
-                      const hasOilUsage = totalLitres > 0;
-
                       return (
-                        <div key={fn} style={{ background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 14px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a', marginBottom: '12px' }}>
+                        <div key={fn} style={{ background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' }}>
+                          {/* Card header */}
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a', paddingBottom: '10px', borderBottom: '2px solid #e8edf2', marginBottom: '4px' }}>
                             {fc > 1 ? `Fryer ${fn}` : 'Trial Stats'}
                           </div>
 
                           {/* TPM */}
-                          {fPeak != null && (() => {
-                            const tpmStats = [
-                              ['Peak', fPeak, tpmColor(fPeak)],
-                              ['Avg', fAvg != null ? fAvg.toFixed(1) : null, tpmColor(fAvg)],
-                              ['Min', fMin, tpmColor(fMin)],
-                            ];
-                            return (<>
-                              {secLbl('TPM')}
-                              {miniStatBand(tpmStats, '#f0f4ff', '#e0e7ff')}
-                            </>);
-                          })()}
+                          {fPeak != null && (<>
+                            {grpHdr('TPM')}
+                            {sRow('Peak', fPeak, tpmColor(fPeak))}
+                            {sRow('Average', fAvg != null ? fAvg.toFixed(1) : '—', tpmColor(fAvg))}
+                            {sRow('Min', fMin, tpmColor(fMin))}
+                          </>)}
 
                           {/* Oil Lifespan */}
-                          {fMaxLife != null && (() => (
-                            <>
-                              {secLbl('Oil Lifespan')}
-                              {miniStatBand([
-                                ['Max', `${fMaxLife}d`, '#0ea5e9'],
-                                ['Avg', fAvgLife != null ? `${fAvgLife}d` : null, '#0ea5e9'],
-                              ], '#f0f9ff', '#e0f2fe')}
-                            </>
-                          ))()}
+                          {fMaxLife != null && (<>
+                            {grpHdr('Oil Lifespan')}
+                            {sRow('Max', `${fMaxLife} days`, '#0ea5e9')}
+                            {fAvgLife != null && sRow('Average', `${fAvgLife} days`, '#0ea5e9')}
+                          </>)}
 
                           {/* Oil Usage */}
-                          {hasOilUsage && (
-                            <div style={{ marginBottom: '10px' }}>
-                              {secLbl('Oil Usage')}
-                              {usageRow('Fresh fills', freshCount, freshLitres)}
-                              {usageRow('Top-ups', topUpCount, topUpLitres)}
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', marginTop: '2px' }}>
-                                <span style={{ fontSize: '11px', fontWeight: '600', color: '#374151' }}>Total</span>
-                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#1a428a' }}>{Math.round(totalLitres * 10) / 10}L</span>
-                              </div>
-                            </div>
-                          )}
+                          {totalLitres > 0 && (<>
+                            {grpHdr('Oil Usage')}
+                            {freshCount > 0 && sRow('Fresh fills', `${freshCount}×${freshLitres > 0 ? `  ${Math.round(freshLitres * 10) / 10}L` : ''}`, '#374151')}
+                            {topUpCount > 0 && sRow('Top-ups', `${topUpCount}×${topUpLitres > 0 ? `  ${Math.round(topUpLitres * 10) / 10}L` : ''}`, '#374151')}
+                            {sRow('Total oil', `${Math.round(totalLitres * 10) / 10}L`, '#1a428a')}
+                          </>)}
 
                           {/* Temperature */}
-                          {fMinTemp != null && (() => (
-                            <>
-                              {secLbl('Temperature')}
-                              {miniStatBand([
-                                ['Min', `${fMinTemp}°`, '#64748b'],
-                                ['Max', `${fMaxTemp}°`, '#64748b'],
-                                fAvgVar != null ? ['Avg Var', `${fAvgVar.toFixed(1)}°`, varCol(fAvgVar)] : [null, null, null],
-                              ], '#f8fafc', '#e8edf2')}
-                            </>
-                          ))()}
+                          {fMinTemp != null && (<>
+                            {grpHdr('Temperature')}
+                            {sRow('Min actual', `${fMinTemp}°`, '#64748b')}
+                            {sRow('Max actual', `${fMaxTemp}°`, '#64748b')}
+                            {fAvgVar != null && sRow('Avg variance', `${fAvgVar.toFixed(1)}°`, varCol(fAvgVar))}
+                          </>)}
                         </div>
                       );
                     }).filter(Boolean);
@@ -4071,6 +4040,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     return (
                       <div style={{ marginTop: '20px' }}>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Fryer Stats</div>
                         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '12px' }}>
                           {cards}
                         </div>
@@ -5184,6 +5154,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </>
                     );
                   })()}
+
+                  {/* ── Divider before Internal Use ── */}
+                  <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '28px 0 24px 0' }} />
 
                   {/* ── Bottom: Internal Use section ── */}
                   <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
