@@ -3939,19 +3939,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {/* ── Per-Fryer Stat Table (transposed: stats=rows, fryers=cols) ── */}
                   {allTrialReadings.length > 0 && (() => {
+                    // Fryers = rows, stat groups = column groups
                     const varCol = (v) => v == null ? '#94a3b8' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
-                    const pfN = (v, decimals = 0, suffix = '') => v != null ? `${decimals > 0 ? Number(v).toFixed(decimals) : Math.round(v)}${suffix}` : '—';
-                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : '—';
+                    const pfN = (v, dec = 0, sfx = '') => v != null ? `${dec > 0 ? Number(v).toFixed(dec) : Math.round(v)}${sfx}` : null;
+                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : null;
 
-                    const rows = fryerList.map(fn => {
+                    const fryerData = fryerList.map(fn => {
                       const frdgs = allTrialReadings.filter(r => (Number(r.fryerNumber) || 1) === fn);
                       if (frdgs.length === 0) return null;
-
                       const tpmVals = frdgs.filter(r => parseFloat(r.tpmValue) > 0).map(r => parseFloat(r.tpmValue));
                       const fPeak = tpmVals.length > 0 ? Math.max(...tpmVals) : null;
                       const fMin  = tpmVals.length > 0 ? Math.min(...tpmVals) : null;
                       const fAvg  = tpmVals.length > 0 ? tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length : null;
-
                       const frdgsSorted = [...frdgs].sort((a, b) => a.readingDate.localeCompare(b.readingDate));
                       const runs = []; let curRun = [];
                       for (const r of frdgsSorted) {
@@ -3960,11 +3959,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         else if (age >= 1) curRun.push(r);
                       }
                       if (curRun.length > 0) runs.push(curRun);
-                      const validRuns = runs.filter(run => Number(run[0].oilAge) === 1);
-                      const lifespans = validRuns.map(run => Math.max(...run.map(r => Number(r.oilAge))));
+                      const lifespans = runs.filter(run => Number(run[0].oilAge) === 1).map(run => Math.max(...run.map(r => Number(r.oilAge))));
                       const fMaxLife = lifespans.length > 0 ? Math.max(...lifespans) : null;
                       const fAvgLife = lifespans.length > 0 ? Math.round(lifespans.reduce((a, b) => a + b, 0) / lifespans.length) : null;
-
                       const freshRdgs = frdgs.filter(r => Number(r.oilAge) === 1);
                       const topUpRdgs = frdgs.filter(r => Number(r.oilAge) > 1 && (parseFloat(r.litresFilled) || 0) > 0);
                       const freshCount = freshRdgs.length;
@@ -3972,73 +3969,107 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       const topUpCount = topUpRdgs.length;
                       const topUpLitres = topUpRdgs.reduce((s, r) => s + (parseFloat(r.litresFilled) || 0), 0);
                       const totalLitres = freshLitres + topUpLitres;
-
                       const varVals = frdgs.filter(r => r.setTemperature != null && r.actualTemperature != null && String(r.setTemperature) !== '' && String(r.actualTemperature) !== '').map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
                       const fAvgVar = varVals.length > 0 ? varVals.reduce((a, b) => a + b, 0) / varVals.length : null;
                       const actualTemps = frdgs.filter(r => r.actualTemperature != null && String(r.actualTemperature) !== '').map(r => parseFloat(r.actualTemperature));
                       const fMinTemp = actualTemps.length > 0 ? Math.round(Math.min(...actualTemps)) : null;
                       const fMaxTemp = actualTemps.length > 0 ? Math.round(Math.max(...actualTemps)) : null;
-
                       return { fn, fPeak, fMin, fAvg, fMaxLife, fAvgLife, freshCount, freshLitres, topUpCount, topUpLitres, totalLitres, fMinTemp, fMaxTemp, fAvgVar };
                     }).filter(Boolean);
 
-                    if (rows.length === 0) return null;
+                    if (fryerData.length === 0) return null;
 
-                    const colCount = rows.length;
-                    const thS = (extra = {}) => ({ padding: '7px 12px', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', background: '#f8fafc', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', ...extra });
-                    const tdV = (value, color = '#374151', extra = {}) => (
-                      <td style={{ padding: '7px 12px', fontSize: '12px', fontWeight: '600', textAlign: 'center', color: value === '—' || value == null ? '#cbd5e1' : color, borderBottom: '1px solid #f1f5f9', ...extra }}>{value ?? '—'}</td>
-                    );
-                    const grpRow = (label) => (
-                      <tr key={label + '_grp'}>
-                        <td colSpan={colCount + 1} style={{ padding: '8px 12px 3px', fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', background: '#f8fafc', borderTop: '1px solid #e8edf2' }}>{label}</td>
-                      </tr>
-                    );
-                    const rowLbl = (text, bold = false) => (
-                      <td style={{ padding: '7px 12px', fontSize: '12px', color: bold ? '#374151' : '#64748b', fontWeight: bold ? '700' : '400', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{text}</td>
-                    );
+                    const hasTpm      = fryerData.some(r => r.fPeak != null);
+                    const hasOilLife  = fryerData.some(r => r.fMaxLife != null);
+                    const hasOilUsage = fryerData.some(r => r.totalLitres > 0);
+                    const hasTemp     = fryerData.some(r => r.fMinTemp != null);
+                    const hasFresh    = fryerData.some(r => r.freshCount > 0);
+                    const hasTopUp    = fryerData.some(r => r.topUpCount > 0);
 
-                    const hasTpm      = rows.some(r => r.fPeak != null);
-                    const hasOilLife  = rows.some(r => r.fMaxLife != null);
-                    const hasOilUsage = rows.some(r => r.totalLitres > 0);
-                    const hasTemp     = rows.some(r => r.fMinTemp != null);
+                    // Column group definitions — each group gets a tinted header
+                    const groups = [
+                      hasTpm     && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg', 'Min'] },
+                      hasOilLife && { label: 'Oil Lifespan', bg: '#e0f2fe', color: '#0284c7', cols: ['Max', 'Avg'] },
+                      hasOilUsage && { label: 'Oil Usage',   bg: '#f0fdf4', color: '#16a34a', cols: [...(hasFresh ? ['Fresh fills'] : []), ...(hasTopUp ? ['Top-ups'] : []), 'Total'] },
+                      hasTemp    && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Min', 'Max', 'Variance'] },
+                    ].filter(Boolean);
+
+                    // Cell value + color extractor per column
+                    const getCell = (r, grpLabel, col) => {
+                      if (grpLabel === 'TPM') {
+                        if (col === 'Peak') return { val: pfN(r.fPeak),       color: tpmColor(r.fPeak) };
+                        if (col === 'Avg')  return { val: pfN(r.fAvg, 1),     color: tpmColor(r.fAvg) };
+                        if (col === 'Min')  return { val: pfN(r.fMin),         color: tpmColor(r.fMin) };
+                      }
+                      if (grpLabel === 'Oil Lifespan') {
+                        if (col === 'Max') return { val: r.fMaxLife != null ? `${r.fMaxLife}d` : null, color: '#0ea5e9' };
+                        if (col === 'Avg') return { val: r.fAvgLife != null ? `${r.fAvgLife}d` : null, color: '#0ea5e9' };
+                      }
+                      if (grpLabel === 'Oil Usage') {
+                        if (col === 'Fresh fills') return { val: r.freshCount > 0 ? `${r.freshCount}×  ${pfL(r.freshLitres) || ''}`.trim() : null, color: '#374151' };
+                        if (col === 'Top-ups')     return { val: r.topUpCount > 0 ? `${r.topUpCount}×  ${pfL(r.topUpLitres) || ''}`.trim() : null, color: '#374151' };
+                        if (col === 'Total')       return { val: pfL(r.totalLitres), color: '#1a428a', bold: true };
+                      }
+                      if (grpLabel === 'Temperature') {
+                        if (col === 'Min')      return { val: pfN(r.fMinTemp, 0, '°'), color: '#64748b' };
+                        if (col === 'Max')      return { val: pfN(r.fMaxTemp, 0, '°'), color: '#64748b' };
+                        if (col === 'Variance') return { val: pfN(r.fAvgVar, 1, '°'), color: varCol(r.fAvgVar) };
+                      }
+                      return { val: null };
+                    };
+
+                    const borderL = '2px solid #e2e8f0';
 
                     return (
                       <div style={{ marginTop: '20px' }}>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Fryer Stats</div>
                         <div style={{ overflowX: 'auto' }}>
-                          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: `${160 + colCount * 100}px` }}>
+                          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                             <thead>
+                              {/* Group header row */}
                               <tr>
-                                <th style={thS({ textAlign: 'left', background: 'white', color: 'transparent' })}>—</th>
-                                {rows.map(r => <th key={r.fn} style={thS({ color: '#1a428a' })}>{fc > 1 ? `Fryer ${r.fn}` : 'Value'}</th>)}
+                                <th style={{ padding: '0', background: 'white', borderBottom: '1px solid #e2e8f0' }} />
+                                {groups.map(g => (
+                                  <th key={g.label} colSpan={g.cols.length}
+                                    style={{ padding: '6px 10px 5px', fontSize: '9px', fontWeight: '800', color: g.color, textTransform: 'uppercase', letterSpacing: '0.6px', textAlign: 'center', background: g.bg, borderLeft: borderL, borderBottom: '1px solid ' + g.bg }}>
+                                    {g.label}
+                                  </th>
+                                ))}
+                              </tr>
+                              {/* Sub-column header row */}
+                              <tr style={{ background: '#f8fafc' }}>
+                                <th style={{ padding: '5px 12px', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                  {fc > 1 ? 'Fryer' : ''}
+                                </th>
+                                {groups.map(g => g.cols.map((col, ci) => (
+                                  <th key={g.label + col} style={{
+                                    padding: '5px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b',
+                                    textAlign: 'center', background: g.bg + '88', borderBottom: '2px solid #e2e8f0',
+                                    borderLeft: ci === 0 ? borderL : '1px solid #f1f5f9', whiteSpace: 'nowrap',
+                                  }}>{col}</th>
+                                )))}
                               </tr>
                             </thead>
                             <tbody>
-                              {hasTpm && (<>
-                                {grpRow('TPM')}
-                                <tr>{rowLbl('Peak')}{rows.map(r => tdV(pfN(r.fPeak), tpmColor(r.fPeak)))}</tr>
-                                <tr>{rowLbl('Average')}{rows.map(r => tdV(pfN(r.fAvg, 1), tpmColor(r.fAvg)))}</tr>
-                                <tr>{rowLbl('Min')}{rows.map(r => tdV(pfN(r.fMin), tpmColor(r.fMin)))}</tr>
-                              </>)}
-                              {hasOilLife && (<>
-                                {grpRow('Oil Lifespan')}
-                                <tr>{rowLbl('Max')}{rows.map(r => tdV(r.fMaxLife != null ? `${r.fMaxLife}d` : '—', '#0ea5e9'))}</tr>
-                                <tr>{rowLbl('Average')}{rows.map(r => tdV(r.fAvgLife != null ? `${r.fAvgLife}d` : '—', '#0ea5e9'))}</tr>
-                              </>)}
-                              {hasOilUsage && (<>
-                                {grpRow('Oil Usage')}
-                                {rows.some(r => r.freshCount > 0) && <tr>{rowLbl('Fresh fills')}{rows.map(r => tdV(r.freshCount > 0 ? `${r.freshCount}× · ${pfL(r.freshLitres)}` : '—'))}</tr>}
-                                {rows.some(r => r.topUpCount > 0) && <tr>{rowLbl('Top-ups')}{rows.map(r => tdV(r.topUpCount > 0 ? `${r.topUpCount}× · ${pfL(r.topUpLitres)}` : '—'))}</tr>}
-                                <tr>{rowLbl('Total oil', true)}{rows.map(r => tdV(pfL(r.totalLitres), '#1a428a'))}</tr>
-                              </>)}
-                              {hasTemp && (<>
-                                {grpRow('Temperature')}
-                                <tr>{rowLbl('Min actual')}{rows.map(r => tdV(pfN(r.fMinTemp, 0, '°'), '#64748b'))}</tr>
-                                <tr>{rowLbl('Max actual')}{rows.map(r => tdV(pfN(r.fMaxTemp, 0, '°'), '#64748b'))}</tr>
-                                <tr>{rowLbl('Avg variance')}{rows.map(r => tdV(pfN(r.fAvgVar, 1, '°'), varCol(r.fAvgVar)))}</tr>
-                              </>)}
+                              {fryerData.map((r, ri) => (
+                                <tr key={r.fn} style={{ background: ri % 2 === 0 ? 'white' : '#fafbfc' }}>
+                                  <td style={{ padding: '8px 12px', fontSize: '12px', fontWeight: '700', color: '#1a428a', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
+                                    {fc > 1 ? `Fryer ${r.fn}` : 'Value'}
+                                  </td>
+                                  {groups.map(g => g.cols.map((col, ci) => {
+                                    const { val, color, bold } = getCell(r, g.label, col);
+                                    return (
+                                      <td key={g.label + col} style={{
+                                        padding: '8px 10px', fontSize: '12px', fontWeight: bold ? '700' : '600',
+                                        textAlign: 'center', color: val ? color || '#374151' : '#e2e8f0',
+                                        borderBottom: '1px solid #f1f5f9',
+                                        borderLeft: ci === 0 ? borderL : '1px solid #f8fafc',
+                                      }}>{val || '—'}</td>
+                                    );
+                                  }))}
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         </div>
