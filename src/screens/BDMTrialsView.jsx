@@ -4520,9 +4520,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {/* Right: goals — on mobile appears FIRST (above comparison) */}
                     <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px', paddingBottom: isDesktop ? '0' : '20px', marginBottom: isDesktop ? '0' : '20px', borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8', order: isDesktop ? 0 : 0 }}>
                       {rSecLabel('Trial Goals Achieved', 0)}
-                      {trialGoalsList.length > 0 ? (
+                      {(() => {
+                        // Merge start goals + achieved goals so achieved goals always show
+                        // even when no goals were set at trial start
+                        const displayGoals = [...new Set([...trialGoalsList, ...achievedGoals])];
+                        return displayGoals.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                          {trialGoalsList.map(g => {
+                          {displayGoals.map(g => {
                             const GoalIcon = GOAL_ICONS[g];
                             const achieved = achievedGoals.includes(g);
                             return (
@@ -4540,7 +4544,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         </div>
                       ) : (
                         <p style={{ fontSize: '12px', color: '#cbd5e1', fontStyle: 'italic', margin: '0' }}>No goals selected.</p>
-                      )}
+                      );
+                      })()}
                     </div>
                   </div>
 
