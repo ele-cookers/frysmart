@@ -1079,6 +1079,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     overallRecommendation: '', overallNextVisit: '', overallConversionRead: '',
   }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
+  const [insightEditMode, setInsightEditMode] = useState(true); // true = editing, false = viewing saved data
   const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
   const [summaryEditMode, setSummaryEditMode] = useState(false); // edit mode for trial findings in summary
   const [summaryFindingsText, setSummaryFindingsText] = useState(''); // editable findings text
@@ -1176,6 +1177,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const mgmtD = parseSafe(v?.insightOilManagement);
       const fqD   = parseSafe(v?.insightFoodQuality);
       const ovrD  = parseSafe(v?.insightRecommendations);
+      const hasInsightData = !!(v?.insightTpmPerformance || v?.insightOilLongevity || v?.insightTempObservations || v?.insightOilManagement || v?.insightFoodQuality || v?.insightRecommendations);
+      setInsightEditMode(!hasInsightData); // view mode if saved data exists, edit mode if blank
       setInsightForm({
         tpmTrends:              tpmD.trends              || '',
         tpmChangePatterns:      tpmD.changePatterns      || '',
@@ -3988,7 +3991,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     // Column group definitions — each group gets a tinted header
                     const groups = [
-                      hasTpm      && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg', 'Min'] },
+                      hasTpm      && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg'] },
                       hasOilLife  && { label: 'Oil Lifespan', bg: '#e0f2fe', color: '#0284c7', cols: ['Max', 'Avg'] },
                       hasOilUsage && { label: 'Oil Usage',    bg: '#f0fdf4', color: '#16a34a', cols: [
                         ...(hasFresh  ? ['Fresh #', 'Fresh L']  : []),
@@ -4001,9 +4004,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     // Cell value + color extractor per column
                     const getCell = (r, grpLabel, col) => {
                       if (grpLabel === 'TPM') {
-                        if (col === 'Peak') return { val: pfN(r.fPeak),       color: tpmColor(r.fPeak) };
-                        if (col === 'Avg')  return { val: pfN(r.fAvg, 1),     color: tpmColor(r.fAvg) };
-                        if (col === 'Min')  return { val: pfN(r.fMin),         color: tpmColor(r.fMin) };
+                        if (col === 'Peak') return { val: pfN(r.fPeak),   color: tpmColor(r.fPeak) };
+                        if (col === 'Avg')  return { val: pfN(r.fAvg, 1), color: tpmColor(r.fAvg) };
                       }
                       if (grpLabel === 'Oil Lifespan') {
                         if (col === 'Max') return { val: r.fMaxLife != null ? `${r.fMaxLife}d` : null, color: '#0ea5e9' };
@@ -4120,23 +4122,42 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
 
-              // Dropdown — stores the label text so summary report can display it directly
+              // Dropdown in edit mode, read-only chip in view mode
               const selS = { width: '100%', padding: '8px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white', cursor: 'pointer', boxSizing: 'border-box' };
-              const mkSel = (fieldKey, opts, accentColor) => (
-                <select style={{ ...selS, color: insightForm[fieldKey] ? '#374151' : '#94a3b8' }}
-                  value={insightForm[fieldKey]}
-                  onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
-                  onFocus={e => { e.target.style.borderColor = accentColor; }}
-                  onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
-                  <option value="">— Select —</option>
-                  {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              );
+              const mkSel = (fieldKey, opts, accentColor) => {
+                if (!insightEditMode) {
+                  const val = insightForm[fieldKey];
+                  return (
+                    <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: val ? '600' : '400', color: val ? '#1f2937' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
+                      {val || 'Not recorded'}
+                    </div>
+                  );
+                }
+                return (
+                  <select style={{ ...selS, color: insightForm[fieldKey] ? '#374151' : '#94a3b8' }}
+                    value={insightForm[fieldKey]}
+                    onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
+                    onFocus={e => { e.target.style.borderColor = accentColor; }}
+                    onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
+                    <option value="">— Select —</option>
+                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                );
+              };
 
               return (
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '4px' }}>Trial Assessment</div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>Fill in each section — this will appear in the Summary Report for the customer.</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Assessment</div>
+                    {!insightEditMode && (
+                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
+                        Edit Assessment
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>
+                    {insightEditMode ? 'Fill in each section — your BDM insights for this trial.' : 'Saved assessment — tap Edit to make changes.'}
+                  </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
@@ -4256,20 +4277,28 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  {insightEditMode && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                    {/* Cancel only shows if there's previously saved data to revert to */}
+                    {(venue.insightTpmPerformance || venue.insightOilLongevity || venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations) && (
+                      <button onClick={() => setInsightEditMode(false)} style={{ padding: '8px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                        Cancel
+                      </button>
+                    )}
                     <button
                       disabled={insightSaving}
                       onClick={async () => {
                         setInsightSaving(true);
                         await updateVenue(venue.id, {
-                          insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns, anomalies: insightForm.tpmAnomalies }),
-                          insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq, notes: insightForm.oilNotes }),
-                          insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration, oilImpact: insightForm.tempOilImpact }),
-                          insightOilManagement:    JSON.stringify({ currentPractice: insightForm.oilMgmtCurrentPractice, changeSchedule: insightForm.oilMgmtChangeSchedule, staffTraining: insightForm.oilMgmtStaffTraining }),
-                          insightFoodQuality:      JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual, consistency: insightForm.foodQualityConsistency }),
-                          insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit, conversionRead: insightForm.overallConversionRead }),
+                          insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns }),
+                          insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq }),
+                          insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration }),
+                          insightOilManagement:    JSON.stringify({ staffTraining: insightForm.oilMgmtStaffTraining, currentPractice: insightForm.oilMgmtCurrentPractice }),
+                          insightFoodQuality:      JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual }),
+                          insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit }),
                         });
                         setInsightSaving(false);
+                        setInsightEditMode(false);
                         setSuccessMsg('Assessment saved');
                       }}
                       style={{ padding: '8px 22px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
@@ -4277,6 +4306,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {insightSaving ? 'Saving…' : 'Save Assessment'}
                     </button>
                   </div>
+                  )}
                 </div>
               );
             })()}
@@ -4486,7 +4516,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
                     </div>
                     {/* Notes panel */}
-                    <div style={{ width: isDesktop ? '300px' : '100%', flexShrink: 0 }}>
+                    <div style={{ width: isDesktop ? '420px' : '100%', flexShrink: 0 }}>
                       <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Notes</div>
                       {daysWithNotes.length === 0 ? (
                         <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes recorded</div>
