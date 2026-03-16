@@ -1074,6 +1074,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     tpmRating: '', tpmTrends: '', tpmChangePatterns: '', tpmAnomalies: '',
     oilRating: '', oilBenchmark: '', oilTopUpFreq: '', oilNotes: '',
     tempRating: '', tempSetVsActual: '', tempCalibration: '', tempOilImpact: '',
+    oilMgmtRating: '', oilMgmtCurrentPractice: '', oilMgmtChangeSchedule: '', oilMgmtStaffTraining: '',
+    foodQualityRating: '', foodQualityFeedback: '', foodQualityVisual: '', foodQualityConsistency: '',
     overallRating: '', overallRecommendation: '', overallNextVisit: '', overallConversionRead: '',
   }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
@@ -1167,28 +1169,38 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageEditForm({});
       const v = venues.find(x => x.id === manageVenueId);
       setManageNoteText(v?.trialNotes || '');
-      const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch { return {}; } };
+      const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
       const tpmD  = parseSafe(v?.insightTpmPerformance);
       const oilD  = parseSafe(v?.insightOilLongevity);
       const tmpD  = parseSafe(v?.insightTempObservations);
+      const mgmtD = parseSafe(v?.insightOilManagement);
+      const fqD   = parseSafe(v?.insightFoodQuality);
       const ovrD  = parseSafe(v?.insightRecommendations);
       setInsightForm({
-        tpmRating:           v?.insightTpmRating     || '',
-        tpmTrends:           tpmD.trends             || '',
-        tpmChangePatterns:   tpmD.changePatterns      || '',
-        tpmAnomalies:        tpmD.anomalies           || '',
-        oilRating:           v?.insightOilRating      || '',
-        oilBenchmark:        oilD.benchmark           || '',
-        oilTopUpFreq:        oilD.topUpFreq           || '',
-        oilNotes:            oilD.notes               || '',
-        tempRating:          v?.insightTempRating     || '',
-        tempSetVsActual:     tmpD.setVsActual         || '',
-        tempCalibration:     tmpD.calibration         || '',
-        tempOilImpact:       tmpD.oilImpact           || '',
-        overallRating:       v?.insightOverallRating  || '',
-        overallRecommendation: ovrD.recommendation   || '',
-        overallNextVisit:    ovrD.nextVisit           || '',
-        overallConversionRead: ovrD.conversionRead   || '',
+        tpmRating:             v?.insightTpmRating      || '',
+        tpmTrends:             tpmD.trends              || '',
+        tpmChangePatterns:     tpmD.changePatterns       || '',
+        tpmAnomalies:          tpmD.anomalies            || '',
+        oilRating:             v?.insightOilRating       || '',
+        oilBenchmark:          oilD.benchmark            || '',
+        oilTopUpFreq:          oilD.topUpFreq            || '',
+        oilNotes:              oilD.notes                || '',
+        tempRating:            v?.insightTempRating      || '',
+        tempSetVsActual:       tmpD.setVsActual          || '',
+        tempCalibration:       tmpD.calibration          || '',
+        tempOilImpact:         tmpD.oilImpact            || '',
+        oilMgmtRating:         v?.insightOilMgmtRating   || '',
+        oilMgmtCurrentPractice: mgmtD.currentPractice   || '',
+        oilMgmtChangeSchedule:  mgmtD.changeSchedule     || '',
+        oilMgmtStaffTraining:   mgmtD.staffTraining      || '',
+        foodQualityRating:     v?.insightFoodQualityRating || '',
+        foodQualityFeedback:   fqD.feedback              || '',
+        foodQualityVisual:     fqD.visual                || '',
+        foodQualityConsistency: fqD.consistency          || '',
+        overallRating:         v?.insightOverallRating   || '',
+        overallRecommendation: ovrD.recommendation       || '',
+        overallNextVisit:      ovrD.nextVisit            || '',
+        overallConversionRead: ovrD.conversionRead       || '',
       });
     }
   }, [manageVenueId]); // eslint-disable-line
@@ -4177,7 +4189,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
 
               return (
-                <div style={{ maxWidth: '700px' }}>
+                <div>
                   <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '4px' }}>Trial Assessment</div>
                   <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>Fill in each section — this will appear in the Summary Report for the customer.</div>
 
@@ -4245,6 +4257,42 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {mkTa('tempOilImpact', 'e.g. Low temp on F2 may explain faster TPM rise', '#f97316')}
                     </div>
 
+                    {/* ── Oil Management Habits ── */}
+                    <div style={qCard}>
+                      {qHead(Cog, '#64748b', 'Oil Management Habits')}
+                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>How does this venue currently manage their oil day-to-day?</div>
+                      {pills('oilMgmtRating', [
+                        { value: 'good-habits',    label: 'Good Habits',    ...G },
+                        { value: 'improving',      label: 'Improving',      ...B },
+                        { value: 'needs-training', label: 'Needs Training', ...A },
+                        { value: 'poor',           label: 'Poor',           ...R },
+                      ])}
+                      {subLbl('Current Practice')}
+                      {mkTa('oilMgmtCurrentPractice', 'e.g. Changes oil once a week regardless of TPM readings', '#64748b')}
+                      {subLbl('Change Schedule')}
+                      {mkTa('oilMgmtChangeSchedule', 'e.g. No fixed schedule — reactive to breakdown or smell', '#64748b')}
+                      {subLbl('Staff Awareness')}
+                      {mkTa('oilMgmtStaffTraining', 'e.g. Staff unaware of TPM targets — owner makes all decisions', '#64748b')}
+                    </div>
+
+                    {/* ── Food Quality ── */}
+                    <div style={qCard}>
+                      {qHead(Award, '#f59e0b', 'Food Quality')}
+                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>Impact on the quality of food being produced during the trial.</div>
+                      {pills('foodQualityRating', [
+                        { value: 'excellent',       label: 'Excellent',      ...G },
+                        { value: 'good',            label: 'Good',           ...B },
+                        { value: 'improving',       label: 'Improving',      ...A },
+                        { value: 'below-standard',  label: 'Below Standard', ...R },
+                      ])}
+                      {subLbl('Customer Feedback')}
+                      {mkTa('foodQualityFeedback', 'e.g. Customers noticed improvement in crispiness and taste', '#f59e0b')}
+                      {subLbl('Visual Quality')}
+                      {mkTa('foodQualityVisual', 'e.g. Food colour improved from week 2 — less greasy appearance', '#f59e0b')}
+                      {subLbl('Consistency')}
+                      {mkTa('foodQualityConsistency', 'e.g. Consistent results across all 3 fryers throughout the trial', '#f59e0b')}
+                    </div>
+
                     {/* ── Overall & Next Steps ── */}
                     <div style={qCard}>
                       {qHead(Target, '#8b5cf6', 'Overall & Next Steps')}
@@ -4271,14 +4319,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       onClick={async () => {
                         setInsightSaving(true);
                         await updateVenue(venue.id, {
-                          insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns, anomalies: insightForm.tpmAnomalies }),
-                          insightTpmRating:        insightForm.tpmRating,
-                          insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq, notes: insightForm.oilNotes }),
-                          insightOilRating:        insightForm.oilRating,
-                          insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration, oilImpact: insightForm.tempOilImpact }),
-                          insightTempRating:       insightForm.tempRating,
-                          insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit, conversionRead: insightForm.overallConversionRead }),
-                          insightOverallRating:    insightForm.overallRating,
+                          insightTpmPerformance:    JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns, anomalies: insightForm.tpmAnomalies }),
+                          insightTpmRating:         insightForm.tpmRating,
+                          insightOilLongevity:      JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq, notes: insightForm.oilNotes }),
+                          insightOilRating:         insightForm.oilRating,
+                          insightTempObservations:  JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration, oilImpact: insightForm.tempOilImpact }),
+                          insightTempRating:        insightForm.tempRating,
+                          insightOilManagement:     JSON.stringify({ currentPractice: insightForm.oilMgmtCurrentPractice, changeSchedule: insightForm.oilMgmtChangeSchedule, staffTraining: insightForm.oilMgmtStaffTraining }),
+                          insightOilMgmtRating:     insightForm.oilMgmtRating,
+                          insightFoodQuality:       JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual, consistency: insightForm.foodQualityConsistency }),
+                          insightFoodQualityRating: insightForm.foodQualityRating,
+                          insightRecommendations:   JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit, conversionRead: insightForm.overallConversionRead }),
+                          insightOverallRating:     insightForm.overallRating,
                         });
                         setInsightSaving(false);
                         setSuccessMsg('Assessment saved');
@@ -4946,16 +4998,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   {/* ── Trial Assessment (read-only summary) ── */}
                   {(() => {
                     const hasAssessment = venue.insightTpmRating || venue.insightOilRating ||
-                      venue.insightTempRating || venue.insightOverallRating ||
+                      venue.insightTempRating || venue.insightOilMgmtRating || venue.insightFoodQualityRating || venue.insightOverallRating ||
                       venue.insightTpmPerformance || venue.insightOilLongevity ||
-                      venue.insightTempObservations || venue.insightRecommendations;
+                      venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations;
                     if (!hasAssessment) return null;
 
-                    const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch { return {}; } };
-                    const tpmD = parseSafe(venue.insightTpmPerformance);
-                    const oilD = parseSafe(venue.insightOilLongevity);
-                    const tmpD = parseSafe(venue.insightTempObservations);
-                    const ovrD = parseSafe(venue.insightRecommendations);
+                    const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
+                    const tpmD  = parseSafe(venue.insightTpmPerformance);
+                    const oilD  = parseSafe(venue.insightOilLongevity);
+                    const tmpD  = parseSafe(venue.insightTempObservations);
+                    const mgmtD = parseSafe(venue.insightOilManagement);
+                    const fqD   = parseSafe(venue.insightFoodQuality);
+                    const ovrD  = parseSafe(venue.insightRecommendations);
 
                     const RL = {
                       'excellent':          { label: 'Excellent',         color: '#059669', bg: '#d1fae5', text: '#065f46' },
@@ -4968,6 +5022,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       'well-calibrated':    { label: 'Well Calibrated',   color: '#059669', bg: '#d1fae5', text: '#065f46' },
                       'minor-variance':     { label: 'Minor Variance',    color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
                       'needs-calibration':  { label: 'Needs Calibration', color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                      'good-habits':        { label: 'Good Habits',       color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'needs-training':     { label: 'Needs Training',    color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'poor':               { label: 'Poor',              color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                      'below-standard':     { label: 'Below Standard',    color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
                       'ready-to-convert':   { label: 'Ready to Convert',  color: '#059669', bg: '#d1fae5', text: '#065f46' },
                       'progressing':        { label: 'Progressing Well',  color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
                       'needs-attention':    { label: 'Needs Attention',   color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
@@ -5024,6 +5082,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626'],
                         ], '#fff7ed', '#fed7aa') : null,
                         fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration], ['Impact on Oil', tmpD.oilImpact]],
+                      },
+                      {
+                        icon: Cog, iconColor: '#64748b', title: 'Oil Management Habits',
+                        rating: venue.insightOilMgmtRating,
+                        stats: null,
+                        fields: [['Current Practice', mgmtD.currentPractice], ['Change Schedule', mgmtD.changeSchedule], ['Staff Awareness', mgmtD.staffTraining]],
+                      },
+                      {
+                        icon: Award, iconColor: '#f59e0b', title: 'Food Quality',
+                        rating: venue.insightFoodQualityRating,
+                        stats: null,
+                        fields: [['Customer Feedback', fqD.feedback], ['Visual Quality', fqD.visual], ['Consistency', fqD.consistency]],
                       },
                       {
                         icon: Target, iconColor: '#8b5cf6', title: 'Overall & Next Steps',
