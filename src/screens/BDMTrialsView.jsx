@@ -4180,12 +4180,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
 
-              const mkTa = (fieldKey, placeholder, accentColor) => (
-                <textarea className="insight-ta" style={taS} placeholder={placeholder}
+              // Dropdown — stores the label text so summary report can display it directly
+              const selS = { width: '100%', padding: '8px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white', cursor: 'pointer', boxSizing: 'border-box' };
+              const mkSel = (fieldKey, opts, accentColor) => (
+                <select style={{ ...selS, color: insightForm[fieldKey] ? '#374151' : '#94a3b8' }}
                   value={insightForm[fieldKey]}
                   onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
                   onFocus={e => { e.target.style.borderColor = accentColor; }}
-                  onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                  onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
+                  <option value="">— Select —</option>
+                  {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
               );
 
               return (
@@ -4210,11 +4215,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         { value: 'critical',          label: 'Critical',          ...R },
                       ])}
                       {subLbl('TPM Trends')}
-                      {mkTa('tpmTrends', 'e.g. Rising in week 2, stabilised after oil change', '#1a428a')}
+                      {mkSel('tpmTrends', [
+                        'Stable throughout the trial',
+                        'Rising gradually over the trial',
+                        'Rose early, stabilised after oil change',
+                        'Peaked then dropped after intervention',
+                        'Inconsistent — volatile readings',
+                        'Consistently high throughout',
+                      ], '#1a428a')}
                       {subLbl('Change Patterns')}
-                      {mkTa('tpmChangePatterns', 'e.g. Reactive only — no scheduled rotation in place', '#1a428a')}
+                      {mkSel('tpmChangePatterns', [
+                        'Scheduled regular oil changes',
+                        'Mostly scheduled with some reactive changes',
+                        'Mostly reactive — changed when oil broke down',
+                        'Entirely reactive — no schedule in place',
+                      ], '#1a428a')}
                       {subLbl('Anomalies')}
-                      {mkTa('tpmAnomalies', 'e.g. Spike to 28 on 15 Mar — fryer was overloaded', '#1a428a')}
+                      {mkSel('tpmAnomalies', [
+                        'None recorded',
+                        'Single spike event — cause identified',
+                        'Single spike event — cause unknown',
+                        'Multiple spike events recorded',
+                        'Consistently elevated readings',
+                        'Equipment-related spikes',
+                      ], '#1a428a')}
                     </div>
 
                     {/* ── Oil Longevity ── */}
@@ -4230,11 +4254,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         { value: 'below-average', label: 'Below Average', ...A },
                       ])}
                       {subLbl('vs Benchmark')}
-                      {mkTa('oilBenchmark', 'e.g. Avg 12 days vs 8 days on current competitor oil', '#0ea5e9')}
+                      {mkSel('oilBenchmark', [
+                        'Significantly extended vs competitor oil',
+                        'Slightly extended vs competitor oil',
+                        'On par with competitor oil',
+                        'Slightly shorter than competitor oil',
+                        'No benchmark data available',
+                      ], '#0ea5e9')}
                       {subLbl('Top-up Frequency')}
-                      {mkTa('oilTopUpFreq', 'e.g. 2 top-ups per change cycle on fryer 1', '#0ea5e9')}
+                      {mkSel('oilTopUpFreq', [
+                        'Fresh fills only — no top-ups required',
+                        '1 top-up per change cycle',
+                        '2 top-ups per change cycle',
+                        '3 or more top-ups per change cycle',
+                        'Inconsistent top-up pattern',
+                      ], '#0ea5e9')}
                       {subLbl('Notes')}
-                      {mkTa('oilNotes', 'e.g. Fryer 2 consistently shorter — may be temperature-related', '#0ea5e9')}
+                      {mkSel('oilNotes', [
+                        'Consistent lifespan across all fryers',
+                        'Fryer 1 showed shorter lifespan',
+                        'Fryer 2 showed shorter lifespan',
+                        'Multiple fryers with reduced lifespan',
+                        'Temperature likely impacting lifespan',
+                        'No notable lifespan issues',
+                      ], '#0ea5e9')}
                     </div>
 
                     {/* ── Temperature Control ── */}
@@ -4250,11 +4293,29 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         { value: 'needs-calibration', label: 'Needs Calibration', ...R },
                       ])}
                       {subLbl('Set vs Actual')}
-                      {mkTa('tempSetVsActual', 'e.g. Fryer 1 ±2°, Fryer 2 running ~8° below set temp', '#f97316')}
+                      {mkSel('tempSetVsActual', [
+                        'All fryers within ±2° — well calibrated',
+                        'Minor variance on one fryer (≤5°)',
+                        'Significant variance on one fryer (>5°)',
+                        'Multiple fryers with notable variance',
+                        'Temperature data not recorded',
+                      ], '#f97316')}
                       {subLbl('Calibration')}
-                      {mkTa('tempCalibration', 'e.g. Fryer 2 likely needs thermostat service', '#f97316')}
+                      {mkSel('tempCalibration', [
+                        'No calibration needed',
+                        'Minor adjustment recommended',
+                        'Fryer 1 needs calibration',
+                        'Fryer 2 needs calibration',
+                        'Multiple fryers need calibration',
+                        'Professional service required',
+                      ], '#f97316')}
                       {subLbl('Impact on Oil')}
-                      {mkTa('tempOilImpact', 'e.g. Low temp on F2 may explain faster TPM rise', '#f97316')}
+                      {mkSel('tempOilImpact', [
+                        'No temperature impact on oil quality detected',
+                        'Minor impact on TPM trends',
+                        'Likely contributing to faster TPM rise',
+                        'Direct correlation to oil degradation observed',
+                      ], '#f97316')}
                     </div>
 
                     {/* ── Oil Management Habits ── */}
@@ -4268,11 +4329,29 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         { value: 'poor',           label: 'Poor',           ...R },
                       ])}
                       {subLbl('Current Practice')}
-                      {mkTa('oilMgmtCurrentPractice', 'e.g. Changes oil once a week regardless of TPM readings', '#64748b')}
+                      {mkSel('oilMgmtCurrentPractice', [
+                        'TPM-based changes — strong discipline',
+                        'Time-based changes — weekly',
+                        'Time-based changes — fortnightly',
+                        'Sensory-based — smell or colour',
+                        'Reactive — only changes when oil breaks down',
+                        'No consistent practice observed',
+                      ], '#64748b')}
                       {subLbl('Change Schedule')}
-                      {mkTa('oilMgmtChangeSchedule', 'e.g. No fixed schedule — reactive to breakdown or smell', '#64748b')}
+                      {mkSel('oilMgmtChangeSchedule', [
+                        'Fixed schedule strictly followed',
+                        'Schedule in place but inconsistently followed',
+                        'Loose schedule — mostly reactive',
+                        'No schedule — entirely reactive',
+                        'New schedule implemented during trial',
+                      ], '#64748b')}
                       {subLbl('Staff Awareness')}
-                      {mkTa('oilMgmtStaffTraining', 'e.g. Staff unaware of TPM targets — owner makes all decisions', '#64748b')}
+                      {mkSel('oilMgmtStaffTraining', [
+                        'All staff trained and aware of oil management',
+                        'Owner only — staff not involved in oil decisions',
+                        'Some staff awareness — inconsistent practice',
+                        'Staff unaware of any oil management targets',
+                      ], '#64748b')}
                     </div>
 
                     {/* ── Food Quality ── */}
@@ -4286,11 +4365,28 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         { value: 'below-standard',  label: 'Below Standard', ...R },
                       ])}
                       {subLbl('Customer Feedback')}
-                      {mkTa('foodQualityFeedback', 'e.g. Customers noticed improvement in crispiness and taste', '#f59e0b')}
+                      {mkSel('foodQualityFeedback', [
+                        'Significant improvement reported by customers',
+                        'Positive feedback — subtle improvement noticed',
+                        'No change in customer feedback',
+                        'Mixed feedback — inconclusive',
+                        'No customer feedback collected',
+                      ], '#f59e0b')}
                       {subLbl('Visual Quality')}
-                      {mkTa('foodQualityVisual', 'e.g. Food colour improved from week 2 — less greasy appearance', '#f59e0b')}
+                      {mkSel('foodQualityVisual', [
+                        'Clear improvement — better colour and finish',
+                        'Subtle improvement in appearance',
+                        'No visible change',
+                        'Inconsistent — varied across fryers',
+                        'Slight degradation observed',
+                      ], '#f59e0b')}
                       {subLbl('Consistency')}
-                      {mkTa('foodQualityConsistency', 'e.g. Consistent results across all 3 fryers throughout the trial', '#f59e0b')}
+                      {mkSel('foodQualityConsistency', [
+                        'Highly consistent across all fryers',
+                        'Mostly consistent with minor variation',
+                        'Improved consistency compared to pre-trial',
+                        'Inconsistent results across fryers',
+                      ], '#f59e0b')}
                     </div>
 
                     {/* ── Overall & Next Steps ── */}
@@ -4304,11 +4400,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         { value: 'not-viable',       label: 'Not Viable',       ...R },
                       ])}
                       {subLbl('Recommendation')}
-                      {mkTa('overallRecommendation', 'e.g. Weekly fills, recalibrate F2, push for close', '#8b5cf6')}
+                      {mkSel('overallRecommendation', [
+                        'Strong case — push for close now',
+                        'Continue trial for additional data',
+                        'Revisit pricing conversation first',
+                        'Address equipment issues before close',
+                        'Needs more engagement before proceeding',
+                        'Not recommended to continue',
+                      ], '#8b5cf6')}
                       {subLbl('Next Visit')}
-                      {mkTa('overallNextVisit', 'e.g. Follow up in 2 weeks with pricing proposal', '#8b5cf6')}
+                      {mkSel('overallNextVisit', [
+                        'Within 1 week',
+                        'Within 2 weeks',
+                        'Within 1 month',
+                        'After customer reviews the proposal',
+                        'No follow-up required',
+                      ], '#8b5cf6')}
                       {subLbl('Conversion Readiness')}
-                      {mkTa('overallConversionRead', 'e.g. Owner is engaged — good timing to have the close conversation', '#8b5cf6')}
+                      {mkSel('overallConversionRead', [
+                        'Owner ready — initiate close conversation',
+                        'Owner interested — needs more data',
+                        'Owner interested — price negotiation needed',
+                        'Owner hesitant — continue building value',
+                        'Owner not engaged at this stage',
+                      ], '#8b5cf6')}
                     </div>
 
                   </div>
