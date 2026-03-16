@@ -123,6 +123,13 @@ export const mapVenue = (r) => ({
   createdAt: r.created_at,
   updatedAt: r.updated_at,
   customerCodeSavedAt: r.customer_code_saved_at || null,
+  // BDM trial assessment fields
+  insightTpmPerformance:   r.insight_tpm_performance   ?? null,
+  insightOilLongevity:     r.insight_oil_longevity     ?? null,
+  insightTempObservations: r.insight_temp_observations ?? null,
+  insightOilManagement:    r.insight_oil_management    ?? null,
+  insightFoodQuality:      r.insight_food_quality      ?? null,
+  insightRecommendations:  r.insight_recommendations   ?? null,
 });
 
 export const unMapVenue = (v) => ({
@@ -139,6 +146,13 @@ export const unMapVenue = (v) => ({
   last_tpm_date: v.lastTpmDate || null,
   password: v.password || null,
   customer_code_saved_at: v.customerCodeSavedAt || null,
+  // BDM trial assessment fields
+  insight_tpm_performance:   v.insightTpmPerformance   ?? null,
+  insight_oil_longevity:     v.insightOilLongevity     ?? null,
+  insight_temp_observations: v.insightTempObservations ?? null,
+  insight_oil_management:    v.insightOilManagement    ?? null,
+  insight_food_quality:      v.insightFoodQuality      ?? null,
+  insight_recommendations:   v.insightRecommendations  ?? null,
 });
 
 // ── trials ──
