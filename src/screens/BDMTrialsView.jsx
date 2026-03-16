@@ -3917,21 +3917,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const avgTempVar = tempVarVals.length > 0
                       ? tempVarVals.reduce((a, b) => a + b, 0) / tempVarVals.length : null;
 
+                    // ── render helpers (called as functions, NOT as <Components>,
+                    //    to prevent React from remounting inputs on every keystroke)
                     const taStyle = {
                       width: '100%', minHeight: '58px', padding: '8px 10px',
                       border: '1.5px solid #e8edf2', borderRadius: '7px',
                       fontSize: '12px', color: '#374151', fontFamily: 'inherit',
                       fontWeight: '500', resize: 'vertical', outline: 'none',
-                      boxSizing: 'border-box', lineHeight: '1.5', background: '#fafbfc',
+                      boxSizing: 'border-box', lineHeight: '1.5', background: 'white',
+                      transition: 'border-color 0.12s',
                     };
+                    const qCardStyle = { background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' };
+                    const GREEN = { color: '#059669', bg: '#d1fae5', text: '#065f46' };
+                    const BLUE  = { color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' };
+                    const AMBER = { color: '#f59e0b', bg: '#fef3c7', text: '#92400e' };
+                    const RED   = { color: '#ef4444', bg: '#fee2e2', text: '#991b1b' };
 
-                    // Rating pill helper — renders selectable pills for a given field key
-                    const RatingPills = ({ fieldKey, options }) => (
+                    // Render function (not a component) — avoids React unmounting inputs on re-render
+                    const ratingPills = (fieldKey, options) => (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
                         {options.map(opt => {
                           const active = insightForm[fieldKey] === opt.value;
                           return (
-                            <button key={opt.value} onClick={() => setInsightForm(f => ({ ...f, [fieldKey]: active ? '' : opt.value }))}
+                            <button key={opt.value}
+                              onClick={() => setInsightForm(f => ({ ...f, [fieldKey]: active ? '' : opt.value }))}
                               style={{ padding: '4px 11px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', border: `1.5px solid ${active ? opt.color : '#e2e8f0'}`, background: active ? opt.bg : 'white', color: active ? opt.text : '#94a3b8', transition: 'all 0.12s' }}>
                               {opt.label}
                             </button>
@@ -3940,22 +3949,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </div>
                     );
 
-                    // Quadrant card wrapper
-                    const QCard = ({ icon: Icon, iconColor, title, hint, children }) => (
-                      <div style={{ background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' }}>
+                    const qCardHead = (Icon, iconColor, title, hint) => (
+                      <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: hint ? '4px' : '10px' }}>
                           <Icon size={14} color={iconColor} strokeWidth={2.5} />
                           <span style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{title}</span>
                         </div>
                         {hint && <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500', marginBottom: '10px' }}>{hint}</div>}
-                        {children}
-                      </div>
+                      </>
                     );
-
-                    const GREEN  = { color: '#059669', bg: '#d1fae5', text: '#065f46' };
-                    const BLUE   = { color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' };
-                    const AMBER  = { color: '#f59e0b', bg: '#fef3c7', text: '#92400e' };
-                    const RED    = { color: '#ef4444', bg: '#fee2e2', text: '#991b1b' };
 
                     return (
                       <div style={{ marginTop: '24px' }}>
@@ -3965,61 +3967,74 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
                           {/* TPM Performance */}
-                          <QCard icon={Activity} iconColor="#1a428a" title="TPM Performance"
-                            hint={(maxTPM != null || avgTPM != null) ? `Peak: ${maxTPM ?? '—'} · Avg: ${avgTPM != null ? avgTPM.toFixed(1) : '—'}` : null}>
-                            <RatingPills fieldKey="tpmRating" options={[
-                              { value: 'excellent',        label: 'Excellent',         ...GREEN  },
-                              { value: 'good',             label: 'Good',              ...BLUE   },
-                              { value: 'needs-improvement',label: 'Needs Improvement', ...AMBER  },
-                              { value: 'critical',         label: 'Critical',          ...RED    },
-                            ]} />
+                          <div style={qCardStyle}>
+                            {qCardHead(Activity, '#1a428a', 'TPM Performance',
+                              (maxTPM != null || avgTPM != null) ? `Peak: ${maxTPM ?? '—'} · Avg: ${avgTPM != null ? avgTPM.toFixed(1) : '—'}` : null)}
+                            {ratingPills('tpmRating', [
+                              { value: 'excellent',         label: 'Excellent',         ...GREEN },
+                              { value: 'good',              label: 'Good',              ...BLUE  },
+                              { value: 'needs-improvement', label: 'Needs Improvement', ...AMBER },
+                              { value: 'critical',          label: 'Critical',          ...RED   },
+                            ])}
                             <textarea style={taStyle} placeholder="Add notes on TPM trends, change patterns, anomalies..."
                               value={insightForm.tpmPerformance}
-                              onChange={e => setInsightForm(f => ({ ...f, tpmPerformance: e.target.value }))} />
-                          </QCard>
+                              onChange={e => setInsightForm(f => ({ ...f, tpmPerformance: e.target.value }))}
+                              onFocus={e => { e.target.style.borderColor = '#1a428a'; }}
+                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                          </div>
 
                           {/* Oil Longevity */}
-                          <QCard icon={Droplets} iconColor="#0ea5e9" title="Oil Longevity"
-                            hint={maxOilAge != null ? `Max lifespan recorded: ${maxOilAge} days` : null}>
-                            <RatingPills fieldKey="oilRating" options={[
-                              { value: 'extended',        label: 'Extended Life',     ...GREEN },
-                              { value: 'on-track',        label: 'On Track',          ...BLUE  },
-                              { value: 'below-average',   label: 'Below Average',     ...AMBER },
-                            ]} />
+                          <div style={qCardStyle}>
+                            {qCardHead(Droplets, '#0ea5e9', 'Oil Longevity',
+                              maxOilAge != null ? `Max lifespan recorded: ${maxOilAge} days` : null)}
+                            {ratingPills('oilRating', [
+                              { value: 'extended',      label: 'Extended Life', ...GREEN },
+                              { value: 'on-track',      label: 'On Track',      ...BLUE  },
+                              { value: 'below-average', label: 'Below Average', ...AMBER },
+                            ])}
                             <textarea style={taStyle} placeholder="How did oil lifespan compare to their current practice?"
                               value={insightForm.oilLongevity}
-                              onChange={e => setInsightForm(f => ({ ...f, oilLongevity: e.target.value }))} />
-                          </QCard>
+                              onChange={e => setInsightForm(f => ({ ...f, oilLongevity: e.target.value }))}
+                              onFocus={e => { e.target.style.borderColor = '#0ea5e9'; }}
+                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                          </div>
 
                           {/* Temperature Control */}
-                          <QCard icon={Flame} iconColor="#f97316" title="Temperature Control"
-                            hint={avgTempVar != null ? `Avg set vs actual variance: ${avgTempVar.toFixed(1)}°` : 'No temperature data recorded'}>
-                            <RatingPills fieldKey="tempRating" options={[
-                              { value: 'well-calibrated',   label: 'Well Calibrated',   ...GREEN },
-                              { value: 'minor-variance',    label: 'Minor Variance',     ...AMBER },
-                              { value: 'needs-calibration', label: 'Needs Calibration',  ...RED   },
-                            ]} />
+                          <div style={qCardStyle}>
+                            {qCardHead(Flame, '#f97316', 'Temperature Control',
+                              avgTempVar != null ? `Avg set vs actual variance: ${avgTempVar.toFixed(1)}°` : 'No temperature data recorded')}
+                            {ratingPills('tempRating', [
+                              { value: 'well-calibrated',   label: 'Well Calibrated',  ...GREEN },
+                              { value: 'minor-variance',    label: 'Minor Variance',    ...AMBER },
+                              { value: 'needs-calibration', label: 'Needs Calibration', ...RED   },
+                            ])}
                             <textarea style={taStyle} placeholder="Note any set vs actual temp gaps, fryer-specific issues..."
                               value={insightForm.tempObservations}
-                              onChange={e => setInsightForm(f => ({ ...f, tempObservations: e.target.value }))} />
-                          </QCard>
+                              onChange={e => setInsightForm(f => ({ ...f, tempObservations: e.target.value }))}
+                              onFocus={e => { e.target.style.borderColor = '#f97316'; }}
+                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                          </div>
 
                           {/* Overall & Next Steps */}
-                          <QCard icon={Target} iconColor="#8b5cf6" title="Overall & Next Steps" hint={null}>
-                            <RatingPills fieldKey="overallRating" options={[
-                              { value: 'ready-to-convert', label: 'Ready to Convert',  ...GREEN },
-                              { value: 'progressing',      label: 'Progressing Well',  ...BLUE  },
-                              { value: 'needs-attention',  label: 'Needs Attention',   ...AMBER },
-                              { value: 'not-viable',       label: 'Not Viable',        ...RED   },
-                            ]} />
+                          <div style={qCardStyle}>
+                            {qCardHead(Target, '#8b5cf6', 'Overall & Next Steps',
+                              'Your read on where this trial is heading and what needs to happen next.')}
+                            {ratingPills('overallRating', [
+                              { value: 'ready-to-convert', label: 'Ready to Convert', ...GREEN },
+                              { value: 'progressing',      label: 'Progressing Well', ...BLUE  },
+                              { value: 'needs-attention',  label: 'Needs Attention',  ...AMBER },
+                              { value: 'not-viable',       label: 'Not Viable',       ...RED   },
+                            ])}
                             <textarea style={taStyle} placeholder="Key recommendations, next visit actions, pricing conversation timing..."
                               value={insightForm.recommendations}
-                              onChange={e => setInsightForm(f => ({ ...f, recommendations: e.target.value }))} />
-                          </QCard>
+                              onChange={e => setInsightForm(f => ({ ...f, recommendations: e.target.value }))}
+                              onFocus={e => { e.target.style.borderColor = '#8b5cf6'; }}
+                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }} />
+                          </div>
 
                         </div>
 
-                        {/* Save button */}
+                        {/* Save button — solid so it's clearly actionable */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <button
                             disabled={insightSaving}
@@ -4038,7 +4053,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               setInsightSaving(false);
                               setSuccessMsg('Assessment saved');
                             }}
-                            style={{ padding: '8px 20px', background: insightSaving ? '#e2e8f0' : '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: insightSaving ? '#94a3b8' : '#1a428a', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
+                            style={{ padding: '8px 22px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
                           >
                             {insightSaving ? 'Saving…' : 'Save Assessment'}
                           </button>
@@ -4701,6 +4716,67 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       })()}
                     </div>
                   </div>
+
+                  {/* ── Trial Assessment (read-only summary) ── */}
+                  {(() => {
+                    const hasAssessment = venue.insightTpmRating || venue.insightOilRating ||
+                      venue.insightTempRating || venue.insightOverallRating ||
+                      venue.insightTpmPerformance || venue.insightOilLongevity ||
+                      venue.insightTempObservations || venue.insightRecommendations;
+                    if (!hasAssessment) return null;
+
+                    const RATING_LABELS = {
+                      'excellent':          { label: 'Excellent',         color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'good':               { label: 'Good',               color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
+                      'needs-improvement':  { label: 'Needs Improvement',  color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'critical':           { label: 'Critical',           color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                      'extended':           { label: 'Extended Life',      color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'on-track':           { label: 'On Track',           color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
+                      'below-average':      { label: 'Below Average',      color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'well-calibrated':    { label: 'Well Calibrated',    color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'minor-variance':     { label: 'Minor Variance',     color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'needs-calibration':  { label: 'Needs Calibration',  color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                      'ready-to-convert':   { label: 'Ready to Convert',   color: '#059669', bg: '#d1fae5', text: '#065f46' },
+                      'progressing':        { label: 'Progressing Well',   color: '#3b82f6', bg: '#dbeafe', text: '#1e40af' },
+                      'needs-attention':    { label: 'Needs Attention',    color: '#f59e0b', bg: '#fef3c7', text: '#92400e' },
+                      'not-viable':         { label: 'Not Viable',         color: '#ef4444', bg: '#fee2e2', text: '#991b1b' },
+                    };
+
+                    const quadrants = [
+                      { icon: Activity,  iconColor: '#1a428a', title: 'TPM Performance',     rating: venue.insightTpmRating,     notes: venue.insightTpmPerformance    },
+                      { icon: Droplets,  iconColor: '#0ea5e9', title: 'Oil Longevity',        rating: venue.insightOilRating,     notes: venue.insightOilLongevity      },
+                      { icon: Flame,     iconColor: '#f97316', title: 'Temperature Control',  rating: venue.insightTempRating,    notes: venue.insightTempObservations  },
+                      { icon: Target,    iconColor: '#8b5cf6', title: 'Overall & Next Steps', rating: venue.insightOverallRating, notes: venue.insightRecommendations   },
+                    ].filter(q => q.rating || q.notes);
+
+                    return (
+                      <>
+                        <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
+                        {rSecLabel('Trial Assessment', 0)}
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '8px' }}>
+                          {quadrants.map(({ icon: Icon, iconColor, title, rating, notes }) => {
+                            const rc = rating ? RATING_LABELS[rating] : null;
+                            return (
+                              <div key={title} style={{ background: '#fafbfc', border: '1.5px solid #e8edf2', borderRadius: '10px', padding: '12px 14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: rc || notes ? '8px' : '0' }}>
+                                  <Icon size={13} color={iconColor} strokeWidth={2.5} />
+                                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', flex: 1 }}>{title}</span>
+                                  {rc && (
+                                    <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 9px', borderRadius: '20px', background: rc.bg, color: rc.text, border: `1px solid ${rc.color}`, whiteSpace: 'nowrap' }}>
+                                      {rc.label}
+                                    </span>
+                                  )}
+                                </div>
+                                {notes && (
+                                  <p style={{ fontSize: '12px', color: '#374151', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>{notes}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {/* ── Second divider ── */}
                   <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
