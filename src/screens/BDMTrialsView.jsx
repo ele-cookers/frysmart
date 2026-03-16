@@ -1070,6 +1070,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [calFryerTab, setCalFryerTab] = useState(1); // Fryer tab within calendar sub-tab
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
+  const [insightForm, setInsightForm] = useState({ tpmPerformance: '', oilLongevity: '', tempObservations: '', recommendations: '' }); // BDM assessment form on Trial Calendar tab
+  const [insightSaving, setInsightSaving] = useState(false);
   const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
   const [summaryEditMode, setSummaryEditMode] = useState(false); // edit mode for trial findings in summary
   const [summaryFindingsText, setSummaryFindingsText] = useState(''); // editable findings text
@@ -1160,6 +1162,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageEditForm({});
       const v = venues.find(x => x.id === manageVenueId);
       setManageNoteText(v?.trialNotes || '');
+      setInsightForm({
+        tpmPerformance:   v?.insightTpmPerformance   || '',
+        oilLongevity:     v?.insightOilLongevity     || '',
+        tempObservations: v?.insightTempObservations || '',
+        recommendations:  v?.insightRecommendations  || '',
+      });
     }
   }, [manageVenueId]); // eslint-disable-line
 
@@ -3894,12 +3902,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     ))}
                   </div>
 
-                  {/* ── Trial Insights ── */}
-                  {allTrialReadings.length > 0 && (() => {
-                    const warn = _tpmThresholds.warning;
-                    const crit = _tpmThresholds.critical;
-
-                    // Temperature variance
+                  {/* ── BDM Assessment Form ── */}
+                  {(() => {
+                    // Computed reference hints
+                    const maxOilAge = oilAgeVals.length > 0 ? Math.max(...oilAgeVals) : null;
                     const tempVarVals = allTrialReadings
                       .filter(r => r.setTemperature != null && r.actualTemperature != null &&
                         String(r.setTemperature) !== '' && String(r.actualTemperature) !== '')
@@ -3907,87 +3913,85 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const avgTempVar = tempVarVals.length > 0
                       ? tempVarVals.reduce((a, b) => a + b, 0) / tempVarVals.length : null;
 
-                    // Oil longevity
-                    const maxOilAge = oilAgeVals.length > 0 ? Math.max(...oilAgeVals) : null;
+                    const fieldLabel = (text) => (
+                      <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{text}</div>
+                    );
+                    const hint = (text) => (
+                      <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '500', marginBottom: '6px' }}>{text}</div>
+                    );
+                    const taStyle = { width: '100%', minHeight: '68px', padding: '9px 11px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', resize: 'vertical', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5' };
 
-                    // Reading coverage
-                    const expectedReadings = calDays.length * fc;
-                    const coverage = expectedReadings > 0
-                      ? Math.round((tpmVals.length / expectedReadings) * 100) : null;
-
-                    // Build insights list
-                    const insights = [];
-
-                    // 1. Peak TPM
-                    if (maxTPM != null) {
-                      if (maxTPM > crit) {
-                        insights.push({ color: '#ef4444', title: `Peak TPM: ${maxTPM}`, body: `Oil reached critical levels (>${crit}). More frequent top-ups or earlier changes would help.` });
-                      } else if (maxTPM > warn) {
-                        insights.push({ color: '#f59e0b', title: `Peak TPM: ${maxTPM}`, body: `Oil approached warning range. Keep monitoring closely.` });
-                      } else {
-                        insights.push({ color: '#10b981', title: `Peak TPM: ${maxTPM}`, body: `Oil quality stayed well within safe limits throughout the trial.` });
-                      }
-                    }
-
-                    // 2. Average TPM
-                    if (avgTPM != null) {
-                      if (avgTPM > crit) {
-                        insights.push({ color: '#ef4444', title: `Avg TPM: ${avgTPM.toFixed(1)}`, body: `Above critical threshold — oil was consistently degraded. Shorter change cycles are recommended.` });
-                      } else if (avgTPM > warn) {
-                        insights.push({ color: '#f59e0b', title: `Avg TPM: ${avgTPM.toFixed(1)}`, body: `In warning range on average — consider shortening change intervals.` });
-                      } else {
-                        insights.push({ color: '#10b981', title: `Avg TPM: ${avgTPM.toFixed(1)}`, body: `Oil quality was consistently healthy across the trial period.` });
-                      }
-                    }
-
-                    // 3. Oil longevity
-                    if (maxOilAge != null) {
-                      if (maxOilAge >= 14) {
-                        insights.push({ color: '#10b981', title: `Oil lifespan: ${maxOilAge} days`, body: `Strong longevity — the product is extending oil life well above typical change cycles.` });
-                      } else if (maxOilAge >= 7) {
-                        insights.push({ color: '#f59e0b', title: `Oil lifespan: ${maxOilAge} days`, body: `Solid mid-range lifespan. There may be room to extend change cycles further.` });
-                      } else {
-                        insights.push({ color: '#ef4444', title: `Oil lifespan: ${maxOilAge} days`, body: `Short change cycles — could indicate high-volume usage, degraded quality, or early disposal habits.` });
-                      }
-                    }
-
-                    // 4. Temperature variance
-                    if (avgTempVar != null) {
-                      if (avgTempVar >= 10) {
-                        insights.push({ color: '#ef4444', title: `Temp variance: ${avgTempVar.toFixed(1)}°`, body: `Significant gap between set and actual temperature. Fryer calibration or thermostat check is recommended.` });
-                      } else if (avgTempVar >= 5) {
-                        insights.push({ color: '#f59e0b', title: `Temp variance: ${avgTempVar.toFixed(1)}°`, body: `Minor variance between set and actual temperature — worth keeping an eye on.` });
-                      } else {
-                        insights.push({ color: '#10b981', title: `Temp variance: ${avgTempVar.toFixed(1)}°`, body: `Fryer is well-calibrated — set and actual temperatures are closely aligned.` });
-                      }
-                    }
-
-                    // 5. Reading coverage
-                    if (coverage != null) {
-                      if (coverage < 60) {
-                        insights.push({ color: '#ef4444', title: `Coverage: ${coverage}%`, body: `Significant gaps in readings. Insights above may not reflect the full trial. Encourage daily logging.` });
-                      } else if (coverage < 90) {
-                        insights.push({ color: '#f59e0b', title: `Coverage: ${coverage}%`, body: `Some missed readings. Daily logs will improve accuracy of trial data.` });
-                      } else {
-                        insights.push({ color: '#10b981', title: `Coverage: ${coverage}%`, body: `Excellent data quality — near-complete readings across the trial period.` });
-                      }
-                    }
-
-                    if (insights.length === 0) return null;
                     return (
                       <div style={{ marginTop: '24px' }}>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
-                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Trial Insights</div>
-                        <div>
-                          {insights.map((ins, i) => (
-                            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '9px 0', borderBottom: i < insights.length - 1 ? '1px solid #f0f4f8' : 'none' }}>
-                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: ins.color, marginTop: '4px', flexShrink: 0 }} />
-                              <div>
-                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>{ins.title} — </span>
-                                <span style={{ fontSize: '12px', color: '#64748b' }}>{ins.body}</span>
-                              </div>
-                            </div>
-                          ))}
+                        <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px' }}>Trial Assessment</div>
+
+                        {/* TPM Performance */}
+                        <div style={{ marginBottom: '14px' }}>
+                          {fieldLabel('TPM Performance')}
+                          {(maxTPM != null || avgTPM != null) && hint(`Peak: ${maxTPM ?? '—'}  ·  Avg: ${avgTPM != null ? avgTPM.toFixed(1) : '—'}`)}
+                          <textarea
+                            style={taStyle}
+                            placeholder="e.g. Oil peaked at 26 TPM in week 2 — pushed into critical range. Venue changes oil reactively rather than on a schedule..."
+                            value={insightForm.tpmPerformance}
+                            onChange={e => setInsightForm(f => ({ ...f, tpmPerformance: e.target.value }))}
+                          />
+                        </div>
+
+                        {/* Oil Longevity */}
+                        <div style={{ marginBottom: '14px' }}>
+                          {fieldLabel('Oil Longevity')}
+                          {maxOilAge != null && hint(`Max lifespan recorded: ${maxOilAge} days`)}
+                          <textarea
+                            style={taStyle}
+                            placeholder="e.g. Oil lasted an average of 11 days before change — above their current practice with competitor oil..."
+                            value={insightForm.oilLongevity}
+                            onChange={e => setInsightForm(f => ({ ...f, oilLongevity: e.target.value }))}
+                          />
+                        </div>
+
+                        {/* Temperature Observations */}
+                        <div style={{ marginBottom: '14px' }}>
+                          {fieldLabel('Temperature Observations')}
+                          {avgTempVar != null && hint(`Avg set vs actual variance: ${avgTempVar.toFixed(1)}°`)}
+                          <textarea
+                            style={taStyle}
+                            placeholder="e.g. Actual temp consistently running ~8° below set temp on fryer 2 — may need thermostat calibration before next visit..."
+                            value={insightForm.tempObservations}
+                            onChange={e => setInsightForm(f => ({ ...f, tempObservations: e.target.value }))}
+                          />
+                        </div>
+
+                        {/* Recommendations */}
+                        <div style={{ marginBottom: '18px' }}>
+                          {fieldLabel('Recommendations')}
+                          <textarea
+                            style={taStyle}
+                            placeholder="e.g. Suggest moving to weekly scheduled top-ups, recalibrate fryer 2, and revisit pricing conversation once 30 days of data is in..."
+                            value={insightForm.recommendations}
+                            onChange={e => setInsightForm(f => ({ ...f, recommendations: e.target.value }))}
+                          />
+                        </div>
+
+                        {/* Save button */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            disabled={insightSaving}
+                            onClick={async () => {
+                              setInsightSaving(true);
+                              await updateVenue(venue.id, {
+                                insightTpmPerformance:   insightForm.tpmPerformance,
+                                insightOilLongevity:     insightForm.oilLongevity,
+                                insightTempObservations: insightForm.tempObservations,
+                                insightRecommendations:  insightForm.recommendations,
+                              });
+                              setInsightSaving(false);
+                              setSuccessMsg('Assessment saved');
+                            }}
+                            style={{ padding: '8px 20px', background: insightSaving ? '#e2e8f0' : '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: insightSaving ? '#94a3b8' : '#1a428a', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
+                          >
+                            {insightSaving ? 'Saving…' : 'Save Assessment'}
+                          </button>
                         </div>
                       </div>
                     );
