@@ -3937,6 +3937,147 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     ))}
                   </div>
 
+                  {/* ── Per-Fryer Stat Cards ── */}
+                  {allTrialReadings.length > 0 && (() => {
+                    const varCol = (v) => v == null ? '#cbd5e1' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
+
+                    // Horizontal stat band inside a card
+                    const miniStatBand = (stats, bg, border) => (
+                      <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '7px', overflow: 'hidden', marginBottom: '10px' }}>
+                        {stats.filter(([, v]) => v != null).map(([label, value, color], i) => (
+                          <div key={label} style={{ flex: 1, padding: '7px 4px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${border}` : 'none' }}>
+                            <div style={{ fontSize: '17px', fontWeight: '800', color: color || '#374151', lineHeight: 1 }}>{value}</div>
+                            <div style={{ fontSize: '8px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '2px' }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+
+                    const secLbl = (text) => (
+                      <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>{text}</div>
+                    );
+
+                    const usageRow = (label, count, litres) => (count > 0 || litres > 0) && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>{label}</span>
+                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#374151' }}>
+                          {count > 0 ? `${count}×` : ''}{count > 0 && litres > 0 ? ' · ' : ''}{litres > 0 ? `${Math.round(litres * 10) / 10}L` : ''}
+                        </span>
+                      </div>
+                    );
+
+                    const cards = fryerList.map(fn => {
+                      const frdgs = allTrialReadings.filter(r => (Number(r.fryerNumber) || 1) === fn);
+                      if (frdgs.length === 0) return null;
+
+                      // TPM
+                      const tpmVals = frdgs.filter(r => parseFloat(r.tpmValue) > 0).map(r => parseFloat(r.tpmValue));
+                      const fPeak = tpmVals.length > 0 ? Math.max(...tpmVals) : null;
+                      const fMin  = tpmVals.length > 0 ? Math.min(...tpmVals) : null;
+                      const fAvg  = tpmVals.length > 0 ? (tpmVals.reduce((a, b) => a + b, 0) / tpmVals.length) : null;
+
+                      // Oil lifespan
+                      const frdgsSorted = [...frdgs].sort((a, b) => a.readingDate.localeCompare(b.readingDate));
+                      const runs = []; let curRun = [];
+                      for (const r of frdgsSorted) {
+                        const age = Number(r.oilAge);
+                        if (age === 1 && curRun.length > 0) { runs.push(curRun); curRun = [r]; }
+                        else if (age >= 1) curRun.push(r);
+                      }
+                      if (curRun.length > 0) runs.push(curRun);
+                      const validRuns = runs.filter(run => Number(run[0].oilAge) === 1);
+                      const lifespans = validRuns.map(run => Math.max(...run.map(r => Number(r.oilAge))));
+                      const fMaxLife = lifespans.length > 0 ? Math.max(...lifespans) : null;
+                      const fAvgLife = lifespans.length > 0 ? Math.round(lifespans.reduce((a, b) => a + b, 0) / lifespans.length) : null;
+
+                      // Oil usage
+                      const freshRdgs = frdgs.filter(r => Number(r.oilAge) === 1);
+                      const topUpRdgs = frdgs.filter(r => Number(r.oilAge) > 1 && (parseFloat(r.litresFilled) || 0) > 0);
+                      const freshCount = freshRdgs.length;
+                      const freshLitres = freshRdgs.reduce((s, r) => s + (parseFloat(r.litresFilled) || 0), 0);
+                      const topUpCount = topUpRdgs.length;
+                      const topUpLitres = topUpRdgs.reduce((s, r) => s + (parseFloat(r.litresFilled) || 0), 0);
+                      const totalLitres = freshLitres + topUpLitres;
+
+                      // Temperature
+                      const varVals = frdgs.filter(r => r.setTemperature != null && r.actualTemperature != null && String(r.setTemperature) !== '' && String(r.actualTemperature) !== '').map(r => Math.abs(parseFloat(r.setTemperature) - parseFloat(r.actualTemperature)));
+                      const fAvgVar = varVals.length > 0 ? varVals.reduce((a, b) => a + b, 0) / varVals.length : null;
+                      const actualTemps = frdgs.filter(r => r.actualTemperature != null && String(r.actualTemperature) !== '').map(r => parseFloat(r.actualTemperature));
+                      const fMinTemp = actualTemps.length > 0 ? Math.round(Math.min(...actualTemps)) : null;
+                      const fMaxTemp = actualTemps.length > 0 ? Math.round(Math.max(...actualTemps)) : null;
+
+                      const hasOilUsage = totalLitres > 0;
+
+                      return (
+                        <div key={fn} style={{ background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 14px' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a428a', marginBottom: '12px' }}>
+                            {fc > 1 ? `Fryer ${fn}` : 'Trial Stats'}
+                          </div>
+
+                          {/* TPM */}
+                          {fPeak != null && (() => {
+                            const tpmStats = [
+                              ['Peak', fPeak, tpmColor(fPeak)],
+                              ['Avg', fAvg != null ? fAvg.toFixed(1) : null, tpmColor(fAvg)],
+                              ['Min', fMin, tpmColor(fMin)],
+                            ];
+                            return (<>
+                              {secLbl('TPM')}
+                              {miniStatBand(tpmStats, '#f0f4ff', '#e0e7ff')}
+                            </>);
+                          })()}
+
+                          {/* Oil Lifespan */}
+                          {fMaxLife != null && (() => (
+                            <>
+                              {secLbl('Oil Lifespan')}
+                              {miniStatBand([
+                                ['Max', `${fMaxLife}d`, '#0ea5e9'],
+                                ['Avg', fAvgLife != null ? `${fAvgLife}d` : null, '#0ea5e9'],
+                              ], '#f0f9ff', '#e0f2fe')}
+                            </>
+                          ))()}
+
+                          {/* Oil Usage */}
+                          {hasOilUsage && (
+                            <div style={{ marginBottom: '10px' }}>
+                              {secLbl('Oil Usage')}
+                              {usageRow('Fresh fills', freshCount, freshLitres)}
+                              {usageRow('Top-ups', topUpCount, topUpLitres)}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', marginTop: '2px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: '600', color: '#374151' }}>Total</span>
+                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#1a428a' }}>{Math.round(totalLitres * 10) / 10}L</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Temperature */}
+                          {fMinTemp != null && (() => (
+                            <>
+                              {secLbl('Temperature')}
+                              {miniStatBand([
+                                ['Min', `${fMinTemp}°`, '#64748b'],
+                                ['Max', `${fMaxTemp}°`, '#64748b'],
+                                fAvgVar != null ? ['Avg Var', `${fAvgVar.toFixed(1)}°`, varCol(fAvgVar)] : [null, null, null],
+                              ], '#f8fafc', '#e8edf2')}
+                            </>
+                          ))()}
+                        </div>
+                      );
+                    }).filter(Boolean);
+
+                    if (cards.length === 0) return null;
+                    const cols = isDesktop ? Math.min(cards.length, 3) : 1;
+                    return (
+                      <div style={{ marginTop: '20px' }}>
+                        <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
+                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '12px' }}>
+                          {cards}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                 </div>
               );
             })()}
@@ -4892,11 +5033,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     );
                   })()}
 
-                  {/* ── Second divider ── */}
-                  <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '24px 0 20px 0' }} />
-
-                  {/* ── Per-Fryer Trial Stats ── */}
-                  {allTrialReadings.length > 0 && (() => {
+                  {false && (() => { // Per-fryer stats moved to Trial Calendar tab
                     const fc2 = Math.max(1, venue.fryerCount || 1);
                     const pfRows = Array.from({ length: fc2 }, (_, i) => {
                       const fn = i + 1;
