@@ -702,23 +702,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
   const fryerChangesLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[FryerChanges:')) || '';
   const preTrialLifespan = fryerChangesLine ? parseInt(fryerChangesLine.replace(/^\[FryerChanges:\s*/, '').replace(/\]$/, '')) || null : null;
 
-  // Trial findings text (new field)
-  const [trialFindings, setTrialFindings] = useState('');
-
-  // Trial goals — parse from trialNotes
-  const GOAL_OPTIONS = [
-    { key: 'save-money',     label: 'Save money',          icon: DollarSign },
-    { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
-    { key: 'food-quality',   label: 'Better food quality', icon: Award      },
-    { key: 'food-colour',    label: 'Improve food colour', icon: Sparkles   },
-    { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
-    { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
-  ];
-  const [achievedGoals, setAchievedGoals] = useState(() => GOAL_OPTIONS.map(g => g.key)); // default: all ticked
-
-  const toggleGoal = (key) => {
-    setAchievedGoals(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-  };
+  const [confirmHover, setConfirmHover] = useState(false);
 
   // Mini trial calendar — show up to yesterday (trial hasn't ended yet, so today is day N+1)
   const modalCalDays = (() => {
@@ -880,10 +864,10 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             <div style={{ marginBottom: '20px' }}>
               <div style={{ overflowX: 'auto' }}>
                 <div style={{ paddingBottom: '16px' }}>
-                <table style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px', minWidth: `${60 + modalCalDays.length * 30}px` }}>
+                <table style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px', width: '100%', minWidth: `${60 + modalCalDays.length * 28}px` }}>
                   <colgroup>
                     <col style={{ width: '60px' }} />
-                    {modalCalDays.map((_, i) => <col key={i} style={{ width: '28px' }} />)}
+                    {modalCalDays.map((_, i) => <col key={i} />)}
                   </colgroup>
                   <thead>
                     <tr>
@@ -908,7 +892,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                           const border = isFresh ? '2px solid #10b981' : isTopUp ? '2px solid #f59e0b' : '1px solid #e2e8f0';
                           return (
                             <td key={idx} style={{
-                              height: '32px', width: '28px',
+                              height: '32px',
                               background: r?.tpmValue != null ? cellBg(r.tpmValue) : 'white',
                               border, borderRadius: '4px',
                               textAlign: 'center', verticalAlign: 'middle',
@@ -945,54 +929,13 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
           )}
 
-          {/* Trial Goals Achieved — always show all options */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px' }}>Trial Goals Achieved</div>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>Tick which goals the trial delivered</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              {GOAL_OPTIONS.map((goal) => {
-                  const GoalIcon = goal.icon;
-                  const achieved = achievedGoals.includes(goal.key);
-                  return (
-                    <div key={goal.key} onClick={() => toggleGoal(goal.key)} style={{
-                      display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px',
-                      cursor: 'pointer', borderRadius: '8px',
-                      background: achieved ? '#dbeafe' : '#f8fafc',
-                      border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`,
-                      transition: 'all 0.1s',
-                    }}>
-                      <GoalIcon size={14} color={achieved ? '#1a428a' : '#94a3b8'} />
-                      <span style={{ flex: 1, fontSize: '13px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
-                      <div style={{
-                        width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                        border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`,
-                        background: achieved ? '#f59e0b' : 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.1s',
-                      }}>
-                        {achieved && <Check size={9} color="white" strokeWidth={3} />}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-          {/* Trial Findings */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '6px' }}>Trial Findings</label>
-            <textarea
-              value={trialFindings}
-              onChange={e => setTrialFindings(e.target.value)}
-              placeholder="What happened? Key observations, outcomes, things that stood out, customer feedback, oil performance notes…"
-              rows={3}
-              style={{ width: '100%', padding: '9px 10px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', resize: 'vertical', fontFamily: 'inherit', color: '#1f2937', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5' }}
-            />
-          </div>
-
           {/* Confirm button — centred, fixed width */}
           <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '8px' }}>
-            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, null)} style={{ padding: '11px 36px', background: '#f59e0b', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
+            <button
+              onClick={() => onConfirm(venue.id, totalNum, [], '', null)}
+              onMouseEnter={() => setConfirmHover(true)}
+              onMouseLeave={() => setConfirmHover(false)}
+              style={{ padding: '11px 36px', background: confirmHover ? '#d97706' : '#fef3c7', border: '1.5px solid #f59e0b', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: confirmHover ? 'white' : '#92400e', cursor: 'pointer', letterSpacing: '0.2px', transition: 'all 0.15s' }}>
               Confirm End Trial
             </button>
           </div>
@@ -1070,6 +1013,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [calFryerTab, setCalFryerTab] = useState(1); // Fryer tab within calendar sub-tab
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
+  const [assessAchievedGoals, setAssessAchievedGoals] = useState([]);
+  const [assessFindings, setAssessFindings] = useState('');
+
   const [insightForm, setInsightForm] = useState({
     // Section 1 — Oil Longevity
     tpmPerformance: '', lifespanVsCompetitor: '', topUpFreqVsCompetitor: '',
@@ -1206,6 +1152,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         interestedInFrySmart:  s7.interestedInFrySmart  || '',
         bdmNotes:              s7.bdmNotes              || '',
       });
+      const _achievedLine = (v?.trialNotes || '').split('\n').find(l => l.trim().startsWith('[GoalsAchieved:')) || '';
+      const _achievedGoals = _achievedLine ? _achievedLine.replace(/^\[GoalsAchieved:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
+      const _findingsLine = (v?.trialNotes || '').split('\n').find(l => l.trim().startsWith('[TrialFindings:')) || '';
+      const _findings = _findingsLine ? _findingsLine.replace(/^\[TrialFindings:\s*/, '').replace(/\]$/, '').trim() : '';
+      setAssessAchievedGoals(_achievedGoals);
+      setAssessFindings(_findings);
     }
   }, [manageVenueId]); // eslint-disable-line
 
@@ -4143,6 +4095,15 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure', 'Food quality checks'];
               const trainingEnabled = insightForm.trainingProvided === 'Yes';
 
+              const ASSESS_GOAL_OPTIONS = [
+                { key: 'save-money',     label: 'Save money',          icon: DollarSign },
+                { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
+                { key: 'food-quality',   label: 'Better food quality', icon: Award      },
+                { key: 'food-colour',    label: 'Improve food colour', icon: Sparkles   },
+                { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
+                { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
+              ];
+
               return (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -4155,6 +4116,56 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </div>
                   <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>
                     {insightEditMode ? 'Complete after your final visit — these observations feed directly into the summary report.' : 'Saved assessment — tap Edit to make changes.'}
+                  </div>
+
+                  {/* ── Trial Outcome (Goals Achieved + Trial Findings) ── */}
+                  <div style={{ ...qCard('#fffbeb', '#fde8a2'), marginBottom: '12px' }}>
+                    {qHead(Award, '#f59e0b', 'Trial Outcome')}
+                    {subLbl('Goals Achieved')}
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', marginTop: '-2px' }}>Tick which goals the trial delivered</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '6px', marginBottom: '14px' }}>
+                      {ASSESS_GOAL_OPTIONS.map((goal) => {
+                        const GoalIcon = goal.icon;
+                        const achieved = assessAchievedGoals.includes(goal.key);
+                        return insightEditMode ? (
+                          <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
+                            <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
+                            <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
+                              {achieved && <Check size={8} color="white" strokeWidth={3} />}
+                            </div>
+                          </div>
+                        ) : (
+                          achieved ? (
+                            <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
+                              <GoalIcon size={12} color="#1a428a" />
+                              <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
+                            </div>
+                          ) : (
+                            <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.45 }}>
+                              <GoalIcon size={12} color="#94a3b8" />
+                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>{goal.label}</span>
+                            </div>
+                          )
+                        );
+                      })}
+                    </div>
+                    {subLbl('Trial Findings')}
+                    {insightEditMode ? (
+                      <textarea
+                        value={assessFindings}
+                        onChange={e => setAssessFindings(e.target.value)}
+                        placeholder="What happened? Key observations, outcomes, things that stood out, customer feedback, oil performance notes…"
+                        rows={3}
+                        style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
+                        onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
+                        onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
+                      />
+                    ) : (
+                      <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', color: assessFindings ? '#374151' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '52px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                        {assessFindings || 'No findings recorded'}
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
@@ -4308,6 +4319,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         disabled={insightSaving}
                         onClick={async () => {
                           setInsightSaving(true);
+                          // Rebuild trialNotes preserving non-outcome lines, then re-inject GoalsAchieved + TrialFindings
+                          const existingNotes = venue.trialNotes || '';
+                          const notesLines = existingNotes.split('\n')
+                            .filter(l => !l.trim().startsWith('[GoalsAchieved:'))
+                            .filter(l => !l.trim().startsWith('[TrialFindings:'));
+                          if (assessAchievedGoals.length > 0) notesLines.push(`[GoalsAchieved: ${assessAchievedGoals.join(', ')}]`);
+                          if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
+                          const newTrialNotes = notesLines.filter(Boolean).join('\n');
                           await updateVenue(venue.id, {
                             insightTpmPerformance:   JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
                             insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded }),
@@ -4315,6 +4334,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             insightOilManagement:    JSON.stringify({ trainingProvided: insightForm.trainingProvided, topicsCovered: insightForm.topicsCovered }),
                             insightOilLongevity:     JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement }),
                             insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart, bdmNotes: insightForm.bdmNotes }),
+                            trialNotes: newTrialNotes,
                           });
                           setInsightSaving(false);
                           setInsightEditMode(false);
