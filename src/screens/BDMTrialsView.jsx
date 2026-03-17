@@ -11,7 +11,7 @@ import {
   ArrowUpDown, CheckCircle2,
   ArrowDown, Filter,
   Edit3, Pencil, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
-  Star, MessageSquare, Target,
+  Star, MessageSquare, Target, BookOpen,
   DollarSign, Droplets, Sparkles, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
@@ -1071,12 +1071,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
   const [insightForm, setInsightForm] = useState({
-    tpmTrends: '', tpmChangePatterns: '', tpmAnomalies: '',
-    oilBenchmark: '', oilTopUpFreq: '', oilNotes: '',
-    tempSetVsActual: '', tempCalibration: '', tempOilImpact: '',
-    oilMgmtCurrentPractice: '', oilMgmtChangeSchedule: '', oilMgmtStaffTraining: '',
-    foodQualityFeedback: '', foodQualityVisual: '', foodQualityConsistency: '',
-    overallRecommendation: '', overallNextVisit: '', overallConversionRead: '',
+    // Section 1 — Oil Longevity
+    tpmPerformance: '', lifespanVsCompetitor: '', topUpFreqVsCompetitor: '',
+    // Section 2 — Temperature Control
+    setVsActual: '', calibrationNeeded: '',
+    // Section 3 — Food Quality
+    tasteAndTexture: '', colourAndAppearance: '',
+    // Section 4 — Training & Education
+    trainingProvided: '', topicsCovered: [],
+    // Section 5 — Feedback & Engagement
+    chefFeedback: '', staffEngagement: '',
+    // Section 6 — Value Demonstrated
+    costSavings: '', qualityGains: '', operationalEfficiency: '',
+    // Section 7 — Next Steps & Conversion
+    interestedInTesto: '', interestedInFrySmart: '', bdmNotes: '',
   }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
   const [insightEditMode, setInsightEditMode] = useState(true); // true = editing, false = viewing saved data
@@ -1171,33 +1179,32 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const v = venues.find(x => x.id === manageVenueId);
       setManageNoteText(v?.trialNotes || '');
       const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
-      const tpmD  = parseSafe(v?.insightTpmPerformance);
-      const oilD  = parseSafe(v?.insightOilLongevity);
-      const tmpD  = parseSafe(v?.insightTempObservations);
-      const mgmtD = parseSafe(v?.insightOilManagement);
-      const fqD   = parseSafe(v?.insightFoodQuality);
-      const ovrD  = parseSafe(v?.insightRecommendations);
+      const s1 = parseSafe(v?.insightTpmPerformance);
+      const s2 = parseSafe(v?.insightTempObservations);
+      const s3 = parseSafe(v?.insightFoodQuality);
+      const s4 = parseSafe(v?.insightOilManagement);
+      const s5 = parseSafe(v?.insightOilLongevity);
+      const s7 = parseSafe(v?.insightRecommendations);
       const hasInsightData = !!(v?.insightTpmPerformance || v?.insightOilLongevity || v?.insightTempObservations || v?.insightOilManagement || v?.insightFoodQuality || v?.insightRecommendations);
-      setInsightEditMode(!hasInsightData); // view mode if saved data exists, edit mode if blank
+      setInsightEditMode(!hasInsightData);
       setInsightForm({
-        tpmTrends:              tpmD.trends              || '',
-        tpmChangePatterns:      tpmD.changePatterns      || '',
-        tpmAnomalies:           tpmD.anomalies           || '',
-        oilBenchmark:           oilD.benchmark           || '',
-        oilTopUpFreq:           oilD.topUpFreq           || '',
-        oilNotes:               oilD.notes               || '',
-        tempSetVsActual:        tmpD.setVsActual         || '',
-        tempCalibration:        tmpD.calibration         || '',
-        tempOilImpact:          tmpD.oilImpact           || '',
-        oilMgmtCurrentPractice: mgmtD.currentPractice   || '',
-        oilMgmtChangeSchedule:  mgmtD.changeSchedule    || '',
-        oilMgmtStaffTraining:   mgmtD.staffTraining      || '',
-        foodQualityFeedback:    fqD.feedback             || '',
-        foodQualityVisual:      fqD.visual               || '',
-        foodQualityConsistency: fqD.consistency          || '',
-        overallRecommendation:  ovrD.recommendation      || '',
-        overallNextVisit:       ovrD.nextVisit           || '',
-        overallConversionRead:  ovrD.conversionRead      || '',
+        tpmPerformance:        s1.tpmPerformance        || '',
+        lifespanVsCompetitor:  s1.lifespanVsCompetitor  || '',
+        topUpFreqVsCompetitor: s1.topUpFreqVsCompetitor || '',
+        setVsActual:           s2.setVsActual           || '',
+        calibrationNeeded:     s2.calibrationNeeded     || '',
+        tasteAndTexture:       s3.tasteAndTexture       || '',
+        colourAndAppearance:   s3.colourAndAppearance   || '',
+        trainingProvided:      s4.trainingProvided      || '',
+        topicsCovered:         s4.topicsCovered         || [],
+        chefFeedback:          s5.chefFeedback          || '',
+        staffEngagement:       s5.staffEngagement       || '',
+        costSavings:           s7.costSavings           || '',
+        qualityGains:          s7.qualityGains          || '',
+        operationalEfficiency: s7.operationalEfficiency || '',
+        interestedInTesto:     s7.interestedInTesto     || '',
+        interestedInFrySmart:  s7.interestedInFrySmart  || '',
+        bdmNotes:              s7.bdmNotes              || '',
       });
     }
   }, [manageVenueId]); // eslint-disable-line
@@ -4089,51 +4096,23 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
             })()}
 
-            {/* ── TPM Chart ── */}
             {/* ── Trial Assessment tab ── */}
             {manageSubTab === 'assessment' && (() => {
-              // render helpers — called as functions (not JSX components) to avoid remounting inputs on keypress
-              const taS = {
-                width: '100%', minHeight: '42px', padding: '7px 10px',
-                border: '1.5px solid #e8edf2', borderRadius: '7px',
-                fontSize: '12px', color: '#374151', fontFamily: 'inherit',
-                fontWeight: '500', resize: 'vertical', outline: 'none',
-                boxSizing: 'border-box', lineHeight: '1.5', background: 'white',
-              };
-              const qCard = (bg = '#f8f9ff', border = '#e8edf2') => ({ background: bg, border: `1.5px solid ${border}`, borderRadius: '12px', padding: '14px 16px' });
-
-              const statBand = (stats, bg, border) => (
-                <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '8px', marginBottom: '12px', overflow: 'hidden' }}>
-                  {stats.filter(([,v]) => v != null).map(([label, value, color], i) => (
-                    <div key={label} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${border}` : 'none' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '800', color: color || '#374151', lineHeight: 1 }}>{value}</div>
-                      <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '3px' }}>{label}</div>
-                    </div>
-                  ))}
-                </div>
-              );
-
-              const subLbl = (text) => (
-                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
-              );
-
+              const qCard = (bg, border) => ({ background: bg, border: `1.5px solid ${border}`, borderRadius: '12px', padding: '14px 16px' });
               const qHead = (Icon, iconColor, title) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
                   <Icon size={14} color={iconColor} strokeWidth={2.5} />
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{title}</span>
                 </div>
               );
-
-              // Dropdown in edit mode, read-only chip in view mode
+              const subLbl = (text) => (
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
+              );
               const selS = { width: '100%', padding: '8px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white', cursor: 'pointer', boxSizing: 'border-box' };
               const mkSel = (fieldKey, opts, accentColor) => {
                 if (!insightEditMode) {
                   const val = insightForm[fieldKey];
-                  return (
-                    <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: val ? '600' : '400', color: val ? '#1f2937' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
-                      {val || 'Not recorded'}
-                    </div>
-                  );
+                  return <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: val ? '600' : '400', color: val ? '#1f2937' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '36px', display: 'flex', alignItems: 'center' }}>{val || 'Not recorded'}</div>;
                 }
                 return (
                   <select style={{ ...selS, color: insightForm[fieldKey] ? '#374151' : '#94a3b8' }}
@@ -4146,6 +4125,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </select>
                 );
               };
+
+              const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure', 'Food quality checks'];
+              const trainingEnabled = insightForm.trainingProvided === 'Yes';
 
               return (
                 <div>
@@ -4163,138 +4145,172 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
-                    {/* ── TPM Performance ── */}
+                    {/* ── 1. Oil Longevity ── */}
                     <div style={qCard('#f0f4ff', '#dde4f8')}>
-                      {qHead(Activity, '#1a428a', 'TPM Performance')}
-                      {subLbl('TPM Trends')}
-                      {mkSel('tpmTrends', [
-                        'Stable and low — good oil performance',
-                        'Gradual rise — typical oil degradation',
-                        'Inconsistent — volatile readings',
-                      ], '#1a428a')}
-                      {subLbl('Change Patterns')}
-                      {mkSel('tpmChangePatterns', [
-                        'Regular scheduled changes',
-                        'Mostly reactive, minimal schedule',
-                        'Entirely reactive — no schedule',
-                      ], '#1a428a')}
-                    </div>
-
-                    {/* ── Oil Longevity ── */}
-                    <div style={qCard('#f0f9ff', '#d0edfb')}>
-                      {qHead(Droplets, '#0ea5e9', 'Oil Longevity')}
+                      {qHead(Activity, '#1a428a', 'Oil Longevity')}
+                      {subLbl('TPM Performance')}
+                      {mkSel('tpmPerformance', ['Acceptable', 'Above normal', 'Unstable'], '#1a428a')}
                       {subLbl('Lifespan vs Competitor Oil')}
-                      {mkSel('oilBenchmark', [
-                        'Longer than competitor oil',
-                        'On par with competitor oil',
-                        'Shorter than competitor oil',
-                      ], '#0ea5e9')}
+                      {mkSel('lifespanVsCompetitor', ['Longer', 'On par', 'Shorter', 'No comparable baseline'], '#1a428a')}
                       {subLbl('Top-up Frequency vs Competitor')}
-                      {mkSel('oilTopUpFreq', [
-                        'Fewer top-ups needed',
-                        'About the same',
-                        'More top-ups needed',
-                      ], '#0ea5e9')}
+                      {mkSel('topUpFreqVsCompetitor', ['Fewer', 'Same', 'More', 'No comparable baseline'], '#1a428a')}
                     </div>
 
-                    {/* ── Temperature Control ── */}
+                    {/* ── 2. Temperature Control ── */}
                     <div style={qCard('#fff7ed', '#fddcbb')}>
                       {qHead(Flame, '#f97316', 'Temperature Control')}
-                      {subLbl('Set vs Actual')}
-                      {mkSel('tempSetVsActual', [
-                        'Well calibrated',
-                        'Minor variance',
-                        'Significant variance',
-                      ], '#f97316')}
-                      {subLbl('Calibration')}
-                      {mkSel('tempCalibration', [
-                        'No calibration needed',
-                        'Minor adjustment recommended',
-                        'Professional service required',
-                      ], '#f97316')}
+                      {subLbl('Set vs Actual Temp')}
+                      {mkSel('setVsActual', ['Well calibrated', 'Minor variance', 'Significant variance'], '#f97316')}
+                      {subLbl('Calibration Needed')}
+                      {mkSel('calibrationNeeded', ['None', 'Minor adjustment', 'Professional service required'], '#f97316')}
                     </div>
 
-                    {/* ── Oil Management ── */}
-                    <div style={qCard('#f8fafc', '#dde3ea')}>
-                      {qHead(Cog, '#64748b', 'Oil Management')}
-                      {subLbl('Training & Education Provided')}
-                      {mkSel('oilMgmtStaffTraining', [
-                        'Yes',
-                        'No',
-                      ], '#64748b')}
-                      {subLbl('Value Demonstrated During Trial')}
-                      {mkSel('oilMgmtCurrentPractice', [
-                        'Yes — clear savings identified',
-                        'Potentially — further data needed',
-                        'Not yet clear',
-                      ], '#64748b')}
-                    </div>
-
-                    {/* ── Food Quality ── */}
+                    {/* ── 3. Food Quality ── */}
                     <div style={qCard('#fffbeb', '#fde8a2')}>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
-                      {subLbl('Taste & Texture')}
-                      {mkSel('foodQualityFeedback', [
-                        'Improved',
-                        'Same',
-                        'Worse',
-                      ], '#f59e0b')}
-                      {subLbl('Visual')}
-                      {mkSel('foodQualityVisual', [
-                        'Improved',
-                        'Same',
-                        'Worse',
-                      ], '#f59e0b')}
+                      {subLbl('Taste and Texture')}
+                      {mkSel('tasteAndTexture', ['Improved', 'Same', 'Worse'], '#f59e0b')}
+                      {subLbl('Colour and Appearance')}
+                      {mkSel('colourAndAppearance', ['Improved', 'Same', 'Worse'], '#f59e0b')}
                     </div>
 
-                    {/* ── Next Steps ── */}
+                    {/* ── 4. Training & Education ── */}
+                    <div style={qCard('#f0fdf4', '#bbf7d0')}>
+                      {qHead(BookOpen, '#16a34a', 'Training & Education')}
+                      {subLbl('Training Provided')}
+                      {insightEditMode ? (
+                        <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '3px', gap: '0' }}>
+                          {['Yes', 'No'].map(opt => {
+                            const active = insightForm.trainingProvided === opt;
+                            return (
+                              <button key={opt} type="button"
+                                onClick={() => setInsightForm(f => ({ ...f, trainingProvided: opt, topicsCovered: opt === 'No' ? [] : f.topicsCovered }))}
+                                style={{ flex: 1, padding: '6px 10px', fontSize: '12px', fontWeight: '600', borderRadius: '6px', border: 'none', cursor: 'pointer', background: active ? 'white' : 'transparent', color: active ? '#16a34a' : '#64748b', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: insightForm.trainingProvided ? '600' : '400', color: insightForm.trainingProvided ? '#1f2937' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
+                          {insightForm.trainingProvided || 'Not recorded'}
+                        </div>
+                      )}
+                      <div style={{ marginTop: '10px', opacity: trainingEnabled ? 1 : 0.4, pointerEvents: trainingEnabled ? 'auto' : 'none' }}>
+                        {subLbl('Topics Covered (tick all that apply)')}
+                        {insightEditMode ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                            {TRAINING_TOPICS.map(topic => {
+                              const checked = insightForm.topicsCovered.includes(topic);
+                              return (
+                                <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: trainingEnabled ? 'pointer' : 'default', fontSize: '12px', color: '#374151' }}>
+                                  <input type="checkbox" checked={checked}
+                                    onChange={() => setInsightForm(f => ({
+                                      ...f,
+                                      topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic],
+                                    }))}
+                                    style={{ width: '14px', height: '14px', accentColor: '#16a34a', cursor: 'inherit' }} />
+                                  {topic}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                            {insightForm.topicsCovered.length > 0
+                              ? insightForm.topicsCovered.map(t => (
+                                  <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#dcfce7', color: '#15803d', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
+                                ))
+                              : <span style={{ fontSize: '12px', color: '#cbd5e1' }}>None recorded</span>
+                            }
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── 5. Feedback & Engagement ── */}
                     <div style={qCard('#f5f3ff', '#ddd6fe')}>
-                      {qHead(Target, '#8b5cf6', 'Next Steps')}
-                      {subLbl('Interested in Testo')}
-                      {mkSel('overallRecommendation', [
-                        'Yes',
-                        'No',
-                        'Not sure',
-                      ], '#8b5cf6')}
-                      {subLbl('Interested in FrySmart')}
-                      {mkSel('overallNextVisit', [
-                        'Yes',
-                        'No',
-                        'Not sure',
-                      ], '#8b5cf6')}
+                      {qHead(MessageSquare, '#7c3aed', 'Feedback & Engagement')}
+                      {subLbl('Chef Feedback')}
+                      {mkSel('chefFeedback', ['Positive', 'Neutral', 'Negative'], '#7c3aed')}
+                      {subLbl('Staff Engagement Level')}
+                      {mkSel('staffEngagement', ['High', 'Moderate', 'Low'], '#7c3aed')}
+                    </div>
+
+                    {/* ── 6. Value Demonstrated ── */}
+                    <div style={qCard('#f0fdf4', '#bbf7d0')}>
+                      {qHead(TrendingUp, '#16a34a', 'Value Demonstrated')}
+                      {subLbl('Cost Savings')}
+                      {mkSel('costSavings', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
+                      {subLbl('Quality Gains')}
+                      {mkSel('qualityGains', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
+                      {subLbl('Operational Efficiency')}
+                      {mkSel('operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
+                    </div>
+
+                    {/* ── 7. Next Steps & Conversion ── full width */}
+                    <div style={{ ...qCard('#faf5ff', '#e9d5ff'), gridColumn: isDesktop ? '1 / -1' : undefined }}>
+                      {qHead(Target, '#7c3aed', 'Next Steps & Conversion')}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px' }}>
+                        <div>
+                          {subLbl('Interested in Testo')}
+                          {mkSel('interestedInTesto', ['Yes', 'No', 'Not sure'], '#7c3aed')}
+                        </div>
+                        <div>
+                          {subLbl('Interested in FrySmart')}
+                          {mkSel('interestedInFrySmart', ['Yes', 'No', 'Not sure'], '#7c3aed')}
+                        </div>
+                        <div>
+                          {subLbl('BDM Notes')}
+                          {insightEditMode ? (
+                            <textarea
+                              value={insightForm.bdmNotes}
+                              onChange={e => setInsightForm(f => ({ ...f, bdmNotes: e.target.value }))}
+                              rows={3}
+                              placeholder="Note any observations, anomalies, or context not captured above (e.g. unexpected TPM spikes, fryer load issues, venue-specific factors)"
+                              style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', resize: 'vertical', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
+                              onFocus={e => { e.target.style.borderColor = '#7c3aed'; }}
+                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
+                            />
+                          ) : (
+                            <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: insightForm.bdmNotes ? '400' : '400', color: insightForm.bdmNotes ? '#374151' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '60px', lineHeight: '1.6' }}>
+                              {insightForm.bdmNotes || 'No notes recorded'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                   </div>
 
                   {insightEditMode && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                    {/* Cancel only shows if there's previously saved data to revert to */}
-                    {(venue.insightTpmPerformance || venue.insightOilLongevity || venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations) && (
-                      <button onClick={() => setInsightEditMode(false)} style={{ padding: '8px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                        Cancel
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      {(venue.insightTpmPerformance || venue.insightOilLongevity || venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations) && (
+                        <button onClick={() => setInsightEditMode(false)} style={{ padding: '8px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        disabled={insightSaving}
+                        onClick={async () => {
+                          setInsightSaving(true);
+                          await updateVenue(venue.id, {
+                            insightTpmPerformance:   JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
+                            insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded }),
+                            insightFoodQuality:      JSON.stringify({ tasteAndTexture: insightForm.tasteAndTexture, colourAndAppearance: insightForm.colourAndAppearance }),
+                            insightOilManagement:    JSON.stringify({ trainingProvided: insightForm.trainingProvided, topicsCovered: insightForm.topicsCovered }),
+                            insightOilLongevity:     JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement }),
+                            insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart, bdmNotes: insightForm.bdmNotes }),
+                          });
+                          setInsightSaving(false);
+                          setInsightEditMode(false);
+                          setSuccessMsg('Assessment saved');
+                        }}
+                        style={{ padding: '8px 22px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
+                      >
+                        {insightSaving ? 'Saving…' : 'Save Assessment'}
                       </button>
-                    )}
-                    <button
-                      disabled={insightSaving}
-                      onClick={async () => {
-                        setInsightSaving(true);
-                        await updateVenue(venue.id, {
-                          insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns }),
-                          insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq }),
-                          insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration }),
-                          insightOilManagement:    JSON.stringify({ staffTraining: insightForm.oilMgmtStaffTraining, currentPractice: insightForm.oilMgmtCurrentPractice }),
-                          insightFoodQuality:      JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual }),
-                          insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit }),
-                        });
-                        setInsightSaving(false);
-                        setInsightEditMode(false);
-                        setSuccessMsg('Assessment saved');
-                      }}
-                      style={{ padding: '8px 22px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
-                    >
-                      {insightSaving ? 'Saving…' : 'Save Assessment'}
-                    </button>
-                  </div>
+                    </div>
                   )}
                 </div>
               );
@@ -4955,12 +4971,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const hasAssessment = false;
 
                     const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
-                    const tpmD  = parseSafe(venue.insightTpmPerformance);
-                    const oilD  = parseSafe(venue.insightOilLongevity);
-                    const tmpD  = parseSafe(venue.insightTempObservations);
-                    const mgmtD = parseSafe(venue.insightOilManagement);
-                    const fqD   = parseSafe(venue.insightFoodQuality);
-                    const ovrD  = parseSafe(venue.insightRecommendations);
+                    const s1 = parseSafe(venue.insightTpmPerformance);
+                    const s2 = parseSafe(venue.insightTempObservations);
+                    const s3 = parseSafe(venue.insightFoodQuality);
+                    const s4 = parseSafe(venue.insightOilManagement);
+                    const s5 = parseSafe(venue.insightOilLongevity);
+                    const s7 = parseSafe(venue.insightRecommendations);
 
                     // Stat band: prominent computed numbers
                     const rStatBand = (stats, bg, border) => (
@@ -4986,37 +5002,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     // maxTPM, avgTPM, minTPM, maxOilAge, avgOilAge, avgTempVar, tpmColor
 
                     const quadrants = [
-                      {
-                        icon: Activity, iconColor: '#1a428a', title: 'TPM Performance',
-                        stats: null,
-                        fields: [['TPM Trends', tpmD.trends], ['Change Patterns', tpmD.changePatterns]],
-                      },
-                      {
-                        icon: Droplets, iconColor: '#0ea5e9', title: 'Oil Longevity',
-                        stats: null,
-                        fields: [['Lifespan vs Competitor', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq]],
-                      },
-                      {
-                        icon: Flame, iconColor: '#f97316', title: 'Temperature Control',
-                        stats: null,
-                        fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration]],
-                      },
-                      {
-                        icon: Cog, iconColor: '#64748b', title: 'Oil Management',
-                        stats: null,
-                        fields: [['Training & Education', mgmtD.staffTraining], ['Value Demonstrated', mgmtD.currentPractice]],
-                      },
-                      {
-                        icon: Award, iconColor: '#f59e0b', title: 'Food Quality',
-                        stats: null,
-                        fields: [['Taste & Texture', fqD.feedback], ['Visual', fqD.visual]],
-                      },
-                      {
-                        icon: Target, iconColor: '#8b5cf6', title: 'Next Steps',
-                        stats: null,
-                        fields: [['Interested in Testo', ovrD.recommendation], ['Interested in FrySmart', ovrD.nextVisit]],
-                      },
-                    ].filter(q => q.stats || q.fields.some(([,v]) => v));
+                      { icon: Activity,      iconColor: '#1a428a', title: 'Oil Longevity',
+                        fields: [['TPM Performance', s1.tpmPerformance], ['Lifespan vs Competitor', s1.lifespanVsCompetitor], ['Top-up Frequency', s1.topUpFreqVsCompetitor]] },
+                      { icon: Flame,         iconColor: '#f97316', title: 'Temperature Control',
+                        fields: [['Set vs Actual', s2.setVsActual], ['Calibration', s2.calibrationNeeded]] },
+                      { icon: Award,         iconColor: '#f59e0b', title: 'Food Quality',
+                        fields: [['Taste & Texture', s3.tasteAndTexture], ['Colour & Appearance', s3.colourAndAppearance]] },
+                      { icon: BookOpen,      iconColor: '#16a34a', title: 'Training & Education',
+                        fields: [['Training Provided', s4.trainingProvided], ['Topics Covered', (s4.topicsCovered || []).join(', ') || null]] },
+                      { icon: MessageSquare, iconColor: '#7c3aed', title: 'Feedback & Engagement',
+                        fields: [['Chef Feedback', s5.chefFeedback], ['Staff Engagement', s5.staffEngagement]] },
+                      { icon: TrendingUp,    iconColor: '#16a34a', title: 'Value Demonstrated',
+                        fields: [['Cost Savings', s7.costSavings], ['Quality Gains', s7.qualityGains], ['Operational Efficiency', s7.operationalEfficiency]] },
+                      { icon: Target,        iconColor: '#7c3aed', title: 'Next Steps & Conversion',
+                        fields: [['Interested in Testo', s7.interestedInTesto], ['Interested in FrySmart', s7.interestedInFrySmart], ['BDM Notes', s7.bdmNotes]] },
+                    ].filter(q => q.fields.some(([,v]) => v));
 
                     return (
                       <>
