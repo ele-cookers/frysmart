@@ -3072,11 +3072,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     );
 
     const manageTabs = [
-      { key: 'details',  label: 'Pre-trial Details', icon: ClipboardList },
-      { key: 'calendar', label: 'Trial Results',     icon: BarChart3 },
-      { key: 'tpcal',       label: 'Trial Calendar',    icon: Calendar },
+      { key: 'details',  label: 'Pre-trial Details', icon: FileText },
+      { key: 'calendar', label: 'Trial Log',         icon: BarChart3 },
+      { key: 'tpcal',       label: 'Trial Snapshot',    icon: Calendar },
       { key: 'notes',       label: 'TPM Chart',         icon: TrendingUp },
-      { key: 'assessment',  label: 'Trial Assessment',  icon: Star },
+      { key: 'assessment',  label: 'Trial Assessment',  icon: ClipboardList },
       ...(['pending', 'accepted', 'successful', 'unsuccessful'].includes(venue.trialStatus) ? [{ key: 'summary', label: 'Summary Report', icon: FileText }] : []),
     ];
 
@@ -3089,7 +3089,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       if (val) {
         // Reset form to current venue values when entering edit mode
         const initNotesText = (venue.trialNotes || '').split('\n')
-          .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); }).join('\n');
+          .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/^TRL-/.test(t); }).join('\n');
         const initCompOil = oilTypes.find(o => o.id === venue.defaultOil);
         const initGoalsLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
         const initGoals = initGoalsLine ? initGoalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
@@ -3113,7 +3113,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     };
     const mSaving = manageSaving;
     const initNotesForDirty = (venue.trialNotes || '').split('\n')
-      .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); }).join('\n');
+      .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/^TRL-/.test(t); }).join('\n');
     const mDirty = mEditing && (
       mEditForm.name !== (venue.name || '') ||
       mEditForm.notesText !== initNotesForDirty ||
@@ -3130,7 +3130,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageSaving(true);
       const avgL = mEditForm.avgLitresPerWeek ? parseFloat(mEditForm.avgLitresPerWeek) : null;
       // Reconstruct trialNotes: keep TRL-ID, rebuild Goals/FryerChanges, preserve GoalsAchieved + [Note...] lines
-      const trialIdLines = (venue.trialNotes || '').split('\n').filter(l => /TRL-\d+/.test(l.trim()));
+      const trialIdLines = (venue.trialNotes || '').split('\n').filter(l => /^TRL-/.test(l.trim()));
       const noteCommentLines = (venue.trialNotes || '').split('\n').filter(l => l.trim().match(/^\[Note /));
       const savedAchievedLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[GoalsAchieved:')) || '';
       const newGoalsLine = (mEditForm.trialGoals || []).length > 0 ? `[Goals: ${mEditForm.trialGoals.join(', ')}]` : '';
@@ -3259,7 +3259,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             {manageTabs.map(tab => {
               const TabIcon = tab.icon;
               const isActive = manageSubTab === tab.key;
-              const shortLabels = { details: 'Details', calendar: 'Results', tpcal: 'Calendar', notes: 'Chart', assessment: 'Assessment', summary: 'Summary' };
+              const shortLabels = { details: 'Details', calendar: 'Log', tpcal: 'Snapshot', notes: 'Chart', assessment: 'Assessment', summary: 'Summary' };
               return (
                 <button key={tab.key} onClick={() => setManageSubTab(tab.key)} style={{
                   flex: isDesktop ? 1 : 'none',
@@ -3284,11 +3284,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             {/* ── Pre-trial Details ── */}
             {manageSubTab === 'details' && (() => {
               // Trial ID — handle both "TRL-0001" and "WA-TRL-0009" formats
-              const trialIdLine = venue.trialNotes?.split('\n').find(l => /TRL-\d+/.test(l.trim())) || '';
-              const trialId = trialIdLine.match(/[A-Z]+-TRL-\d+|TRL-\d+/)?.[0] || '';
+              const trialIdLine = venue.trialNotes?.split('\n').find(l => /^TRL-/.test(l.trim())) || '';
+              const trialId = trialIdLine.trim().split(/\s/)[0] || '';
               const initialNote = venue.trialNotes
                 ? venue.trialNotes.split('\n')
-                    .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); })
+                    .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/^TRL-/.test(t); })
                     .join('\n')
                 : '';
               const hasStarted = venue.trialStatus !== 'pipeline';
@@ -3402,7 +3402,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         )}
                         {/* Bottom metadata strip — desktop only (mobile version rendered after goals below) */}
                         {isDesktop && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px 0', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
+                            {trialId && (
+                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Trial ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{trialId}</span></span>
+                            )}
+                            {venue.customerCode && (
+                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Prospect ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
+                            )}
+                            <span />
                             {trialCreatedDate && (
                               <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
                             )}
@@ -3447,7 +3454,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* Mobile-only metadata strip — rendered AFTER goals so it appears at bottom on mobile */}
                       {!isDesktop && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', paddingTop: '16px', borderTop: '1px solid #f0f4f8' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px 0', paddingTop: '16px', borderTop: '1px solid #f0f4f8' }}>
+                          {trialId && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Trial ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{trialId}</span></span>
+                          )}
+                          {venue.customerCode && (
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Prospect ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
+                          )}
+                          <span />
                           {trialCreatedDate && (
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
                           )}
@@ -4140,7 +4154,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>
-                    {insightEditMode ? 'Fill in each section — your BDM insights for this trial.' : 'Saved assessment — tap Edit to make changes.'}
+                    {insightEditMode ? 'Complete after your final visit — these observations feed directly into the summary report.' : 'Saved assessment — tap Edit to make changes.'}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
