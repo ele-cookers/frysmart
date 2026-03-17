@@ -2160,7 +2160,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
                 <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '500', color: '#94a3b8', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
                   <div style={{ position: 'relative', flex: 1 }}>
                     <input
                       type="number" min="1" step="1"
@@ -3583,7 +3583,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               {Array.from({ length: parseInt(mEditForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
                                 <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <div style={{ fontSize: '12px', fontWeight: '500', color: '#94a3b8', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
+                                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
                                   <div style={{ position: 'relative', flex: 1 }}>
                                     <input type="number" min="1" step="1"
                                       value={mEditForm.fryerVolumes?.[fn] ?? ''}
