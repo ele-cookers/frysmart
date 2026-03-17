@@ -203,6 +203,7 @@ const TRIAL_DEFS = [
     trialOil: XLFRY, curPrice: 2.35, offPrice: 3.10,
     goalKeys: ['save-money', 'reduce-waste'],
     achievedKeys: [],
+    notes: 'Met with owner last week — currently on Canola at $2.35/L, going through around 75L/week. He changes oil by eye, no testing. Fryer 2 gets hammered on Friday nights. He\'s open to trying something different if we can show real savings. Key watch: book the first visit on a busy service day so the TPM data lands with impact.',
   },
 
   // 2. ACTIVE — trial running now (started 7 days ago)
@@ -214,6 +215,7 @@ const TRIAL_DEFS = [
     startDaysAgo: 7,
     goalKeys: ['save-money', 'food-quality', 'extend-life'],
     achievedKeys: [],
+    notes: 'Owner (Mike) has been with same supplier 3+ years but says oil doesn\'t last like it used to. A few customer comments about soggy chips recently. Heavy crumbed chicken and chips menu. Biggest concern is price — he was nervous going above $2.40/L. Showed him the lifespan comparison numbers and he was genuinely intrigued. Three fryers running fairly hard across lunch and dinner.',
   },
 
   // 3. PENDING — trial ended, awaiting decision (9-day trial, ended 2 days ago)
@@ -226,6 +228,7 @@ const TRIAL_DEFS = [
     goalKeys: ['save-money', 'reduce-changes', 'extend-life'],
     achievedKeys: [],
     findings: 'Oil held up well across the full 9-day trial. TPM stayed below 18 throughout. Customer noted noticeably better chip colour and crispness.',
+    notes: 'Small operation, owner does everything himself — 2 fryers, mostly chips and flathead. He\'s been changing oil every 3–4 days purely on colour because he has no way to test it. Told him a TPM meter would transform how he manages the fryer. Competitor oil is cheap but he\'s clearly over-changing and throwing money away. If we can reduce his change frequency by even 2 days, the savings argument is bulletproof.',
   },
 
   // 4. ACCEPTED — won, waiting on customer code (8-day trial, accepted 4 days ago)
@@ -239,6 +242,7 @@ const TRIAL_DEFS = [
     goalKeys: ['save-money', 'reduce-waste', 'extend-life'],
     achievedKeys: ['save-money', 'extend-life'],
     findings: 'Oil lasted 8 days vs their usual 5 days with competitor oil. Owner confirmed they will switch. Customer code pending.',
+    notes: 'Sharon runs a tight operation — busy lunch and dinner, lots of chicken pieces and chips. Frustrated that oil breaks down fast in summer. Both fryers at 180°. Main angle is lifespan — if we can show 2+ extra days per cycle the savings argument writes itself. She wants to see the numbers before committing, so make sure every reading is logged and the report is clean.',
   },
 
   // 5. SUCCESSFUL — trial won with customer code (10-day trial, won 8 days ago)
@@ -249,10 +253,11 @@ const TRIAL_DEFS = [
     trialOil: XLFRY, curPrice: 2.50, offPrice: 3.30,
     startDaysAgo: 22, durationDays: 10, outcomeDaysAgo: 8,
     reason: 'better-food-quality', soldPrice: 3.15,
-    custCode: `${STATE}-TEST-001`,
+    custCode: `${STATE}-9001`,
     goalKeys: ['save-money', 'food-quality', 'reduce-waste', 'extend-life'],
     achievedKeys: ['save-money', 'food-quality', 'extend-life'],
     findings: 'Outstanding result. TPM peaked at 20 on day 10 vs competitor baseline of 26+ by day 6. Food quality improvement noted by both owner and customers. Customer converted at $3.15/L.',
+    notes: 'High-volume shop — 3 fryers flat out from 11am every day. Tony has heard of Cookers but always assumed it was too expensive. Oil goes dark fast, changing every 5 days, staff complaining about the smell during service. Think this one has real potential if we nail the food quality story — his chips are what the locals come for. Push the comparison data hard on the first visit.',
   },
 
   // 6. UNSUCCESSFUL — trial lost (8-day trial, marked unsuccessful 5 days ago)
@@ -266,6 +271,7 @@ const TRIAL_DEFS = [
     goalKeys: ['save-money', 'food-quality'],
     achievedKeys: [],
     findings: 'Trial showed clear TPM improvement but owner was unwilling to move from $2.10/L. Price gap too large to bridge at this stage. Follow up in 6 months.',
+    notes: 'Small shop, 2 fryers, decent lunch trade, mostly kebabs and chips. Owner buys oil from a wholesale club in bulk — paying $2.10/L. Very price sensitive, margins are tight. Acknowledged the oil goes dark by end of service but doesn\'t see it as a problem. Going to be a tough sell purely on price — need to focus entirely on oil life and show him exactly how many fewer changes he\'d need to do per month.',
   },
 ];
 
@@ -277,7 +283,7 @@ let totalReadings = 0;
 
 for (let i = 0; i < TRIAL_DEFS.length; i++) {
   const def = TRIAL_DEFS[i];
-  const prospectCode = `PRS-TEST-${String(i + 1).padStart(4, '0')}`;
+  const prospectCode = `PRS-${String(9000 + i + 1).padStart(4, '0')}`;
 
   // ── Insert venue ──
   const { data: venue, error: vErr } = await supabase.from('venues').insert({
@@ -295,11 +301,12 @@ for (let i = 0; i < TRIAL_DEFS.length; i++) {
   if (vErr) { console.error(`  ERR venue "${def.venueName}": ${vErr.message}`); continue; }
 
   // ── Build trial notes ──
-  const trialIdLine  = `TRL-TEST-${String(i + 1).padStart(4, '0')}`;
+  const trialIdLine  = `TRL-${String(9000 + i + 1).padStart(4, '0')}`;
   const notesLines   = [trialIdLine];
   if (def.goalKeys?.length)     notesLines.push(mkGoalsLine(...def.goalKeys));
   if (def.achievedKeys?.length) notesLines.push(mkAchievedLine(...def.achievedKeys));
   if (def.findings)             notesLines.push(mkFindingsLine(def.findings));
+  if (def.notes)                notesLines.push(def.notes);
   const trialNotes   = notesLines.filter(Boolean).join('\n');
 
   // ── Date calculations ──
