@@ -12,7 +12,7 @@ import {
   ArrowDown, Filter,
   Edit3, Pencil, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
   Star, MessageSquare, Target,
-  DollarSign, Droplets, Palette, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
+  DollarSign, Droplets, Drumstick, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
@@ -710,7 +710,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
     { key: 'save-money',     label: 'Save money',          icon: DollarSign },
     { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
     { key: 'food-quality',   label: 'Better food quality', icon: Award      },
-    { key: 'food-colour',    label: 'Improve food colour', icon: Palette    },
+    { key: 'food-colour',    label: 'Improve food colour', icon: Drumstick  },
     { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
     { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
   ];
@@ -2226,7 +2226,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           { key: 'save-money',      label: 'Save money',          icon: DollarSign },
           { key: 'reduce-waste',    label: 'Reduce oil waste',    icon: Droplets   },
           { key: 'food-quality',    label: 'Better food quality', icon: Award      },
-          { key: 'food-colour',     label: 'Improve food colour', icon: Palette    },
+          { key: 'food-colour',     label: 'Improve food colour', icon: Drumstick  },
           { key: 'reduce-changes',  label: 'Fewer fryer changes', icon: Cog        },
           { key: 'extend-life',     label: 'Extend oil life',     icon: TrendingUp },
         ];
@@ -3290,7 +3290,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
               const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes', 'extend-life': 'Extend oil life' };
-              const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Palette, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
+              const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Drumstick, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
               // fryerChangesPerWeek and achievedGoals are available from the outer scope
               // Type: new prospect (vs competitor) or existing customer
               const isNewProspect = !!comp;
@@ -3634,7 +3634,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           { key: 'save-money',     label: 'Save money',          icon: DollarSign },
                           { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
                           { key: 'food-quality',   label: 'Better food quality', icon: Award      },
-                          { key: 'food-colour',    label: 'Improve food colour', icon: Palette    },
+                          { key: 'food-colour',    label: 'Improve food colour', icon: Drumstick  },
                           { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
                           { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
                         ];
@@ -3994,32 +3994,34 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       hasTpm      && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg'] },
                       hasOilLife  && { label: 'Oil Lifespan', bg: '#e0f2fe', color: '#0284c7', cols: ['Max', 'Avg'] },
                       hasOilUsage && { label: 'Oil Usage',    bg: '#f0fdf4', color: '#16a34a', cols: [
-                        ...(hasFresh  ? ['Fresh #', 'Fresh L']  : []),
-                        ...(hasTopUp  ? ['Top-up #', 'Top-up L'] : []),
+                        ...(hasFresh  ? ['Fresh Fills', 'Fresh L']  : []),
+                        ...(hasTopUp  ? ['Top-ups', 'Top-up L'] : []),
                         'Total L',
                       ]},
-                      hasTemp     && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Avg Variance'] },
+                      hasTemp     && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Min Temp', 'Max Temp', 'Variance'] },
                     ].filter(Boolean);
 
                     // Cell value + color extractor per column
                     const getCell = (r, grpLabel, col) => {
                       if (grpLabel === 'TPM') {
                         if (col === 'Peak') return { val: pfN(r.fPeak),   color: tpmColor(r.fPeak) };
-                        if (col === 'Avg')  return { val: pfN(r.fAvg, 1), color: tpmColor(r.fAvg) };
+                        if (col === 'Avg')  return { val: pfN(r.fAvg),   color: tpmColor(r.fAvg) };
                       }
                       if (grpLabel === 'Oil Lifespan') {
                         if (col === 'Max') return { val: r.fMaxLife != null ? `${r.fMaxLife}d` : null, color: '#0ea5e9' };
                         if (col === 'Avg') return { val: r.fAvgLife != null ? `${r.fAvgLife}d` : null, color: '#0ea5e9' };
                       }
                       if (grpLabel === 'Oil Usage') {
-                        if (col === 'Fresh #')  return { val: r.freshCount > 0 ? `${r.freshCount}` : null,       color: '#374151' };
-                        if (col === 'Fresh L')  return { val: pfL(r.freshLitres),                                 color: '#374151' };
-                        if (col === 'Top-up #') return { val: r.topUpCount > 0 ? `${r.topUpCount}` : null,       color: '#374151' };
-                        if (col === 'Top-up L') return { val: pfL(r.topUpLitres),                                 color: '#374151' };
-                        if (col === 'Total L')  return { val: pfL(r.totalLitres),                                 color: '#1a428a', bold: true };
+                        if (col === 'Fresh Fills') return { val: r.freshCount > 0 ? `${r.freshCount}` : null,  color: '#374151' };
+                        if (col === 'Fresh L')     return { val: pfL(r.freshLitres),                            color: '#374151' };
+                        if (col === 'Top-ups')     return { val: r.topUpCount > 0 ? `${r.topUpCount}` : null,  color: '#374151' };
+                        if (col === 'Top-up L')    return { val: pfL(r.topUpLitres),                            color: '#374151' };
+                        if (col === 'Total L')     return { val: pfL(r.totalLitres),                            color: '#1a428a', bold: true };
                       }
                       if (grpLabel === 'Temperature') {
-                        if (col === 'Avg Variance') return { val: pfN(r.fAvgVar, 1, '°'), color: varCol(r.fAvgVar) };
+                        if (col === 'Min Temp')  return { val: r.fMinTemp != null ? `${r.fMinTemp}°` : null,   color: '#0ea5e9' };
+                        if (col === 'Max Temp')  return { val: r.fMaxTemp != null ? `${r.fMaxTemp}°` : null,   color: '#dc2626' };
+                        if (col === 'Variance')  return { val: pfN(r.fAvgVar, 1, '°'),                         color: varCol(r.fAvgVar) };
                       }
                       return { val: null };
                     };
@@ -4098,7 +4100,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 fontWeight: '500', resize: 'vertical', outline: 'none',
                 boxSizing: 'border-box', lineHeight: '1.5', background: 'white',
               };
-              const qCard = { background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' };
+              const qCard = (bg = '#f8f9ff', border = '#e8edf2') => ({ background: bg, border: `1.5px solid ${border}`, borderRadius: '12px', padding: '14px 16px' });
 
               const statBand = (stats, bg, border) => (
                 <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '8px', marginBottom: '12px', overflow: 'hidden' }}>
@@ -4162,13 +4164,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
                     {/* ── TPM Performance ── */}
-                    <div style={qCard}>
+                    <div style={qCard('#f0f4ff', '#dde4f8')}>
                       {qHead(Activity, '#1a428a', 'TPM Performance')}
-                      {(maxTPM != null || avgTPM != null || minTPM != null) && statBand([
-                        ['Peak TPM', maxTPM, tpmColor(maxTPM)],
-                        ['Avg TPM',  avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
-                        ['Min TPM',  minTPM, tpmColor(minTPM)],
-                      ], '#f0f4ff', '#e0e7ff')}
                       {subLbl('TPM Trends')}
                       {mkSel('tpmTrends', [
                         'Stable and low — good oil performance',
@@ -4184,12 +4181,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* ── Oil Longevity ── */}
-                    <div style={qCard}>
+                    <div style={qCard('#f0f9ff', '#d0edfb')}>
                       {qHead(Droplets, '#0ea5e9', 'Oil Longevity')}
-                      {(maxOilAge != null || avgOilAge != null) && statBand([
-                        ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
-                        ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
-                      ], '#f0f9ff', '#e0f2fe')}
                       {subLbl('Lifespan vs Competitor Oil')}
                       {mkSel('oilBenchmark', [
                         'Longer than competitor oil',
@@ -4205,12 +4198,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* ── Temperature Control ── */}
-                    <div style={qCard}>
+                    <div style={qCard('#fff7ed', '#fddcbb')}>
                       {qHead(Flame, '#f97316', 'Temperature Control')}
-                      {avgTempVar != null
-                        ? statBand([['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626']], '#fff7ed', '#fed7aa')
-                        : <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>No temperature data recorded yet.</div>
-                      }
                       {subLbl('Set vs Actual')}
                       {mkSel('tempSetVsActual', [
                         'Well calibrated',
@@ -4226,7 +4215,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* ── Oil Management ── */}
-                    <div style={qCard}>
+                    <div style={qCard('#f8fafc', '#dde3ea')}>
                       {qHead(Cog, '#64748b', 'Oil Management')}
                       {subLbl('Training & Education Provided')}
                       {mkSel('oilMgmtStaffTraining', [
@@ -4242,7 +4231,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* ── Food Quality ── */}
-                    <div style={qCard}>
+                    <div style={qCard('#fffbeb', '#fde8a2')}>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
                       {subLbl('Taste & Texture')}
                       {mkSel('foodQualityFeedback', [
@@ -4259,7 +4248,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
 
                     {/* ── Next Steps ── */}
-                    <div style={qCard}>
+                    <div style={qCard('#f5f3ff', '#ddd6fe')}>
                       {qHead(Target, '#8b5cf6', 'Next Steps')}
                       {subLbl('Interested in Testo')}
                       {mkSel('overallRecommendation', [
@@ -4595,7 +4584,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               };
               const GOAL_ICONS = {
                 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets,
-                'food-quality': Award, 'food-colour': Palette, 'reduce-changes': Cog,
+                'food-quality': Award, 'food-colour': Drumstick, 'reduce-changes': Cog,
                 'simplify-ops': Cog, 'extend-life': TrendingUp,
               };
               const initialNote = venue.trialNotes
@@ -4999,26 +4988,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const quadrants = [
                       {
                         icon: Activity, iconColor: '#1a428a', title: 'TPM Performance',
-                        stats: (maxTPM != null || avgTPM != null || minTPM != null) ? rStatBand([
-                          ['Peak TPM', maxTPM, tpmColor(maxTPM)],
-                          ['Avg TPM', avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
-                          ['Min TPM', minTPM, tpmColor(minTPM)],
-                        ], '#f0f4ff', '#e0e7ff') : null,
+                        stats: null,
                         fields: [['TPM Trends', tpmD.trends], ['Change Patterns', tpmD.changePatterns]],
                       },
                       {
                         icon: Droplets, iconColor: '#0ea5e9', title: 'Oil Longevity',
-                        stats: (maxOilAge != null || avgOilAge != null) ? rStatBand([
-                          ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
-                          ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
-                        ], '#f0f9ff', '#e0f2fe') : null,
+                        stats: null,
                         fields: [['Lifespan vs Competitor', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq]],
                       },
                       {
                         icon: Flame, iconColor: '#f97316', title: 'Temperature Control',
-                        stats: avgTempVar != null ? rStatBand([
-                          ['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626'],
-                        ], '#fff7ed', '#fed7aa') : null,
+                        stats: null,
                         fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration]],
                       },
                       {
