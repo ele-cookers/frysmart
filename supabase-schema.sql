@@ -132,7 +132,7 @@ create table venues (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   -- BDM post-trial assessment fields (each stores a JSON object as text)
-  insight_tpm_performance   text,  -- Section 1 — Oil Longevity: { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
+  insight_oil_longevity     text,  -- Section 1 — Oil Longevity: { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
   insight_temp_observations text,  -- Section 2 — Temperature Control: { setVsActual, calibrationNeeded }
   insight_food_quality      text,  -- Section 3 — Food Quality: { tasteAndTexture, colourAndAppearance }
   insight_training          text,  -- Section 4 — Training & Education: { trainingProvided, topicsCovered[] }

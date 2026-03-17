@@ -1,11 +1,11 @@
 -- ============================================================
 -- FrySmart — Schema Migration: Add & rename assessment columns
 -- Run this once in Supabase Dashboard > SQL Editor
+-- Safe to re-run — all blocks use IF EXISTS / IF NOT EXISTS guards
 -- ============================================================
 
--- Step 1 — Add the 6 assessment columns to venues (if they don't exist yet).
---          These were added manually and are not in the original schema file.
---          Using DO blocks so the script is safe to re-run.
+-- Step 1 — Add columns under their original names if they don't exist yet.
+--          (Covers the case of setting up a brand-new database.)
 do $$
 begin
   if not exists (select 1 from information_schema.columns where table_name='venues' and column_name='insight_tpm_performance') then
@@ -28,16 +28,20 @@ begin
   end if;
 end $$;
 
--- Step 2 — Rename the two misleading columns.
---          insight_oil_longevity  → insight_engagement  (stores Feedback & Engagement section)
---          insight_oil_management → insight_training     (stores Training & Education section)
---
---          NOTE: rename insight_oil_longevity FIRST to free the name before we use it elsewhere.
+-- Step 2 — Rename all three misleading columns.
+--          Order matters: free up insight_oil_longevity first (→ insight_engagement),
+--          then reuse that name for insight_tpm_performance (→ insight_oil_longevity).
 do $$
 begin
+  -- insight_oil_longevity → insight_engagement  (stores Feedback & Engagement, not oil longevity)
   if exists (select 1 from information_schema.columns where table_name='venues' and column_name='insight_oil_longevity') then
     alter table venues rename column insight_oil_longevity to insight_engagement;
   end if;
+  -- insight_tpm_performance → insight_oil_longevity  (stores Oil Longevity section data)
+  if exists (select 1 from information_schema.columns where table_name='venues' and column_name='insight_tpm_performance') then
+    alter table venues rename column insight_tpm_performance to insight_oil_longevity;
+  end if;
+  -- insight_oil_management → insight_training  (stores Training & Education, not oil management)
   if exists (select 1 from information_schema.columns where table_name='venues' and column_name='insight_oil_management') then
     alter table venues rename column insight_oil_management to insight_training;
   end if;
@@ -46,7 +50,7 @@ end $$;
 -- ============================================================
 -- Final column layout for venues assessment fields:
 --
---   insight_tpm_performance   — Section 1: Oil Longevity
+--   insight_oil_longevity     — Section 1: Oil Longevity
 --                               { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
 --   insight_temp_observations — Section 2: Temperature Control
 --                               { setVsActual, calibrationNeeded }

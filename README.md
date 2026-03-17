@@ -87,7 +87,7 @@ One row per customer venue. Assessment data is attached here (not to the trial) 
 | `default_oil` | uuid | FK → oil_types |
 | `group_id` | uuid | FK → groups |
 | `bdm_id` | uuid | FK → profiles |
-| `insight_tpm_performance` | text | Section 1 — Oil Longevity (JSON) |
+| `insight_oil_longevity` | text | Section 1 — Oil Longevity (JSON) |
 | `insight_temp_observations` | text | Section 2 — Temperature Control (JSON) |
 | `insight_food_quality` | text | Section 3 — Food Quality (JSON) |
 | `insight_training` | text | Section 4 — Training & Education (JSON) |
@@ -96,7 +96,7 @@ One row per customer venue. Assessment data is attached here (not to the trial) 
 
 #### Assessment JSON shapes
 ```js
-insight_tpm_performance:   { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
+insight_oil_longevity:     { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
 insight_temp_observations: { setVsActual, calibrationNeeded }
 insight_food_quality:      { tasteAndTexture, colourAndAppearance }
 insight_training:          { trainingProvided, topicsCovered: string[] }
@@ -147,6 +147,7 @@ All DB ↔ frontend mapping is in `src/lib/mappers.js`. Key mappings:
 | `venues.fryer_count` | `fryerCount` |
 | `venues.fryer_volumes` | `fryerVolumes` |
 | `venues.customer_code` | `customerCode` |
+| `venues.insight_oil_longevity` | `insightOilLongevity` |
 | `venues.insight_training` | `insightTraining` |
 | `venues.insight_engagement` | `insightEngagement` |
 | `tpm_readings.tpm_value` | `tpmValue` |

@@ -124,7 +124,7 @@ export const mapVenue = (r) => ({
   updatedAt: r.updated_at,
   customerCodeSavedAt: r.customer_code_saved_at || null,
   // BDM post-trial assessment fields
-  insightTpmPerformance:   r.insight_tpm_performance   ?? null,  // Section 1 — Oil Longevity
+  insightOilLongevity:   r.insight_oil_longevity   ?? null,  // Section 1 — Oil Longevity
   insightTempObservations: r.insight_temp_observations ?? null,  // Section 2 — Temperature Control
   insightFoodQuality:      r.insight_food_quality      ?? null,  // Section 3 — Food Quality
   insightTraining:         r.insight_training          ?? null,  // Section 4 — Training & Education
@@ -147,7 +147,7 @@ export const unMapVenue = (v) => ({
   password: v.password || null,
   customer_code_saved_at: v.customerCodeSavedAt || null,
   // BDM post-trial assessment fields
-  insight_tpm_performance:   v.insightTpmPerformance   ?? null,  // Section 1 — Oil Longevity
+  insight_oil_longevity:   v.insightOilLongevity   ?? null,  // Section 1 — Oil Longevity
   insight_temp_observations: v.insightTempObservations ?? null,  // Section 2 — Temperature Control
   insight_food_quality:      v.insightFoodQuality      ?? null,  // Section 3 — Food Quality
   insight_training:          v.insightTraining         ?? null,  // Section 4 — Training & Education

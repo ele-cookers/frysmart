@@ -1125,13 +1125,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const v = venues.find(x => x.id === manageVenueId);
       setManageNoteText(v?.trialNotes || '');
       const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
-      const s1 = parseSafe(v?.insightTpmPerformance);
+      const s1 = parseSafe(v?.insightOilLongevity);
       const s2 = parseSafe(v?.insightTempObservations);
       const s3 = parseSafe(v?.insightFoodQuality);
       const s4 = parseSafe(v?.insightTraining);
       const s5 = parseSafe(v?.insightEngagement);
       const s7 = parseSafe(v?.insightRecommendations);
-      const hasInsightData = !!(v?.insightTpmPerformance || v?.insightEngagement || v?.insightTempObservations || v?.insightTraining || v?.insightFoodQuality || v?.insightRecommendations);
+      const hasInsightData = !!(v?.insightOilLongevity || v?.insightEngagement || v?.insightTempObservations || v?.insightTraining || v?.insightFoodQuality || v?.insightRecommendations);
       setInsightEditMode(!hasInsightData);
       setInsightForm({
         tpmPerformance:        s1.tpmPerformance        || '',
@@ -4310,7 +4310,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   {insightEditMode && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                      {(venue.insightTpmPerformance || venue.insightEngagement || venue.insightTempObservations || venue.insightTraining || venue.insightFoodQuality || venue.insightRecommendations) && (
+                      {(venue.insightOilLongevity || venue.insightEngagement || venue.insightTempObservations || venue.insightTraining || venue.insightFoodQuality || venue.insightRecommendations) && (
                         <button onClick={() => setInsightEditMode(false)} style={{ padding: '8px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
                           Cancel
                         </button>
@@ -4328,7 +4328,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
                           const newTrialNotes = notesLines.filter(Boolean).join('\n');
                           await updateVenue(venue.id, {
-                            insightTpmPerformance:   JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
+                            insightOilLongevity:   JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
                             insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded }),
                             insightFoodQuality:      JSON.stringify({ tasteAndTexture: insightForm.tasteAndTexture, colourAndAppearance: insightForm.colourAndAppearance }),
                             insightTraining:         JSON.stringify({ trainingProvided: insightForm.trainingProvided, topicsCovered: insightForm.topicsCovered }),
@@ -5005,7 +5005,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const hasAssessment = false;
 
                     const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
-                    const s1 = parseSafe(venue.insightTpmPerformance);
+                    const s1 = parseSafe(venue.insightOilLongevity);
                     const s2 = parseSafe(venue.insightTempObservations);
                     const s3 = parseSafe(venue.insightFoodQuality);
                     const s4 = parseSafe(venue.insightTraining);
