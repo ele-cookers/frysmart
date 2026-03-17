@@ -12,7 +12,7 @@ import {
   ArrowDown, Filter,
   Edit3, Pencil, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
   Star, MessageSquare, Target,
-  DollarSign, Droplets, Drumstick, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
+  DollarSign, Droplets, Sparkles, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
@@ -710,7 +710,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
     { key: 'save-money',     label: 'Save money',          icon: DollarSign },
     { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
     { key: 'food-quality',   label: 'Better food quality', icon: Award      },
-    { key: 'food-colour',    label: 'Improve food colour', icon: Drumstick  },
+    { key: 'food-colour',    label: 'Improve food colour', icon: Sparkles   },
     { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
     { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
   ];
@@ -1134,7 +1134,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [newTrialForm, setNewTrialForm] = useState({
     customerCode: '', venueName: '',
     competitor: '',
-    trialOilId: '', fryerCount: 1, fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
+    trialOilId: '', fryerCount: '', fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
     avgLitresPerWeek: '', fryerChangesPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
   });
 
@@ -1617,7 +1617,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setNewTrialForm({
         customerCode: '', venueName: '',
         competitor: '',
-        trialOilId: '', fryerCount: 1, fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
+        trialOilId: '', fryerCount: '', fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
         avgLitresPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
       });
       setTrialType('new');
@@ -2019,7 +2019,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
     <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #94a3b8; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: white !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
+    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #b8c4cf; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: white !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
       {/* Customer code — only for existing */}
@@ -2130,7 +2130,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <label style={S.label}>AVG OIL LIFESPAN (DAYS)</label>
           <input type="number" min="0" step="1" value={newTrialForm.fryerChangesPerWeek}
             onChange={e => setNewTrialForm(f => ({ ...f, fryerChangesPerWeek: e.target.value }))}
-            placeholder="e.g. 7" style={inputStyle}
+            placeholder="e.g. 3" style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
       </div>
@@ -2150,7 +2150,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return { ...f, fryerCount: e.target.value, fryerVolumes: vols };
               });
             }}
-            style={inputStyle} required
+            placeholder="e.g. 1" style={inputStyle} required
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
         {/* Right: Fryer Volumes */}
@@ -2160,7 +2160,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {Array.from({ length: parseInt(newTrialForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
                 <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
+                  <div style={{ fontSize: '12px', fontWeight: '500', color: '#94a3b8', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
                   <div style={{ position: 'relative', flex: 1 }}>
                     <input
                       type="number" min="1" step="1"
@@ -2216,7 +2216,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={S.field}>
         <label style={S.label}>WHAT DO WE KNOW GOING INTO THIS TRIAL?</label>
         <textarea value={newTrialForm.notes} onChange={e => setNewTrialForm(f => ({ ...f, notes: e.target.value }))}
-          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="E.g. competitor pricing pressure, key contact notes, food quality concerns, things to watch…"
+          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="E.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
       </div>
 
@@ -2226,7 +2226,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           { key: 'save-money',      label: 'Save money',          icon: DollarSign },
           { key: 'reduce-waste',    label: 'Reduce oil waste',    icon: Droplets   },
           { key: 'food-quality',    label: 'Better food quality', icon: Award      },
-          { key: 'food-colour',     label: 'Improve food colour', icon: Drumstick  },
+          { key: 'food-colour',     label: 'Improve food colour', icon: Sparkles   },
           { key: 'reduce-changes',  label: 'Fewer fryer changes', icon: Cog        },
           { key: 'extend-life',     label: 'Extend oil life',     icon: TrendingUp },
         ];
@@ -3290,7 +3290,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
               const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes', 'extend-life': 'Extend oil life' };
-              const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Drumstick, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
+              const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Sparkles, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
               // fryerChangesPerWeek and achievedGoals are available from the outer scope
               // Type: new prospect (vs competitor) or existing customer
               const isNewProspect = !!comp;
@@ -3555,7 +3555,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <label style={S.label}>AVG OIL LIFESPAN (DAYS)</label>
                           <input type="number" min="0" step="1" value={mEditForm.fryerChangesPerWeek ?? ''}
                             onChange={e => setMEditForm(p => ({ ...p, fryerChangesPerWeek: e.target.value }))}
-                            placeholder="e.g. 7" style={inputStyle}
+                            placeholder="e.g. 3" style={inputStyle}
                             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                         </div>
                       </div>
@@ -3583,7 +3583,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               {Array.from({ length: parseInt(mEditForm.fryerCount) || 1 }, (_, i) => i + 1).map(fn => (
                                 <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
+                                  <div style={{ fontSize: '12px', fontWeight: '500', color: '#94a3b8', width: '64px', paddingRight: '12px', flexShrink: 0 }}>Fryer {fn}</div>
                                   <div style={{ position: 'relative', flex: 1 }}>
                                     <input type="number" min="1" step="1"
                                       value={mEditForm.fryerVolumes?.[fn] ?? ''}
@@ -3624,7 +3624,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <textarea value={mEditForm.notesText}
                           onChange={e => setMEditForm(p => ({ ...p, notesText: e.target.value }))}
                           rows={3} style={{ ...inputStyle, resize: 'vertical' }}
-                          placeholder="E.g. competitor pricing pressure, key contact notes, food quality concerns, things to watch…"
+                          placeholder="E.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
                           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                       </div>
 
@@ -3634,7 +3634,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           { key: 'save-money',     label: 'Save money',          icon: DollarSign },
                           { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
                           { key: 'food-quality',   label: 'Better food quality', icon: Award      },
-                          { key: 'food-colour',    label: 'Improve food colour', icon: Drumstick  },
+                          { key: 'food-colour',    label: 'Improve food colour', icon: Sparkles   },
                           { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
                           { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
                         ];
@@ -4584,7 +4584,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               };
               const GOAL_ICONS = {
                 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets,
-                'food-quality': Award, 'food-colour': Drumstick, 'reduce-changes': Cog,
+                'food-quality': Award, 'food-colour': Sparkles, 'reduce-changes': Cog,
                 'simplify-ops': Cog, 'extend-life': TrendingUp,
               };
               const initialNote = venue.trialNotes
