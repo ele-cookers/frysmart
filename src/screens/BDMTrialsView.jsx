@@ -1004,6 +1004,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [readingModal, setReadingModal] = useState(null);
   const [closeTrialModal, setCloseTrialModal] = useState(null);
   const [endTrialModal, setEndTrialModal] = useState(null); // venue object when end trial modal is open
+  const [trialEndedVenue, setTrialEndedVenue] = useState(null); // confirmation after ending a trial
   const [selectedTrialVenue, setSelectedTrialVenue] = useState(null); // venue for detail modal
   const [successMsg, setSuccessMsg] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -1418,14 +1419,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     }
     const newTrialNotes = lines.filter(Boolean).join('\n');
     const endedToday = getTodayString();
-    // Close immediately (optimistic), fire update in background
+    // Close form modal, fire update in background, show confirmation
     setEndTrialModal(null);
-    setSuccessMsg('Trial Ended');
     updateVenue(venueId, { trialStatus: 'pending', trialEndDate: endedToday, trialNotes: newTrialNotes });
-    // Navigate straight to the summary report for the just-ended trial
-    setSelectedTrialVenue({ ...v, trialStatus: 'pending', trialEndDate: endedToday, trialNotes: newTrialNotes });
-    setManageSubTab('summary');
-    setActiveTab('pending');
+    setTrialEndedVenue({ id: venueId, name: v?.name || '' });
   };
 
   const handleCloseTrial = (venueId, outcomeData) => {
@@ -2959,7 +2956,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const trialYearlySpend = trialWeeklySpend !== null ? Math.round(trialWeeklySpend * 52 * 100) / 100 : null;
     const pctLitresReduced = weekLitres !== null && preTrialAvg ? Math.round((weekLitres / preTrialAvg) * 1000) / 10 : null;
     const pctCostSaved = weekSpend !== null && compWeeklySpend ? Math.round((weekSpend / compWeeklySpend) * 1000) / 10 : null;
-    const maxOilLifespan = oilAgeVals.length > 0 ? Math.max(...oilAgeVals) : null;
     const maxOilLifespanByFryer = {};
     fryerList.forEach(fn => {
       const ages = allTrialReadings.filter(r => (r.fryerNumber || 1) === fn && r.oilAge != null && r.oilAge > 0).map(r => r.oilAge);
@@ -4800,7 +4796,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         {/* Row 5: Total trial litres | Pre-trial oil lifespan | Trial oil lifespan */}
                         {sfld('Total trial litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
                         {sfld('Pre-trial oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                        {sfld('Trial oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
+                        {sfld('Trial oil lifespan', maxOilAge ? `${maxOilAge} days` : null)}
                       </div>
                       {/* Row 6: Start / End / Duration — temporal context, visually separated */}
                       <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1.5px dashed #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
@@ -5863,6 +5859,35 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         />
       )}
 
+      {trialEndedVenue && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '28px 24px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <CheckCircle2 size={26} color="#059669" />
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', marginBottom: '6px' }}>Trial ended</div>
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>{trialEndedVenue.name}</div>
+            <button
+              onClick={() => {
+                setTrialEndedVenue(null);
+                setManageVenueId(trialEndedVenue.id);
+                setManageSubTab('calendar');
+                setActiveTab('manage');
+              }}
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: '#1f2937', color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '10px' }}
+            >
+              Finalise trial details now
+            </button>
+            <button
+              onClick={() => setTrialEndedVenue(null)}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'transparent', color: '#64748b', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {decisionModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
@@ -5942,7 +5967,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* Manage trial — all tabs */}
                 <button className="bdm-row-btn" onClick={() => { close(); setManageVenueId(rv.id); setActiveTab('manage'); }}>
-                  <ClipboardList size={14} /> Manage trial
+                  <ClipboardList size={14} /> View trial
                 </button>
                 {/* Pipeline: Start trial */}
                 {rt === 'pipeline' && (
