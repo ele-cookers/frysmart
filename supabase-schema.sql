@@ -105,7 +105,6 @@ create table groups (
   nam_id uuid references profiles(id) on delete set null,
   password text,
   status text not null default 'active' check (status in ('active', 'inactive')),
-  last_tpm_date date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -123,7 +122,7 @@ create table venues (
   fryer_count int not null default 4,
   fryer_volumes jsonb default '{}'::jsonb,
   volume_bracket text references volume_brackets(key),
-  default_oil uuid references oil_types(id) on delete set null,
+  default_oil_id uuid references oil_types(id) on delete set null,
   group_id uuid references groups(id) on delete set null,
   bdm_id uuid references profiles(id) on delete set null,
   last_tpm_date date,
@@ -144,7 +143,7 @@ create table trials (
     check (status in ('pipeline', 'active', 'pending', 'accepted', 'successful', 'unsuccessful')),
   start_date date,
   end_date date,
-  trial_oil_id uuid references oil_types(id) on delete set null,
+  oil_id uuid references oil_types(id) on delete set null,
   notes text,
   current_weekly_avg numeric,
   current_price_per_litre numeric,
@@ -152,7 +151,7 @@ create table trials (
   outcome_date date,
   trial_reason text references trial_reasons(key),
   sold_price_per_litre numeric,
-  trial_type text check (trial_type in ('existing', 'new')),
+  customer_type text check (customer_type in ('existing', 'new')),
   -- BDM post-trial assessment fields (each stores a JSON object as text)
   insight_oil_longevity     text,  -- Section 1 — Oil Longevity: { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
   insight_temp_observations text,  -- Section 2 — Temperature Control: { setVsActual, calibrationNeeded }
