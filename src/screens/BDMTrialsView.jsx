@@ -3162,13 +3162,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {/* Back button + header + action buttons */}
         <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'flex-end' : 'stretch', gap: isDesktop ? '12px' : '8px', marginBottom: '16px' }}>
           <button onClick={() => { setManageVenueId(null); if (prevTab && prevTab !== 'manage') setActiveTab(prevTab); setPrevTab(null); }} style={{
-            ...(isDesktop
-              ? { background: '#f1f5f9', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: '600', color: '#64748b' }
-              : { background: '#1a428a', border: '2px solid #1a428a', borderRadius: '10px', padding: '11px 20px', fontSize: '14px', fontWeight: '700', color: 'white' }
-            ),
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+            background: '#f1f5f9', border: 'none', borderRadius: '6px', padding: '6px 10px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+            fontSize: '11px', fontWeight: '600', color: '#64748b', flexShrink: 0,
           }}>
-            <ChevronLeft size={isDesktop ? 12 : 18} /> Back
+            <ChevronLeft size={12} /> Back
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', margin: 0, lineHeight: 1 }}>{venue.name}</h2>
