@@ -5932,7 +5932,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
 
           {/* Mobile content */}
-          <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ padding: '16px 16px 80px', maxWidth: '600px', margin: '0 auto', background: '#f8fafc' }}>
             {renderTabContent()}
           </div>
         </>
