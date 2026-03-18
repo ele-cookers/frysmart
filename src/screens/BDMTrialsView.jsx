@@ -2138,29 +2138,35 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', minWidth: 0, overflow: 'hidden' }}>
         <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
           <label style={S.label}>EST. START DATE</label>
-          <input type="date" value={newTrialForm.estStartDate}
-            onChange={e => {
-              const start = e.target.value;
-              setNewTrialForm(f => {
-                const updated = { ...f, estStartDate: start };
-                if (start && !f.endDateManual) {
-                  const d = new Date(start);
-                  d.setDate(d.getDate() + (systemSettings?.trialDuration || 7));
-                  updated.estEndDate = d.toISOString().split('T')[0];
-                }
-                if (!start && !f.endDateManual) updated.estEndDate = '';
-                return updated;
-              });
-            }}
-            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none' }}
-            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+          <div style={{ position: 'relative' }}>
+            <input type="date" value={newTrialForm.estStartDate}
+              onChange={e => {
+                const start = e.target.value;
+                setNewTrialForm(f => {
+                  const updated = { ...f, estStartDate: start };
+                  if (start && !f.endDateManual) {
+                    const d = new Date(start);
+                    d.setDate(d.getDate() + (systemSettings?.trialDuration || 7));
+                    updated.estEndDate = d.toISOString().split('T')[0];
+                  }
+                  if (!start && !f.endDateManual) updated.estEndDate = '';
+                  return updated;
+                });
+              }}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none', paddingRight: '36px' }}
+              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+            <Calendar size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+          </div>
         </div>
         <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
           <label style={S.label}>EST. END DATE</label>
-          <input type="date" value={newTrialForm.estEndDate}
-            onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
-            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none' }}
-            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+          <div style={{ position: 'relative' }}>
+            <input type="date" value={newTrialForm.estEndDate}
+              onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none', paddingRight: '36px' }}
+              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+            <Calendar size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+          </div>
           {newTrialForm.estEndDate && !newTrialForm.endDateManual && (
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Auto-set: {systemSettings?.trialDuration || 7}-day trial</div>
           )}
