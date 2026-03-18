@@ -663,7 +663,9 @@ const CloseTrialModal = ({ venue, outcome, trialReasons, onClose, onSave }) => {
           </div>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button disabled={!canSubmit} onClick={() => onSave({
-              trialStatus: outcome === 'successful' ? 'accepted' : outcome,
+              trialStatus: outcome === 'successful'
+                ? (venue.customerCode && !venue.customerCode.startsWith('PRS-') ? 'successful' : 'accepted')
+                : outcome,
               trialReason: form.reason,
               outcomeDate: form.outcomeDate,
               trialNotes: [venue.trialNotes, form.notes ? `[${outcome === 'successful' ? 'Successful' : 'Unsuccessful'} ${form.outcomeDate}] ${form.notes}` : ''].filter(Boolean).join('\n'),
@@ -1453,7 +1455,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   const handleCloseTrial = (venueId, outcomeData) => {
     setCloseTrialModal(null);
-    setSuccessMsg(outcomeData.trialStatus === 'accepted' ? 'Marked as Accepted' : 'Marked as Unsuccessful');
+    setSuccessMsg(outcomeData.trialStatus === 'successful' ? 'Marked as Successful' : outcomeData.trialStatus === 'accepted' ? 'Marked as Accepted' : 'Marked as Unsuccessful');
     updateVenue(venueId, outcomeData);
   };
 
@@ -2153,9 +2155,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   return updated;
                 });
               }}
-              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none', paddingRight: '36px' }}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
               onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-            <Calendar size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
           </div>
         </div>
         <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
@@ -2163,9 +2164,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={{ position: 'relative' }}>
             <input type="date" value={newTrialForm.estEndDate}
               onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
-              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none', paddingRight: '36px' }}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
               onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-            <Calendar size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
           </div>
           {newTrialForm.estEndDate && !newTrialForm.endDateManual && (
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Auto-set: {systemSettings?.trialDuration || 7}-day trial</div>
@@ -2874,7 +2874,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 const allOilsFlat = [...(allOilOptions?.cookers || []), ...Object.values(allOilOptions?.compGroups || {}).flat()];
                 const currentOilObj = allOilsFlat.find(o => o.id === v.defaultOil);
                 const trialOilObj2 = (allOilOptions?.cookers || []).find(o => o.id === v.trialOilId);
-                const supplierName = !isExistingCust && currentOilObj?.competitorId ? competitors.find(c => c.id === currentOilObj.competitorId)?.name : null;
+                const supplierComp = !isExistingCust && currentOilObj?.competitorId ? competitors.find(c => c.id === currentOilObj.competitorId) : null;
                 return (
                   <div key={v.id} onClick={() => { setPrevTab('manage'); setManageVenueId(v.id); }} style={cardBase(sc.accent)}>
                     {/* Name + status badge on same row */}
@@ -2884,14 +2884,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <div style={{ fontSize: '14px', fontWeight: '700', color: COLORS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{v.name}</div>
                           <TrialStatusBadge status={v.trialStatus} />
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '8px' }}>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>
-                            <span style={{ fontWeight: '600' }}>{isExistingCust ? 'Existing Customer' : 'New Prospect'}</span>
-                            {supplierName && <span style={{ color: '#94a3b8' }}> · {supplierName}</span>}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.3px', background: isExistingCust ? '#eff6ff' : '#fff7ed', color: isExistingCust ? '#1a428a' : '#c2410c', border: `1px solid ${isExistingCust ? '#bfdbfe' : '#fed7aa'}` }}>
+                              {isExistingCust ? 'Existing' : 'Prospect'}
+                            </span>
+                            {supplierComp && <CompetitorPill comp={supplierComp} />}
                           </div>
                           {(currentOilObj || trialOilObj2) && (
-                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                              {currentOilObj?.name || '—'} → {trialOilObj2?.name || '—'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                              <OilBadge oil={currentOilObj} competitors={competitors} compact />
+                              <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8' }}>vs</span>
+                              <OilBadge oil={trialOilObj2} competitors={competitors} compact />
                             </div>
                           )}
                         </div>
