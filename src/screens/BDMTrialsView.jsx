@@ -4100,16 +4100,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
               };
-              // mkSel — edit: native select. View: coloured chip (hidden if empty)
+              // mkSel — edit: native select. View: frozen select-style field (same look, no arrow, not interactive)
               const mkSel = (fieldKey, opts, accentColor) => {
                 const val = insightForm[fieldKey];
-                const meta = val ? OPTION_META[val] : null;
                 if (!insightEditMode) {
-                  if (!val) return null;
                   return (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '6px', background: meta ? `${meta.color}15` : '#f1f5f9', border: `1px solid ${meta ? `${meta.color}35` : '#e2e8f0'}`, marginTop: '2px' }}>
-                      {meta && <span style={{ fontSize: '11px', fontWeight: '700', color: meta.color }}>{meta.icon}</span>}
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: meta?.color || '#374151' }}>{val}</span>
+                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', fontWeight: val ? '500' : '400', color: val ? '#1f2937' : '#94a3b8', background: 'white', boxSizing: 'border-box', minHeight: '34px' }}>
+                      {val || '— Select —'}
                     </div>
                   );
                 }
@@ -4123,11 +4120,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   </select>
                 );
               };
-              // mkField — hides label+input entirely in view mode when empty
-              const mkField = (label, fieldKey, opts, accent) => {
-                if (!insightEditMode && !insightForm[fieldKey]) return null;
-                return <>{subLbl(label)}{mkSel(fieldKey, opts, accent)}</>;
-              };
+              // mkField — always visible (shows "— Select —" when empty in view mode)
+              const mkField = (label, fieldKey, opts, accent) => (
+                <>{subLbl(label)}{mkSel(fieldKey, opts, accent)}</>
+              );
 
               const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure'];
 
@@ -4189,8 +4185,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
-                    {/* ── 1. Oil Longevity ── */}
-                    <div style={qCard('#f0f4ff', '#dde4f8')}>
+                    {/* ── 1. Oil Longevity — blue ── */}
+                    <div style={qCard('#eff6ff', '#bfdbfe')}>
                       {qHead(Activity, '#1a428a', 'Oil Longevity')}
                       {mkField('TPM Performance', 'tpmPerformance', ['Acceptable', 'Above normal', 'Unstable'], '#1a428a')}
                       {mkField('Lifespan vs Competitor Oil', 'lifespanVsCompetitor', ['Longer', 'On par', 'Shorter', 'No comparable baseline'], '#1a428a')}
@@ -4213,9 +4209,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {mkField('Appearance', 'appearance', ['Improved', 'Same', 'Worse'], '#f59e0b')}
                     </div>
 
-                    {/* ── 4. Training & Education ── */}
-                    <div style={qCard('#f0fdf4', '#bbf7d0')}>
-                      {qHead(BookOpen, '#16a34a', 'Training & Education')}
+                    {/* ── 4. Training & Education — teal ── */}
+                    <div style={qCard('#f0fdfa', '#99f6e4')}>
+                      {qHead(BookOpen, '#0d9488', 'Training & Education')}
                       {(insightEditMode || insightForm.topicsCovered.length > 0) && (<>
                         {subLbl('Topics Covered')}
                         {insightEditMode ? (
@@ -4226,7 +4222,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
                                   <input type="checkbox" checked={checked}
                                     onChange={() => setInsightForm(f => ({ ...f, topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic] }))}
-                                    style={{ width: '14px', height: '14px', accentColor: '#16a34a', cursor: 'pointer' }} />
+                                    style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
                                   {topic}
                                 </label>
                               );
@@ -4240,8 +4236,37 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </div>
                         )}
                       </>)}
-                      {mkField('Interested in Testo', 'interestedInTesto', ['Yes', 'No', 'Not sure'], '#16a34a')}
-                      {mkField('Interested in FrySmart', 'interestedInFrySmart', ['Yes', 'No', 'Not sure'], '#16a34a')}
+                      {subLbl('Conversion Interest')}
+                      {insightEditMode ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                          {[['interestedInTesto', 'Interested in Testo'], ['interestedInFrySmart', 'Interested in FrySmart']].map(([key, label]) => {
+                            const checked = insightForm[key] === 'Yes';
+                            return (
+                              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                                <input type="checkbox" checked={checked}
+                                  onChange={e => setInsightForm(f => ({ ...f, [key]: e.target.checked ? 'Yes' : 'No' }))}
+                                  style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
+                                {label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                          {[['interestedInTesto', 'Testo'], ['interestedInFrySmart', 'FrySmart']].map(([key, label]) => {
+                            const val = insightForm[key];
+                            const yes = val === 'Yes';
+                            return (
+                              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: yes ? '#0f766e' : '#94a3b8' }}>
+                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', border: `2px solid ${yes ? '#0d9488' : '#d1d5db'}`, background: yes ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  {yes && <Check size={8} color="white" strokeWidth={3} />}
+                                </div>
+                                <span style={{ fontWeight: yes ? '600' : '400' }}>{label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* ── 5. Feedback & Engagement ── */}
@@ -4256,18 +4281,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <div style={qCard('#f0fdf4', '#bbf7d0')}>
                       {qHead(TrendingUp, '#16a34a', 'Value Demonstrated')}
                       {mkField('Cost Savings', 'costSavings', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
-                      {mkField('Quality Gains', 'qualityGains', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
+                      {mkField('Oil Quality', 'qualityGains', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
                       {mkField('Operational Efficiency', 'operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
                     </div>
 
-                    {/* ── Trial Outcome — full width, split goals (left) + findings (right) ── */}
-                    <div style={{ ...qCard('#fffbeb', '#fde8a2'), gridColumn: isDesktop ? '1 / -1' : undefined }}>
+                    {/* ── Trial Outcome — rose, full width ── */}
+                    <div style={{ ...qCard('#fff1f2', '#fecdd3'), gridColumn: isDesktop ? '1 / -1' : undefined }}>
                       {qHead(Award, '#f59e0b', 'Trial Outcome')}
                       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
                         {/* Goals */}
                         <div>
                           {subLbl('Goals Achieved')}
-                          {insightEditMode && <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', marginTop: '-2px' }}>Tick which goals the trial delivered</div>}
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                             {insightEditMode ? ASSESS_GOAL_OPTIONS.map(goal => {
                               const GoalIcon = goal.icon;
@@ -5024,7 +5048,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       { icon: MessageSquare, iconColor: '#7c3aed', title: 'Feedback & Engagement',
                         fields: [['Chef Feedback', s5.chefFeedback], ['Staff Engagement', s5.staffEngagement], ['Management Buy-in', s5.overallReception]] },
                       { icon: TrendingUp,    iconColor: '#16a34a', title: 'Value Demonstrated',
-                        fields: [['Cost Savings', s7.costSavings], ['Quality Gains', s7.qualityGains], ['Operational Efficiency', s7.operationalEfficiency]] },
+                        fields: [['Cost Savings', s7.costSavings], ['Oil Quality', s7.qualityGains], ['Operational Efficiency', s7.operationalEfficiency]] },
                     ].filter(q => q.fields.some(([,v]) => v));
 
                     return (
