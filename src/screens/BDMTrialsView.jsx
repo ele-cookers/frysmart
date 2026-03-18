@@ -5600,7 +5600,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       ...(isDesktop
         ? { height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
         : { minHeight: '100vh' }),
-      background: isDesktop ? COLORS.bg : 'transparent',
+      background: COLORS.bg,
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
     }}>
       <style>{`
