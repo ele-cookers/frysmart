@@ -1728,7 +1728,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const totalLitres = venueReadings.reduce((sum, r) => sum + (parseFloat(r.litresFilled) || 0), 0);
 
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(TRIAL_STATUS_COLORS['active'].accent)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : undefined} style={cardBase(TRIAL_STATUS_COLORS['active'].accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue)}
@@ -1745,7 +1745,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
-              <Eye size={13} /> View Trial
+              <ClipboardList size={13} /> View Trial
             </button>
             <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnMobileBlue}>
               <ClipboardList size={13} /> Log
@@ -1787,7 +1787,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const renderPendingOutcomeCard = (venue) => {
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || getTodayString());
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(COLORS.warning)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : undefined} style={cardBase(COLORS.warning)}>
         {cardHeader(venue, <span style={{ ...S.pill, background: COLORS.warningBg, color: '#92400e', border: '1px solid #fde68a' }}>Pending</span>)}
         {cardOilRow(venue)}
         {pricingRow(venue)}
@@ -1814,12 +1814,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(statusCfg.accent)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : undefined} style={cardBase(statusCfg.accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
-        {/* reason badges removed — status is clear from the tab/card colour */}
+        {!isDesktop && (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
+              <ClipboardList size={13} /> View Trial
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -1830,12 +1836,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={() => setSelectedTrialVenue(venue)} style={cardBase(statusCfg.accent)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : undefined} style={cardBase(statusCfg.accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
         <CustomerCodeInput venueId={venue.id} onSave={handleSaveCustomerCode} />
+        {!isDesktop && (
+          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
+              <ClipboardList size={13} /> View Trial
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -2862,35 +2875,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       ['End', v.trialEndDate ? displayDate(v.trialEndDate) : '—'],
                       ...(v.customerCode && !v.customerCode.startsWith('PRS-') ? [['Code', v.customerCode]] : []),
                     ])}
-                    {/* Mobile action buttons per stage */}
-                    {!isDesktop && (
-                      <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setManageVenueId(v.id)} style={{ ...btnMobileGhost, fontSize: '11px', padding: '7px 10px' }}>
-                          <Eye size={12} /> View
-                        </button>
-                        {v.trialStatus === 'pipeline' && (
-                          <button onClick={() => setReadingModal({ ...v, startingTrial: true, trialStartDate: v.trialStartDate || getTodayString() })} style={{ ...btnMobileBlue, fontSize: '11px', padding: '7px 10px' }}>
-                            <Play size={12} /> Start
-                          </button>
-                        )}
-                        {v.trialStatus === 'active' && (<>
-                          <button onClick={() => setReadingModal(v)} style={{ ...btnMobileBlue, fontSize: '11px', padding: '7px 10px' }}>
-                            <ClipboardList size={12} /> Log
-                          </button>
-                          <button onClick={() => setEndTrialModal(v)} style={{ ...btnMobileRed, fontSize: '11px', padding: '7px 10px' }}>
-                            <XCircle size={12} /> End
-                          </button>
-                        </>)}
-                        {v.trialStatus === 'pending' && (<>
-                          <button onClick={() => setCloseTrialModal({ venue: v, outcome: 'successful' })} style={{ ...btnMobileGreen, fontSize: '11px', padding: '7px 10px' }}>
-                            <Trophy size={12} /> Won
-                          </button>
-                          <button onClick={() => setCloseTrialModal({ venue: v, outcome: 'unsuccessful' })} style={{ ...btnMobileRed, fontSize: '11px', padding: '7px 10px' }}>
-                            <XCircle size={12} /> Lost
-                          </button>
-                        </>)}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -4192,7 +4176,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               };
               const selS = {
                 width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px',
-                fontSize: '12px', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white',
+                fontSize: '12px', fontFamily: 'inherit', fontWeight: '500', outline: 'none', backgroundColor: 'white',
                 cursor: 'pointer', boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none',
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
@@ -4224,11 +4208,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </div>
                   );
                 }
+                const editVs = val ? valueBgStyle(val) : {};
                 return (
-                  <select style={{ ...selS, color: val ? '#1f2937' : '#94a3b8' }}
-                    value={val} onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
-                    onFocus={e => { e.target.style.borderColor = accentColor; }}
-                    onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
+                  <select
+                    style={{ ...selS, backgroundColor: editVs.background || 'white', color: editVs.color || (val ? '#1f2937' : '#94a3b8'), border: '1.5px solid #e8edf2', fontWeight: val ? '600' : '500' }}
+                    value={val} onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}>
                     <option value="">— Select —</option>
                     {opts.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
@@ -4351,12 +4335,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           })}
                         </div>
                       ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '5px', marginTop: '6px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '8px', marginTop: '6px' }}>
                           {TRAINING_TOPICS.map(topic => {
                             const checked = insightForm.topicsCovered.includes(topic);
                             return (
-                              <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', color: checked ? '#0f766e' : '#94a3b8' }}>
-                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', flexShrink: 0, border: `2px solid ${checked ? '#0d9488' : '#d1d5db'}`, background: checked ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: checked ? '#0f766e' : '#94a3b8' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '3px', flexShrink: 0, border: `2px solid ${checked ? '#0d9488' : '#d1d5db'}`, background: checked ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   {checked && <Check size={8} color="white" strokeWidth={3} />}
                                 </div>
                                 <span style={{ fontWeight: checked ? '600' : '400' }}>{topic}</span>
@@ -4382,13 +4366,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           })}
                         </div>
                       ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '8px', marginTop: '4px' }}>
                           {[['interestedInTesto', 'Testo'], ['interestedInFrySmart', 'FrySmart']].map(([key, label]) => {
                             const val = insightForm[key];
                             const yes = val === 'Yes';
                             return (
-                              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', color: yes ? '#0f766e' : '#94a3b8' }}>
-                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', border: `2px solid ${yes ? '#0d9488' : '#d1d5db'}`, background: yes ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: yes ? '#0f766e' : '#94a3b8' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '3px', border: `2px solid ${yes ? '#0d9488' : '#d1d5db'}`, background: yes ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                   {yes && <Check size={8} color="white" strokeWidth={3} />}
                                 </div>
                                 <span style={{ fontWeight: yes ? '600' : '400' }}>{label}</span>
@@ -4448,7 +4432,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <textarea
                               value={assessFindings}
                               onChange={e => setAssessFindings(e.target.value)}
-                              placeholder="What went well? Any surprises? How did the chef react? Anything unusual with the oil or fryers worth noting?…"
+                              placeholder="Summarise how the trial went…"
                               rows={6}
                               style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
                               onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
