@@ -1581,6 +1581,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const newTrialObj = {
         venueId: venueRow.id,
         trialStatus: 'pipeline',
+        trialType: trialType, // 'existing' | 'new'
         trialOilId: newTrialForm.trialOilId,
         trialNotes: [trialId, goalsLine, fryerChangesLine, newTrialForm.notes].filter(Boolean).join('\n'),
         currentPricePerLitre: parseFloat(newTrialForm.currentPrice),
@@ -2870,7 +2871,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               ) : cardRows.map(v => {
                 const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
                 const isWonOrAccepted = v.trialStatus === 'successful' || v.trialStatus === 'accepted';
-                const isExistingCust = v.customerCode && !v.customerCode.startsWith('PRS-');
+                const isExistingCust = v.trialType === 'existing' || (!v.trialType && v.customerCode && !v.customerCode.startsWith('PRS-'));
                 const allOilsFlat = [...(allOilOptions?.cookers || []), ...Object.values(allOilOptions?.compGroups || {}).flat()];
                 const currentOilObj = allOilsFlat.find(o => o.id === v.defaultOil);
                 const trialOilObj2 = (allOilOptions?.cookers || []).find(o => o.id === v.trialOilId);
@@ -2885,14 +2886,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <TrialStatusBadge status={v.trialStatus} />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.3px', background: isExistingCust ? '#eff6ff' : '#fff7ed', color: isExistingCust ? '#1a428a' : '#c2410c', border: `1px solid ${isExistingCust ? '#bfdbfe' : '#fed7aa'}` }}>
-                              {isExistingCust ? 'Existing' : 'Prospect'}
+                          {/* Row 2: Existing customer / New prospect badge */}
+                          <div>
+                            <span style={{ fontSize: '11px', fontWeight: '700', background: isExistingCust ? '#f0fdf4' : '#fff7ed', color: isExistingCust ? '#166534' : '#c2410c', border: `1px solid ${isExistingCust ? '#bbf7d0' : '#fed7aa'}`, borderRadius: '6px', padding: '3px 8px' }}>
+                              {isExistingCust ? 'Existing customer' : 'New prospect'}
                             </span>
-                            {supplierComp && <CompetitorPill comp={supplierComp} />}
                           </div>
-                          {(currentOilObj || trialOilObj2) && (
+                          {/* Row 3: supplier (if prospect) · current oil vs trial oil */}
+                          {(supplierComp || currentOilObj || trialOilObj2) && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                              {supplierComp && (
+                                <>
+                                  <CompetitorPill comp={supplierComp} />
+                                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>·</span>
+                                </>
+                              )}
                               <OilBadge oil={currentOilObj} competitors={competitors} compact />
                               <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8' }}>vs</span>
                               <OilBadge oil={trialOilObj2} competitors={competitors} compact />
@@ -2906,7 +2914,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {isDesktop && dateRow([
                       ['Start', v.trialStartDate ? displayDate(v.trialStartDate) : '—'],
                       ['End', v.trialEndDate ? displayDate(v.trialEndDate) : '—'],
-                      ...(v.customerCode && !v.customerCode.startsWith('PRS-') ? [['Code', v.customerCode]] : []),
+                      ...((v.trialType === 'existing' || (!v.trialType && v.customerCode && !v.customerCode.startsWith('PRS-'))) ? [['Code', v.customerCode]] : []),
                     ])}
                   </div>
                 );
@@ -3087,7 +3095,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         setManageEditForm({
           name: venue.name || '',
           notesText: initNotesText,
-          trialType: initCompOil?.competitorId ? 'new' : 'existing',
+          trialType: venue.trialType || (initCompOil?.competitorId ? 'new' : 'existing'),
           trialGoals: initGoals,
           fryerChangesPerWeek: initFryerChanges,
           currentPricePerLitre: venue.currentPricePerLitre ? String(venue.currentPricePerLitre) : '',
@@ -3289,7 +3297,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Sparkles, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
               // fryerChangesPerWeek and achievedGoals are available from the outer scope
               // Type: new prospect (vs competitor) or existing customer
-              const isNewProspect = !!comp;
+              // Use stored trialType as primary source; fall back to customer code heuristic for old records
+              const isNewProspect = venue.trialType === 'new' || (!venue.trialType && (!venue.customerCode || venue.customerCode.startsWith('PRS-')));
               const typeBadge = isNewProspect
                 ? <span style={{ fontSize: '11px', fontWeight: '700', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '6px', padding: '3px 8px' }}>New prospect</span>
                 : <span style={{ fontSize: '11px', fontWeight: '700', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '3px 8px' }}>Existing customer</span>;
@@ -4810,8 +4819,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const compYearlyLitres = compWklyAvg ? compWklyAvg * 52 : null;
               const trialYearlyLitres = liveTrialAvg !== null ? liveTrialAvg * 52 : null;
 
-              // Type badge (same as pre-trial tab)
-              const isNewProspect = !!comp;
+              // Type badge (same as pre-trial tab) — use stored trialType as primary source; fall back to customer code heuristic for old records
+              const isNewProspect = venue.trialType === 'new' || (!venue.trialType && (!venue.customerCode || venue.customerCode.startsWith('PRS-')));
               const typeBadge = isNewProspect
                 ? <span style={{ fontSize: '11px', fontWeight: '700', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '6px', padding: '3px 8px' }}>New prospect</span>
                 : <span style={{ fontSize: '11px', fontWeight: '700', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '3px 8px' }}>Existing customer</span>;
