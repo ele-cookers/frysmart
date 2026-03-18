@@ -3919,7 +3919,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     // Fryers = rows, stat groups = column groups
                     const varCol = (v) => v == null ? '#94a3b8' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
                     const pfN = (v, dec = 0, sfx = '') => v != null ? `${dec > 0 ? Number(v).toFixed(dec) : Math.round(v)}${sfx}` : null;
-                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : null;
+                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}` : null;
 
                     const fryerData = fryerList.map(fn => {
                       const frdgs = allTrialReadings.filter(r => (Number(r.fryerNumber) || 1) === fn);
@@ -3989,9 +3989,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       }
                       if (grpLabel === 'Oil Usage') {
                         if (col === 'Fresh Fills') return { val: r.freshCount > 0 ? `${r.freshCount}` : null,  color: '#374151' };
-                        if (col === 'Fresh L')     return { val: pfL(r.freshLitres),                            color: '#374151' };
+                        if (col === 'Fresh L')     return { val: pfL(r.freshLitres),                            color: '#0ea5e9' };
                         if (col === 'Top-ups')     return { val: r.topUpCount > 0 ? `${r.topUpCount}` : null,  color: '#374151' };
-                        if (col === 'Top-up L')    return { val: pfL(r.topUpLitres),                            color: '#374151' };
+                        if (col === 'Top-up L')    return { val: pfL(r.topUpLitres),                            color: '#0ea5e9' };
                         if (col === 'Total L')     return { val: pfL(r.totalLitres),                            color: '#1a428a', bold: true };
                       }
                       if (grpLabel === 'Temperature') {
@@ -4009,7 +4009,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Fryer Stats</div>
                         <div style={{ overflowX: 'auto' }}>
-                          <table style={{ borderCollapse: 'collapse', width: 'auto' }}>
+                          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                             <thead>
                               {/* Group header row */}
                               <tr>
@@ -4031,7 +4031,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                     padding: '5px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b',
                                     textAlign: 'center', background: g.bg + '88', borderBottom: '2px solid #e2e8f0',
                                     borderLeft: ci === 0 ? borderL : '1px solid #f1f5f9', whiteSpace: 'nowrap',
-                                    width: '72px', maxWidth: '72px',
                                   }}>{col}</th>
                                 )))}
                               </tr>
@@ -4044,9 +4043,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   </td>
                                   {groups.map(g => g.cols.map((col, ci) => {
                                     const { val, color, bold } = getCell(r, g.label, col);
+                                    const isTemp = g.label === 'Temperature';
                                     return (
                                       <td key={g.label + col} style={{
-                                        padding: '8px 10px', fontSize: '12px', fontWeight: bold ? '700' : '600',
+                                        padding: '8px 10px', fontSize: isTemp ? '11px' : '12px', fontWeight: bold ? '700' : '600',
                                         textAlign: 'center', color: val ? color || '#374151' : '#e2e8f0',
                                         borderBottom: '1px solid #f1f5f9',
                                         borderLeft: ci === 0 ? borderL : '1px solid #f8fafc',
@@ -4105,8 +4105,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 const val = insightForm[fieldKey];
                 if (!insightEditMode) {
                   return (
-                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', fontWeight: val ? '500' : '400', color: val ? '#1f2937' : '#94a3b8', background: 'white', boxSizing: 'border-box', minHeight: '34px' }}>
-                      {val || '— Select —'}
+                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', fontWeight: val ? '500' : '400', color: val ? '#1f2937' : '#94a3b8', fontStyle: val ? 'normal' : 'italic', background: 'white', boxSizing: 'border-box', minHeight: '34px' }}>
+                      {val || '— not yet assessed —'}
                     </div>
                   );
                 }
@@ -4212,31 +4212,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {/* ── 4. Training & Education — teal ── */}
                     <div style={qCard('#f0fdfa', '#99f6e4')}>
                       {qHead(BookOpen, '#0d9488', 'Training & Education')}
-                      {(insightEditMode || insightForm.topicsCovered.length > 0) && (<>
-                        {subLbl('Topics Covered')}
-                        {insightEditMode ? (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
-                            {TRAINING_TOPICS.map(topic => {
-                              const checked = insightForm.topicsCovered.includes(topic);
-                              return (
-                                <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
-                                  <input type="checkbox" checked={checked}
-                                    onChange={() => setInsightForm(f => ({ ...f, topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic] }))}
-                                    style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
-                                  {topic}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                            {insightForm.topicsCovered.map(t => (
-                              <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#dcfce7', color: '#15803d', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
-                            ))}
-                          </div>
-                        )}
-                      </>)}
-                      {subLbl('Conversion Interest')}
+                      {subLbl('Topics Covered')}
+                      {insightEditMode ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
+                          {TRAINING_TOPICS.map(topic => {
+                            const checked = insightForm.topicsCovered.includes(topic);
+                            return (
+                              <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                                <input type="checkbox" checked={checked}
+                                  onChange={() => setInsightForm(f => ({ ...f, topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic] }))}
+                                  style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
+                                {topic}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        insightForm.topicsCovered.length > 0
+                          ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                              {insightForm.topicsCovered.map(t => (
+                                <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#ccfbf1', color: '#0f766e', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
+                              ))}
+                            </div>
+                          : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', marginTop: '4px' }}>— not yet assessed —</div>
+                      )}
+                      <div style={{ borderTop: '1px solid #99f6e440', margin: '10px 0 4px' }} />
                       {insightEditMode ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {[['interestedInTesto', 'Interested in Testo'], ['interestedInFrySmart', 'Interested in FrySmart']].map(([key, label]) => {
@@ -4285,8 +4285,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {mkField('Operational Efficiency', 'operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
                     </div>
 
-                    {/* ── Trial Outcome — rose, full width ── */}
-                    <div style={{ ...qCard('#fff1f2', '#fecdd3'), gridColumn: isDesktop ? '1 / -1' : undefined }}>
+                    {/* ── Trial Outcome — white, full width ── */}
+                    <div style={{ ...qCard('white', '#e2e8f0'), gridColumn: isDesktop ? '1 / -1' : undefined }}>
                       {qHead(Award, '#f59e0b', 'Trial Outcome')}
                       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
                         {/* Goals */}
@@ -4341,8 +4341,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             />
                           ) : (
                             assessFindings
-                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap' }}>{assessFindings}</p>
-                              : <span style={{ fontSize: '12px', color: '#cbd5e1' }}>No findings recorded</span>
+                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>{assessFindings}</p>
+                              : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '10px 12px', border: '1.5px solid #e8edf2', borderRadius: '8px' }}>— not yet assessed —</div>
                           )}
                         </div>
                       </div>
