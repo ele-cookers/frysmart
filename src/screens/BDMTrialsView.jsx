@@ -1095,15 +1095,24 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
   const nextTrialId = useMemo(() => {
-    // Count all trial venues (including other BDMs) for a global sequential number
-    const trialCount = venues.length;
-    return `TRL-${String(trialCount + 1).padStart(4, '0')}`;
+    // Derive from the highest existing TRL number so deletes/gaps never cause duplicates
+    let max = 0;
+    venues.forEach(v => {
+      const m = (v.trialNotes || '').match(/^TRL-(\d+)/m);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return `TRL-${String(max + 1).padStart(4, '0')}`;
   }, [venues]);
 
   // ── Generate prospect code (PRS-XXXX) ──
   const nextProspectCode = useMemo(() => {
-    const prospectVenues = venues.filter(v => v.customerCode && v.customerCode.startsWith('PRS-'));
-    return `PRS-${String(prospectVenues.length + 1).padStart(4, '0')}`;
+    // Derive from the highest existing PRS number so deletes/gaps never cause duplicates
+    let max = 0;
+    venues.forEach(v => {
+      const m = (v.customerCode || '').match(/^PRS-(\d+)$/);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return `PRS-${String(max + 1).padStart(4, '0')}`;
   }, [venues]);
 
   // ── Responsive ──
