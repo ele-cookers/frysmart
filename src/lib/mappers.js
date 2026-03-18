@@ -123,13 +123,6 @@ export const mapVenue = (r) => ({
   createdAt: r.created_at,
   updatedAt: r.updated_at,
   customerCodeSavedAt: r.customer_code_saved_at || null,
-  // BDM post-trial assessment fields
-  insightOilLongevity:   r.insight_oil_longevity   ?? null,  // Section 1 — Oil Longevity
-  insightTempObservations: r.insight_temp_observations ?? null,  // Section 2 — Temperature Control
-  insightFoodQuality:      r.insight_food_quality      ?? null,  // Section 3 — Food Quality
-  insightTraining:         r.insight_training          ?? null,  // Section 4 — Training & Education
-  insightEngagement:       r.insight_engagement        ?? null,  // Section 5 — Feedback & Engagement
-  insightRecommendations:  r.insight_recommendations   ?? null,  // Sections 6+7 — Value + Next Steps
 });
 
 export const unMapVenue = (v) => ({
@@ -146,13 +139,6 @@ export const unMapVenue = (v) => ({
   last_tpm_date: v.lastTpmDate || null,
   password: v.password || null,
   customer_code_saved_at: v.customerCodeSavedAt || null,
-  // BDM post-trial assessment fields
-  insight_oil_longevity:   v.insightOilLongevity   ?? null,  // Section 1 — Oil Longevity
-  insight_temp_observations: v.insightTempObservations ?? null,  // Section 2 — Temperature Control
-  insight_food_quality:      v.insightFoodQuality      ?? null,  // Section 3 — Food Quality
-  insight_training:          v.insightTraining         ?? null,  // Section 4 — Training & Education
-  insight_engagement:        v.insightEngagement       ?? null,  // Section 5 — Feedback & Engagement
-  insight_recommendations:   v.insightRecommendations  ?? null,  // Sections 6+7 — Value + Next Steps
 });
 
 // ── trials ──
@@ -170,7 +156,15 @@ export const mapTrial = (r) => ({
   outcomeDate: r.outcome_date,
   trialReason: r.trial_reason ?? '',
   soldPricePerLitre: r.sold_price_per_litre,
+  trialType: r.trial_type ?? null,
   trialCreatedAt: r.created_at,
+  // BDM post-trial assessment fields (each stores a JSON object as text)
+  insightOilLongevity:     r.insight_oil_longevity     ?? null,  // Section 1 — Oil Longevity
+  insightTempObservations: r.insight_temp_observations ?? null,  // Section 2 — Temperature Control
+  insightFoodQuality:      r.insight_food_quality      ?? null,  // Section 3 — Food Quality
+  insightTraining:         r.insight_training          ?? null,  // Section 4 — Training & Education
+  insightEngagement:       r.insight_engagement        ?? null,  // Section 5 — Feedback & Engagement
+  insightRecommendations:  r.insight_recommendations   ?? null,  // Sections 6+7 — Value + Next Steps
 });
 
 export const unMapTrial = (t) => ({
@@ -186,6 +180,14 @@ export const unMapTrial = (t) => ({
   outcome_date: t.outcomeDate || null,
   trial_reason: t.trialReason || null,
   sold_price_per_litre: t.soldPricePerLitre ?? null,
+  trial_type: t.trialType || null,
+  // BDM post-trial assessment fields
+  insight_oil_longevity:     t.insightOilLongevity     ?? null,
+  insight_temp_observations: t.insightTempObservations ?? null,
+  insight_food_quality:      t.insightFoodQuality      ?? null,
+  insight_training:          t.insightTraining         ?? null,
+  insight_engagement:        t.insightEngagement       ?? null,
+  insight_recommendations:   t.insightRecommendations  ?? null,
 });
 
 // ── Trial ↔ Venue merge/split helpers ──
@@ -194,7 +196,10 @@ export const TRIAL_FIELDS = [
   'trialId', 'trialStatus', 'trialStartDate', 'trialEndDate',
   'trialOilId', 'trialNotes', 'currentWeeklyAvg', 'currentPricePerLitre',
   'offeredPricePerLitre', 'outcomeDate', 'trialReason', 'soldPricePerLitre',
-  'trialCreatedAt',
+  'trialType', 'trialCreatedAt',
+  // BDM post-trial assessment fields
+  'insightOilLongevity', 'insightTempObservations', 'insightFoodQuality',
+  'insightTraining', 'insightEngagement', 'insightRecommendations',
 ];
 
 export const mergeTrialIntoVenue = (venue, trial) => {

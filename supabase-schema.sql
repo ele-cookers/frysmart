@@ -130,14 +130,7 @@ create table venues (
   password text,
   customer_code_saved_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  -- BDM post-trial assessment fields (each stores a JSON object as text)
-  insight_oil_longevity     text,  -- Section 1 — Oil Longevity: { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
-  insight_temp_observations text,  -- Section 2 — Temperature Control: { setVsActual, calibrationNeeded }
-  insight_food_quality      text,  -- Section 3 — Food Quality: { tasteAndTexture, colourAndAppearance }
-  insight_training          text,  -- Section 4 — Training & Education: { trainingProvided, topicsCovered[] }
-  insight_engagement        text,  -- Section 5 — Feedback & Engagement: { chefFeedback, staffEngagement }
-  insight_recommendations   text   -- Sections 6+7 — Value + Next Steps: { costSavings, qualityGains, operationalEfficiency, interestedInTesto, interestedInFrySmart, bdmNotes }
+  updated_at timestamptz not null default now()
 );
 
 -- ============================================================
@@ -159,6 +152,14 @@ create table trials (
   outcome_date date,
   trial_reason text references trial_reasons(key),
   sold_price_per_litre numeric,
+  trial_type text check (trial_type in ('existing', 'new')),
+  -- BDM post-trial assessment fields (each stores a JSON object as text)
+  insight_oil_longevity     text,  -- Section 1 — Oil Longevity: { tpmPerformance, lifespanVsCompetitor, topUpFreqVsCompetitor }
+  insight_temp_observations text,  -- Section 2 — Temperature Control: { setVsActual, calibrationNeeded }
+  insight_food_quality      text,  -- Section 3 — Food Quality: { tasteAndTexture, colourAndAppearance }
+  insight_training          text,  -- Section 4 — Training & Education: { trainingProvided, topicsCovered[] }
+  insight_engagement        text,  -- Section 5 — Feedback & Engagement: { chefFeedback, staffEngagement }
+  insight_recommendations   text,  -- Sections 6+7 — Value + Next Steps: { costSavings, qualityGains, operationalEfficiency, interestedInTesto, interestedInFrySmart, bdmNotes }
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
