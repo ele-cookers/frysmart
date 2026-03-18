@@ -794,7 +794,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Oil Usage</th>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>Count</th>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>Litres</th>
+                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>Ltrs</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -822,7 +822,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                 <colgroup><col style={{ width: '50%' }} /><col style={{ width: '25%' }} /><col style={{ width: '25%' }} /></colgroup>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
-                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Oil Lifespan</th>
+                    <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Lifespan</th>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>Days</th>
                     <th style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.3px', textTransform: 'uppercase', textAlign: 'center', borderBottom: '2px solid #e2e8f0' }}>+/−</th>
                   </tr>
@@ -931,13 +931,13 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
           )}
 
-          {/* Confirm button — centred, fixed width */}
-          <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '8px' }}>
+          {/* Confirm button — full width */}
+          <div style={{ paddingBottom: '8px' }}>
             <button
               onClick={() => onConfirm(venue.id, totalNum, [], '', null)}
               onMouseEnter={() => setConfirmHover(true)}
               onMouseLeave={() => setConfirmHover(false)}
-              style={{ padding: '11px 36px', background: confirmHover ? '#d97706' : '#fef3c7', border: '1.5px solid #f59e0b', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: confirmHover ? 'white' : '#92400e', cursor: 'pointer', letterSpacing: '0.2px', transition: 'all 0.15s' }}>
+              style={{ width: '100%', padding: '11px 36px', background: confirmHover ? '#d97706' : '#fef3c7', border: '1.5px solid #f59e0b', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: confirmHover ? 'white' : '#92400e', cursor: 'pointer', letterSpacing: '0.2px', transition: 'all 0.15s' }}>
               Confirm End Trial
             </button>
           </div>
@@ -1194,6 +1194,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         ]);
         const mappedVenues = (venueData || []).map(mapVenue);
         const mappedTrials = (trialData || []).map(mapTrial);
+
+        // One-time migration: existing customers should have name = customerCode
+        const toFix = mappedVenues.filter(v =>
+          v.customerCode && !v.customerCode.startsWith('PRS-') && v.name !== v.customerCode
+        );
+        if (toFix.length > 0) {
+          await Promise.all(toFix.map(v =>
+            supabase.from('venues').update({ name: v.customerCode }).eq('id', v.id)
+          ));
+          toFix.forEach(v => { v.name = v.customerCode; });
+        }
+
         const merged = mappedVenues.map(v => {
           const trial = mappedTrials.find(t => t.venueId === v.id);
           return mergeTrialIntoVenue(v, trial);
@@ -1547,7 +1559,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       // 1. Insert venue (venue-only fields)
       const newVenue = {
-        name: newTrialForm.venueName.trim(),
+        name: trialType === 'existing' ? newTrialForm.customerCode.trim() : newTrialForm.venueName.trim(),
         status: 'trial-only',
         customerCode: custCode,
         state: currentUser.region || '',
@@ -1837,6 +1849,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
+        {!isDesktop && (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <button onClick={(e) => { e.stopPropagation(); setPrevTab(activeTab); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}><ClipboardList size={13} /> View Trial</button>
+          </div>
+        )}
         <CustomerCodeInput venueId={venue.id} onSave={handleSaveCustomerCode} />
       </div>
     );
@@ -1962,22 +1979,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
       {/* Customer code — only for existing */}
-      {trialType === 'existing' && (
+      {trialType === 'existing' ? (
         <div style={S.field}>
-          <label style={S.label}>CUSTOMER CODE {req}</label>
+          <label style={S.label}>CUST CODE {req}</label>
           <input type="text" value={newTrialForm.customerCode} onChange={e => setNewTrialForm(f => ({ ...f, customerCode: e.target.value }))}
-            placeholder="e.g., CUST001" style={inputStyle} required
+            placeholder="e.g., QLD-001" style={inputStyle} required
+            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+        </div>
+      ) : (
+        <div style={S.field}>
+          <label style={S.label}>VENUE NAME {req}</label>
+          <input type="text" value={newTrialForm.venueName} onChange={e => setNewTrialForm(f => ({ ...f, venueName: e.target.value }))}
+            placeholder="e.g. Joe's Fish & Chips" style={inputStyle} required
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
       )}
-
-      {/* Venue Name */}
-      <div style={S.field}>
-        <label style={S.label}>VENUE NAME {req}</label>
-        <input type="text" value={newTrialForm.venueName} onChange={e => setNewTrialForm(f => ({ ...f, venueName: e.target.value }))}
-          placeholder="e.g. Joe's Fish & Chips" style={inputStyle} required
-          onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-      </div>
 
       {/* Competitor — new prospect only */}
       {trialType === 'new' && (
@@ -2848,14 +2864,32 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               ) : cardRows.map(v => {
                 const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
                 const isWonOrAccepted = v.trialStatus === 'successful' || v.trialStatus === 'accepted';
+                const isExistingCust = v.customerCode && !v.customerCode.startsWith('PRS-');
+                const allOilsFlat = [...(allOilOptions?.cookers || []), ...Object.values(allOilOptions?.compGroups || {}).flat()];
+                const currentOilObj = allOilsFlat.find(o => o.id === v.defaultOil);
+                const trialOilObj2 = (allOilOptions?.cookers || []).find(o => o.id === v.trialOilId);
+                const supplierName = !isExistingCust && currentOilObj?.competitorId ? competitors.find(c => c.id === currentOilObj.competitorId)?.name : null;
                 return (
                   <div key={v.id} onClick={() => { setPrevTab('manage'); setManageVenueId(v.id); }} style={cardBase(sc.accent)}>
                     {/* Name + status badge on same row */}
                     {!isDesktop ? (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: '8px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '700', color: COLORS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{v.name}</div>
-                        <TrialStatusBadge status={v.trialStatus} />
-                      </div>
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '8px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: '700', color: COLORS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{v.name}</div>
+                          <TrialStatusBadge status={v.trialStatus} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '8px' }}>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>
+                            <span style={{ fontWeight: '600' }}>{isExistingCust ? 'Existing Customer' : 'New Prospect'}</span>
+                            {supplierName && <span style={{ color: '#94a3b8' }}> · {supplierName}</span>}
+                          </div>
+                          {(currentOilObj || trialOilObj2) && (
+                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                              {currentOilObj?.name || '—'} → {trialOilObj2?.name || '—'}
+                            </div>
+                          )}
+                        </div>
+                      </>
                     ) : cardHeader(v)}
                     {cardOilRow(v)}
                     {pricingRow(v, isWonOrAccepted)}
@@ -3423,9 +3457,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '20px 24px', maxWidth: '600px', margin: '0 auto' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-                      {/* Venue name */}
+                      {/* Venue name / Cust code */}
                       <div style={S.field}>
-                        <label style={S.label}>VENUE NAME</label>
+                        <label style={S.label}>{venue.customerCode && !venue.customerCode.startsWith('PRS-') ? 'CUST CODE' : 'VENUE NAME'}</label>
                         <input type="text" value={mEditForm.name}
                           onChange={e => setMEditForm(p => ({ ...p, name: e.target.value }))}
                           style={inputStyle}
@@ -4961,7 +4995,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         !isDesktop ? (
                           /* ── Mobile: transposed table with Weekly/Yearly grouping ── */
                           <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0', tableLayout: 'fixed' }}>
+                              <colgroup><col style={{ width: '32%' }} /><col style={{ width: '22.67%' }} /><col style={{ width: '22.67%' }} /><col style={{ width: '22.67%' }} /></colgroup>
                               <thead>
                                 <tr style={{ background: '#f8fafc' }}>
                                   <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}></th>
