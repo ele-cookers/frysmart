@@ -4228,15 +4228,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           })}
                         </div>
                       ) : (
-                        insightForm.topicsCovered.length > 0
-                          ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                              {insightForm.topicsCovered.map(t => (
-                                <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#ccfbf1', color: '#0f766e', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
-                              ))}
-                            </div>
-                          : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', marginTop: '4px' }}>— not yet assessed —</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', marginTop: '6px' }}>
+                          {TRAINING_TOPICS.map(topic => {
+                            const checked = insightForm.topicsCovered.includes(topic);
+                            return (
+                              <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: checked ? '#0f766e' : '#94a3b8' }}>
+                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', flexShrink: 0, border: `2px solid ${checked ? '#0d9488' : '#d1d5db'}`, background: checked ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {checked && <Check size={8} color="white" strokeWidth={3} />}
+                                </div>
+                                <span style={{ fontWeight: checked ? '600' : '400' }}>{topic}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                       <div style={{ borderTop: '1px solid #99f6e440', margin: '10px 0 4px' }} />
+                      {subLbl('Interested in')}
                       {insightEditMode ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                           {[['interestedInTesto', 'Interested in Testo'], ['interestedInFrySmart', 'Interested in FrySmart']].map(([key, label]) => {
@@ -4341,7 +4348,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             />
                           ) : (
                             assessFindings
-                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>{assessFindings}</p>
+                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: 'white' }}>{assessFindings}</p>
                               : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '10px 12px', border: '1.5px solid #e8edf2', borderRadius: '8px' }}>— not yet assessed —</div>
                           )}
                         </div>
