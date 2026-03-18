@@ -995,7 +995,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // ── UI state ──
   const [activeTab, setActiveTab] = useState(
-    typeof window !== 'undefined' && window.innerWidth >= 768 ? 'dashboard' : 'actions'
+    typeof window !== 'undefined' && window.innerWidth >= 768 ? 'dashboard' : 'new'
   );
   // archiveSubTab removed — Successful/Unsuccessful are now separate top-level tabs
   // bdmView removed — responsive design uses isDesktop (window.innerWidth >= 768)
@@ -1773,7 +1773,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       ) : (
         <div style={{ display: 'flex', gap: '8px' }}>
           <button onClick={() => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
-            <Eye size={13} /> View Trial
+            <ClipboardList size={13} /> View Trial
           </button>
           <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={btnMobileBlue}>
             <Play size={13} /> Start Trial
@@ -1799,7 +1799,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}><Eye size={13} /> View Trial</button>
+            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}><ClipboardList size={13} /> View Trial</button>
             <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={btnMobileGreen}><Trophy size={13} /> Won</button>
             <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={btnMobileRed}><XCircle size={13} /> Lost</button>
           </div>
@@ -1814,18 +1814,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : undefined} style={cardBase(statusCfg.accent)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : () => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={cardBase(statusCfg.accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
-        {!isDesktop && (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
-              <ClipboardList size={13} /> View Trial
-            </button>
-          </div>
-        )}
       </div>
     );
   };
@@ -1836,19 +1829,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : undefined} style={cardBase(statusCfg.accent)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : () => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={cardBase(statusCfg.accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['End', displayDate(venue.trialEndDate)], ['Duration', daysRan != null ? `${daysRan}d` : '—']])}
         <CustomerCodeInput venueId={venue.id} onSave={handleSaveCustomerCode} />
-        {!isDesktop && (
-          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
-              <ClipboardList size={13} /> View Trial
-            </button>
-          </div>
-        )}
       </div>
     );
   };
@@ -5484,7 +5470,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Pipeline</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials you're planning to start. Hit Start Trial on a venue when you're ready to begin.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials you're planning to start.</p>
             {pipelineTrials.length === 0
               ? emptyState(Clock, 'Pipeline empty', 'Create a new trial to add to your pipeline')
               : isTableView ? renderTrialTable(pipelineTrials, 'pipeline')
@@ -5498,7 +5484,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Active Trials</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials currently in progress. Log daily TPM readings and end the trial when complete.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials currently in progress.</p>
             {activeTrials.length === 0
               ? emptyState(Play, 'No active trials', 'Start a trial from your pipeline')
               : isTableView ? renderTrialTable(activeTrials, 'active')
@@ -5512,7 +5498,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Pending Outcome</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that have ended and need a decision. Mark each as Successful or Unsuccessful.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that have ended and need a decision.</p>
             {pendingOutcomeTrials.length === 0
               ? emptyState(Clock, 'No pending outcomes', 'Trials awaiting a won/lost decision will appear here')
               : isTableView ? renderTrialTable(pendingOutcomeTrials, 'pending')
@@ -5526,7 +5512,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Accepted</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Customer has agreed to switch. Enter their customer code to complete the conversion.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Enter the customer code to complete the conversion.</p>
             {acceptedTrials.length === 0
               ? emptyState(ClipboardList, 'No trials awaiting codes', 'Accepted trials needing a customer code will appear here')
               : isTableView ? renderTrialTable(acceptedTrials, 'accepted')
@@ -5540,7 +5526,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Successful</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that converted — venues now using Cookers oil.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that have converted.</p>
             {wonTrials.length === 0
               ? emptyState(Trophy, 'No successful trials yet', 'Won trials will appear here')
               : isTableView ? renderTrialTable(wonTrials, 'successful')
@@ -5554,7 +5540,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         return (
           <div style={isTableView ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Unsuccessful</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that didn't convert. Review the reasons to improve your approach next time.</p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Trials that didn't convert.</p>
             {lostTrials.length === 0
               ? emptyState(XCircle, 'No unsuccessful trials', 'Lost trials will appear here')
               : isTableView ? renderTrialTable(lostTrials, 'unsuccessful')
