@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" style="background:#1a428a;">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -11,13 +11,17 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <style>html,body{background:#1a428a}#root{min-height:100vh}</style>
+    <style>
+      html { background: linear-gradient(#1a428a 180px, #f8fafc 180px); background-attachment: fixed; }
+      body { margin: 0; background: transparent; }
+      #root { min-height: 100vh; background: transparent; }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
   </head>
-  <body style="background:#1a428a;">
+  <body>
     <div id="root" style="min-height:100vh;"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

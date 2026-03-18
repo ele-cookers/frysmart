@@ -10,7 +10,7 @@ import {
   XCircle, ChevronDown,
   ArrowUpDown, CheckCircle2,
   ArrowDown, Filter, Eye,
-  Edit3, Pencil, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
+  Edit3, Pencil, Calendar, Save, ChevronLeft, ChevronRight, BarChart3, RotateCcw, FileText,
   Star, MessageSquare, Target, BookOpen,
   DollarSign, Droplets, Sparkles, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
 } from 'lucide-react';
@@ -97,6 +97,8 @@ const getFoodEmoji = (type) => FOOD_EMOJIS[type] || '🍽️';
 const _tpmThresholds = { warning: 18, critical: 24 };
 const tpmBg  = tpm => tpm <= _tpmThresholds.warning ? '#d1fae5' : tpm <= _tpmThresholds.critical ? '#fef3c7' : '#fee2e2';
 const tpmCol = tpm => tpm <= _tpmThresholds.warning ? '#059669' : tpm <= _tpmThresholds.critical ? '#d97706' : '#dc2626';
+// Smart temperature formatter — shows decimal only when needed (180.5 → "180.5", 180 → "180")
+const fmtTemp = v => { if (v == null || v === '') return null; const n = parseFloat(v); return isNaN(n) ? null : n % 1 === 0 ? String(Math.round(n)) : String(parseFloat(n.toFixed(2))); };
 
 const inputStyle = {
   width: '100%', maxWidth: '100%', padding: '10px 12px', borderRadius: '8px',
@@ -505,14 +507,14 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
             <div>
               <label style={lbl}>Set Temp (°C)</label>
-              <input type="text" inputMode="numeric" pattern="[0-9]*" value={fryer.setTemperature}
-                onChange={e => updateFryer('setTemperature', e.target.value.replace(/[^0-9]/g, ''))} placeholder="180"
+              <input type="text" inputMode="decimal" value={fryer.setTemperature}
+                onChange={e => updateFryer('setTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="180"
                 style={inputSt} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
             </div>
             <div>
               <label style={lbl}>Actual Temp (°C)</label>
-              <input type="text" inputMode="numeric" pattern="[0-9]*" value={fryer.actualTemperature}
-                onChange={e => updateFryer('actualTemperature', e.target.value.replace(/[^0-9]/g, ''))} placeholder="175"
+              <input type="text" inputMode="decimal" value={fryer.actualTemperature}
+                onChange={e => updateFryer('actualTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="175"
                 style={inputSt} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
             </div>
           </div>
@@ -997,6 +999,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [activeTab, setActiveTab] = useState(
     typeof window !== 'undefined' && window.innerWidth >= 768 ? 'dashboard' : 'new'
   );
+  const [prevTab, setPrevTab] = useState(null); // track where user came from before manage trial detail
   // archiveSubTab removed — Successful/Unsuccessful are now separate top-level tabs
   // bdmView removed — responsive design uses isDesktop (window.innerWidth >= 768)
   const [sortNewest, setSortNewest] = useState(false); // false = A-Z, true = most recent
@@ -1744,7 +1747,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
+            <button onClick={(e) => { e.stopPropagation(); setPrevTab(activeTab); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
               <ClipboardList size={13} /> View Trial
             </button>
             <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnMobileBlue}>
@@ -1772,7 +1775,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         </button>
       ) : (
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
+          <button onClick={() => { setPrevTab(activeTab); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
             <ClipboardList size={13} /> View Trial
           </button>
           <button onClick={() => setReadingModal({ ...venue, startingTrial: true, trialStartDate: venue.trialStartDate || getTodayString() })} style={btnMobileBlue}>
@@ -1799,7 +1802,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={(e) => { e.stopPropagation(); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}><ClipboardList size={13} /> View Trial</button>
+            <button onClick={(e) => { e.stopPropagation(); setPrevTab(activeTab); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}><ClipboardList size={13} /> View Trial</button>
             <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'successful' }); }} style={btnMobileGreen}><Trophy size={13} /> Won</button>
             <button onClick={(e) => { e.stopPropagation(); setCloseTrialModal({ venue, outcome: 'unsuccessful' }); }} style={btnMobileRed}><XCircle size={13} /> Lost</button>
           </div>
@@ -1814,7 +1817,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : () => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={cardBase(statusCfg.accent)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : () => { setPrevTab(activeTab); setManageVenueId(venue.id); setActiveTab('manage'); }} style={cardBase(statusCfg.accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
@@ -1829,7 +1832,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const reasonLabel = venue.trialReason ? (trialReasons.find(r => r.key === venue.trialReason)?.label || venue.trialReason) : null;
     const daysRan = daysBetween(venue.trialStartDate, venue.trialEndDate || venue.outcomeDate || getTodayString());
     return (
-      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : () => { setManageVenueId(venue.id); setActiveTab('manage'); }} style={cardBase(statusCfg.accent)}>
+      <div key={venue.id} onClick={isDesktop ? () => setSelectedTrialVenue(venue) : () => { setPrevTab(activeTab); setManageVenueId(venue.id); setActiveTab('manage'); }} style={cardBase(statusCfg.accent)}>
         {cardHeader(venue)}
         {cardOilRow(venue)}
         {pricingRow(venue, true)}
@@ -2846,7 +2849,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 const sc = TRIAL_STATUS_COLORS[v.trialStatus] || TRIAL_STATUS_COLORS['pipeline'];
                 const isWonOrAccepted = v.trialStatus === 'successful' || v.trialStatus === 'accepted';
                 return (
-                  <div key={v.id} onClick={() => setManageVenueId(v.id)} style={cardBase(sc.accent)}>
+                  <div key={v.id} onClick={() => { setPrevTab('manage'); setManageVenueId(v.id); }} style={cardBase(sc.accent)}>
                     {/* Name + status badge on same row */}
                     {!isDesktop ? (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: '8px' }}>
@@ -3133,8 +3136,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       <div style={{ fontSize: '16px', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
                       <div style={{ fontSize: '9px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>{hasFresh ? 'Fresh' : `${latest.oilAge}d`}</div>
                       <div style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.2', textAlign: 'center' }}>
-                        {latest.setTemperature && <span>S:{latest.setTemperature}° </span>}
-                        {latest.actualTemperature && <span>A:{latest.actualTemperature}°</span>}
+                        {latest.setTemperature && <span>S:{fmtTemp(latest.setTemperature)}° </span>}
+                        {latest.actualTemperature && <span>A:{fmtTemp(latest.actualTemperature)}°</span>}
                       </div>
                       <div style={{ display: 'flex', gap: '1px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1px' }}>
                         {hasFiltered && <Filter size={8} color="#1e40af" strokeWidth={2.5} />}
@@ -3158,12 +3161,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div>
         {/* Back button + header + action buttons */}
         <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'flex-end' : 'stretch', gap: isDesktop ? '12px' : '8px', marginBottom: '16px' }}>
-          <button onClick={() => setManageVenueId(null)} style={{
-            background: '#f1f5f9', border: 'none', borderRadius: '6px', padding: '6px 10px',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-            fontSize: '11px', fontWeight: '600', color: '#64748b', flexShrink: 0,
+          <button onClick={() => { setManageVenueId(null); if (prevTab && prevTab !== 'manage') setActiveTab(prevTab); setPrevTab(null); }} style={{
+            ...(isDesktop
+              ? { background: '#f1f5f9', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: '600', color: '#64748b' }
+              : { background: '#1a428a', border: '2px solid #1a428a', borderRadius: '10px', padding: '11px 20px', fontSize: '14px', fontWeight: '700', color: 'white' }
+            ),
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
           }}>
-            <ChevronDown size={12} style={{ transform: 'rotate(90deg)' }} /> Back
+            <ChevronLeft size={isDesktop ? 12 : 18} /> Back
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', margin: 0, lineHeight: 1 }}>{venue.name}</h2>
@@ -3754,7 +3759,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const isFuture = day > today;
                           const isFresh = r?.oilAge === 1;
                           const isToppedUp = r && r.litresFilled > 0 && !isFresh;
-                          const variance = (r?.actualTemperature != null && r?.setTemperature != null) ? (r.actualTemperature - r.setTemperature) : null;
+                          const rawVariance = (r?.actualTemperature != null && r?.setTemperature != null) ? (parseFloat(r.actualTemperature) - parseFloat(r.setTemperature)) : null;
+                          const variance = rawVariance != null ? parseFloat(rawVariance.toFixed(2)) : null;
                           const tpmCol = r?.tpmValue != null ? tpmColor(r.tpmValue) : '#1f2937';
                           const cellTpmBgColor = r?.tpmValue != null ? tpmBg(r.tpmValue) : 'transparent';
                           const missed = !r && !isFuture;
@@ -3771,8 +3777,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               <td style={{ ...tdBase, fontWeight: '700', color: missed ? '#94a3b8' : tpmCol, background: cellTpmBgColor }}>
                                 {r ? (r.tpmValue ?? '—') : missed ? 'Missed' : '—'}
                               </td>
-                              <td style={tdBase}>{r ? (r.setTemperature ?? '—') : dash}</td>
-                              <td style={tdBase}>{r ? (r.actualTemperature ?? '—') : dash}</td>
+                              <td style={tdBase}>{r ? (fmtTemp(r.setTemperature) ?? '—') : dash}</td>
+                              <td style={tdBase}>{r ? (fmtTemp(r.actualTemperature) ?? '—') : dash}</td>
                               <td style={{
                                 ...tdBase, fontWeight: '600',
                                 background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent',
@@ -3827,7 +3833,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               const isFuture = day > today;
                               const isFresh = r?.oilAge === 1;
                               const isToppedUp = r && r.litresFilled > 0 && !isFresh;
-                              const variance = (r?.actualTemperature != null && r?.setTemperature != null) ? (r.actualTemperature - r.setTemperature) : null;
+                              const rawVar2 = (r?.actualTemperature != null && r?.setTemperature != null) ? (parseFloat(r.actualTemperature) - parseFloat(r.setTemperature)) : null;
+                              const variance = rawVar2 != null ? parseFloat(rawVar2.toFixed(2)) : null;
                               const tpmCol2 = r?.tpmValue != null ? tpmColor(r.tpmValue) : '#1f2937';
                               const cellTpmBg2 = r?.tpmValue != null ? tpmBg(r.tpmValue) : 'transparent';
                               const missed = !r && !isFuture;
@@ -3842,8 +3849,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   <td style={{ ...tdBase, color: '#64748b', fontWeight: '500' }}>{DAYS[day.getDay()]}</td>
                                   <td style={{ ...tdBase, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
                                   <td style={{ ...tdBase, fontWeight: '700', color: missed ? '#94a3b8' : tpmCol2, background: cellTpmBg2 }}>{r ? (r.tpmValue ?? '—') : missed ? 'Missed' : '—'}</td>
-                                  <td style={tdBase}>{r ? (r.setTemperature ?? '—') : dash}</td>
-                                  <td style={tdBase}>{r ? (r.actualTemperature ?? '—') : dash}</td>
+                                  <td style={tdBase}>{r ? (fmtTemp(r.setTemperature) ?? '—') : dash}</td>
+                                  <td style={tdBase}>{r ? (fmtTemp(r.actualTemperature) ?? '—') : dash}</td>
                                   <td style={{ ...tdBase, fontWeight: '600', background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent', color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8' }}>
                                     {variance != null ? (variance > 0 ? '+' : '') + variance : dash}
                                   </td>
@@ -5593,7 +5600,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       ...(isDesktop
         ? { height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
         : { minHeight: '100vh' }),
-      background: COLORS.bg,
+      background: isDesktop ? COLORS.bg : 'transparent',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
     }}>
       <style>{`
