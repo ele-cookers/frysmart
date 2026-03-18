@@ -3749,22 +3749,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                       zIndex: 9999, background: 'rgba(15,23,42,0.65)',
                     } : {}}>
-                      {(!isDesktop && showTrialTableModal) && (
-                        <button onClick={() => setShowTrialTableModal(false)} style={{
-                          position: 'absolute', bottom: '20px', right: '16px', zIndex: 10000,
-                          background: 'rgba(255,255,255,0.95)', border: 'none',
-                          color: '#1a428a', fontWeight: '700', fontSize: '12px',
-                          padding: '8px 20px', borderRadius: '8px', cursor: 'pointer',
-                          letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                        }}>Close</button>
-                      )}
                     <div style={(!isDesktop && showTrialTableModal) ? {
                       position: 'absolute', top: '50%', left: '50%',
                       width: '100vh', height: '100vw',
                       transform: 'translate(-50%, -50%) rotate(90deg)',
-                      background: 'white', overflowX: 'auto', overflowY: 'auto',
-                      boxSizing: 'border-box', padding: '6px 0',
+                      background: 'white', display: 'flex', flexDirection: 'column',
+                      boxSizing: 'border-box',
                     } : { overflowX: 'auto' }}>
+                      {(!isDesktop && showTrialTableModal) && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#1a428a', flexShrink: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Fryer {activeFryer}</div>
+                          <button onClick={() => setShowTrialTableModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '5px 14px', borderRadius: '7px' }}>Close</button>
+                        </div>
+                      )}
+                    <div style={(!isDesktop && showTrialTableModal) ? { flex: 1, overflowX: 'auto', overflowY: 'auto' } : {}}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: (!isDesktop && showTrialTableModal) ? '9px' : '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
@@ -4100,21 +4098,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         </div>
                         {!isDesktop && showFryerStatsModal && (
                           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.65)' }}>
-                            <button onClick={() => setShowFryerStatsModal(false)} style={{
-                              position: 'absolute', bottom: '20px', right: '16px', zIndex: 10000,
-                              background: 'rgba(255,255,255,0.95)', border: 'none',
-                              color: '#1a428a', fontWeight: '700', fontSize: '12px',
-                              padding: '8px 20px', borderRadius: '8px', cursor: 'pointer',
-                              letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                            }}>Close</button>
                             <div style={{
                               position: 'absolute', top: '50%', left: '50%',
                               width: '100vh', height: '100vw',
                               transform: 'translate(-50%, -50%) rotate(90deg)',
-                              background: 'white', overflowX: 'auto', overflowY: 'auto',
-                              boxSizing: 'border-box', padding: '12px 8px',
+                              background: 'white', display: 'flex', flexDirection: 'column',
+                              boxSizing: 'border-box',
                             }}>
-                              {fryerStatsTable}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#1a428a', flexShrink: 0 }}>
+                                <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Fryer Stats</div>
+                                <button onClick={() => setShowFryerStatsModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '5px 14px', borderRadius: '7px' }}>Close</button>
+                              </div>
+                              <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '8px' }}>
+                                {fryerStatsTable}
+                              </div>
                             </div>
                           </div>
                         )}
