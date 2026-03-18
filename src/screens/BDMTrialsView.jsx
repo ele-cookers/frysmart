@@ -479,16 +479,19 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             <div style={fld}>
               <label style={lbl}>{isFreshOil ? 'Litres (fresh fill)' : 'Litres Topped Up'}</label>
               {isFreshOil ? (
-                <div style={{ ...inputSt, background: '#f8fafc', color: '#64748b', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', cursor: 'default' }}>
-                  <span style={{ fontWeight: '600', color: '#1f2937' }}>{fryer.litresFilled || '—'}</span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '4px' }}>L (from fryer volume)</span>
+                <div style={{ ...inputSt, background: '#f8fafc', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px', cursor: 'default' }}>
+                  <span style={{ color: '#64748b' }}>{fryer.litresFilled || '—'}L</span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>(from fryer vol.)</span>
                 </div>
               ) : (
-                <input type="text" inputMode="decimal" value={fryer.litresFilled}
-                  onChange={e => updateFryer('litresFilled', e.target.value.replace(/[^0-9.]/g, ''))}
-                  placeholder="0" style={inputSt}
-                  onFocus={e => e.target.style.borderColor = '#1a428a'}
-                  onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                <div style={{ position: 'relative' }}>
+                  <input type="text" inputMode="decimal" value={fryer.litresFilled}
+                    onChange={e => updateFryer('litresFilled', e.target.value.replace(/[^0-9.]/g, ''))}
+                    placeholder="e.g. 5" style={{ ...inputSt, paddingRight: '28px' }}
+                    onFocus={e => e.target.style.borderColor = '#1a428a'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                  <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+                </div>
               )}
             </div>
           )}
@@ -514,7 +517,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             <div>
               <label style={lbl}>Actual Temp (°C)</label>
               <input type="text" inputMode="decimal" value={fryer.actualTemperature}
-                onChange={e => updateFryer('actualTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="e.g. 175"
+                onChange={e => updateFryer('actualTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="e.g. 180"
                 style={inputSt} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
             </div>
           </div>
@@ -2074,10 +2077,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT AVG LITRES/WEEK {req}</label>
-          <input type="number" min="0" step="1" value={newTrialForm.avgLitresPerWeek}
-            onChange={e => setNewTrialForm(f => ({ ...f, avgLitresPerWeek: e.target.value }))}
-            placeholder="e.g. 80" style={inputStyle} required
-            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+          <div style={{ position: 'relative' }}>
+            <input type="number" min="0" step="1" value={newTrialForm.avgLitresPerWeek}
+              onChange={e => setNewTrialForm(f => ({ ...f, avgLitresPerWeek: e.target.value }))}
+              placeholder="e.g. 80" style={{ ...inputStyle, paddingRight: '28px' }} required
+              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+            <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+          </div>
           {newTrialForm.avgLitresPerWeek && calcVolumeBracket(newTrialForm.avgLitresPerWeek) && (
             <div style={{ marginTop: '6px' }}>
               <VolumePill bracket={calcVolumeBracket(newTrialForm.avgLitresPerWeek)} />
@@ -3404,9 +3410,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             {trialId && (
                               <span style={{ fontSize: '10px', color: '#b0bac9' }}>Trial ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{trialId}</span></span>
                             )}
-                            {venue.customerCode && (
-                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Prospect ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
-                            )}
+                            {venue.customerCode ? (
+                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>{isNewProspect ? 'Prospect ID' : 'Customer Code'}: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
+                            ) : <span />}
                             <span />
                             {trialCreatedDate && (
                               <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
@@ -3457,7 +3463,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Trial ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{trialId}</span></span>
                           )}
                           {venue.customerCode && (
-                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Prospect ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
+                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>{isNewProspect ? 'Prospect ID' : 'Customer Code'}: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
                           )}
                           {trialCreatedDate && (
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
@@ -3561,10 +3567,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '12px', alignItems: 'start' }}>
                         <div style={S.field}>
                           <label style={S.label}>CURRENT AVG LITRES / WEEK</label>
-                          <input type="number" min="0" step="1" value={mEditForm.avgLitresPerWeek}
-                            onChange={e => setMEditForm(p => ({ ...p, avgLitresPerWeek: e.target.value }))}
-                            placeholder="e.g. 80" style={inputStyle}
-                            onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                          <div style={{ position: 'relative' }}>
+                            <input type="number" min="0" step="1" value={mEditForm.avgLitresPerWeek}
+                              onChange={e => setMEditForm(p => ({ ...p, avgLitresPerWeek: e.target.value }))}
+                              placeholder="e.g. 80" style={{ ...inputStyle, paddingRight: '28px' }}
+                              onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                            <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+                          </div>
                           {mEditForm.avgLitresPerWeek && calcVolumeBracket(mEditForm.avgLitresPerWeek) && (
                             <div style={{ marginTop: '6px' }}><VolumePill bracket={calcVolumeBracket(mEditForm.avgLitresPerWeek)} /></div>
                           )}
