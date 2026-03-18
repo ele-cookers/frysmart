@@ -496,7 +496,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           {/* TPM */}
           <div style={fld}>
             <label style={lbl}>TPM Value (%)</label>
-            <input type="text" inputMode="decimal" value={fryer.tpmValue} required
+            <input type="text" inputMode="decimal" value={fryer.tpmValue} required placeholder="e.g. 14"
               onChange={e => updateFryer('tpmValue', e.target.value.replace(/[^0-9.]/g, ''))}
               style={inputSt}
               onFocus={e => e.target.style.borderColor = '#1a428a'}
@@ -508,13 +508,13 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             <div>
               <label style={lbl}>Set Temp (°C)</label>
               <input type="text" inputMode="decimal" value={fryer.setTemperature}
-                onChange={e => updateFryer('setTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="180"
+                onChange={e => updateFryer('setTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="e.g. 180"
                 style={inputSt} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
             </div>
             <div>
               <label style={lbl}>Actual Temp (°C)</label>
               <input type="text" inputMode="decimal" value={fryer.actualTemperature}
-                onChange={e => updateFryer('actualTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="175"
+                onChange={e => updateFryer('actualTemperature', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="e.g. 175"
                 style={inputSt} onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
             </div>
           </div>
@@ -562,7 +562,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           <div style={fld}>
             <label style={lbl}>Notes (optional)</label>
             <textarea value={fryer.notes} onChange={e => updateFryer('notes', e.target.value)}
-              placeholder="Add notes..."
+              placeholder="e.g. note about this fryer in particular…"
               style={{ ...inputSt, minHeight: '60px', resize: 'vertical', fontFamily: 'inherit' }}
               onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
@@ -1981,7 +1981,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       {/* Customer code — only for existing */}
       {trialType === 'existing' ? (
         <div style={S.field}>
-          <label style={S.label}>CUST CODE {req}</label>
+          <label style={S.label}>CUSTOMER CODE {req}</label>
           <input type="text" value={newTrialForm.customerCode} onChange={e => setNewTrialForm(f => ({ ...f, customerCode: e.target.value }))}
             placeholder="e.g., QLD-001" style={inputStyle} required
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
@@ -2121,7 +2121,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       type="number" min="1" step="1"
                       value={newTrialForm.fryerVolumes[fn] ?? ''}
                       onChange={e => setNewTrialForm(f => ({ ...f, fryerVolumes: { ...f.fryerVolumes, [fn]: e.target.value } }))}
-                      placeholder="20"
+                      placeholder="e.g. 20"
                       style={{ ...inputStyle, paddingRight: '28px', width: '100%', boxSizing: 'border-box' }}
                       onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                     />
@@ -2152,14 +2152,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return updated;
               });
             }}
-            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
+            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none' }}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
         <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
           <label style={S.label}>EST. END DATE</label>
           <input type="date" value={newTrialForm.estEndDate}
             onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
-            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
+            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', display: 'block', WebkitAppearance: 'none', appearance: 'none' }}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           {newTrialForm.estEndDate && !newTrialForm.endDateManual && (
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Auto-set: {systemSettings?.trialDuration || 7}-day trial</div>
@@ -3459,7 +3459,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* Venue name / Cust code */}
                       <div style={S.field}>
-                        <label style={S.label}>{venue.customerCode && !venue.customerCode.startsWith('PRS-') ? 'CUST CODE' : 'VENUE NAME'}</label>
+                        <label style={S.label}>{venue.customerCode && !venue.customerCode.startsWith('PRS-') ? 'CUSTOMER CODE' : 'VENUE NAME'}</label>
                         <input type="text" value={mEditForm.name}
                           onChange={e => setMEditForm(p => ({ ...p, name: e.target.value }))}
                           style={inputStyle}
