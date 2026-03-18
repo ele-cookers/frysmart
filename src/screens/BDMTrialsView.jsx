@@ -3733,7 +3733,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </div>
                           <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
                     <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px', fontSize: '9px', tableLayout: 'fixed' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px', fontSize: '8px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
                         <col style={{ width: '36px' }} />  {/* Day */}
@@ -3782,7 +3782,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const dash = missed ? '' : '—'; // blank for missed days, dash for future
                           const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}`;
                           return (
-                            <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '44px' }}>
+                            <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '28px' }}>
                               <td style={{ ...tdBase, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
                               <td style={{ ...tdBase, color: '#64748b', fontWeight: '500' }}>{DAYS[day.getDay()]}</td>
                               <td style={{ ...tdBase, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
@@ -4134,7 +4134,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                 <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Fryer Stats</div>
                                 <button onClick={() => setShowFryerStatsModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '5px 14px', borderRadius: '7px' }}>Close</button>
                               </div>
-                              <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '8px', fontSize: '9px' }}>
+                              <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '6px', fontSize: '8px' }}>
                                 {fryerStatsTable}
                               </div>
                             </div>
@@ -4153,7 +4153,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
             {/* ── Trial Assessment tab ── */}
             {manageSubTab === 'assessment' && (() => {
-              const qCard = (bg, border) => ({ background: bg, border: `1.5px solid ${border}`, borderRadius: '12px', padding: '14px 16px' });
+              const qCard = (_bg, border) => ({ background: 'white', border: `1.5px solid ${border}`, borderRadius: '12px', padding: '14px 16px' });
               const qHead = (Icon, iconColor, title) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
                   <Icon size={14} color={iconColor} strokeWidth={2.5} />
@@ -4185,15 +4185,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
               };
-              // isSectionEditing — desktop uses global insightEditMode; mobile uses per-section state
-              const isSectionEditing = (sectionKey) => isDesktop ? insightEditMode : insightEditSection === sectionKey;
-              // mkSel — edit: native select. View: frozen select-style field
+              // isSectionEditing — per-section for both desktop and mobile
+              const isSectionEditing = (sectionKey) => insightEditSection === sectionKey;
+              // valueBgStyle — colour-codes a saved answer chip based on OPTION_META
+              const valueBgStyle = (val) => {
+                const meta = OPTION_META[val];
+                if (!meta) return { background: '#f8fafc', color: '#94a3b8', fontStyle: 'italic', fontWeight: '400' };
+                const map = {
+                  '#059669': { bg: '#dcfce7', text: '#15803d' },
+                  '#ef4444': { bg: '#fee2e2', text: '#dc2626' },
+                  '#f59e0b': { bg: '#fef3c7', text: '#d97706' },
+                  '#94a3b8': { bg: '#f1f5f9', text: '#64748b' },
+                  '#64748b': { bg: '#f1f5f9', text: '#64748b' },
+                };
+                const c = map[meta.color] || { bg: '#f1f5f9', text: '#64748b' };
+                return { background: c.bg, color: c.text, fontWeight: '600', fontStyle: 'normal' };
+              };
+              // mkSel — edit: native select. View: colour-coded frozen chip
               const mkSel = (fieldKey, opts, accentColor, sectionKey) => {
                 const val = insightForm[fieldKey];
                 if (!isSectionEditing(sectionKey)) {
+                  const vs = valueBgStyle(val);
                   return (
-                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', fontWeight: val ? '500' : '400', color: val ? '#1f2937' : '#94a3b8', fontStyle: val ? 'normal' : 'italic', background: 'white', boxSizing: 'border-box', minHeight: '34px' }}>
-                      {val || '— not yet assessed —'}
+                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', minHeight: '34px', boxSizing: 'border-box', ...vs }}>
+                      {val ? `${OPTION_META[val]?.icon || ''} ${val}` : '— not yet assessed —'}
                     </div>
                   );
                 }
@@ -4211,27 +4226,27 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const mkField = (label, fieldKey, opts, accent, sectionKey) => (
                 <>{subLbl(label)}{mkSel(fieldKey, opts, accent, sectionKey)}</>
               );
-              // mkCard — wraps a card with mobile tap-to-edit + per-section save button
+              // mkCard — wraps a card with click/tap-to-edit + per-section save button (both platforms)
               const mkCard = (sectionKey, cardStyle, children) => {
                 const editing = isSectionEditing(sectionKey);
                 return (
-                  <div style={{ ...cardStyle, cursor: !isDesktop && !editing ? 'pointer' : 'default', position: 'relative' }}
-                    onClick={() => { if (!isDesktop && !editing) setInsightEditSection(sectionKey); }}>
+                  <div style={{ ...cardStyle, cursor: !editing ? 'pointer' : 'default', position: 'relative' }}
+                    onClick={() => { if (!editing) setInsightEditSection(sectionKey); }}>
                     {children}
-                    {!isDesktop && editing && (
+                    {editing && (
                       <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
                         <button onClick={e => { e.stopPropagation(); setInsightEditSection(null); }}
                           style={{ flex: 1, padding: '8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
                           Cancel
                         </button>
                         <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(); setInsightEditSection(null); }}
-                          style={{ flex: 2, padding: '8px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
+                          style={{ flex: 1, padding: '8px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
                           {insightSaving ? 'Saving…' : 'Save'}
                         </button>
                       </div>
                     )}
-                    {!isDesktop && !editing && (
-                      <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Tap to edit</div>
+                    {!editing && (
+                      <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>{isDesktop ? 'Click to edit' : 'Tap to edit'}</div>
                     )}
                   </div>
                 );
@@ -4276,24 +4291,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   {/* ── Header ── */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Assessment</div>
-                    {isDesktop && (insightEditMode ? (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        {hasExistingAssessment && (
-                          <button onClick={() => setInsightEditMode(false)} style={{ padding: '7px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                            Cancel
-                          </button>
-                        )}
-                        <button disabled={insightSaving} onClick={handleSaveAssessment}
-                          style={{ padding: '7px 20px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
-                          {insightSaving ? 'Saving…' : 'Save Assessment'}
-                        </button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 14px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                        Edit
-                      </button>
-                    ))}
-                    {!isDesktop && <div style={{ fontSize: '11px', color: '#94a3b8' }}>Tap a section to edit</div>}
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{isDesktop ? 'Click a section to edit' : 'Tap a section to edit'}</div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
@@ -4331,7 +4329,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {TRAINING_TOPICS.map(topic => {
                             const checked = insightForm.topicsCovered.includes(topic);
                             return (
-                              <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                              <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#374151' }}>
                                 <input type="checkbox" checked={checked}
                                   onChange={() => setInsightForm(f => ({ ...f, topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic] }))}
                                   style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
@@ -4345,7 +4343,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {TRAINING_TOPICS.map(topic => {
                             const checked = insightForm.topicsCovered.includes(topic);
                             return (
-                              <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: checked ? '#0f766e' : '#94a3b8' }}>
+                              <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: checked ? '#0f766e' : '#94a3b8' }}>
                                 <div style={{ width: '14px', height: '14px', borderRadius: '3px', flexShrink: 0, border: `2px solid ${checked ? '#0d9488' : '#d1d5db'}`, background: checked ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   {checked && <Check size={8} color="white" strokeWidth={3} />}
                                 </div>
@@ -4358,11 +4356,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       <div style={{ borderTop: '1px solid #99f6e440', margin: '10px 0 4px' }} />
                       {subLbl('Interested in')}
                       {isSectionEditing('training') ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                          {[['interestedInTesto', 'Interested in Testo'], ['interestedInFrySmart', 'Interested in FrySmart']].map(([key, label]) => {
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
+                          {[['interestedInTesto', 'Testo'], ['interestedInFrySmart', 'FrySmart']].map(([key, label]) => {
                             const checked = insightForm[key] === 'Yes';
                             return (
-                              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#374151' }}>
                                 <input type="checkbox" checked={checked}
                                   onChange={e => setInsightForm(f => ({ ...f, [key]: e.target.checked ? 'Yes' : 'No' }))}
                                   style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
@@ -4372,12 +4370,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           })}
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px' }}>
                           {[['interestedInTesto', 'Testo'], ['interestedInFrySmart', 'FrySmart']].map(([key, label]) => {
                             const val = insightForm[key];
                             const yes = val === 'Yes';
                             return (
-                              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: yes ? '#0f766e' : '#94a3b8' }}>
+                              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: yes ? '#0f766e' : '#94a3b8' }}>
                                 <div style={{ width: '14px', height: '14px', borderRadius: '3px', border: `2px solid ${yes ? '#0d9488' : '#d1d5db'}`, background: yes ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                   {yes && <Check size={8} color="white" strokeWidth={3} />}
                                 </div>
@@ -4413,12 +4411,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <div>
                           {subLbl('Goals Achieved')}
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                            {isSectionEditing('outcome') ? ASSESS_GOAL_OPTIONS.map(goal => {
+                            {ASSESS_GOAL_OPTIONS.map(goal => {
                               const GoalIcon = goal.icon;
                               const achieved = assessAchievedGoals.includes(goal.key);
+                              const editing = isSectionEditing('outcome');
                               return (
-                                <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
+                                <div key={goal.key}
+                                  onClick={editing ? () => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key]) : undefined}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: editing ? 'pointer' : 'default', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
                                   <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
                                   <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
                                   <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
@@ -4426,24 +4426,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   </div>
                                 </div>
                               );
-                            }) : (
-                              assessAchievedGoals.length > 0
-                                ? assessAchievedGoals.map(key => {
-                                    const goal = ASSESS_GOAL_OPTIONS.find(g => g.key === key);
-                                    if (!goal) return null;
-                                    const GoalIcon = goal.icon;
-                                    return (
-                                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
-                                        <GoalIcon size={13} color="#1a428a" />
-                                        <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
-                                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, background: '#f59e0b', border: '2px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                          <Check size={8} color="white" strokeWidth={3} />
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                : <span style={{ fontSize: '12px', color: '#cbd5e1', gridColumn: '1 / -1' }}>No goals recorded</span>
-                            )}
+                            })}
                           </div>
                         </div>
                         {/* Findings */}
