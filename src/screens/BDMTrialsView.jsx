@@ -11,8 +11,8 @@ import {
   ArrowUpDown, CheckCircle2,
   ArrowDown, Filter,
   Edit3, Pencil, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
-  Star, MessageSquare, Target, BookOpen,
-  DollarSign, Droplets, Sparkles, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
+  Star, MessageSquare, Target,
+  DollarSign, Droplets, Palette, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
@@ -108,9 +108,9 @@ const inputStyle = {
 const selectStyle = {
   ...inputStyle,
   WebkitAppearance: 'none', appearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
   backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center',
-  paddingRight: '34px', cursor: 'pointer',
+  paddingRight: '32px', cursor: 'pointer',
 };
 
 const S = Object.freeze({
@@ -702,7 +702,23 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
   const fryerChangesLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[FryerChanges:')) || '';
   const preTrialLifespan = fryerChangesLine ? parseInt(fryerChangesLine.replace(/^\[FryerChanges:\s*/, '').replace(/\]$/, '')) || null : null;
 
-  const [confirmHover, setConfirmHover] = useState(false);
+  // Trial findings text (new field)
+  const [trialFindings, setTrialFindings] = useState('');
+
+  // Trial goals — parse from trialNotes
+  const GOAL_OPTIONS = [
+    { key: 'save-money',     label: 'Save money',          icon: DollarSign },
+    { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
+    { key: 'food-quality',   label: 'Better food quality', icon: Award      },
+    { key: 'food-colour',    label: 'Improve food colour', icon: Palette    },
+    { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
+    { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
+  ];
+  const [achievedGoals, setAchievedGoals] = useState(() => GOAL_OPTIONS.map(g => g.key)); // default: all ticked
+
+  const toggleGoal = (key) => {
+    setAchievedGoals(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
 
   // Mini trial calendar — show up to yesterday (trial hasn't ended yet, so today is day N+1)
   const modalCalDays = (() => {
@@ -864,10 +880,10 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             <div style={{ marginBottom: '20px' }}>
               <div style={{ overflowX: 'auto' }}>
                 <div style={{ paddingBottom: '16px' }}>
-                <table style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px', width: '100%', minWidth: `${60 + modalCalDays.length * 28}px` }}>
+                <table style={{ tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: '2px', minWidth: `${60 + modalCalDays.length * 30}px` }}>
                   <colgroup>
                     <col style={{ width: '60px' }} />
-                    {modalCalDays.map((_, i) => <col key={i} />)}
+                    {modalCalDays.map((_, i) => <col key={i} style={{ width: '28px' }} />)}
                   </colgroup>
                   <thead>
                     <tr>
@@ -892,7 +908,7 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
                           const border = isFresh ? '2px solid #10b981' : isTopUp ? '2px solid #f59e0b' : '1px solid #e2e8f0';
                           return (
                             <td key={idx} style={{
-                              height: '32px',
+                              height: '32px', width: '28px',
                               background: r?.tpmValue != null ? cellBg(r.tpmValue) : 'white',
                               border, borderRadius: '4px',
                               textAlign: 'center', verticalAlign: 'middle',
@@ -929,13 +945,54 @@ const EndTrialModal = ({ venue, readings, oilTypes, competitors, onClose, onConf
             </div>
           )}
 
+          {/* Trial Goals Achieved — always show all options */}
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px' }}>Trial Goals Achieved</div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>Tick which goals the trial delivered</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              {GOAL_OPTIONS.map((goal) => {
+                  const GoalIcon = goal.icon;
+                  const achieved = achievedGoals.includes(goal.key);
+                  return (
+                    <div key={goal.key} onClick={() => toggleGoal(goal.key)} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px',
+                      cursor: 'pointer', borderRadius: '8px',
+                      background: achieved ? '#dbeafe' : '#f8fafc',
+                      border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`,
+                      transition: 'all 0.1s',
+                    }}>
+                      <GoalIcon size={14} color={achieved ? '#1a428a' : '#94a3b8'} />
+                      <span style={{ flex: 1, fontSize: '13px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
+                      <div style={{
+                        width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
+                        border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`,
+                        background: achieved ? '#f59e0b' : 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.1s',
+                      }}>
+                        {achieved && <Check size={9} color="white" strokeWidth={3} />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          {/* Trial Findings */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '6px' }}>Trial Findings</label>
+            <textarea
+              value={trialFindings}
+              onChange={e => setTrialFindings(e.target.value)}
+              placeholder="What happened? Key observations, outcomes, things that stood out, customer feedback, oil performance notes…"
+              rows={3}
+              style={{ width: '100%', padding: '9px 10px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', resize: 'vertical', fontFamily: 'inherit', color: '#1f2937', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5' }}
+            />
+          </div>
+
           {/* Confirm button — centred, fixed width */}
           <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '8px' }}>
-            <button
-              onClick={() => onConfirm(venue.id, totalNum, [], '', null)}
-              onMouseEnter={() => setConfirmHover(true)}
-              onMouseLeave={() => setConfirmHover(false)}
-              style={{ padding: '11px 36px', background: confirmHover ? '#d97706' : '#fef3c7', border: '1.5px solid #f59e0b', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: confirmHover ? 'white' : '#92400e', cursor: 'pointer', letterSpacing: '0.2px', transition: 'all 0.15s' }}>
+            <button onClick={() => onConfirm(venue.id, totalNum, achievedGoals, trialFindings, null)} style={{ padding: '11px 36px', background: '#f59e0b', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
               Confirm End Trial
             </button>
           </div>
@@ -1004,7 +1061,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [readingModal, setReadingModal] = useState(null);
   const [closeTrialModal, setCloseTrialModal] = useState(null);
   const [endTrialModal, setEndTrialModal] = useState(null); // venue object when end trial modal is open
-  const [trialEndedVenue, setTrialEndedVenue] = useState(null); // confirmation after ending a trial
   const [selectedTrialVenue, setSelectedTrialVenue] = useState(null); // venue for detail modal
   const [successMsg, setSuccessMsg] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -1014,28 +1070,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [calFryerTab, setCalFryerTab] = useState(1); // Fryer tab within calendar sub-tab
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
-  const [assessAchievedGoals, setAssessAchievedGoals] = useState([]);
-  const [assessFindings, setAssessFindings] = useState('');
-
   const [insightForm, setInsightForm] = useState({
-    // Section 1 — Oil Longevity
-    tpmPerformance: '', lifespanVsCompetitor: '', topUpFreqVsCompetitor: '',
-    // Section 2 — Temperature Control
-    setVsActual: '', calibrationNeeded: '', tempRecovery: '',
-    // Section 3 — Food Quality
-    taste: '', texture: '', appearance: '',
-    // Section 4 — Training & Education
-    topicsCovered: [],
-    // Section 5 — Feedback & Engagement
-    chefFeedback: '', staffEngagement: '', overallReception: '',
-    // Section 6 — Value Demonstrated
-    costSavings: '', qualityGains: '', operationalEfficiency: '',
-    // Section 7 — Next Steps & Conversion
-    interestedInTesto: '', interestedInFrySmart: '',
+    tpmTrends: '', tpmChangePatterns: '', tpmAnomalies: '',
+    oilBenchmark: '', oilTopUpFreq: '', oilNotes: '',
+    tempSetVsActual: '', tempCalibration: '', tempOilImpact: '',
+    oilMgmtCurrentPractice: '', oilMgmtChangeSchedule: '', oilMgmtStaffTraining: '',
+    foodQualityFeedback: '', foodQualityVisual: '', foodQualityConsistency: '',
+    overallRecommendation: '', overallNextVisit: '', overallConversionRead: '',
   }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
-  const [insightEditMode, setInsightEditMode] = useState(true); // true = editing, false = viewing saved data (desktop)
-  const [insightEditSection, setInsightEditSection] = useState(null); // mobile: which section card is in edit mode
+  const [insightEditMode, setInsightEditMode] = useState(true); // true = editing, false = viewing saved data
   const [summaryCustCode, setSummaryCustCode] = useState(''); // inline cust code input in summary report
   const [summaryEditMode, setSummaryEditMode] = useState(false); // edit mode for trial findings in summary
   const [summaryFindingsText, setSummaryFindingsText] = useState(''); // editable findings text
@@ -1047,7 +1091,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [custCodeModal, setCustCodeModal] = useState(null); // venue object for cust code popup
   const [rowActionVenue, setRowActionVenue] = useState(null); // { venue, tabType } for pipeline row-click popup
   const [showTrialTableModal, setShowTrialTableModal] = useState(false); // mobile: trial results table full-screen modal
-  const [showFryerStatsModal, setShowFryerStatsModal] = useState(false); // mobile: fryer stats full-screen landscape modal
+  const [showFryerStatsModal, setShowFryerStatsModal] = useState(false); // mobile: fryer stats landscape modal
+  const [insightEditSection, setInsightEditSection] = useState(null); // mobile: which assessment section is in edit mode
   // ── Column toggle state ──
   const BDM_TRIAL_COLS = [
     { key: 'name', label: 'Venue Name', locked: true },
@@ -1091,30 +1136,21 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [newTrialForm, setNewTrialForm] = useState({
     customerCode: '', venueName: '',
     competitor: '',
-    trialOilId: '', fryerCount: '', fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
+    trialOilId: '', fryerCount: 1, fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
     avgLitresPerWeek: '', fryerChangesPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
   });
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
   const nextTrialId = useMemo(() => {
-    // Derive from the highest existing TRL number so deletes/gaps never cause duplicates
-    let max = 0;
-    venues.forEach(v => {
-      const m = (v.trialNotes || '').match(/^TRL-(\d+)/m);
-      if (m) max = Math.max(max, parseInt(m[1], 10));
-    });
-    return `TRL-${String(max + 1).padStart(4, '0')}`;
+    // Count all trial venues (including other BDMs) for a global sequential number
+    const trialCount = venues.length;
+    return `TRL-${String(trialCount + 1).padStart(4, '0')}`;
   }, [venues]);
 
   // ── Generate prospect code (PRS-XXXX) ──
   const nextProspectCode = useMemo(() => {
-    // Derive from the highest existing PRS number so deletes/gaps never cause duplicates
-    let max = 0;
-    venues.forEach(v => {
-      const m = (v.customerCode || '').match(/^PRS-(\d+)$/);
-      if (m) max = Math.max(max, parseInt(m[1], 10));
-    });
-    return `PRS-${String(max + 1).padStart(4, '0')}`;
+    const prospectVenues = venues.filter(v => v.customerCode && v.customerCode.startsWith('PRS-'));
+    return `PRS-${String(prospectVenues.length + 1).padStart(4, '0')}`;
   }, [venues]);
 
   // ── Responsive ──
@@ -1137,40 +1173,34 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const v = venues.find(x => x.id === manageVenueId);
       setManageNoteText(v?.trialNotes || '');
       const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
-      const s1 = parseSafe(v?.insightOilLongevity);
-      const s2 = parseSafe(v?.insightTempObservations);
-      const s3 = parseSafe(v?.insightFoodQuality);
-      const s4 = parseSafe(v?.insightTraining);
-      const s5 = parseSafe(v?.insightEngagement);
-      const s7 = parseSafe(v?.insightRecommendations);
-      const hasInsightData = !!(v?.insightOilLongevity || v?.insightEngagement || v?.insightTempObservations || v?.insightTraining || v?.insightFoodQuality || v?.insightRecommendations);
-      setInsightEditMode(!hasInsightData);
+      const tpmD  = parseSafe(v?.insightTpmPerformance);
+      const oilD  = parseSafe(v?.insightOilLongevity);
+      const tmpD  = parseSafe(v?.insightTempObservations);
+      const mgmtD = parseSafe(v?.insightOilManagement);
+      const fqD   = parseSafe(v?.insightFoodQuality);
+      const ovrD  = parseSafe(v?.insightRecommendations);
+      const hasInsightData = !!(v?.insightTpmPerformance || v?.insightOilLongevity || v?.insightTempObservations || v?.insightOilManagement || v?.insightFoodQuality || v?.insightRecommendations);
+      setInsightEditMode(!hasInsightData); // view mode if saved data exists, edit mode if blank
       setInsightForm({
-        tpmPerformance:        s1.tpmPerformance        || '',
-        lifespanVsCompetitor:  s1.lifespanVsCompetitor  || '',
-        topUpFreqVsCompetitor: s1.topUpFreqVsCompetitor || '',
-        setVsActual:           s2.setVsActual           || '',
-        calibrationNeeded:     s2.calibrationNeeded     || '',
-        tempRecovery:          s2.tempRecovery          || '',
-        taste:                 s3.taste                 || '',
-        texture:               s3.texture               || '',
-        appearance:            s3.appearance            || '',
-        topicsCovered:         s4.topicsCovered         || [],
-        chefFeedback:          s5.chefFeedback          || '',
-        staffEngagement:       s5.staffEngagement       || '',
-        overallReception:      s5.overallReception      || '',
-        costSavings:           s7.costSavings           || '',
-        qualityGains:          s7.qualityGains          || '',
-        operationalEfficiency: s7.operationalEfficiency || '',
-        interestedInTesto:     s7.interestedInTesto     || '',
-        interestedInFrySmart:  s7.interestedInFrySmart  || '',
+        tpmTrends:              tpmD.trends              || '',
+        tpmChangePatterns:      tpmD.changePatterns      || '',
+        tpmAnomalies:           tpmD.anomalies           || '',
+        oilBenchmark:           oilD.benchmark           || '',
+        oilTopUpFreq:           oilD.topUpFreq           || '',
+        oilNotes:               oilD.notes               || '',
+        tempSetVsActual:        tmpD.setVsActual         || '',
+        tempCalibration:        tmpD.calibration         || '',
+        tempOilImpact:          tmpD.oilImpact           || '',
+        oilMgmtCurrentPractice: mgmtD.currentPractice   || '',
+        oilMgmtChangeSchedule:  mgmtD.changeSchedule    || '',
+        oilMgmtStaffTraining:   mgmtD.staffTraining      || '',
+        foodQualityFeedback:    fqD.feedback             || '',
+        foodQualityVisual:      fqD.visual               || '',
+        foodQualityConsistency: fqD.consistency          || '',
+        overallRecommendation:  ovrD.recommendation      || '',
+        overallNextVisit:       ovrD.nextVisit           || '',
+        overallConversionRead:  ovrD.conversionRead      || '',
       });
-      const _achievedLine = (v?.trialNotes || '').split('\n').find(l => l.trim().startsWith('[GoalsAchieved:')) || '';
-      const _achievedGoals = _achievedLine ? _achievedLine.replace(/^\[GoalsAchieved:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
-      const _findingsLine = (v?.trialNotes || '').split('\n').find(l => l.trim().startsWith('[TrialFindings:')) || '';
-      const _findings = _findingsLine ? _findingsLine.replace(/^\[TrialFindings:\s*/, '').replace(/\]$/, '').trim() : '';
-      setAssessAchievedGoals(_achievedGoals);
-      setAssessFindings(_findings);
     }
   }, [manageVenueId]); // eslint-disable-line
 
@@ -1430,10 +1460,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     }
     const newTrialNotes = lines.filter(Boolean).join('\n');
     const endedToday = getTodayString();
-    // Close form modal, fire update in background, show confirmation
+    // Close immediately (optimistic), fire update in background
     setEndTrialModal(null);
+    setSuccessMsg('Trial Ended');
     updateVenue(venueId, { trialStatus: 'pending', trialEndDate: endedToday, trialNotes: newTrialNotes });
-    setTrialEndedVenue({ id: venueId, name: v?.name || '' });
+    // Navigate straight to the summary report for the just-ended trial
+    setSelectedTrialVenue({ ...v, trialStatus: 'pending', trialEndDate: endedToday, trialNotes: newTrialNotes });
+    setManageSubTab('summary');
+    setActiveTab('pending');
   };
 
   const handleCloseTrial = (venueId, outcomeData) => {
@@ -1585,7 +1619,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setNewTrialForm({
         customerCode: '', venueName: '',
         competitor: '',
-        trialOilId: '', fryerCount: '', fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
+        trialOilId: '', fryerCount: 1, fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
         avgLitresPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
       });
       setTrialType('new');
@@ -1987,7 +2021,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
     <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #b8c4cf; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: white !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
+    <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #94a3b8; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: white !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
       {/* Customer code — only for existing */}
@@ -2004,7 +2038,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={S.field}>
         <label style={S.label}>VENUE NAME {req}</label>
         <input type="text" value={newTrialForm.venueName} onChange={e => setNewTrialForm(f => ({ ...f, venueName: e.target.value }))}
-          placeholder="e.g. Joe's Fish & Chips" style={inputStyle} required
+          placeholder="e.g., Joe's Fish & Chips" style={inputStyle} required
           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
       </div>
 
@@ -2098,7 +2132,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <label style={S.label}>AVG OIL LIFESPAN (DAYS)</label>
           <input type="number" min="0" step="1" value={newTrialForm.fryerChangesPerWeek}
             onChange={e => setNewTrialForm(f => ({ ...f, fryerChangesPerWeek: e.target.value }))}
-            placeholder="e.g. 3" style={inputStyle}
+            placeholder="e.g. 7" style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
       </div>
@@ -2118,7 +2152,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return { ...f, fryerCount: e.target.value, fryerVolumes: vols };
               });
             }}
-            placeholder="e.g. 1" style={inputStyle} required
+            style={inputStyle} required
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
         {/* Right: Fryer Volumes */}
@@ -2149,7 +2183,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       {/* Est. Start Date + Est. End Date — side by side on desktop */}
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', minWidth: 0, overflow: 'hidden' }}>
-        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ ...S.field, minWidth: 0 }}>
           <label style={S.label}>EST. START DATE</label>
           <input type="date" value={newTrialForm.estStartDate}
             onChange={e => {
@@ -2165,14 +2199,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 return updated;
               });
             }}
-            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
+            style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
-        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ ...S.field, minWidth: 0 }}>
           <label style={S.label}>EST. END DATE</label>
           <input type="date" value={newTrialForm.estEndDate}
             onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
-            style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
+            style={inputStyle}
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           {newTrialForm.estEndDate && !newTrialForm.endDateManual && (
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Auto-set: {systemSettings?.trialDuration || 7}-day trial</div>
@@ -2184,7 +2218,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={S.field}>
         <label style={S.label}>WHAT DO WE KNOW GOING INTO THIS TRIAL?</label>
         <textarea value={newTrialForm.notes} onChange={e => setNewTrialForm(f => ({ ...f, notes: e.target.value }))}
-          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="e.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
+          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="E.g. competitor pricing pressure, key contact notes, food quality concerns, things to watch…"
           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
       </div>
 
@@ -2194,7 +2228,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           { key: 'save-money',      label: 'Save money',          icon: DollarSign },
           { key: 'reduce-waste',    label: 'Reduce oil waste',    icon: Droplets   },
           { key: 'food-quality',    label: 'Better food quality', icon: Award      },
-          { key: 'food-colour',     label: 'Improve food colour', icon: Sparkles   },
+          { key: 'food-colour',     label: 'Improve food colour', icon: Palette    },
           { key: 'reduce-changes',  label: 'Fewer fryer changes', icon: Cog        },
           { key: 'extend-life',     label: 'Extend oil life',     icon: TrendingUp },
         ];
@@ -2229,7 +2263,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {selected && <Check size={10} color="white" strokeWidth={3} />}
                     </div>
                     <span style={{ flex: 1 }}>{opt.label}</span>
-                    <opt.icon size={15} style={{ flexShrink: 0, opacity: selected ? 0.8 : 0.4 }} />
+                    <opt.icon size={13} style={{ flexShrink: 0, opacity: selected ? 0.8 : 0.4 }} />
                   </button>
                 );
               })}
@@ -2967,6 +3001,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const trialYearlySpend = trialWeeklySpend !== null ? Math.round(trialWeeklySpend * 52 * 100) / 100 : null;
     const pctLitresReduced = weekLitres !== null && preTrialAvg ? Math.round((weekLitres / preTrialAvg) * 1000) / 10 : null;
     const pctCostSaved = weekSpend !== null && compWeeklySpend ? Math.round((weekSpend / compWeeklySpend) * 1000) / 10 : null;
+    const maxOilLifespan = oilAgeVals.length > 0 ? Math.max(...oilAgeVals) : null;
     const maxOilLifespanByFryer = {};
     fryerList.forEach(fn => {
       const ages = allTrialReadings.filter(r => (r.fryerNumber || 1) === fn && r.oilAge != null && r.oilAge > 0).map(r => r.oilAge);
@@ -3032,11 +3067,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     );
 
     const manageTabs = [
-      { key: 'details',  label: 'Pre-trial Details', icon: FileText },
-      { key: 'calendar', label: 'Trial Log',         icon: BarChart3 },
-      { key: 'tpcal',       label: 'Trial Snapshot',    icon: Calendar },
+      { key: 'details',  label: 'Pre-trial Details', icon: ClipboardList },
+      { key: 'calendar', label: 'Trial Results',     icon: BarChart3 },
+      { key: 'tpcal',       label: 'Trial Calendar',    icon: Calendar },
       { key: 'notes',       label: 'TPM Chart',         icon: TrendingUp },
-      { key: 'assessment',  label: 'Trial Assessment',  icon: ClipboardList },
+      { key: 'assessment',  label: 'Trial Assessment',  icon: Star },
       ...(['pending', 'accepted', 'successful', 'unsuccessful'].includes(venue.trialStatus) ? [{ key: 'summary', label: 'Summary Report', icon: FileText }] : []),
     ];
 
@@ -3049,7 +3084,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       if (val) {
         // Reset form to current venue values when entering edit mode
         const initNotesText = (venue.trialNotes || '').split('\n')
-          .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/^TRL-/.test(t); }).join('\n');
+          .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); }).join('\n');
         const initCompOil = oilTypes.find(o => o.id === venue.defaultOil);
         const initGoalsLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
         const initGoals = initGoalsLine ? initGoalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
@@ -3073,7 +3108,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     };
     const mSaving = manageSaving;
     const initNotesForDirty = (venue.trialNotes || '').split('\n')
-      .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/^TRL-/.test(t); }).join('\n');
+      .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); }).join('\n');
     const mDirty = mEditing && (
       mEditForm.name !== (venue.name || '') ||
       mEditForm.notesText !== initNotesForDirty ||
@@ -3090,7 +3125,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       setManageSaving(true);
       const avgL = mEditForm.avgLitresPerWeek ? parseFloat(mEditForm.avgLitresPerWeek) : null;
       // Reconstruct trialNotes: keep TRL-ID, rebuild Goals/FryerChanges, preserve GoalsAchieved + [Note...] lines
-      const trialIdLines = (venue.trialNotes || '').split('\n').filter(l => /^TRL-/.test(l.trim()));
+      const trialIdLines = (venue.trialNotes || '').split('\n').filter(l => /TRL-\d+/.test(l.trim()));
       const noteCommentLines = (venue.trialNotes || '').split('\n').filter(l => l.trim().match(/^\[Note /));
       const savedAchievedLine = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[GoalsAchieved:')) || '';
       const newGoalsLine = (mEditForm.trialGoals || []).length > 0 ? `[Goals: ${mEditForm.trialGoals.join(', ')}]` : '';
@@ -3219,7 +3254,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             {manageTabs.map(tab => {
               const TabIcon = tab.icon;
               const isActive = manageSubTab === tab.key;
-              const shortLabels = { details: 'Details', calendar: 'Log', tpcal: 'Snapshot', notes: 'Chart', assessment: 'Assessment', summary: 'Summary' };
+              const shortLabels = { details: 'Details', calendar: 'Results', tpcal: 'Calendar', notes: 'Chart', assessment: 'Assessment', summary: 'Summary' };
               return (
                 <button key={tab.key} onClick={() => setManageSubTab(tab.key)} style={{
                   flex: isDesktop ? 1 : 'none',
@@ -3244,11 +3279,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             {/* ── Pre-trial Details ── */}
             {manageSubTab === 'details' && (() => {
               // Trial ID — handle both "TRL-0001" and "WA-TRL-0009" formats
-              const trialIdLine = venue.trialNotes?.split('\n').find(l => /^TRL-/.test(l.trim())) || '';
-              const trialId = trialIdLine.trim().split(/\s/)[0] || '';
+              const trialIdLine = venue.trialNotes?.split('\n').find(l => /TRL-\d+/.test(l.trim())) || '';
+              const trialId = trialIdLine.match(/[A-Z]+-TRL-\d+|TRL-\d+/)?.[0] || '';
               const initialNote = venue.trialNotes
                 ? venue.trialNotes.split('\n')
-                    .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/^TRL-/.test(t); })
+                    .filter(l => { const t = l.trim(); return t && !t.match(/^\[/) && !/TRL-\d+/.test(t); })
                     .join('\n')
                 : '';
               const hasStarted = venue.trialStatus !== 'pipeline';
@@ -3257,7 +3292,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const goalsLine = venue.trialNotes?.split('\n').find(l => l.trim().startsWith('[Goals:')) || '';
               const parsedGoals = goalsLine ? goalsLine.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
               const GOAL_LABELS = { 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste', 'reduce-consumption': 'Reduce oil waste', 'food-quality': 'Better food quality', 'food-colour': 'Improve food colour', 'reduce-changes': 'Fewer fryer changes', 'simplify-ops': 'Fewer fryer changes', 'extend-life': 'Extend oil life' };
-              const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Sparkles, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
+              const GOAL_ICONS = { 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets, 'food-quality': Award, 'food-colour': Palette, 'reduce-changes': Cog, 'simplify-ops': Cog, 'extend-life': TrendingUp };
               // fryerChangesPerWeek and achievedGoals are available from the outer scope
               // Type: new prospect (vs competitor) or existing customer
               const isNewProspect = !!comp;
@@ -3335,8 +3370,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           {fld('Offered price / L', venue.offeredPricePerLitre ? `$${parseFloat(venue.offeredPricePerLitre).toFixed(2)}` : null)}
                           {/* Row 4: Vol bracket | Pre-trial weekly avg | Avg oil lifespan */}
                           {fld('Vol bracket', venue.volumeBracket ? <VolumePill bracket={venue.volumeBracket} /> : null)}
-                          {fld('Prev weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
-                          {fld('Prev oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
+                          {fld('Pre-trial weekly avg', venue.currentWeeklyAvg ? `${venue.currentWeeklyAvg} L` : null)}
+                          {fld('Pre-trial oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
                           {/* Row 5: Start date | End date — desktop only (moved to bottom on mobile), with dashed separator */}
                           {isDesktop && <div style={{ gridColumn: 'span 3', borderTop: '1.5px dashed #e2e8f0', marginTop: '6px' }} />}
                           {isDesktop && fld(hasStarted ? 'Start' : 'Est. start', venue.trialStartDate ? displayDate(venue.trialStartDate) : null)}
@@ -3362,14 +3397,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         )}
                         {/* Bottom metadata strip — desktop only (mobile version rendered after goals below) */}
                         {isDesktop && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px 0', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
-                            {trialId && (
-                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Trial ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{trialId}</span></span>
-                            )}
-                            {venue.customerCode && (
-                              <span style={{ fontSize: '10px', color: '#b0bac9' }}>Prospect ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
-                            )}
-                            <span />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '18px', paddingTop: '12px', borderTop: '1px solid #f0f4f8' }}>
                             {trialCreatedDate && (
                               <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
                             )}
@@ -3414,13 +3442,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                       {/* Mobile-only metadata strip — rendered AFTER goals so it appears at bottom on mobile */}
                       {!isDesktop && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '16px', borderTop: '1px solid #f0f4f8' }}>
-                          {trialId && (
-                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Trial ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{trialId}</span></span>
-                          )}
-                          {venue.customerCode && (
-                            <span style={{ fontSize: '10px', color: '#b0bac9' }}>Prospect ID: <span style={{ fontWeight: '600', color: '#94a3b8' }}>{venue.customerCode}</span></span>
-                          )}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', paddingTop: '16px', borderTop: '1px solid #f0f4f8' }}>
                           {trialCreatedDate && (
                             <span style={{ fontSize: '10px', color: '#b0bac9' }}>Created {displayDate(trialCreatedDate)}</span>
                           )}
@@ -3535,7 +3557,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <label style={S.label}>AVG OIL LIFESPAN (DAYS)</label>
                           <input type="number" min="0" step="1" value={mEditForm.fryerChangesPerWeek ?? ''}
                             onChange={e => setMEditForm(p => ({ ...p, fryerChangesPerWeek: e.target.value }))}
-                            placeholder="e.g. 3" style={inputStyle}
+                            placeholder="e.g. 7" style={inputStyle}
                             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                         </div>
                       </div>
@@ -3604,7 +3626,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <textarea value={mEditForm.notesText}
                           onChange={e => setMEditForm(p => ({ ...p, notesText: e.target.value }))}
                           rows={3} style={{ ...inputStyle, resize: 'vertical' }}
-                          placeholder="e.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
+                          placeholder="E.g. competitor pricing pressure, key contact notes, food quality concerns, things to watch…"
                           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                       </div>
 
@@ -3614,7 +3636,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           { key: 'save-money',     label: 'Save money',          icon: DollarSign },
                           { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
                           { key: 'food-quality',   label: 'Better food quality', icon: Award      },
-                          { key: 'food-colour',    label: 'Improve food colour', icon: Sparkles   },
+                          { key: 'food-colour',    label: 'Improve food colour', icon: Palette    },
                           { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
                           { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
                         ];
@@ -3723,30 +3745,39 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       📊 Tap to View Full Trial Table
                     </button>
                   ) : (
-                    /* Mobile: full-screen modal overlay (portrait, no rotation) */
-                    (!isDesktop && showTrialTableModal) ? (
-                      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.6)', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: '48px', background: 'white', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
-                          {/* Modal header */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#1a428a', flexShrink: 0 }}>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>Trial Results</div>
-                            <button onClick={() => setShowTrialTableModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '6px 14px', borderRadius: '7px', letterSpacing: '0.3px' }}>Close</button>
-                          </div>
-                          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
-                    <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px', fontSize: '9px', tableLayout: 'fixed' }}>
+                    <div style={(!isDesktop && showTrialTableModal) ? {
+                      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                      zIndex: 9999, background: 'rgba(15,23,42,0.65)',
+                    } : {}}>
+                      {(!isDesktop && showTrialTableModal) && (
+                        <button onClick={() => setShowTrialTableModal(false)} style={{
+                          position: 'absolute', bottom: '20px', right: '16px', zIndex: 10000,
+                          background: 'rgba(255,255,255,0.95)', border: 'none',
+                          color: '#1a428a', fontWeight: '700', fontSize: '12px',
+                          padding: '8px 20px', borderRadius: '8px', cursor: 'pointer',
+                          letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                        }}>Close</button>
+                      )}
+                    <div style={(!isDesktop && showTrialTableModal) ? {
+                      position: 'absolute', top: '50%', left: '50%',
+                      width: '100vh', height: '100vw',
+                      transform: 'translate(-50%, -50%) rotate(90deg)',
+                      background: 'white', overflowX: 'auto', overflowY: 'auto',
+                      boxSizing: 'border-box', padding: '6px 0',
+                    } : { overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: (!isDesktop && showTrialTableModal) ? '9px' : '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
-                        <col style={{ width: '36px' }} />  {/* Day */}
-                        <col style={{ width: '68px' }} />  {/* Date */}
-                        <col style={{ width: '44px' }} />  {/* TPM */}
-                        <col style={{ width: '44px' }} />  {/* Set°C */}
-                        <col style={{ width: '50px' }} />  {/* Actual°C */}
-                        <col style={{ width: '40px' }} />  {/* -/+°C */}
-                        <col style={{ width: '62px' }} />  {/* Fill Type */}
-                        <col style={{ width: '36px' }} />  {/* Litres */}
-                        <col style={{ width: '58px' }} />  {/* Filtered */}
-                        <col style={{ width: '80px' }} />  {/* Food */}
+                        <col style={{ width: '50px' }} />  {/* Day */}
+                        <col style={{ width: '92px' }} />  {/* Date */}
+                        <col style={{ width: '60px' }} />  {/* TPM */}
+                        <col style={{ width: '60px' }} />  {/* Set°C */}
+                        <col style={{ width: '70px' }} />  {/* Actual°C */}
+                        <col style={{ width: '60px' }} />  {/* -/+°C */}
+                        <col style={{ width: '82px' }} />  {/* Fill Type */}
+                        <col style={{ width: '46px' }} />  {/* Litres */}
+                        <col style={{ width: '82px' }} />  {/* Filtered */}
+                        <col style={{ width: '123px' }} /> {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
@@ -3818,66 +3849,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </tbody>
                     </table>
                     </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : ( /* desktop */
-                      /* Desktop: plain scrollable table */
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
-                          <colgroup>
-                            <col style={{ width: '32px' }} /><col style={{ width: '50px' }} /><col style={{ width: '92px' }} />
-                            <col style={{ width: '60px' }} /><col style={{ width: '60px' }} /><col style={{ width: '70px' }} />
-                            <col style={{ width: '60px' }} /><col style={{ width: '82px' }} /><col style={{ width: '46px' }} />
-                            <col style={{ width: '82px' }} /><col style={{ width: '123px' }} /><col />
-                          </colgroup>
-                          <thead><tr>
-                            <th style={thBase}>#</th><th style={thBase}>Day</th><th style={thBase}>Date</th>
-                            <th style={thBase}>TPM</th><th style={thBase}>Set °C</th><th style={thBase}>Actual °C</th>
-                            <th style={thBase}>-/+ °C</th><th style={thBase}>Fill Type</th><th style={thBase}>Litres</th>
-                            <th style={thBase}>Filtered</th><th style={{ ...thBase, textAlign: 'center' }}>Food</th>
-                            <th style={{ ...thBase, textAlign: 'left' }}>Notes</th>
-                          </tr></thead>
-                          <tbody>
-                            {calDays.map((day, idx) => {
-                              const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
-                              const dayRecs = (readingsByDate[dateStr] || []).filter(r => (r.fryerNumber || 1) === activeFryer);
-                              const r = dayRecs.length > 0 ? dayRecs[dayRecs.length - 1] : null;
-                              const isFuture = day > today;
-                              const isFresh = r?.oilAge === 1;
-                              const isToppedUp = r && r.litresFilled > 0 && !isFresh;
-                              const variance = (r?.actualTemperature != null && r?.setTemperature != null) ? (r.actualTemperature - r.setTemperature) : null;
-                              const tpmCol2 = r?.tpmValue != null ? tpmColor(r.tpmValue) : '#1f2937';
-                              const cellTpmBg2 = r?.tpmValue != null ? tpmBg(r.tpmValue) : 'transparent';
-                              const missed = !r && !isFuture;
-                              const varZero = variance === 0;
-                              const varInRange = variance != null && variance !== 0 && Math.abs(variance) <= 5;
-                              const varOutRange = variance != null && Math.abs(variance) > 5;
-                              const dash = missed ? '' : '—';
-                              const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}`;
-                              return (
-                                <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '44px' }}>
-                                  <td style={{ ...tdBase, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
-                                  <td style={{ ...tdBase, color: '#64748b', fontWeight: '500' }}>{DAYS[day.getDay()]}</td>
-                                  <td style={{ ...tdBase, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
-                                  <td style={{ ...tdBase, fontWeight: '700', color: missed ? '#94a3b8' : tpmCol2, background: cellTpmBg2 }}>{r ? (r.tpmValue ?? '—') : missed ? 'Missed' : '—'}</td>
-                                  <td style={tdBase}>{r ? (r.setTemperature ?? '—') : dash}</td>
-                                  <td style={tdBase}>{r ? (r.actualTemperature ?? '—') : dash}</td>
-                                  <td style={{ ...tdBase, fontWeight: '600', background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent', color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8' }}>
-                                    {variance != null ? (variance > 0 ? '+' : '') + variance : dash}
-                                  </td>
-                                  <td style={tdBase}>{isFresh ? badge('Fresh Fill', '#d1fae5', '#059669') : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706') : ''}</td>
-                                  <td style={tdBase}>{r && r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>
-                                  <td style={tdBase}>{r?.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}</td>
-                                  <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>{r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}</td>
-                                  <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{r?.notes || ''}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )
+                    </div>
                   )}
                 </div>
               );
@@ -3983,7 +3955,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     // Fryers = rows, stat groups = column groups
                     const varCol = (v) => v == null ? '#94a3b8' : v === 0 ? '#059669' : v <= 5 ? '#d97706' : '#dc2626';
                     const pfN = (v, dec = 0, sfx = '') => v != null ? `${dec > 0 ? Number(v).toFixed(dec) : Math.round(v)}${sfx}` : null;
-                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}` : null;
+                    const pfL = (v) => v > 0 ? `${Math.round(v * 10) / 10}L` : null;
 
                     const fryerData = fryerList.map(fn => {
                       const frdgs = allTrialReadings.filter(r => (Number(r.fryerNumber) || 1) === fn);
@@ -4032,36 +4004,32 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       hasTpm      && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg'] },
                       hasOilLife  && { label: 'Oil Lifespan', bg: '#e0f2fe', color: '#0284c7', cols: ['Max', 'Avg'] },
                       hasOilUsage && { label: 'Oil Usage',    bg: '#f0fdf4', color: '#16a34a', cols: [
-                        ...(hasFresh  ? ['Fresh Fills'] : []),
-                        ...(hasTopUp  ? ['Top-ups']     : []),
-                        ...(hasFresh  ? ['Fresh L']     : []),
-                        ...(hasTopUp  ? ['Top-up L']    : []),
+                        ...(hasFresh  ? ['Fresh #', 'Fresh L']  : []),
+                        ...(hasTopUp  ? ['Top-up #', 'Top-up L'] : []),
                         'Total L',
                       ]},
-                      hasTemp     && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Min Temp', 'Max Temp', 'Variance'] },
+                      hasTemp     && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Avg Variance'] },
                     ].filter(Boolean);
 
                     // Cell value + color extractor per column
                     const getCell = (r, grpLabel, col) => {
                       if (grpLabel === 'TPM') {
                         if (col === 'Peak') return { val: pfN(r.fPeak),   color: tpmColor(r.fPeak) };
-                        if (col === 'Avg')  return { val: pfN(r.fAvg),   color: tpmColor(r.fAvg) };
+                        if (col === 'Avg')  return { val: pfN(r.fAvg, 1), color: tpmColor(r.fAvg) };
                       }
                       if (grpLabel === 'Oil Lifespan') {
                         if (col === 'Max') return { val: r.fMaxLife != null ? `${r.fMaxLife}d` : null, color: '#0ea5e9' };
                         if (col === 'Avg') return { val: r.fAvgLife != null ? `${r.fAvgLife}d` : null, color: '#0ea5e9' };
                       }
                       if (grpLabel === 'Oil Usage') {
-                        if (col === 'Fresh Fills') return { val: r.freshCount > 0 ? `${r.freshCount}` : null,  color: '#374151' };
-                        if (col === 'Fresh L')     return { val: pfL(r.freshLitres),                            color: '#0ea5e9' };
-                        if (col === 'Top-ups')     return { val: r.topUpCount > 0 ? `${r.topUpCount}` : null,  color: '#374151' };
-                        if (col === 'Top-up L')    return { val: pfL(r.topUpLitres),                            color: '#0ea5e9' };
-                        if (col === 'Total L')     return { val: pfL(r.totalLitres),                            color: '#1a428a', bold: true };
+                        if (col === 'Fresh #')  return { val: r.freshCount > 0 ? `${r.freshCount}` : null,       color: '#374151' };
+                        if (col === 'Fresh L')  return { val: pfL(r.freshLitres),                                 color: '#374151' };
+                        if (col === 'Top-up #') return { val: r.topUpCount > 0 ? `${r.topUpCount}` : null,       color: '#374151' };
+                        if (col === 'Top-up L') return { val: pfL(r.topUpLitres),                                 color: '#374151' };
+                        if (col === 'Total L')  return { val: pfL(r.totalLitres),                                 color: '#1a428a', bold: true };
                       }
                       if (grpLabel === 'Temperature') {
-                        if (col === 'Min Temp')  return { val: r.fMinTemp != null ? `${r.fMinTemp}°` : null,   color: '#0ea5e9' };
-                        if (col === 'Max Temp')  return { val: r.fMaxTemp != null ? `${r.fMaxTemp}°` : null,   color: '#dc2626' };
-                        if (col === 'Variance')  return { val: pfN(r.fAvgVar, 1, '°'),                         color: varCol(r.fAvgVar) };
+                        if (col === 'Avg Variance') return { val: pfN(r.fAvgVar, 1, '°'), color: varCol(r.fAvgVar) };
                       }
                       return { val: null };
                     };
@@ -4103,10 +4071,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   </td>
                                   {groups.map(g => g.cols.map((col, ci) => {
                                     const { val, color, bold } = getCell(r, g.label, col);
-                                    const isTemp = g.label === 'Temperature';
                                     return (
                                       <td key={g.label + col} style={{
-                                        padding: '8px 10px', fontSize: isTemp ? '11px' : '12px', fontWeight: bold ? '700' : '600',
+                                        padding: '8px 10px', fontSize: '12px', fontWeight: bold ? '700' : '600',
                                         textAlign: 'center', color: val ? color || '#374151' : '#e2e8f0',
                                         borderBottom: '1px solid #f1f5f9',
                                         borderLeft: ci === 0 ? borderL : '1px solid #f8fafc',
@@ -4122,28 +4089,38 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     return (
                       <div style={{ marginTop: '20px' }}>
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Fryer Stats</div>
-                        {!isDesktop && (
-                          <button onClick={() => setShowFryerStatsModal(true)} style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px', fontWeight: '600', color: '#16a34a', marginBottom: '12px' }}>
-                            📊 Tap to View Fryer Stats
-                          </button>
-                        )}
-                        {showFryerStatsModal && !isDesktop && (
-                          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.6)', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: '48px', background: 'white', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#1a428a', flexShrink: 0 }}>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>Fryer Stats</div>
-                                <button onClick={() => setShowFryerStatsModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '6px 14px', borderRadius: '7px', letterSpacing: '0.3px' }}>Close</button>
-                              </div>
-                              <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', fontSize: '9px' }}>
-                                {fryerStatsTable}
-                              </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Fryer Stats</div>
+                          {!isDesktop && (
+                            <button onClick={() => setShowFryerStatsModal(true)} style={{
+                              padding: '5px 12px', background: '#eff6ff', border: '1.5px solid #bfdbfe',
+                              borderRadius: '7px', fontSize: '11px', fontWeight: '600', color: '#1a428a', cursor: 'pointer'
+                            }}>Full screen</button>
+                          )}
+                        </div>
+                        {!isDesktop && showFryerStatsModal && (
+                          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.65)' }}>
+                            <button onClick={() => setShowFryerStatsModal(false)} style={{
+                              position: 'absolute', bottom: '20px', right: '16px', zIndex: 10000,
+                              background: 'rgba(255,255,255,0.95)', border: 'none',
+                              color: '#1a428a', fontWeight: '700', fontSize: '12px',
+                              padding: '8px 20px', borderRadius: '8px', cursor: 'pointer',
+                              letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                            }}>Close</button>
+                            <div style={{
+                              position: 'absolute', top: '50%', left: '50%',
+                              width: '100vh', height: '100vw',
+                              transform: 'translate(-50%, -50%) rotate(90deg)',
+                              background: 'white', overflowX: 'auto', overflowY: 'auto',
+                              boxSizing: 'border-box', padding: '12px 8px',
+                            }}>
+                              {fryerStatsTable}
                             </div>
                           </div>
                         )}
-                        {isDesktop && (
-                          <div style={{ overflowX: 'auto' }}>{fryerStatsTable}</div>
-                        )}
+                        <div style={{ overflowX: 'auto' }}>
+                          {fryerStatsTable}
+                        </div>
                       </div>
                     );
                   })()}
@@ -4152,67 +4129,57 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               );
             })()}
 
+            {/* ── TPM Chart ── */}
             {/* ── Trial Assessment tab ── */}
             {manageSubTab === 'assessment' && (() => {
-              const qCard = (bg, border) => ({ background: bg, border: `1.5px solid ${border}`, borderRadius: '12px', padding: '14px 16px' });
+              // render helpers — called as functions (not JSX components) to avoid remounting inputs on keypress
+              const taS = {
+                width: '100%', minHeight: '42px', padding: '7px 10px',
+                border: '1.5px solid #e8edf2', borderRadius: '7px',
+                fontSize: '12px', color: '#374151', fontFamily: 'inherit',
+                fontWeight: '500', resize: 'vertical', outline: 'none',
+                boxSizing: 'border-box', lineHeight: '1.5', background: 'white',
+              };
+              const qCard = { background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' };
+
+              const statBand = (stats, bg, border) => (
+                <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '8px', marginBottom: '12px', overflow: 'hidden' }}>
+                  {stats.filter(([,v]) => v != null).map(([label, value, color], i) => (
+                    <div key={label} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${border}` : 'none' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '800', color: color || '#374151', lineHeight: 1 }}>{value}</div>
+                      <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '3px' }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+
+              const subLbl = (text) => (
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
+              );
+
               const qHead = (Icon, iconColor, title) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
                   <Icon size={14} color={iconColor} strokeWidth={2.5} />
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{title}</span>
                 </div>
               );
-              const subLbl = (text) => (
-                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
-              );
-              // Colour metadata per answer value — used for chips in view mode
-              const OPTION_META = {
-                'Acceptable': { icon: '✓', color: '#059669' }, 'Above normal': { icon: '↑', color: '#f59e0b' }, 'Unstable': { icon: '⚠', color: '#ef4444' },
-                'Well calibrated': { icon: '✓', color: '#059669' }, 'Minor variance': { icon: '~', color: '#f59e0b' }, 'Significant variance': { icon: '!', color: '#ef4444' },
-                'None': { icon: '✓', color: '#059669' }, 'Minor adjustment': { icon: '~', color: '#f59e0b' }, 'Professional service required': { icon: '!', color: '#ef4444' },
-                'Fast': { icon: '⚡', color: '#059669' }, 'Normal': { icon: '✓', color: '#059669' }, 'Slow': { icon: '↓', color: '#ef4444' },
-                'Improved': { icon: '↑', color: '#059669' }, 'Same': { icon: '—', color: '#64748b' }, 'Worse': { icon: '↓', color: '#ef4444' },
-                'Longer': { icon: '↑', color: '#059669' }, 'On par': { icon: '=', color: '#64748b' }, 'Shorter': { icon: '↓', color: '#ef4444' }, 'No comparable baseline': { icon: '?', color: '#94a3b8' },
-                'Fewer': { icon: '↓', color: '#059669' }, 'More': { icon: '↑', color: '#ef4444' },
-                'Positive': { icon: '↑', color: '#059669' }, 'Neutral': { icon: '—', color: '#64748b' }, 'Negative': { icon: '↓', color: '#ef4444' },
-                'High': { icon: '↑', color: '#059669' }, 'Moderate': { icon: '~', color: '#f59e0b' }, 'Low': { icon: '↓', color: '#ef4444' },
-                'Supportive': { icon: '↑', color: '#059669' }, 'Resistant': { icon: '↓', color: '#ef4444' },
-                'Evident': { icon: '✓', color: '#059669' }, 'Partially evident': { icon: '~', color: '#f59e0b' }, 'Not evident': { icon: '✗', color: '#ef4444' }, 'N/A': { icon: '—', color: '#94a3b8' },
-                'Yes': { icon: '✓', color: '#059669' }, 'No': { icon: '✗', color: '#ef4444' }, 'Not sure': { icon: '?', color: '#f59e0b' },
-              };
-              const selS = {
-                width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px',
-                fontSize: '12px', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white',
-                cursor: 'pointer', boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
-              };
-              // isSectionEditing — desktop uses global insightEditMode; mobile uses per-section state
+
+              // Per-section edit helpers
               const isSectionEditing = (sectionKey) => isDesktop ? insightEditMode : insightEditSection === sectionKey;
-              // mkSel — edit: native select. View: frozen select-style field
-              const mkSel = (fieldKey, opts, accentColor, sectionKey) => {
-                const val = insightForm[fieldKey];
-                if (!isSectionEditing(sectionKey)) {
-                  return (
-                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', fontWeight: val ? '500' : '400', color: val ? '#1f2937' : '#94a3b8', fontStyle: val ? 'normal' : 'italic', background: 'white', boxSizing: 'border-box', minHeight: '34px' }}>
-                      {val || '— not yet assessed —'}
-                    </div>
-                  );
-                }
-                return (
-                  <select style={{ ...selS, color: val ? '#1f2937' : '#94a3b8' }}
-                    value={val} onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
-                    onFocus={e => { e.target.style.borderColor = accentColor; }}
-                    onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
-                    <option value="">— Select —</option>
-                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                );
+              const handleSaveAssessment = async () => {
+                setInsightSaving(true);
+                await updateVenue(venue.id, {
+                  insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns }),
+                  insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq }),
+                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration }),
+                  insightOilManagement:    JSON.stringify({ staffTraining: insightForm.oilMgmtStaffTraining, currentPractice: insightForm.oilMgmtCurrentPractice }),
+                  insightFoodQuality:      JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual }),
+                  insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit }),
+                });
+                setInsightSaving(false);
               };
-              // mkField — always visible
-              const mkField = (label, fieldKey, opts, accent, sectionKey) => (
-                <>{subLbl(label)}{mkSel(fieldKey, opts, accent, sectionKey)}</>
-              );
-              // mkCard — wraps a card with mobile tap-to-edit + per-section save button
+
+              // mkCard: wraps an assessment card with mobile tap-to-edit + per-section Save/Cancel
               const mkCard = (sectionKey, cardStyle, children) => {
                 const editing = isSectionEditing(sectionKey);
                 return (
@@ -4222,11 +4189,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {!isDesktop && editing && (
                       <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
                         <button onClick={e => { e.stopPropagation(); setInsightEditSection(null); }}
-                          style={{ flex: 1, padding: '8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                          Cancel
-                        </button>
-                        <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(); setInsightEditSection(null); }}
-                          style={{ flex: 2, padding: '8px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
+                          style={{ flex: 1, padding: '9px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
+                        <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(); setInsightEditSection(null); setSuccessMsg('Assessment saved'); }}
+                          style={{ flex: 1, padding: '9px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
                           {insightSaving ? 'Saving…' : 'Save'}
                         </button>
                       </div>
@@ -4238,238 +4203,186 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 );
               };
 
-              const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure'];
-
-              const ASSESS_GOAL_OPTIONS = [
-                { key: 'save-money',     label: 'Save money',          icon: DollarSign },
-                { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
-                { key: 'food-quality',   label: 'Better food quality', icon: Award      },
-                { key: 'food-colour',    label: 'Improve food colour', icon: Sparkles   },
-                { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
-                { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
-              ];
-
-              const hasExistingAssessment = !!(venue.insightOilLongevity || venue.insightEngagement || venue.insightTempObservations || venue.insightTraining || venue.insightFoodQuality || venue.insightRecommendations);
-              const handleSaveAssessment = async () => {
-                setInsightSaving(true);
-                const existingNotes = venue.trialNotes || '';
-                const notesLines = existingNotes.split('\n')
-                  .filter(l => !l.trim().startsWith('[GoalsAchieved:'))
-                  .filter(l => !l.trim().startsWith('[TrialFindings:'));
-                if (assessAchievedGoals.length > 0) notesLines.push(`[GoalsAchieved: ${assessAchievedGoals.join(', ')}]`);
-                if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
-                await updateVenue(venue.id, {
-                  insightOilLongevity:     JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
-                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded, tempRecovery: insightForm.tempRecovery }),
-                  insightFoodQuality:      JSON.stringify({ taste: insightForm.taste, texture: insightForm.texture, appearance: insightForm.appearance }),
-                  insightTraining:         JSON.stringify({ topicsCovered: insightForm.topicsCovered }),
-                  insightEngagement:       JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement, overallReception: insightForm.overallReception }),
-                  insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart }),
-                  trialNotes: notesLines.filter(Boolean).join('\n'),
-                });
-                setInsightSaving(false);
-                setInsightEditMode(false);
-                setSuccessMsg('Assessment saved');
+              // Dropdown in edit mode, color-coded chip in view mode
+              const selS = { width: '100%', padding: '8px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white', cursor: 'pointer', boxSizing: 'border-box' };
+              const mkSel = (fieldKey, opts, accentColor, sectionKey) => {
+                const val = insightForm[fieldKey];
+                if (!isSectionEditing(sectionKey)) {
+                  const idx = opts.indexOf(val);
+                  let bg = '#f8fafc', textColor = val ? '#1f2937' : '#cbd5e1';
+                  if (val && idx !== -1) {
+                    if (idx === 0) { bg = '#f0fdf4'; textColor = '#16a34a'; }
+                    else if (idx === opts.length - 1) { bg = '#fef2f2'; textColor = '#dc2626'; }
+                    else { bg = '#fffbeb'; textColor = '#d97706'; }
+                  }
+                  return (
+                    <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: val ? '600' : '400', color: textColor, background: bg, border: '1.5px solid transparent', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
+                      {val || 'Not recorded'}
+                    </div>
+                  );
+                }
+                return (
+                  <select style={{ ...selS, color: val ? '#374151' : '#94a3b8' }}
+                    value={val}
+                    onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
+                    onFocus={e => { e.target.style.borderColor = accentColor; }}
+                    onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
+                    <option value="">— Select —</option>
+                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                );
               };
 
               return (
                 <div>
-                  {/* ── Header ── */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Assessment</div>
-                    {isDesktop && (insightEditMode ? (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        {hasExistingAssessment && (
-                          <button onClick={() => setInsightEditMode(false)} style={{ padding: '7px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                            Cancel
-                          </button>
-                        )}
-                        <button disabled={insightSaving} onClick={handleSaveAssessment}
-                          style={{ padding: '7px 20px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
-                          {insightSaving ? 'Saving…' : 'Save Assessment'}
-                        </button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 14px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                        Edit
+                    {isDesktop && !insightEditMode && (
+                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
+                        Edit Assessment
                       </button>
-                    ))}
-                    {!isDesktop && <div style={{ fontSize: '11px', color: '#94a3b8' }}>Tap a section to edit</div>}
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>
+                    {isDesktop
+                      ? (insightEditMode ? 'Fill in each section — your BDM insights for this trial.' : 'Saved assessment — tap Edit to make changes.')
+                      : 'Tap a section to edit.'}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
-                    {/* ── 1. Oil Longevity — blue ── */}
-                    {mkCard('oil', qCard('#eff6ff', '#bfdbfe'), (<>
-                      {qHead(Activity, '#1a428a', 'Oil Longevity')}
-                      {mkField('TPM Performance', 'tpmPerformance', ['Acceptable', 'Above normal', 'Unstable'], '#1a428a', 'oil')}
-                      {mkField('Lifespan vs Competitor Oil', 'lifespanVsCompetitor', ['Longer', 'On par', 'Shorter', 'No comparable baseline'], '#1a428a', 'oil')}
-                      {mkField('Top-up Frequency vs Competitor', 'topUpFreqVsCompetitor', ['Fewer', 'Same', 'More', 'No comparable baseline'], '#1a428a', 'oil')}
+                    {/* ── TPM Performance ── */}
+                    {mkCard('tpm', qCard, (<>
+                      {qHead(Activity, '#1a428a', 'TPM Performance')}
+                      {(maxTPM != null || avgTPM != null || minTPM != null) && statBand([
+                        ['Peak TPM', maxTPM, tpmColor(maxTPM)],
+                        ['Avg TPM',  avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
+                        ['Min TPM',  minTPM, tpmColor(minTPM)],
+                      ], '#f0f4ff', '#e0e7ff')}
+                      {subLbl('TPM Trends')}
+                      {mkSel('tpmTrends', [
+                        'Stable and low — good oil performance',
+                        'Gradual rise — typical oil degradation',
+                        'Inconsistent — volatile readings',
+                      ], '#1a428a', 'tpm')}
+                      {subLbl('Change Patterns')}
+                      {mkSel('tpmChangePatterns', [
+                        'Regular scheduled changes',
+                        'Mostly reactive, minimal schedule',
+                        'Entirely reactive — no schedule',
+                      ], '#1a428a', 'tpm')}
                     </>))}
 
-                    {/* ── 2. Temperature Control ── */}
-                    {mkCard('temp', qCard('#fff7ed', '#fddcbb'), (<>
+                    {/* ── Oil Longevity ── */}
+                    {mkCard('oil', qCard, (<>
+                      {qHead(Droplets, '#0ea5e9', 'Oil Longevity')}
+                      {(maxOilAge != null || avgOilAge != null) && statBand([
+                        ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
+                        ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
+                      ], '#f0f9ff', '#e0f2fe')}
+                      {subLbl('Lifespan vs Competitor Oil')}
+                      {mkSel('oilBenchmark', [
+                        'Longer than competitor oil',
+                        'On par with competitor oil',
+                        'Shorter than competitor oil',
+                      ], '#0ea5e9', 'oil')}
+                      {subLbl('Top-up Frequency vs Competitor')}
+                      {mkSel('oilTopUpFreq', [
+                        'Fewer top-ups needed',
+                        'About the same',
+                        'More top-ups needed',
+                      ], '#0ea5e9', 'oil')}
+                    </>))}
+
+                    {/* ── Temperature Control ── */}
+                    {mkCard('temp', qCard, (<>
                       {qHead(Flame, '#f97316', 'Temperature Control')}
-                      {mkField('Set vs Actual Temp', 'setVsActual', ['Well calibrated', 'Minor variance', 'Significant variance'], '#f97316', 'temp')}
-                      {mkField('Calibration Needed', 'calibrationNeeded', ['None', 'Minor adjustment', 'Professional service required'], '#f97316', 'temp')}
-                      {mkField('Fryer Recovery Speed', 'tempRecovery', ['Fast', 'Normal', 'Slow'], '#f97316', 'temp')}
+                      {avgTempVar != null
+                        ? statBand([['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626']], '#fff7ed', '#fed7aa')
+                        : <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>No temperature data recorded yet.</div>
+                      }
+                      {subLbl('Set vs Actual')}
+                      {mkSel('tempSetVsActual', [
+                        'Well calibrated',
+                        'Minor variance',
+                        'Significant variance',
+                      ], '#f97316', 'temp')}
+                      {subLbl('Calibration')}
+                      {mkSel('tempCalibration', [
+                        'No calibration needed',
+                        'Minor adjustment recommended',
+                        'Professional service required',
+                      ], '#f97316', 'temp')}
                     </>))}
 
-                    {/* ── 3. Food Quality ── */}
-                    {mkCard('food', qCard('#fffbeb', '#fde8a2'), (<>
+                    {/* ── Oil Management ── */}
+                    {mkCard('mgmt', qCard, (<>
+                      {qHead(Cog, '#64748b', 'Oil Management')}
+                      {subLbl('Training & Education Provided')}
+                      {mkSel('oilMgmtStaffTraining', [
+                        'Yes',
+                        'No',
+                      ], '#64748b', 'mgmt')}
+                      {subLbl('Value Demonstrated During Trial')}
+                      {mkSel('oilMgmtCurrentPractice', [
+                        'Yes — clear savings identified',
+                        'Potentially — further data needed',
+                        'Not yet clear',
+                      ], '#64748b', 'mgmt')}
+                    </>))}
+
+                    {/* ── Food Quality ── */}
+                    {mkCard('food', qCard, (<>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
-                      {mkField('Taste', 'taste', ['Improved', 'Same', 'Worse'], '#f59e0b', 'food')}
-                      {mkField('Texture', 'texture', ['Improved', 'Same', 'Worse'], '#f59e0b', 'food')}
-                      {mkField('Appearance', 'appearance', ['Improved', 'Same', 'Worse'], '#f59e0b', 'food')}
+                      {subLbl('Taste & Texture')}
+                      {mkSel('foodQualityFeedback', [
+                        'Improved',
+                        'Same',
+                        'Worse',
+                      ], '#f59e0b', 'food')}
+                      {subLbl('Visual')}
+                      {mkSel('foodQualityVisual', [
+                        'Improved',
+                        'Same',
+                        'Worse',
+                      ], '#f59e0b', 'food')}
                     </>))}
 
-                    {/* ── 4. Training & Education — teal ── */}
-                    {mkCard('training', qCard('#f0fdfa', '#99f6e4'), (<>
-                      {qHead(BookOpen, '#0d9488', 'Training & Education')}
-                      {subLbl('Topics Covered')}
-                      {isSectionEditing('training') ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
-                          {TRAINING_TOPICS.map(topic => {
-                            const checked = insightForm.topicsCovered.includes(topic);
-                            return (
-                              <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
-                                <input type="checkbox" checked={checked}
-                                  onChange={() => setInsightForm(f => ({ ...f, topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic] }))}
-                                  style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
-                                {topic}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', marginTop: '6px' }}>
-                          {TRAINING_TOPICS.map(topic => {
-                            const checked = insightForm.topicsCovered.includes(topic);
-                            return (
-                              <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: checked ? '#0f766e' : '#94a3b8' }}>
-                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', flexShrink: 0, border: `2px solid ${checked ? '#0d9488' : '#d1d5db'}`, background: checked ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  {checked && <Check size={8} color="white" strokeWidth={3} />}
-                                </div>
-                                <span style={{ fontWeight: checked ? '600' : '400' }}>{topic}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div style={{ borderTop: '1px solid #99f6e440', margin: '10px 0 4px' }} />
-                      {subLbl('Interested in')}
-                      {isSectionEditing('training') ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                          {[['interestedInTesto', 'Interested in Testo'], ['interestedInFrySmart', 'Interested in FrySmart']].map(([key, label]) => {
-                            const checked = insightForm[key] === 'Yes';
-                            return (
-                              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
-                                <input type="checkbox" checked={checked}
-                                  onChange={e => setInsightForm(f => ({ ...f, [key]: e.target.checked ? 'Yes' : 'No' }))}
-                                  style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
-                                {label}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                          {[['interestedInTesto', 'Testo'], ['interestedInFrySmart', 'FrySmart']].map(([key, label]) => {
-                            const val = insightForm[key];
-                            const yes = val === 'Yes';
-                            return (
-                              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: yes ? '#0f766e' : '#94a3b8' }}>
-                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', border: `2px solid ${yes ? '#0d9488' : '#d1d5db'}`, background: yes ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                  {yes && <Check size={8} color="white" strokeWidth={3} />}
-                                </div>
-                                <span style={{ fontWeight: yes ? '600' : '400' }}>{label}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>))}
-
-                    {/* ── 5. Feedback & Engagement ── */}
-                    {mkCard('engagement', qCard('#f5f3ff', '#ddd6fe'), (<>
-                      {qHead(MessageSquare, '#7c3aed', 'Feedback & Engagement')}
-                      {mkField('Chef Feedback', 'chefFeedback', ['Positive', 'Neutral', 'Negative'], '#7c3aed', 'engagement')}
-                      {mkField('Staff Engagement Level', 'staffEngagement', ['High', 'Moderate', 'Low'], '#7c3aed', 'engagement')}
-                      {mkField('Management Buy-in', 'overallReception', ['Supportive', 'Neutral', 'Resistant'], '#7c3aed', 'engagement')}
-                    </>))}
-
-                    {/* ── 6. Value Demonstrated ── */}
-                    {mkCard('value', qCard('#f0fdf4', '#bbf7d0'), (<>
-                      {qHead(TrendingUp, '#16a34a', 'Value Demonstrated')}
-                      {mkField('Cost Savings', 'costSavings', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a', 'value')}
-                      {mkField('Oil Quality', 'qualityGains', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a', 'value')}
-                      {mkField('Operational Efficiency', 'operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a', 'value')}
-                    </>))}
-
-                    {/* ── Trial Outcome — white, full width ── */}
-                    {mkCard('outcome', { ...qCard('white', '#e2e8f0'), gridColumn: isDesktop ? '1 / -1' : undefined }, (<>
-                      {qHead(Award, '#f59e0b', 'Trial Outcome')}
-                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
-                        {/* Goals */}
-                        <div>
-                          {subLbl('Goals Achieved')}
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                            {isSectionEditing('outcome') ? ASSESS_GOAL_OPTIONS.map(goal => {
-                              const GoalIcon = goal.icon;
-                              const achieved = assessAchievedGoals.includes(goal.key);
-                              return (
-                                <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
-                                  <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
-                                  <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
-                                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
-                                    {achieved && <Check size={8} color="white" strokeWidth={3} />}
-                                  </div>
-                                </div>
-                              );
-                            }) : (
-                              assessAchievedGoals.length > 0
-                                ? assessAchievedGoals.map(key => {
-                                    const goal = ASSESS_GOAL_OPTIONS.find(g => g.key === key);
-                                    if (!goal) return null;
-                                    const GoalIcon = goal.icon;
-                                    return (
-                                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
-                                        <GoalIcon size={13} color="#1a428a" />
-                                        <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
-                                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, background: '#f59e0b', border: '2px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                          <Check size={8} color="white" strokeWidth={3} />
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                : <span style={{ fontSize: '12px', color: '#cbd5e1', gridColumn: '1 / -1' }}>No goals recorded</span>
-                            )}
-                          </div>
-                        </div>
-                        {/* Findings */}
-                        <div>
-                          {subLbl('Trial Findings')}
-                          {isSectionEditing('outcome') ? (
-                            <textarea
-                              value={assessFindings}
-                              onChange={e => setAssessFindings(e.target.value)}
-                              placeholder="What went well? Any surprises? How did the chef react? Anything unusual with the oil or fryers worth noting?…"
-                              rows={6}
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
-                              onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
-                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
-                            />
-                          ) : (
-                            assessFindings
-                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: 'white' }}>{assessFindings}</p>
-                              : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '10px 12px', border: '1.5px solid #e8edf2', borderRadius: '8px' }}>— not yet assessed —</div>
-                          )}
-                        </div>
-                      </div>
+                    {/* ── Next Steps ── */}
+                    {mkCard('nextsteps', qCard, (<>
+                      {qHead(Target, '#8b5cf6', 'Next Steps')}
+                      {subLbl('Interested in Testo')}
+                      {mkSel('overallRecommendation', [
+                        'Yes',
+                        'No',
+                        'Not sure',
+                      ], '#8b5cf6', 'nextsteps')}
+                      {subLbl('Interested in FrySmart')}
+                      {mkSel('overallNextVisit', [
+                        'Yes',
+                        'No',
+                        'Not sure',
+                      ], '#8b5cf6', 'nextsteps')}
                     </>))}
 
                   </div>
+
+                  {isDesktop && insightEditMode && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                    {(venue.insightTpmPerformance || venue.insightOilLongevity || venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations) && (
+                      <button onClick={() => setInsightEditMode(false)} style={{ padding: '8px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      disabled={insightSaving}
+                      onClick={async () => { await handleSaveAssessment(); setInsightEditMode(false); setSuccessMsg('Assessment saved'); }}
+                      style={{ padding: '8px 22px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
+                    >
+                      {insightSaving ? 'Saving…' : 'Save Assessment'}
+                    </button>
+                  </div>
+                  )}
                 </div>
               );
             })()}
@@ -4758,7 +4671,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               };
               const GOAL_ICONS = {
                 'save-money': DollarSign, 'reduce-waste': Droplets, 'reduce-consumption': Droplets,
-                'food-quality': Award, 'food-colour': Sparkles, 'reduce-changes': Cog,
+                'food-quality': Award, 'food-colour': Palette, 'reduce-changes': Cog,
                 'simplify-ops': Cog, 'extend-life': TrendingUp,
               };
               const initialNote = venue.trialNotes
@@ -4907,14 +4820,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         {sfld('Fryer count', fc ? String(fc) : null)}
                         {sfld('Current price / L', venue.currentPricePerLitre ? fmt$(venue.currentPricePerLitre) : null)}
                         {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
-                        {/* Row 4: Vol bracket | Prev weekly avg | Trial weekly avg */}
+                        {/* Row 4: Vol bracket | Pre-trial weekly avg | Trial weekly avg */}
                         {sfld('Vol bracket', volBadge)}
-                        {sfld('Prev weekly avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
+                        {sfld('Pre-trial weekly avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
                         {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
-                        {/* Row 5: Total trial litres | Prev oil lifespan | Trial oil lifespan */}
+                        {/* Row 5: Total trial litres | Pre-trial oil lifespan | Trial oil lifespan */}
                         {sfld('Total trial litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
-                        {sfld('Prev oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                        {sfld('Trial oil lifespan', maxOilAge ? `${maxOilAge} days` : null)}
+                        {sfld('Pre-trial oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
+                        {sfld('Trial oil lifespan', maxOilLifespan ? `${maxOilLifespan} days` : null)}
                       </div>
                       {/* Row 6: Start / End / Duration — temporal context, visually separated */}
                       <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1.5px dashed #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
@@ -4990,61 +4903,36 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     }}>
                       {(compWklyAvg || liveTrialAvg !== null) ? (
                         !isDesktop ? (
-                          /* ── Mobile: transposed table with Weekly/Yearly grouping ── */
+                          /* ── Mobile: transposed table (metrics as rows) ── */
                           <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                               <thead>
                                 <tr style={{ background: '#f8fafc' }}>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}></th>
-                                  <th style={{ padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#64748b', textAlign: 'center', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Metric</th>
+                                  <th style={{ padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#64748b', textAlign: 'center', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9' }}>
                                     {compOilBadge ? <span style={{ display: 'inline-block', transform: 'scale(0.85)', transformOrigin: 'center' }}>{compOilBadge}</span> : <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{compOilName || 'Current'}</span>}
                                   </th>
-                                  <th style={{ padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#64748b', textAlign: 'center', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                  <th style={{ padding: '6px 8px', fontSize: '9px', fontWeight: '700', color: '#1d4ed8', textAlign: 'center', borderBottom: '1px solid #e2e8f0', background: '#eff6ff' }}>
                                     {trialOilBadge ? <span style={{ display: 'inline-block', transform: 'scale(0.85)', transformOrigin: 'center' }}>{trialOilBadge}</span> : <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{trialOilName || 'Trial'}</span>}
                                   </th>
-                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Diff</th>
+                                  <th style={{ padding: '8px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>Difference</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {/* Price */}
-                                <tr style={{ background: 'white' }}>
-                                  <td style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '600', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>Price / L</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{currentPrice ? fmt$(currentPrice) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialPrice ? fmt$(trialPrice) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', textAlign: 'right', borderBottom: '1px solid #f1f5f9', color: '#94a3b8', fontSize: '11px' }}>—</td>
-                                </tr>
-                                {/* Weekly group header */}
-                                <tr style={{ background: '#f8fafc' }}>
-                                  <td colSpan={4} style={{ padding: '4px 10px', fontSize: '8px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.8px', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #e2e8f0' }}>Weekly</td>
-                                </tr>
-                                <tr style={{ background: 'white' }}>
-                                  <td style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>Litres</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWklyAvg ? fmtL(compWklyAvg) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', borderBottom: '1px solid #f1f5f9', color: weekLitres != null ? (weekLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' }}>{weekLitres != null ? `${Math.round(Math.abs(weekLitres)).toLocaleString('en-AU')} L` : '—'}</td>
-                                </tr>
-                                <tr style={{ background: '#fafafa' }}>
-                                  <td style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>Cost</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compWeeklySpend != null ? fmt$nd(compWeeklySpend) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialWeeklySpend != null ? fmt$nd(trialWeeklySpend) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', borderBottom: '1px solid #f1f5f9', color: weekSpend != null ? (weekSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' }}>{weekSpend != null ? `$${Math.round(Math.abs(weekSpend)).toLocaleString('en-AU')}` : '—'}</td>
-                                </tr>
-                                {/* Yearly group header */}
-                                <tr style={{ background: '#f8fafc' }}>
-                                  <td colSpan={4} style={{ padding: '4px 10px', fontSize: '8px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.8px', borderBottom: '1px solid #e2e8f0', borderTop: '1px solid #e2e8f0' }}>Yearly</td>
-                                </tr>
-                                <tr style={{ background: 'white' }}>
-                                  <td style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>Litres</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{compYearlyLitres ? fmtL(compYearlyLitres) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>{trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', borderBottom: '1px solid #f1f5f9', color: annualLitres != null ? (annualLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' }}>{annualLitres != null ? `${Math.round(Math.abs(annualLitres)).toLocaleString('en-AU')} L` : '—'}</td>
-                                </tr>
-                                <tr style={{ background: '#fafafa' }}>
-                                  <td style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b' }}>Cost</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right' }}>{compYearlySpend != null ? fmt$nd(compYearlySpend) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right' }}>{trialYearlySpend != null ? fmt$nd(trialYearlySpend) : '—'}</td>
-                                  <td style={{ padding: '7px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', color: annualSpend != null ? (annualSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' }}>{annualSpend != null ? `$${Math.round(Math.abs(annualSpend)).toLocaleString('en-AU')}` : '—'}</td>
-                                </tr>
+                                {[
+                                  { label: 'Price / L',   comp: currentPrice ? fmt$(currentPrice) : '—',       trial: trialPrice ? fmt$(trialPrice) : '—',                              diff: null, diffColor: null },
+                                  { label: 'Litres / Wk', comp: compWklyAvg ? fmtL(compWklyAvg) : '—',          trial: liveTrialAvg !== null ? fmtL(liveTrialAvg) : '—',                 diff: weekLitres != null ? `${Math.round(Math.abs(weekLitres)).toLocaleString('en-AU')} L` : '—',   diffColor: weekLitres != null ? (weekLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Litres / Yr', comp: compYearlyLitres ? fmtL(compYearlyLitres) : '—', trial: trialYearlyLitres !== null ? fmtL(trialYearlyLitres) : '—',      diff: annualLitres != null ? `${Math.round(Math.abs(annualLitres)).toLocaleString('en-AU')} L` : '—', diffColor: annualLitres != null ? (annualLitres >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Wk',   comp: compWeeklySpend != null ? fmt$nd(compWeeklySpend) : '—', trial: trialWeeklySpend != null ? fmt$nd(trialWeeklySpend) : '—',   diff: weekSpend != null ? `$${Math.round(Math.abs(weekSpend)).toLocaleString('en-AU')}` : '—', diffColor: weekSpend != null ? (weekSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                  { label: 'Cost / Yr',   comp: compYearlySpend != null ? fmt$nd(compYearlySpend) : '—', trial: trialYearlySpend != null ? fmt$nd(trialYearlySpend) : '—',   diff: annualSpend != null ? `$${Math.round(Math.abs(annualSpend)).toLocaleString('en-AU')}` : '—', diffColor: annualSpend != null ? (annualSpend >= 0 ? '#059669' : '#dc2626') : '#94a3b8' },
+                                ].map((row, i, arr) => (
+                                  <tr key={row.label} style={{ background: i % 2 === 0 ? '#fafafa' : 'white' }}>
+                                    <td style={{ padding: '8px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.label}</td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.comp}</td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'right', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{row.trial}</td>
+                                    <td style={{ padding: '8px 10px', fontSize: '11px', fontWeight: '700', textAlign: 'right', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none', color: row.diffColor || '#94a3b8' }}>{row.diff ?? '—'}</td>
+                                  </tr>
+                                ))}
                               </tbody>
                             </table>
                           </div>
@@ -5122,20 +5010,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <div style={{ paddingLeft: isDesktop ? '28px' : '0', paddingTop: isDesktop ? '0' : '4px', paddingBottom: isDesktop ? '0' : '20px', marginBottom: isDesktop ? '0' : '20px', borderBottom: isDesktop ? 'none' : '1px solid #f0f4f8', order: isDesktop ? 0 : 0 }}>
                       {rSecLabel('Trial Goals Achieved', 0)}
                       {(() => {
-                        // Only show goals that were explicitly ticked in the assessment screen
-                        const displayGoals = achievedGoals;
+                        // Merge start goals + achieved goals so achieved goals always show
+                        // even when no goals were set at trial start
+                        const displayGoals = [...new Set([...trialGoalsList, ...achievedGoals])];
                         return displayGoals.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                           {displayGoals.map(g => {
                             const GoalIcon = GOAL_ICONS[g];
+                            const achieved = achievedGoals.includes(g);
                             return (
                               <div key={g} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '7px', background: '#f0f7ff', border: '1px solid #dbeafe' }}>
                                 <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                   {GoalIcon ? <GoalIcon size={14} color="#1a428a" /> : null}
                                 </div>
                                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#1e3a6e', flex: 1 }}>{GOAL_LABELS[g] || g}</span>
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, background: '#f59e0b', border: '2px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Check size={11} color="white" strokeWidth={3} />
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, background: achieved ? '#f59e0b' : 'transparent', border: achieved ? '2px solid #f59e0b' : '2px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {achieved && <Check size={11} color="white" strokeWidth={3} />}
                                 </div>
                               </div>
                             );
@@ -5152,12 +5042,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     const hasAssessment = false;
 
                     const parseSafe = (str) => { try { return str ? JSON.parse(str) : {}; } catch (e) { return {}; } };
-                    const s1 = parseSafe(venue.insightOilLongevity);
-                    const s2 = parseSafe(venue.insightTempObservations);
-                    const s3 = parseSafe(venue.insightFoodQuality);
-                    const s4 = parseSafe(venue.insightTraining);
-                    const s5 = parseSafe(venue.insightEngagement);
-                    const s7 = parseSafe(venue.insightRecommendations);
+                    const tpmD  = parseSafe(venue.insightTpmPerformance);
+                    const oilD  = parseSafe(venue.insightOilLongevity);
+                    const tmpD  = parseSafe(venue.insightTempObservations);
+                    const mgmtD = parseSafe(venue.insightOilManagement);
+                    const fqD   = parseSafe(venue.insightFoodQuality);
+                    const ovrD  = parseSafe(venue.insightRecommendations);
 
                     // Stat band: prominent computed numbers
                     const rStatBand = (stats, bg, border) => (
@@ -5183,19 +5073,46 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     // maxTPM, avgTPM, minTPM, maxOilAge, avgOilAge, avgTempVar, tpmColor
 
                     const quadrants = [
-                      { icon: Activity,      iconColor: '#1a428a', title: 'Oil Longevity',
-                        fields: [['TPM Performance', s1.tpmPerformance], ['Lifespan vs Competitor', s1.lifespanVsCompetitor], ['Top-up Frequency', s1.topUpFreqVsCompetitor]] },
-                      { icon: Flame,         iconColor: '#f97316', title: 'Temperature Control',
-                        fields: [['Set vs Actual', s2.setVsActual], ['Calibration', s2.calibrationNeeded], ['Recovery Speed', s2.tempRecovery]] },
-                      { icon: Award,         iconColor: '#f59e0b', title: 'Food Quality',
-                        fields: [['Taste', s3.taste], ['Texture', s3.texture], ['Appearance', s3.appearance]] },
-                      { icon: BookOpen,      iconColor: '#16a34a', title: 'Training & Education',
-                        fields: [['Topics Covered', (s4.topicsCovered || []).join(', ') || null], ['Interested in Testo', s7.interestedInTesto], ['Interested in FrySmart', s7.interestedInFrySmart]] },
-                      { icon: MessageSquare, iconColor: '#7c3aed', title: 'Feedback & Engagement',
-                        fields: [['Chef Feedback', s5.chefFeedback], ['Staff Engagement', s5.staffEngagement], ['Management Buy-in', s5.overallReception]] },
-                      { icon: TrendingUp,    iconColor: '#16a34a', title: 'Value Demonstrated',
-                        fields: [['Cost Savings', s7.costSavings], ['Oil Quality', s7.qualityGains], ['Operational Efficiency', s7.operationalEfficiency]] },
-                    ].filter(q => q.fields.some(([,v]) => v));
+                      {
+                        icon: Activity, iconColor: '#1a428a', title: 'TPM Performance',
+                        stats: (maxTPM != null || avgTPM != null || minTPM != null) ? rStatBand([
+                          ['Peak TPM', maxTPM, tpmColor(maxTPM)],
+                          ['Avg TPM', avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
+                          ['Min TPM', minTPM, tpmColor(minTPM)],
+                        ], '#f0f4ff', '#e0e7ff') : null,
+                        fields: [['TPM Trends', tpmD.trends], ['Change Patterns', tpmD.changePatterns]],
+                      },
+                      {
+                        icon: Droplets, iconColor: '#0ea5e9', title: 'Oil Longevity',
+                        stats: (maxOilAge != null || avgOilAge != null) ? rStatBand([
+                          ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
+                          ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
+                        ], '#f0f9ff', '#e0f2fe') : null,
+                        fields: [['Lifespan vs Competitor', oilD.benchmark], ['Top-up Frequency', oilD.topUpFreq]],
+                      },
+                      {
+                        icon: Flame, iconColor: '#f97316', title: 'Temperature Control',
+                        stats: avgTempVar != null ? rStatBand([
+                          ['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626'],
+                        ], '#fff7ed', '#fed7aa') : null,
+                        fields: [['Set vs Actual', tmpD.setVsActual], ['Calibration', tmpD.calibration]],
+                      },
+                      {
+                        icon: Cog, iconColor: '#64748b', title: 'Oil Management',
+                        stats: null,
+                        fields: [['Training & Education', mgmtD.staffTraining], ['Value Demonstrated', mgmtD.currentPractice]],
+                      },
+                      {
+                        icon: Award, iconColor: '#f59e0b', title: 'Food Quality',
+                        stats: null,
+                        fields: [['Taste & Texture', fqD.feedback], ['Visual', fqD.visual]],
+                      },
+                      {
+                        icon: Target, iconColor: '#8b5cf6', title: 'Next Steps',
+                        stats: null,
+                        fields: [['Interested in Testo', ovrD.recommendation], ['Interested in FrySmart', ovrD.nextVisit]],
+                      },
+                    ].filter(q => q.stats || q.fields.some(([,v]) => v));
 
                     return (
                       <>
@@ -5389,8 +5306,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       </button>
                     </div>
 
-                    {/* Metadata grid — 4 columns on desktop, 2 columns on mobile */}
-                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '14px 20px' }}>
+                    {/* Metadata grid — 4 columns, 2 rows */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px 20px' }}>
                       {[
                         { label: 'Type', value: typeBadge },
                         { label: 'Status', value: <TrialStatusBadge status={venue.trialStatus} /> },
@@ -5470,7 +5387,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
 
                     {/* Footer — created / last recording / last edited as small grey text */}
-                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8', display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: isDesktop ? '16px' : '6px', flexWrap: 'wrap' }}>
+                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f0f4f8', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                       {[
                         { label: 'Created', value: trialCreatedDate ? displayDate(trialCreatedDate) : null },
                         { label: 'Last recording', value: lastRecDate ? displayDate(lastRecDate) : null },
@@ -6002,39 +5919,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         />
       )}
 
-      {trialEndedVenue && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '28px 24px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center', position: 'relative' }}>
-            {/* X close button */}
-            <button
-              onClick={() => setTrialEndedVenue(null)}
-              style={{ position: 'absolute', top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', lineHeight: 1 }}
-            >
-              ✕
-            </button>
-            <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <CheckCircle2 size={26} color="#059669" />
-            </div>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', marginBottom: '6px' }}>Trial ended</div>
-            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>{trialEndedVenue.name}</div>
-            <button
-              onClick={() => {
-                const v = trialEndedVenue;
-                setTrialEndedVenue(null);
-                setManageVenueId(v.id);
-                setManageSubTab('calendar');
-                setActiveTab('manage');
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.color = 'white'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#1f2937'; }}
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #1f2937', cursor: 'pointer', background: '#f1f5f9', color: '#1f2937', fontSize: '13px', fontWeight: '700', transition: 'background 0.15s, color 0.15s' }}
-            >
-              Finalise trial details now
-            </button>
-          </div>
-        </div>
-      )}
-
       {decisionModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
@@ -6114,7 +5998,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* Manage trial — all tabs */}
                 <button className="bdm-row-btn" onClick={() => { close(); setManageVenueId(rv.id); setActiveTab('manage'); }}>
-                  <ClipboardList size={14} /> View trial
+                  <ClipboardList size={14} /> Manage trial
                 </button>
                 {/* Pipeline: Start trial */}
                 {rt === 'pipeline' && (
