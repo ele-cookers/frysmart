@@ -3726,10 +3726,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     /* Mobile fullscreen: CSS rotation to landscape (works on iOS) */
                     (!isDesktop && showTrialTableModal) ? (
                       <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999, background: '#1a428a', overflow: 'hidden' }}>
+                        {/* Close button in portrait coords: top-right → appears top-left in landscape view */}
+                        <button onClick={() => setShowTrialTableModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10000, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px', padding: '8px 14px', borderRadius: '8px', lineHeight: '1' }}>✕</button>
                         <div style={{ position: 'absolute', top: '50%', left: '50%', width: '100vh', height: '100vw', transform: 'translate(-50%, -50%) rotate(90deg)', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a428a', flexShrink: 0 }}>
+                          <div style={{ padding: '10px 16px', background: '#1a428a', flexShrink: 0 }}>
                             <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Trial Results</div>
-                            <button onClick={() => setShowTrialTableModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '22px', lineHeight: '1', padding: '4px 8px' }}>✕</button>
                           </div>
                           <div style={{ flex: 1, background: 'white', overflowX: 'auto', overflowY: 'auto' }}>
                     <div style={{ overflowX: 'auto' }}>
@@ -4129,10 +4130,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         )}
                         {showFryerStatsModal && !isDesktop && (
                           <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999, background: '#1a428a', overflow: 'hidden' }}>
+                            {/* Close button in portrait coords: top-right → appears top-left in landscape */}
+                            <button onClick={() => setShowFryerStatsModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10000, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px', padding: '8px 14px', borderRadius: '8px', lineHeight: '1' }}>✕</button>
                             <div style={{ position: 'absolute', top: '50%', left: '50%', width: '100vh', height: '100vw', transform: 'translate(-50%, -50%) rotate(90deg)', display: 'flex', flexDirection: 'column' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a428a', flexShrink: 0 }}>
+                              <div style={{ padding: '10px 16px', background: '#1a428a', flexShrink: 0 }}>
                                 <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Fryer Stats</div>
-                                <button onClick={() => setShowFryerStatsModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '22px', lineHeight: '1', padding: '4px 8px' }}>✕</button>
                               </div>
                               <div style={{ flex: 1, background: 'white', overflowX: 'auto', overflowY: 'auto' }}>
                                 {fryerStatsTable}
