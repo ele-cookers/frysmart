@@ -1091,6 +1091,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [custCodeModal, setCustCodeModal] = useState(null); // venue object for cust code popup
   const [rowActionVenue, setRowActionVenue] = useState(null); // { venue, tabType } for pipeline row-click popup
   const [showTrialTableModal, setShowTrialTableModal] = useState(false); // mobile: trial results table full-screen modal
+  const [showFryerStatsModal, setShowFryerStatsModal] = useState(false); // mobile: fryer stats landscape modal
+  const [insightEditSection, setInsightEditSection] = useState(null); // mobile: which assessment section is in edit mode
   // ── Column toggle state ──
   const BDM_TRIAL_COLS = [
     { key: 'name', label: 'Venue Name', locked: true },
@@ -3733,7 +3735,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                   </div>
                   {!isDesktop && !showTrialTableModal ? (
-                    <button onClick={() => { setShowTrialTableModal(true); screen?.orientation?.lock?.('landscape').catch(()=>{}); }} style={{
+                    <button onClick={() => setShowTrialTableModal(true)} style={{
                       width: '100%', padding: '14px 16px', borderRadius: '10px',
                       background: '#eff6ff', border: '1.5px solid #bfdbfe',
                       cursor: 'pointer', display: 'flex', alignItems: 'center',
@@ -3745,17 +3747,25 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   ) : (
                     <div style={(!isDesktop && showTrialTableModal) ? {
                       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                      zIndex: 9999, background: 'rgba(0,0,0,0.88)',
-                      display: 'flex', flexDirection: 'column'
+                      zIndex: 9999, background: 'rgba(15,23,42,0.65)',
                     } : {}}>
                       {(!isDesktop && showTrialTableModal) && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#1a428a', flexShrink: 0 }}>
-                          <div style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>Trial Results</div>
-                          <button onClick={() => { setShowTrialTableModal(false); screen?.orientation?.unlock?.(); }} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '22px', lineHeight: '1', padding: '4px 8px' }}>✕</button>
-                        </div>
+                        <button onClick={() => setShowTrialTableModal(false)} style={{
+                          position: 'absolute', bottom: '20px', right: '16px', zIndex: 10000,
+                          background: 'rgba(255,255,255,0.95)', border: 'none',
+                          color: '#1a428a', fontWeight: '700', fontSize: '12px',
+                          padding: '8px 20px', borderRadius: '8px', cursor: 'pointer',
+                          letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                        }}>Close</button>
                       )}
-                    <div style={{ overflowX: 'auto', ...( (!isDesktop && showTrialTableModal) ? { flex: 1, background: 'white', overflowY: 'auto' } : {}) }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
+                    <div style={(!isDesktop && showTrialTableModal) ? {
+                      position: 'absolute', top: '50%', left: '50%',
+                      width: '100vh', height: '100vw',
+                      transform: 'translate(-50%, -50%) rotate(90deg)',
+                      background: 'white', overflowX: 'auto', overflowY: 'auto',
+                      boxSizing: 'border-box', padding: '6px 0',
+                    } : { overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: (!isDesktop && showTrialTableModal) ? '9px' : '11px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
                         <col style={{ width: '50px' }} />  {/* Day */}
@@ -4026,12 +4036,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     const borderL = '2px solid #e2e8f0';
 
-                    return (
-                      <div style={{ marginTop: '20px' }}>
-                        <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Fryer Stats</div>
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                    const fryerStatsTable = (
+                      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                             <thead>
                               {/* Group header row */}
                               <tr>
@@ -4078,6 +4084,42 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               ))}
                             </tbody>
                           </table>
+                    );
+
+                    return (
+                      <div style={{ marginTop: '20px' }}>
+                        <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937' }}>Fryer Stats</div>
+                          {!isDesktop && (
+                            <button onClick={() => setShowFryerStatsModal(true)} style={{
+                              padding: '5px 12px', background: '#eff6ff', border: '1.5px solid #bfdbfe',
+                              borderRadius: '7px', fontSize: '11px', fontWeight: '600', color: '#1a428a', cursor: 'pointer'
+                            }}>Full screen</button>
+                          )}
+                        </div>
+                        {!isDesktop && showFryerStatsModal && (
+                          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.65)' }}>
+                            <button onClick={() => setShowFryerStatsModal(false)} style={{
+                              position: 'absolute', bottom: '20px', right: '16px', zIndex: 10000,
+                              background: 'rgba(255,255,255,0.95)', border: 'none',
+                              color: '#1a428a', fontWeight: '700', fontSize: '12px',
+                              padding: '8px 20px', borderRadius: '8px', cursor: 'pointer',
+                              letterSpacing: '0.3px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                            }}>Close</button>
+                            <div style={{
+                              position: 'absolute', top: '50%', left: '50%',
+                              width: '100vh', height: '100vw',
+                              transform: 'translate(-50%, -50%) rotate(90deg)',
+                              background: 'white', overflowX: 'auto', overflowY: 'auto',
+                              boxSizing: 'border-box', padding: '12px 8px',
+                            }}>
+                              {fryerStatsTable}
+                            </div>
+                          </div>
+                        )}
+                        <div style={{ overflowX: 'auto' }}>
+                          {fryerStatsTable}
                         </div>
                       </div>
                     );
@@ -4122,20 +4164,66 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
 
-              // Dropdown in edit mode, read-only chip in view mode
+              // Per-section edit helpers
+              const isSectionEditing = (sectionKey) => isDesktop ? insightEditMode : insightEditSection === sectionKey;
+              const handleSaveAssessment = async () => {
+                setInsightSaving(true);
+                await updateVenue(venue.id, {
+                  insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns }),
+                  insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq }),
+                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration }),
+                  insightOilManagement:    JSON.stringify({ staffTraining: insightForm.oilMgmtStaffTraining, currentPractice: insightForm.oilMgmtCurrentPractice }),
+                  insightFoodQuality:      JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual }),
+                  insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit }),
+                });
+                setInsightSaving(false);
+              };
+
+              // mkCard: wraps an assessment card with mobile tap-to-edit + per-section Save/Cancel
+              const mkCard = (sectionKey, cardStyle, children) => {
+                const editing = isSectionEditing(sectionKey);
+                return (
+                  <div style={{ ...cardStyle, cursor: !isDesktop && !editing ? 'pointer' : 'default', position: 'relative' }}
+                    onClick={() => { if (!isDesktop && !editing) setInsightEditSection(sectionKey); }}>
+                    {children}
+                    {!isDesktop && editing && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                        <button onClick={e => { e.stopPropagation(); setInsightEditSection(null); }}
+                          style={{ flex: 1, padding: '9px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
+                        <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(); setInsightEditSection(null); setSuccessMsg('Assessment saved'); }}
+                          style={{ flex: 1, padding: '9px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
+                          {insightSaving ? 'Saving…' : 'Save'}
+                        </button>
+                      </div>
+                    )}
+                    {!isDesktop && !editing && (
+                      <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Tap to edit</div>
+                    )}
+                  </div>
+                );
+              };
+
+              // Dropdown in edit mode, color-coded chip in view mode
               const selS = { width: '100%', padding: '8px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white', cursor: 'pointer', boxSizing: 'border-box' };
-              const mkSel = (fieldKey, opts, accentColor) => {
-                if (!insightEditMode) {
-                  const val = insightForm[fieldKey];
+              const mkSel = (fieldKey, opts, accentColor, sectionKey) => {
+                const val = insightForm[fieldKey];
+                if (!isSectionEditing(sectionKey)) {
+                  const idx = opts.indexOf(val);
+                  let bg = '#f8fafc', textColor = val ? '#1f2937' : '#cbd5e1';
+                  if (val && idx !== -1) {
+                    if (idx === 0) { bg = '#f0fdf4'; textColor = '#16a34a'; }
+                    else if (idx === opts.length - 1) { bg = '#fef2f2'; textColor = '#dc2626'; }
+                    else { bg = '#fffbeb'; textColor = '#d97706'; }
+                  }
                   return (
-                    <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: val ? '600' : '400', color: val ? '#1f2937' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: val ? '600' : '400', color: textColor, background: bg, border: '1.5px solid transparent', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
                       {val || 'Not recorded'}
                     </div>
                   );
                 }
                 return (
-                  <select style={{ ...selS, color: insightForm[fieldKey] ? '#374151' : '#94a3b8' }}
-                    value={insightForm[fieldKey]}
+                  <select style={{ ...selS, color: val ? '#374151' : '#94a3b8' }}
+                    value={val}
                     onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
                     onFocus={e => { e.target.style.borderColor = accentColor; }}
                     onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
@@ -4149,20 +4237,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Assessment</div>
-                    {!insightEditMode && (
+                    {isDesktop && !insightEditMode && (
                       <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
                         Edit Assessment
                       </button>
                     )}
                   </div>
                   <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>
-                    {insightEditMode ? 'Fill in each section — your BDM insights for this trial.' : 'Saved assessment — tap Edit to make changes.'}
+                    {isDesktop
+                      ? (insightEditMode ? 'Fill in each section — your BDM insights for this trial.' : 'Saved assessment — tap Edit to make changes.')
+                      : 'Tap a section to edit.'}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
                     {/* ── TPM Performance ── */}
-                    <div style={qCard}>
+                    {mkCard('tpm', qCard, (<>
                       {qHead(Activity, '#1a428a', 'TPM Performance')}
                       {(maxTPM != null || avgTPM != null || minTPM != null) && statBand([
                         ['Peak TPM', maxTPM, tpmColor(maxTPM)],
@@ -4174,17 +4264,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         'Stable and low — good oil performance',
                         'Gradual rise — typical oil degradation',
                         'Inconsistent — volatile readings',
-                      ], '#1a428a')}
+                      ], '#1a428a', 'tpm')}
                       {subLbl('Change Patterns')}
                       {mkSel('tpmChangePatterns', [
                         'Regular scheduled changes',
                         'Mostly reactive, minimal schedule',
                         'Entirely reactive — no schedule',
-                      ], '#1a428a')}
-                    </div>
+                      ], '#1a428a', 'tpm')}
+                    </>))}
 
                     {/* ── Oil Longevity ── */}
-                    <div style={qCard}>
+                    {mkCard('oil', qCard, (<>
                       {qHead(Droplets, '#0ea5e9', 'Oil Longevity')}
                       {(maxOilAge != null || avgOilAge != null) && statBand([
                         ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
@@ -4195,17 +4285,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         'Longer than competitor oil',
                         'On par with competitor oil',
                         'Shorter than competitor oil',
-                      ], '#0ea5e9')}
+                      ], '#0ea5e9', 'oil')}
                       {subLbl('Top-up Frequency vs Competitor')}
                       {mkSel('oilTopUpFreq', [
                         'Fewer top-ups needed',
                         'About the same',
                         'More top-ups needed',
-                      ], '#0ea5e9')}
-                    </div>
+                      ], '#0ea5e9', 'oil')}
+                    </>))}
 
                     {/* ── Temperature Control ── */}
-                    <div style={qCard}>
+                    {mkCard('temp', qCard, (<>
                       {qHead(Flame, '#f97316', 'Temperature Control')}
                       {avgTempVar != null
                         ? statBand([['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626']], '#fff7ed', '#fed7aa')
@@ -4216,70 +4306,69 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         'Well calibrated',
                         'Minor variance',
                         'Significant variance',
-                      ], '#f97316')}
+                      ], '#f97316', 'temp')}
                       {subLbl('Calibration')}
                       {mkSel('tempCalibration', [
                         'No calibration needed',
                         'Minor adjustment recommended',
                         'Professional service required',
-                      ], '#f97316')}
-                    </div>
+                      ], '#f97316', 'temp')}
+                    </>))}
 
                     {/* ── Oil Management ── */}
-                    <div style={qCard}>
+                    {mkCard('mgmt', qCard, (<>
                       {qHead(Cog, '#64748b', 'Oil Management')}
                       {subLbl('Training & Education Provided')}
                       {mkSel('oilMgmtStaffTraining', [
                         'Yes',
                         'No',
-                      ], '#64748b')}
+                      ], '#64748b', 'mgmt')}
                       {subLbl('Value Demonstrated During Trial')}
                       {mkSel('oilMgmtCurrentPractice', [
                         'Yes — clear savings identified',
                         'Potentially — further data needed',
                         'Not yet clear',
-                      ], '#64748b')}
-                    </div>
+                      ], '#64748b', 'mgmt')}
+                    </>))}
 
                     {/* ── Food Quality ── */}
-                    <div style={qCard}>
+                    {mkCard('food', qCard, (<>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
                       {subLbl('Taste & Texture')}
                       {mkSel('foodQualityFeedback', [
                         'Improved',
                         'Same',
                         'Worse',
-                      ], '#f59e0b')}
+                      ], '#f59e0b', 'food')}
                       {subLbl('Visual')}
                       {mkSel('foodQualityVisual', [
                         'Improved',
                         'Same',
                         'Worse',
-                      ], '#f59e0b')}
-                    </div>
+                      ], '#f59e0b', 'food')}
+                    </>))}
 
                     {/* ── Next Steps ── */}
-                    <div style={qCard}>
+                    {mkCard('nextsteps', qCard, (<>
                       {qHead(Target, '#8b5cf6', 'Next Steps')}
                       {subLbl('Interested in Testo')}
                       {mkSel('overallRecommendation', [
                         'Yes',
                         'No',
                         'Not sure',
-                      ], '#8b5cf6')}
+                      ], '#8b5cf6', 'nextsteps')}
                       {subLbl('Interested in FrySmart')}
                       {mkSel('overallNextVisit', [
                         'Yes',
                         'No',
                         'Not sure',
-                      ], '#8b5cf6')}
-                    </div>
+                      ], '#8b5cf6', 'nextsteps')}
+                    </>))}
 
                   </div>
 
-                  {insightEditMode && (
+                  {isDesktop && insightEditMode && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                    {/* Cancel only shows if there's previously saved data to revert to */}
                     {(venue.insightTpmPerformance || venue.insightOilLongevity || venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations) && (
                       <button onClick={() => setInsightEditMode(false)} style={{ padding: '8px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
                         Cancel
@@ -4287,20 +4376,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     )}
                     <button
                       disabled={insightSaving}
-                      onClick={async () => {
-                        setInsightSaving(true);
-                        await updateVenue(venue.id, {
-                          insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns }),
-                          insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq }),
-                          insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration }),
-                          insightOilManagement:    JSON.stringify({ staffTraining: insightForm.oilMgmtStaffTraining, currentPractice: insightForm.oilMgmtCurrentPractice }),
-                          insightFoodQuality:      JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual }),
-                          insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit }),
-                        });
-                        setInsightSaving(false);
-                        setInsightEditMode(false);
-                        setSuccessMsg('Assessment saved');
-                      }}
+                      onClick={async () => { await handleSaveAssessment(); setInsightEditMode(false); setSuccessMsg('Assessment saved'); }}
                       style={{ padding: '8px 22px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
                     >
                       {insightSaving ? 'Saving…' : 'Save Assessment'}
