@@ -12,7 +12,8 @@ import {
   ArrowDown, Filter,
   Edit3, Pencil, Calendar, Save, ChevronRight, BarChart3, RotateCcw, FileText,
   Star, MessageSquare, Target,
-  DollarSign, Droplets, Palette, Cog, TrendingUp, TrendingDown, Award, Flame, Activity
+  DollarSign, Droplets, Palette, Cog, TrendingUp, TrendingDown, Award, Flame, Activity,
+  Sparkles, BookOpen
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
@@ -1071,12 +1072,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   const [manageNoteText, setManageNoteText] = useState(''); // Notes textarea in Notes tab
   const [manageNoteSaving, setManageNoteSaving] = useState(false);
   const [insightForm, setInsightForm] = useState({
-    tpmTrends: '', tpmChangePatterns: '', tpmAnomalies: '',
-    oilBenchmark: '', oilTopUpFreq: '', oilNotes: '',
-    tempSetVsActual: '', tempCalibration: '', tempOilImpact: '',
-    oilMgmtCurrentPractice: '', oilMgmtChangeSchedule: '', oilMgmtStaffTraining: '',
-    foodQualityFeedback: '', foodQualityVisual: '', foodQualityConsistency: '',
-    overallRecommendation: '', overallNextVisit: '', overallConversionRead: '',
+    // Section 1 — Oil Longevity
+    tpmPerformance: '', lifespanVsCompetitor: '', topUpFreqVsCompetitor: '',
+    // Section 2 — Temperature Control
+    setVsActual: '', calibrationNeeded: '', tempRecovery: '',
+    // Section 3 — Food Quality
+    taste: '', texture: '', appearance: '',
+    // Section 4 — Training & Education
+    topicsCovered: [],
+    // Section 5 — Feedback & Engagement
+    chefFeedback: '', staffEngagement: '', overallReception: '',
+    // Section 6 — Value Demonstrated
+    costSavings: '', qualityGains: '', operationalEfficiency: '',
+    // Section 7 — Next Steps & Conversion
+    interestedInTesto: '', interestedInFrySmart: '',
   }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
   const [insightEditMode, setInsightEditMode] = useState(true); // true = editing, false = viewing saved data
@@ -3848,6 +3857,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </table>
                     </div>
                     </div>
+                    </div>
                   )}
                 </div>
               );
@@ -4129,54 +4139,50 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             {/* ── TPM Chart ── */}
             {/* ── Trial Assessment tab ── */}
             {manageSubTab === 'assessment' && (() => {
-              // render helpers — called as functions (not JSX components) to avoid remounting inputs on keypress
-              const taS = {
-                width: '100%', minHeight: '42px', padding: '7px 10px',
-                border: '1.5px solid #e8edf2', borderRadius: '7px',
-                fontSize: '12px', color: '#374151', fontFamily: 'inherit',
-                fontWeight: '500', resize: 'vertical', outline: 'none',
-                boxSizing: 'border-box', lineHeight: '1.5', background: 'white',
-              };
-              const qCard = { background: 'white', border: '1.5px solid #e8edf2', borderRadius: '12px', padding: '14px 16px' };
-
-              const statBand = (stats, bg, border) => (
-                <div style={{ display: 'flex', background: bg, border: `1px solid ${border}`, borderRadius: '8px', marginBottom: '12px', overflow: 'hidden' }}>
-                  {stats.filter(([,v]) => v != null).map(([label, value, color], i) => (
-                    <div key={label} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${border}` : 'none' }}>
-                      <div style={{ fontSize: '20px', fontWeight: '800', color: color || '#374151', lineHeight: 1 }}>{value}</div>
-                      <div style={{ fontSize: '9px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '3px' }}>{label}</div>
-                    </div>
-                  ))}
-                </div>
-              );
-
-              const subLbl = (text) => (
-                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
-              );
-
+              const qCard = (bg, border) => ({ background: bg, border: `1.5px solid ${border}`, borderRadius: '12px', padding: '14px 16px' });
               const qHead = (Icon, iconColor, title) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
                   <Icon size={14} color={iconColor} strokeWidth={2.5} />
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{title}</span>
                 </div>
               );
-
-              // Per-section edit helpers
-              const isSectionEditing = (sectionKey) => isDesktop ? insightEditMode : insightEditSection === sectionKey;
-              const handleSaveAssessment = async () => {
-                setInsightSaving(true);
-                await updateVenue(venue.id, {
-                  insightTpmPerformance:   JSON.stringify({ trends: insightForm.tpmTrends, changePatterns: insightForm.tpmChangePatterns }),
-                  insightOilLongevity:     JSON.stringify({ benchmark: insightForm.oilBenchmark, topUpFreq: insightForm.oilTopUpFreq }),
-                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.tempSetVsActual, calibration: insightForm.tempCalibration }),
-                  insightOilManagement:    JSON.stringify({ staffTraining: insightForm.oilMgmtStaffTraining, currentPractice: insightForm.oilMgmtCurrentPractice }),
-                  insightFoodQuality:      JSON.stringify({ feedback: insightForm.foodQualityFeedback, visual: insightForm.foodQualityVisual }),
-                  insightRecommendations:  JSON.stringify({ recommendation: insightForm.overallRecommendation, nextVisit: insightForm.overallNextVisit }),
-                });
-                setInsightSaving(false);
+              const subLbl = (text) => (
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
+              );
+              const selS = {
+                width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px',
+                fontSize: '12px', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white',
+                cursor: 'pointer', boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
               };
-
-              // mkCard: wraps an assessment card with mobile tap-to-edit + per-section Save/Cancel
+              // isSectionEditing — desktop uses global insightEditMode; mobile uses per-section state
+              const isSectionEditing = (sectionKey) => isDesktop ? insightEditMode : insightEditSection === sectionKey;
+              // mkSel — edit: native select. View: frozen select-style field
+              const mkSel = (fieldKey, opts, accentColor, sectionKey) => {
+                const val = insightForm[fieldKey];
+                if (!isSectionEditing(sectionKey)) {
+                  return (
+                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', fontWeight: val ? '500' : '400', color: val ? '#1f2937' : '#94a3b8', fontStyle: val ? 'normal' : 'italic', background: 'white', boxSizing: 'border-box', minHeight: '34px' }}>
+                      {val || '— not yet assessed —'}
+                    </div>
+                  );
+                }
+                return (
+                  <select style={{ ...selS, color: val ? '#1f2937' : '#94a3b8' }}
+                    value={val} onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
+                    onFocus={e => { e.target.style.borderColor = accentColor; }}
+                    onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
+                    <option value="">— Select —</option>
+                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                );
+              };
+              // mkField — always visible
+              const mkField = (label, fieldKey, opts, accent, sectionKey) => (
+                <>{subLbl(label)}{mkSel(fieldKey, opts, accent, sectionKey)}</>
+              );
+              // mkCard — wraps a card with mobile tap-to-edit + per-section save button
               const mkCard = (sectionKey, cardStyle, children) => {
                 const editing = isSectionEditing(sectionKey);
                 return (
@@ -4186,9 +4192,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {!isDesktop && editing && (
                       <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
                         <button onClick={e => { e.stopPropagation(); setInsightEditSection(null); }}
-                          style={{ flex: 1, padding: '9px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>Cancel</button>
-                        <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(); setInsightEditSection(null); setSuccessMsg('Assessment saved'); }}
-                          style={{ flex: 1, padding: '9px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
+                          style={{ flex: 1, padding: '8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                          Cancel
+                        </button>
+                        <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(); setInsightEditSection(null); }}
+                          style={{ flex: 1, padding: '8px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
                           {insightSaving ? 'Saving…' : 'Save'}
                         </button>
                       </div>
@@ -4200,186 +4208,238 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 );
               };
 
-              // Dropdown in edit mode, color-coded chip in view mode
-              const selS = { width: '100%', padding: '8px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white', cursor: 'pointer', boxSizing: 'border-box' };
-              const mkSel = (fieldKey, opts, accentColor, sectionKey) => {
-                const val = insightForm[fieldKey];
-                if (!isSectionEditing(sectionKey)) {
-                  const idx = opts.indexOf(val);
-                  let bg = '#f8fafc', textColor = val ? '#1f2937' : '#cbd5e1';
-                  if (val && idx !== -1) {
-                    if (idx === 0) { bg = '#f0fdf4'; textColor = '#16a34a'; }
-                    else if (idx === opts.length - 1) { bg = '#fef2f2'; textColor = '#dc2626'; }
-                    else { bg = '#fffbeb'; textColor = '#d97706'; }
-                  }
-                  return (
-                    <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: val ? '600' : '400', color: textColor, background: bg, border: '1.5px solid transparent', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
-                      {val || 'Not recorded'}
-                    </div>
-                  );
-                }
-                return (
-                  <select style={{ ...selS, color: val ? '#374151' : '#94a3b8' }}
-                    value={val}
-                    onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
-                    onFocus={e => { e.target.style.borderColor = accentColor; }}
-                    onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
-                    <option value="">— Select —</option>
-                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                );
+              const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure'];
+
+              const ASSESS_GOAL_OPTIONS = [
+                { key: 'save-money',     label: 'Save money',          icon: DollarSign },
+                { key: 'reduce-waste',   label: 'Reduce oil waste',    icon: Droplets   },
+                { key: 'food-quality',   label: 'Better food quality', icon: Award      },
+                { key: 'food-colour',    label: 'Improve food colour', icon: Sparkles   },
+                { key: 'reduce-changes', label: 'Fewer fryer changes', icon: Cog        },
+                { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
+              ];
+
+              const hasExistingAssessment = !!(venue.insightOilLongevity || venue.insightEngagement || venue.insightTempObservations || venue.insightTraining || venue.insightFoodQuality || venue.insightRecommendations);
+              const handleSaveAssessment = async () => {
+                setInsightSaving(true);
+                const existingNotes = venue.trialNotes || '';
+                const notesLines = existingNotes.split('\n')
+                  .filter(l => !l.trim().startsWith('[GoalsAchieved:'))
+                  .filter(l => !l.trim().startsWith('[TrialFindings:'));
+                if (assessAchievedGoals.length > 0) notesLines.push(`[GoalsAchieved: ${assessAchievedGoals.join(', ')}]`);
+                if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
+                await updateVenue(venue.id, {
+                  insightOilLongevity:     JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
+                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded, tempRecovery: insightForm.tempRecovery }),
+                  insightFoodQuality:      JSON.stringify({ taste: insightForm.taste, texture: insightForm.texture, appearance: insightForm.appearance }),
+                  insightTraining:         JSON.stringify({ topicsCovered: insightForm.topicsCovered }),
+                  insightEngagement:       JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement, overallReception: insightForm.overallReception }),
+                  insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart }),
+                  trialNotes: notesLines.filter(Boolean).join('\n'),
+                });
+                setInsightSaving(false);
+                setInsightEditMode(false);
+                setSuccessMsg('Assessment saved');
               };
 
               return (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  {/* ── Header ── */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Assessment</div>
-                    {isDesktop && !insightEditMode && (
-                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1a428a', cursor: 'pointer' }}>
-                        Edit Assessment
+                    {isDesktop && (insightEditMode ? (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {hasExistingAssessment && (
+                          <button onClick={() => setInsightEditMode(false)} style={{ padding: '7px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        )}
+                        <button disabled={insightSaving} onClick={handleSaveAssessment}
+                          style={{ padding: '7px 20px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
+                          {insightSaving ? 'Saving…' : 'Save Assessment'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 14px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                        Edit
                       </button>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>
-                    {isDesktop
-                      ? (insightEditMode ? 'Fill in each section — your BDM insights for this trial.' : 'Saved assessment — tap Edit to make changes.')
-                      : 'Tap a section to edit.'}
+                    ))}
+                    {!isDesktop && <div style={{ fontSize: '11px', color: '#94a3b8' }}>Tap a section to edit</div>}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
-                    {/* ── TPM Performance ── */}
-                    {mkCard('tpm', qCard, (<>
-                      {qHead(Activity, '#1a428a', 'TPM Performance')}
-                      {(maxTPM != null || avgTPM != null || minTPM != null) && statBand([
-                        ['Peak TPM', maxTPM, tpmColor(maxTPM)],
-                        ['Avg TPM',  avgTPM != null ? avgTPM.toFixed(1) : null, tpmColor(avgTPM)],
-                        ['Min TPM',  minTPM, tpmColor(minTPM)],
-                      ], '#f0f4ff', '#e0e7ff')}
-                      {subLbl('TPM Trends')}
-                      {mkSel('tpmTrends', [
-                        'Stable and low — good oil performance',
-                        'Gradual rise — typical oil degradation',
-                        'Inconsistent — volatile readings',
-                      ], '#1a428a', 'tpm')}
-                      {subLbl('Change Patterns')}
-                      {mkSel('tpmChangePatterns', [
-                        'Regular scheduled changes',
-                        'Mostly reactive, minimal schedule',
-                        'Entirely reactive — no schedule',
-                      ], '#1a428a', 'tpm')}
+                    {/* ── 1. Oil Longevity — blue ── */}
+                    {mkCard('oil', qCard('#eff6ff', '#bfdbfe'), (<>
+                      {qHead(Activity, '#1a428a', 'Oil Longevity')}
+                      {mkField('TPM Performance', 'tpmPerformance', ['Acceptable', 'Above normal', 'Unstable'], '#1a428a', 'oil')}
+                      {mkField('Lifespan vs Competitor Oil', 'lifespanVsCompetitor', ['Longer', 'On par', 'Shorter', 'No comparable baseline'], '#1a428a', 'oil')}
+                      {mkField('Top-up Frequency vs Competitor', 'topUpFreqVsCompetitor', ['Fewer', 'Same', 'More', 'No comparable baseline'], '#1a428a', 'oil')}
                     </>))}
 
-                    {/* ── Oil Longevity ── */}
-                    {mkCard('oil', qCard, (<>
-                      {qHead(Droplets, '#0ea5e9', 'Oil Longevity')}
-                      {(maxOilAge != null || avgOilAge != null) && statBand([
-                        ['Max Lifespan', maxOilAge != null ? `${maxOilAge}d` : null, '#0ea5e9'],
-                        ['Avg Lifespan', avgOilAge != null ? `${Math.round(avgOilAge)}d` : null, '#0ea5e9'],
-                      ], '#f0f9ff', '#e0f2fe')}
-                      {subLbl('Lifespan vs Competitor Oil')}
-                      {mkSel('oilBenchmark', [
-                        'Longer than competitor oil',
-                        'On par with competitor oil',
-                        'Shorter than competitor oil',
-                      ], '#0ea5e9', 'oil')}
-                      {subLbl('Top-up Frequency vs Competitor')}
-                      {mkSel('oilTopUpFreq', [
-                        'Fewer top-ups needed',
-                        'About the same',
-                        'More top-ups needed',
-                      ], '#0ea5e9', 'oil')}
-                    </>))}
-
-                    {/* ── Temperature Control ── */}
-                    {mkCard('temp', qCard, (<>
+                    {/* ── 2. Temperature Control ── */}
+                    {mkCard('temp', qCard('#fff7ed', '#fddcbb'), (<>
                       {qHead(Flame, '#f97316', 'Temperature Control')}
-                      {avgTempVar != null
-                        ? statBand([['Avg Variance', `${avgTempVar.toFixed(1)}°`, avgTempVar === 0 ? '#059669' : avgTempVar <= 5 ? '#d97706' : '#dc2626']], '#fff7ed', '#fed7aa')
-                        : <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '12px' }}>No temperature data recorded yet.</div>
-                      }
-                      {subLbl('Set vs Actual')}
-                      {mkSel('tempSetVsActual', [
-                        'Well calibrated',
-                        'Minor variance',
-                        'Significant variance',
-                      ], '#f97316', 'temp')}
-                      {subLbl('Calibration')}
-                      {mkSel('tempCalibration', [
-                        'No calibration needed',
-                        'Minor adjustment recommended',
-                        'Professional service required',
-                      ], '#f97316', 'temp')}
+                      {mkField('Set vs Actual Temp', 'setVsActual', ['Well calibrated', 'Minor variance', 'Significant variance'], '#f97316', 'temp')}
+                      {mkField('Calibration Needed', 'calibrationNeeded', ['None', 'Minor adjustment', 'Professional service required'], '#f97316', 'temp')}
+                      {mkField('Fryer Recovery Speed', 'tempRecovery', ['Fast', 'Normal', 'Slow'], '#f97316', 'temp')}
                     </>))}
 
-                    {/* ── Oil Management ── */}
-                    {mkCard('mgmt', qCard, (<>
-                      {qHead(Cog, '#64748b', 'Oil Management')}
-                      {subLbl('Training & Education Provided')}
-                      {mkSel('oilMgmtStaffTraining', [
-                        'Yes',
-                        'No',
-                      ], '#64748b', 'mgmt')}
-                      {subLbl('Value Demonstrated During Trial')}
-                      {mkSel('oilMgmtCurrentPractice', [
-                        'Yes — clear savings identified',
-                        'Potentially — further data needed',
-                        'Not yet clear',
-                      ], '#64748b', 'mgmt')}
-                    </>))}
-
-                    {/* ── Food Quality ── */}
-                    {mkCard('food', qCard, (<>
+                    {/* ── 3. Food Quality ── */}
+                    {mkCard('food', qCard('#fffbeb', '#fde8a2'), (<>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
-                      {subLbl('Taste & Texture')}
-                      {mkSel('foodQualityFeedback', [
-                        'Improved',
-                        'Same',
-                        'Worse',
-                      ], '#f59e0b', 'food')}
-                      {subLbl('Visual')}
-                      {mkSel('foodQualityVisual', [
-                        'Improved',
-                        'Same',
-                        'Worse',
-                      ], '#f59e0b', 'food')}
+                      {mkField('Taste', 'taste', ['Improved', 'Same', 'Worse'], '#f59e0b', 'food')}
+                      {mkField('Texture', 'texture', ['Improved', 'Same', 'Worse'], '#f59e0b', 'food')}
+                      {mkField('Appearance', 'appearance', ['Improved', 'Same', 'Worse'], '#f59e0b', 'food')}
                     </>))}
 
-                    {/* ── Next Steps ── */}
-                    {mkCard('nextsteps', qCard, (<>
-                      {qHead(Target, '#8b5cf6', 'Next Steps')}
-                      {subLbl('Interested in Testo')}
-                      {mkSel('overallRecommendation', [
-                        'Yes',
-                        'No',
-                        'Not sure',
-                      ], '#8b5cf6', 'nextsteps')}
-                      {subLbl('Interested in FrySmart')}
-                      {mkSel('overallNextVisit', [
-                        'Yes',
-                        'No',
-                        'Not sure',
-                      ], '#8b5cf6', 'nextsteps')}
+                    {/* ── 4. Training & Education — teal ── */}
+                    {mkCard('training', qCard('#f0fdfa', '#99f6e4'), (<>
+                      {qHead(BookOpen, '#0d9488', 'Training & Education')}
+                      {subLbl('Topics Covered')}
+                      {isSectionEditing('training') ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '6px', marginTop: '6px' }}>
+                          {TRAINING_TOPICS.map(topic => {
+                            const checked = insightForm.topicsCovered.includes(topic);
+                            return (
+                              <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                                <input type="checkbox" checked={checked}
+                                  onChange={() => setInsightForm(f => ({ ...f, topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic] }))}
+                                  style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
+                                {topic}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '5px', marginTop: '6px' }}>
+                          {TRAINING_TOPICS.map(topic => {
+                            const checked = insightForm.topicsCovered.includes(topic);
+                            return (
+                              <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: checked ? '#0f766e' : '#94a3b8' }}>
+                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', flexShrink: 0, border: `2px solid ${checked ? '#0d9488' : '#d1d5db'}`, background: checked ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {checked && <Check size={8} color="white" strokeWidth={3} />}
+                                </div>
+                                <span style={{ fontWeight: checked ? '600' : '400' }}>{topic}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div style={{ borderTop: '1px solid #99f6e440', margin: '10px 0 4px' }} />
+                      {subLbl('Interested in')}
+                      {isSectionEditing('training') ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                          {[['interestedInTesto', 'Interested in Testo'], ['interestedInFrySmart', 'Interested in FrySmart']].map(([key, label]) => {
+                            const checked = insightForm[key] === 'Yes';
+                            return (
+                              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                                <input type="checkbox" checked={checked}
+                                  onChange={e => setInsightForm(f => ({ ...f, [key]: e.target.checked ? 'Yes' : 'No' }))}
+                                  style={{ width: '14px', height: '14px', accentColor: '#0d9488', cursor: 'pointer' }} />
+                                {label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                          {[['interestedInTesto', 'Testo'], ['interestedInFrySmart', 'FrySmart']].map(([key, label]) => {
+                            const val = insightForm[key];
+                            const yes = val === 'Yes';
+                            return (
+                              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: yes ? '#0f766e' : '#94a3b8' }}>
+                                <div style={{ width: '14px', height: '14px', borderRadius: '3px', border: `2px solid ${yes ? '#0d9488' : '#d1d5db'}`, background: yes ? '#0d9488' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  {yes && <Check size={8} color="white" strokeWidth={3} />}
+                                </div>
+                                <span style={{ fontWeight: yes ? '600' : '400' }}>{label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>))}
+
+                    {/* ── 5. Feedback & Engagement ── */}
+                    {mkCard('engagement', qCard('#f5f3ff', '#ddd6fe'), (<>
+                      {qHead(MessageSquare, '#7c3aed', 'Feedback & Engagement')}
+                      {mkField('Chef Feedback', 'chefFeedback', ['Positive', 'Neutral', 'Negative'], '#7c3aed', 'engagement')}
+                      {mkField('Staff Engagement Level', 'staffEngagement', ['High', 'Moderate', 'Low'], '#7c3aed', 'engagement')}
+                      {mkField('Management Buy-in', 'overallReception', ['Supportive', 'Neutral', 'Resistant'], '#7c3aed', 'engagement')}
+                    </>))}
+
+                    {/* ── 6. Value Demonstrated ── */}
+                    {mkCard('value', qCard('#f0fdf4', '#bbf7d0'), (<>
+                      {qHead(TrendingUp, '#16a34a', 'Value Demonstrated')}
+                      {mkField('Cost Savings', 'costSavings', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a', 'value')}
+                      {mkField('Oil Quality', 'qualityGains', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a', 'value')}
+                      {mkField('Operational Efficiency', 'operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a', 'value')}
+                    </>))}
+
+                    {/* ── Trial Outcome — white, full width ── */}
+                    {mkCard('outcome', { ...qCard('white', '#e2e8f0'), gridColumn: isDesktop ? '1 / -1' : undefined }, (<>
+                      {qHead(Award, '#f59e0b', 'Trial Outcome')}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
+                        {/* Goals */}
+                        <div>
+                          {subLbl('Goals Achieved')}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            {isSectionEditing('outcome') ? ASSESS_GOAL_OPTIONS.map(goal => {
+                              const GoalIcon = goal.icon;
+                              const achieved = assessAchievedGoals.includes(goal.key);
+                              return (
+                                <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
+                                  <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
+                                  <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
+                                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
+                                    {achieved && <Check size={8} color="white" strokeWidth={3} />}
+                                  </div>
+                                </div>
+                              );
+                            }) : (
+                              assessAchievedGoals.length > 0
+                                ? assessAchievedGoals.map(key => {
+                                    const goal = ASSESS_GOAL_OPTIONS.find(g => g.key === key);
+                                    if (!goal) return null;
+                                    const GoalIcon = goal.icon;
+                                    return (
+                                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
+                                        <GoalIcon size={13} color="#1a428a" />
+                                        <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
+                                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, background: '#f59e0b', border: '2px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                          <Check size={8} color="white" strokeWidth={3} />
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                : <span style={{ fontSize: '12px', color: '#cbd5e1', gridColumn: '1 / -1' }}>No goals recorded</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Findings */}
+                        <div>
+                          {subLbl('Trial Findings')}
+                          {isSectionEditing('outcome') ? (
+                            <textarea
+                              value={assessFindings}
+                              onChange={e => setAssessFindings(e.target.value)}
+                              placeholder="What went well? Any surprises? How did the chef react? Anything unusual with the oil or fryers worth noting?…"
+                              rows={6}
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
+                              onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
+                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
+                            />
+                          ) : (
+                            assessFindings
+                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: 'white' }}>{assessFindings}</p>
+                              : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '10px 12px', border: '1.5px solid #e8edf2', borderRadius: '8px' }}>— not yet assessed —</div>
+                          )}
+                        </div>
+                      </div>
                     </>))}
 
                   </div>
-
-                  {isDesktop && insightEditMode && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                    {(venue.insightTpmPerformance || venue.insightOilLongevity || venue.insightTempObservations || venue.insightOilManagement || venue.insightFoodQuality || venue.insightRecommendations) && (
-                      <button onClick={() => setInsightEditMode(false)} style={{ padding: '8px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                        Cancel
-                      </button>
-                    )}
-                    <button
-                      disabled={insightSaving}
-                      onClick={async () => { await handleSaveAssessment(); setInsightEditMode(false); setSuccessMsg('Assessment saved'); }}
-                      style={{ padding: '8px 22px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}
-                    >
-                      {insightSaving ? 'Saving…' : 'Save Assessment'}
-                    </button>
-                  </div>
-                  )}
                 </div>
               );
             })()}
