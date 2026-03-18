@@ -5861,7 +5861,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       {trialEndedVenue && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '28px 24px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '28px 24px', width: '100%', maxWidth: '360px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', textAlign: 'center', position: 'relative' }}>
+            {/* X close button */}
+            <button
+              onClick={() => setTrialEndedVenue(null)}
+              style={{ position: 'absolute', top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', lineHeight: 1 }}
+            >
+              ✕
+            </button>
             <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <CheckCircle2 size={26} color="#059669" />
             </div>
@@ -5869,20 +5876,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>{trialEndedVenue.name}</div>
             <button
               onClick={() => {
+                const v = trialEndedVenue;
                 setTrialEndedVenue(null);
-                setManageVenueId(trialEndedVenue.id);
+                setManageVenueId(v.id);
                 setManageSubTab('calendar');
                 setActiveTab('manage');
               }}
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: '#1f2937', color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '10px' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.color = 'white'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#1f2937'; }}
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #1f2937', cursor: 'pointer', background: '#f1f5f9', color: '#1f2937', fontSize: '13px', fontWeight: '700', transition: 'background 0.15s, color 0.15s' }}
             >
               Finalise trial details now
-            </button>
-            <button
-              onClick={() => setTrialEndedVenue(null)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'transparent', color: '#64748b', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
-            >
-              Close
             </button>
           </div>
         </div>
