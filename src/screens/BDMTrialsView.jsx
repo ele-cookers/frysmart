@@ -4078,7 +4078,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const subLbl = (text) => (
                 <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '10px', marginBottom: '4px' }}>{text}</div>
               );
-              // Icon + colour metadata for each answer option — shown as pill chips in view mode and edit pills
+              // Colour metadata per answer value — used for chips in view mode
               const OPTION_META = {
                 'Acceptable': { icon: '✓', color: '#059669' }, 'Above normal': { icon: '↑', color: '#f59e0b' }, 'Unstable': { icon: '⚠', color: '#ef4444' },
                 'Well calibrated': { icon: '✓', color: '#059669' }, 'Minor variance': { icon: '~', color: '#f59e0b' }, 'Significant variance': { icon: '!', color: '#ef4444' },
@@ -4093,35 +4093,40 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 'Evident': { icon: '✓', color: '#059669' }, 'Partially evident': { icon: '~', color: '#f59e0b' }, 'Not evident': { icon: '✗', color: '#ef4444' }, 'N/A': { icon: '—', color: '#94a3b8' },
                 'Yes': { icon: '✓', color: '#059669' }, 'No': { icon: '✗', color: '#ef4444' }, 'Not sure': { icon: '?', color: '#f59e0b' },
               };
+              const selS = {
+                width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px',
+                fontSize: '12px', fontFamily: 'inherit', fontWeight: '500', outline: 'none', background: 'white',
+                cursor: 'pointer', boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
+              };
+              // mkSel — edit: native select. View: coloured chip (hidden if empty)
               const mkSel = (fieldKey, opts, accentColor) => {
                 const val = insightForm[fieldKey];
                 const meta = val ? OPTION_META[val] : null;
                 if (!insightEditMode) {
-                  // View mode — coloured chip if value set, subtle dash if not
-                  if (!val) return <div style={{ fontSize: '12px', color: '#cbd5e1', padding: '6px 0' }}>—</div>;
+                  if (!val) return null;
                   return (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '20px', background: meta ? `${meta.color}18` : '#f1f5f9', border: `1px solid ${meta ? `${meta.color}40` : '#e2e8f0'}` }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '6px', background: meta ? `${meta.color}15` : '#f1f5f9', border: `1px solid ${meta ? `${meta.color}35` : '#e2e8f0'}`, marginTop: '2px' }}>
                       {meta && <span style={{ fontSize: '11px', fontWeight: '700', color: meta.color }}>{meta.icon}</span>}
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: meta ? meta.color : '#374151' }}>{val}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: meta?.color || '#374151' }}>{val}</span>
                     </div>
                   );
                 }
-                // Edit mode — pill buttons for each option
                 return (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
-                    {opts.map(o => {
-                      const selected = val === o;
-                      const m = OPTION_META[o];
-                      return (
-                        <button key={o} type="button" onClick={() => setInsightForm(f => ({ ...f, [fieldKey]: o }))}
-                          style={{ padding: '5px 11px', borderRadius: '20px', border: `1.5px solid ${selected ? accentColor : '#e2e8f0'}`, background: selected ? accentColor : 'white', color: selected ? 'white' : '#64748b', fontSize: '11.5px', fontWeight: selected ? '600' : '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.1s', whiteSpace: 'nowrap' }}>
-                          {m && <span style={{ fontSize: '10px', opacity: selected ? 1 : 0.7 }}>{m.icon}</span>}
-                          {o}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <select style={{ ...selS, color: val ? '#1f2937' : '#94a3b8' }}
+                    value={val} onChange={e => setInsightForm(f => ({ ...f, [fieldKey]: e.target.value }))}
+                    onFocus={e => { e.target.style.borderColor = accentColor; }}
+                    onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}>
+                    <option value="">— Select —</option>
+                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
                 );
+              };
+              // mkField — hides label+input entirely in view mode when empty
+              const mkField = (label, fieldKey, opts, accent) => {
+                if (!insightEditMode && !insightForm[fieldKey]) return null;
+                return <>{subLbl(label)}{mkSel(fieldKey, opts, accent)}</>;
               };
 
               const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure'];
@@ -4135,18 +4140,51 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 { key: 'extend-life',    label: 'Extend oil life',     icon: TrendingUp },
               ];
 
+              const hasExistingAssessment = !!(venue.insightOilLongevity || venue.insightEngagement || venue.insightTempObservations || venue.insightTraining || venue.insightFoodQuality || venue.insightRecommendations);
+              const handleSaveAssessment = async () => {
+                setInsightSaving(true);
+                const existingNotes = venue.trialNotes || '';
+                const notesLines = existingNotes.split('\n')
+                  .filter(l => !l.trim().startsWith('[GoalsAchieved:'))
+                  .filter(l => !l.trim().startsWith('[TrialFindings:'));
+                if (assessAchievedGoals.length > 0) notesLines.push(`[GoalsAchieved: ${assessAchievedGoals.join(', ')}]`);
+                if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
+                await updateVenue(venue.id, {
+                  insightOilLongevity:     JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
+                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded, tempRecovery: insightForm.tempRecovery }),
+                  insightFoodQuality:      JSON.stringify({ taste: insightForm.taste, texture: insightForm.texture, appearance: insightForm.appearance }),
+                  insightTraining:         JSON.stringify({ topicsCovered: insightForm.topicsCovered }),
+                  insightEngagement:       JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement, overallReception: insightForm.overallReception }),
+                  insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart }),
+                  trialNotes: notesLines.filter(Boolean).join('\n'),
+                });
+                setInsightSaving(false);
+                setInsightEditMode(false);
+                setSuccessMsg('Assessment saved');
+              };
+
               return (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  {/* ── Header ── */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Assessment</div>
-                    {!insightEditMode && (
-                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 16px', background: '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer' }}>
+                    {insightEditMode ? (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {hasExistingAssessment && (
+                          <button onClick={() => setInsightEditMode(false)} style={{ padding: '7px 16px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        )}
+                        <button disabled={insightSaving} onClick={handleSaveAssessment}
+                          style={{ padding: '7px 20px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
+                          {insightSaving ? 'Saving…' : 'Save Assessment'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setInsightEditMode(true)} style={{ padding: '6px 14px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
                         Edit
                       </button>
                     )}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px' }}>
-                    {insightEditMode ? 'Complete after your final visit — these observations feed directly into the summary report.' : 'Saved assessment.'}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
@@ -4154,185 +4192,139 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {/* ── 1. Oil Longevity ── */}
                     <div style={qCard('#f0f4ff', '#dde4f8')}>
                       {qHead(Activity, '#1a428a', 'Oil Longevity')}
-                      {subLbl('TPM Performance')}
-                      {mkSel('tpmPerformance', ['Acceptable', 'Above normal', 'Unstable'], '#1a428a')}
-                      {subLbl('Lifespan vs Competitor Oil')}
-                      {mkSel('lifespanVsCompetitor', ['Longer', 'On par', 'Shorter', 'No comparable baseline'], '#1a428a')}
-                      {subLbl('Top-up Frequency vs Competitor')}
-                      {mkSel('topUpFreqVsCompetitor', ['Fewer', 'Same', 'More', 'No comparable baseline'], '#1a428a')}
+                      {mkField('TPM Performance', 'tpmPerformance', ['Acceptable', 'Above normal', 'Unstable'], '#1a428a')}
+                      {mkField('Lifespan vs Competitor Oil', 'lifespanVsCompetitor', ['Longer', 'On par', 'Shorter', 'No comparable baseline'], '#1a428a')}
+                      {mkField('Top-up Frequency vs Competitor', 'topUpFreqVsCompetitor', ['Fewer', 'Same', 'More', 'No comparable baseline'], '#1a428a')}
                     </div>
 
                     {/* ── 2. Temperature Control ── */}
                     <div style={qCard('#fff7ed', '#fddcbb')}>
                       {qHead(Flame, '#f97316', 'Temperature Control')}
-                      {subLbl('Set vs Actual Temp')}
-                      {mkSel('setVsActual', ['Well calibrated', 'Minor variance', 'Significant variance'], '#f97316')}
-                      {subLbl('Calibration Needed')}
-                      {mkSel('calibrationNeeded', ['None', 'Minor adjustment', 'Professional service required'], '#f97316')}
-                      {subLbl('Fryer Recovery Speed')}
-                      {mkSel('tempRecovery', ['Fast', 'Normal', 'Slow'], '#f97316')}
+                      {mkField('Set vs Actual Temp', 'setVsActual', ['Well calibrated', 'Minor variance', 'Significant variance'], '#f97316')}
+                      {mkField('Calibration Needed', 'calibrationNeeded', ['None', 'Minor adjustment', 'Professional service required'], '#f97316')}
+                      {mkField('Fryer Recovery Speed', 'tempRecovery', ['Fast', 'Normal', 'Slow'], '#f97316')}
                     </div>
 
                     {/* ── 3. Food Quality ── */}
                     <div style={qCard('#fffbeb', '#fde8a2')}>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
-                      {subLbl('Taste')}
-                      {mkSel('taste', ['Improved', 'Same', 'Worse'], '#f59e0b')}
-                      {subLbl('Texture')}
-                      {mkSel('texture', ['Improved', 'Same', 'Worse'], '#f59e0b')}
-                      {subLbl('Appearance')}
-                      {mkSel('appearance', ['Improved', 'Same', 'Worse'], '#f59e0b')}
+                      {mkField('Taste', 'taste', ['Improved', 'Same', 'Worse'], '#f59e0b')}
+                      {mkField('Texture', 'texture', ['Improved', 'Same', 'Worse'], '#f59e0b')}
+                      {mkField('Appearance', 'appearance', ['Improved', 'Same', 'Worse'], '#f59e0b')}
                     </div>
 
                     {/* ── 4. Training & Education ── */}
                     <div style={qCard('#f0fdf4', '#bbf7d0')}>
                       {qHead(BookOpen, '#16a34a', 'Training & Education')}
-                      {subLbl('Topics Covered (tick all that apply)')}
-                      {insightEditMode ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
-                          {TRAINING_TOPICS.map(topic => {
-                            const checked = insightForm.topicsCovered.includes(topic);
-                            return (
-                              <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
-                                <input type="checkbox" checked={checked}
-                                  onChange={() => setInsightForm(f => ({
-                                    ...f,
-                                    topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic],
-                                  }))}
-                                  style={{ width: '14px', height: '14px', accentColor: '#16a34a', cursor: 'pointer' }} />
-                                {topic}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                          {insightForm.topicsCovered.length > 0
-                            ? insightForm.topicsCovered.map(t => (
-                                <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#dcfce7', color: '#15803d', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
-                              ))
-                            : <span style={{ fontSize: '12px', color: '#cbd5e1' }}>None recorded</span>
-                          }
-                        </div>
-                      )}
-                      {subLbl('Interested in Testo')}
-                      {mkSel('interestedInTesto', ['Yes', 'No', 'Not sure'], '#16a34a')}
-                      {subLbl('Interested in FrySmart')}
-                      {mkSel('interestedInFrySmart', ['Yes', 'No', 'Not sure'], '#16a34a')}
+                      {(insightEditMode || insightForm.topicsCovered.length > 0) && (<>
+                        {subLbl('Topics Covered')}
+                        {insightEditMode ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
+                            {TRAINING_TOPICS.map(topic => {
+                              const checked = insightForm.topicsCovered.includes(topic);
+                              return (
+                                <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                                  <input type="checkbox" checked={checked}
+                                    onChange={() => setInsightForm(f => ({ ...f, topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic] }))}
+                                    style={{ width: '14px', height: '14px', accentColor: '#16a34a', cursor: 'pointer' }} />
+                                  {topic}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                            {insightForm.topicsCovered.map(t => (
+                              <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#dcfce7', color: '#15803d', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
+                            ))}
+                          </div>
+                        )}
+                      </>)}
+                      {mkField('Interested in Testo', 'interestedInTesto', ['Yes', 'No', 'Not sure'], '#16a34a')}
+                      {mkField('Interested in FrySmart', 'interestedInFrySmart', ['Yes', 'No', 'Not sure'], '#16a34a')}
                     </div>
 
                     {/* ── 5. Feedback & Engagement ── */}
                     <div style={qCard('#f5f3ff', '#ddd6fe')}>
                       {qHead(MessageSquare, '#7c3aed', 'Feedback & Engagement')}
-                      {subLbl('Chef Feedback')}
-                      {mkSel('chefFeedback', ['Positive', 'Neutral', 'Negative'], '#7c3aed')}
-                      {subLbl('Staff Engagement Level')}
-                      {mkSel('staffEngagement', ['High', 'Moderate', 'Low'], '#7c3aed')}
-                      {subLbl('Management Buy-in')}
-                      {mkSel('overallReception', ['Supportive', 'Neutral', 'Resistant'], '#7c3aed')}
+                      {mkField('Chef Feedback', 'chefFeedback', ['Positive', 'Neutral', 'Negative'], '#7c3aed')}
+                      {mkField('Staff Engagement Level', 'staffEngagement', ['High', 'Moderate', 'Low'], '#7c3aed')}
+                      {mkField('Management Buy-in', 'overallReception', ['Supportive', 'Neutral', 'Resistant'], '#7c3aed')}
                     </div>
 
                     {/* ── 6. Value Demonstrated ── */}
                     <div style={qCard('#f0fdf4', '#bbf7d0')}>
                       {qHead(TrendingUp, '#16a34a', 'Value Demonstrated')}
-                      {subLbl('Cost Savings')}
-                      {mkSel('costSavings', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
-                      {subLbl('Quality Gains')}
-                      {mkSel('qualityGains', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
-                      {subLbl('Operational Efficiency')}
-                      {mkSel('operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
+                      {mkField('Cost Savings', 'costSavings', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
+                      {mkField('Quality Gains', 'qualityGains', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
+                      {mkField('Operational Efficiency', 'operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
                     </div>
 
-                    {/* ── Trial Outcome (Goals Achieved + Trial Findings) ── full width bottom */}
+                    {/* ── Trial Outcome — full width, split goals (left) + findings (right) ── */}
                     <div style={{ ...qCard('#fffbeb', '#fde8a2'), gridColumn: isDesktop ? '1 / -1' : undefined }}>
                       {qHead(Award, '#f59e0b', 'Trial Outcome')}
-                      {subLbl('Goals Achieved')}
-                      <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', marginTop: '-2px' }}>Tick which goals the trial delivered</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '14px' }}>
-                        {ASSESS_GOAL_OPTIONS.map((goal) => {
-                          const GoalIcon = goal.icon;
-                          const achieved = assessAchievedGoals.includes(goal.key);
-                          return insightEditMode ? (
-                            <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
-                              <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
-                              <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
-                              <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
-                                {achieved && <Check size={8} color="white" strokeWidth={3} />}
-                              </div>
-                            </div>
-                          ) : (
-                            achieved ? (
-                              <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
-                                <GoalIcon size={12} color="#1a428a" />
-                                <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
-                              </div>
-                            ) : (
-                              <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.45 }}>
-                                <GoalIcon size={12} color="#94a3b8" />
-                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>{goal.label}</span>
-                              </div>
-                            )
-                          );
-                        })}
-                      </div>
-                      {subLbl('Trial Findings')}
-                      {insightEditMode ? (
-                        <textarea
-                          value={assessFindings}
-                          onChange={e => setAssessFindings(e.target.value)}
-                          placeholder="What went well? Any surprises? How did the chef react? Anything unusual with the oil or fryers worth noting?…"
-                          rows={3}
-                          style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
-                          onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
-                          onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
-                        />
-                      ) : (
-                        <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', color: assessFindings ? '#374151' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '52px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                          {assessFindings || 'No findings recorded'}
+                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
+                        {/* Goals */}
+                        <div>
+                          {subLbl('Goals Achieved')}
+                          {insightEditMode && <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', marginTop: '-2px' }}>Tick which goals the trial delivered</div>}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            {insightEditMode ? ASSESS_GOAL_OPTIONS.map(goal => {
+                              const GoalIcon = goal.icon;
+                              const achieved = assessAchievedGoals.includes(goal.key);
+                              return (
+                                <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
+                                  <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
+                                  <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
+                                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
+                                    {achieved && <Check size={8} color="white" strokeWidth={3} />}
+                                  </div>
+                                </div>
+                              );
+                            }) : (
+                              assessAchievedGoals.length > 0
+                                ? assessAchievedGoals.map(key => {
+                                    const goal = ASSESS_GOAL_OPTIONS.find(g => g.key === key);
+                                    if (!goal) return null;
+                                    const GoalIcon = goal.icon;
+                                    return (
+                                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
+                                        <GoalIcon size={13} color="#1a428a" />
+                                        <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
+                                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, background: '#f59e0b', border: '2px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                          <Check size={8} color="white" strokeWidth={3} />
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                : <span style={{ fontSize: '12px', color: '#cbd5e1', gridColumn: '1 / -1' }}>No goals recorded</span>
+                            )}
+                          </div>
                         </div>
-                      )}
+                        {/* Findings */}
+                        <div>
+                          {subLbl('Trial Findings')}
+                          {insightEditMode ? (
+                            <textarea
+                              value={assessFindings}
+                              onChange={e => setAssessFindings(e.target.value)}
+                              placeholder="What went well? Any surprises? How did the chef react? Anything unusual with the oil or fryers worth noting?…"
+                              rows={6}
+                              style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
+                              onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
+                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
+                            />
+                          ) : (
+                            assessFindings
+                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap' }}>{assessFindings}</p>
+                              : <span style={{ fontSize: '12px', color: '#cbd5e1' }}>No findings recorded</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                   </div>
-
-                  {insightEditMode && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                      <button
-                        disabled={insightSaving}
-                        onClick={async () => {
-                          setInsightSaving(true);
-                          // Rebuild trialNotes preserving non-outcome lines, then re-inject GoalsAchieved + TrialFindings
-                          const existingNotes = venue.trialNotes || '';
-                          const notesLines = existingNotes.split('\n')
-                            .filter(l => !l.trim().startsWith('[GoalsAchieved:'))
-                            .filter(l => !l.trim().startsWith('[TrialFindings:'));
-                          if (assessAchievedGoals.length > 0) notesLines.push(`[GoalsAchieved: ${assessAchievedGoals.join(', ')}]`);
-                          if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
-                          const newTrialNotes = notesLines.filter(Boolean).join('\n');
-                          await updateVenue(venue.id, {
-                            insightOilLongevity:     JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
-                            insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded, tempRecovery: insightForm.tempRecovery }),
-                            insightFoodQuality:      JSON.stringify({ taste: insightForm.taste, texture: insightForm.texture, appearance: insightForm.appearance }),
-                            insightTraining:         JSON.stringify({ topicsCovered: insightForm.topicsCovered }),
-                            insightEngagement:       JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement, overallReception: insightForm.overallReception }),
-                            insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart }),
-                            trialNotes: newTrialNotes,
-                          });
-                          setInsightSaving(false);
-                          setInsightEditMode(false);
-                          setSuccessMsg('Assessment saved');
-                        }}
-                        style={{ width: '100%', padding: '12px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer', letterSpacing: '0.2px' }}
-                      >
-                        {insightSaving ? 'Saving…' : 'Save Assessment'}
-                      </button>
-                      {(venue.insightOilLongevity || venue.insightEngagement || venue.insightTempObservations || venue.insightTraining || venue.insightFoodQuality || venue.insightRecommendations) && (
-                        <button onClick={() => setInsightEditMode(false)} style={{ width: '100%', padding: '9px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             })()}
