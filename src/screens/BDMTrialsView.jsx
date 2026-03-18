@@ -3723,30 +3723,30 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       📊 Tap to View Full Trial Table
                     </button>
                   ) : (
-                    /* Mobile fullscreen: CSS rotation to landscape (works on iOS) */
+                    /* Mobile: full-screen modal overlay (portrait, no rotation) */
                     (!isDesktop && showTrialTableModal) ? (
-                      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999, background: '#1a428a', overflow: 'hidden' }}>
-                        {/* Close button in portrait coords: top-right → appears top-left in landscape view */}
-                        <button onClick={() => setShowTrialTableModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10000, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px', padding: '8px 14px', borderRadius: '8px', lineHeight: '1' }}>✕</button>
-                        <div style={{ position: 'absolute', top: '50%', left: '50%', width: '100vh', height: '100vw', transform: 'translate(-50%, -50%) rotate(90deg)', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ padding: '10px 16px', background: '#1a428a', flexShrink: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Trial Results</div>
+                      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.6)', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: '48px', background: 'white', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
+                          {/* Modal header */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#1a428a', flexShrink: 0 }}>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>Trial Results</div>
+                            <button onClick={() => setShowTrialTableModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '6px 14px', borderRadius: '7px', letterSpacing: '0.3px' }}>Close</button>
                           </div>
-                          <div style={{ flex: 1, background: 'white', overflowX: 'auto', overflowY: 'auto' }}>
+                          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
                     <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px', fontSize: '9px', tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '32px' }} />  {/* # */}
-                        <col style={{ width: '50px' }} />  {/* Day */}
-                        <col style={{ width: '92px' }} />  {/* Date */}
-                        <col style={{ width: '60px' }} />  {/* TPM */}
-                        <col style={{ width: '60px' }} />  {/* Set°C */}
-                        <col style={{ width: '70px' }} />  {/* Actual°C */}
-                        <col style={{ width: '60px' }} />  {/* -/+°C */}
-                        <col style={{ width: '82px' }} />  {/* Fill Type */}
-                        <col style={{ width: '46px' }} />  {/* Litres */}
-                        <col style={{ width: '82px' }} />  {/* Filtered */}
-                        <col style={{ width: '123px' }} /> {/* Food */}
+                        <col style={{ width: '36px' }} />  {/* Day */}
+                        <col style={{ width: '68px' }} />  {/* Date */}
+                        <col style={{ width: '44px' }} />  {/* TPM */}
+                        <col style={{ width: '44px' }} />  {/* Set°C */}
+                        <col style={{ width: '50px' }} />  {/* Actual°C */}
+                        <col style={{ width: '40px' }} />  {/* -/+°C */}
+                        <col style={{ width: '62px' }} />  {/* Fill Type */}
+                        <col style={{ width: '36px' }} />  {/* Litres */}
+                        <col style={{ width: '58px' }} />  {/* Filtered */}
+                        <col style={{ width: '80px' }} />  {/* Food */}
                         <col />                            {/* Notes: auto */}
                       </colgroup>
                       <thead>
@@ -3821,7 +3821,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </div>
                         </div>
                       </div>
-                    ) : (
+                    ) : ( /* desktop */
                       /* Desktop: plain scrollable table */
                       <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', fontSize: '11px', tableLayout: 'fixed' }}>
@@ -4129,14 +4129,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </button>
                         )}
                         {showFryerStatsModal && !isDesktop && (
-                          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999, background: '#1a428a', overflow: 'hidden' }}>
-                            {/* Close button in portrait coords: top-right → appears top-left in landscape */}
-                            <button onClick={() => setShowFryerStatsModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10000, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px', padding: '8px 14px', borderRadius: '8px', lineHeight: '1' }}>✕</button>
-                            <div style={{ position: 'absolute', top: '50%', left: '50%', width: '100vh', height: '100vw', transform: 'translate(-50%, -50%) rotate(90deg)', display: 'flex', flexDirection: 'column' }}>
-                              <div style={{ padding: '10px 16px', background: '#1a428a', flexShrink: 0 }}>
-                                <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Fryer Stats</div>
+                          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.6)', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: '48px', background: 'white', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#1a428a', flexShrink: 0 }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>Fryer Stats</div>
+                                <button onClick={() => setShowFryerStatsModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '6px 14px', borderRadius: '7px', letterSpacing: '0.3px' }}>Close</button>
                               </div>
-                              <div style={{ flex: 1, background: 'white', overflowX: 'auto', overflowY: 'auto' }}>
+                              <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', fontSize: '9px' }}>
                                 {fryerStatsTable}
                               </div>
                             </div>
