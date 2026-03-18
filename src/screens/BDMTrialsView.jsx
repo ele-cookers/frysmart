@@ -108,9 +108,9 @@ const inputStyle = {
 const selectStyle = {
   ...inputStyle,
   WebkitAppearance: 'none', appearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
   backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center',
-  paddingRight: '32px', cursor: 'pointer',
+  paddingRight: '34px', cursor: 'pointer',
 };
 
 const S = Object.freeze({
@@ -1020,17 +1020,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     // Section 1 — Oil Longevity
     tpmPerformance: '', lifespanVsCompetitor: '', topUpFreqVsCompetitor: '',
     // Section 2 — Temperature Control
-    setVsActual: '', calibrationNeeded: '',
+    setVsActual: '', calibrationNeeded: '', tempRecovery: '',
     // Section 3 — Food Quality
-    tasteAndTexture: '', colourAndAppearance: '',
+    taste: '', texture: '', appearance: '',
     // Section 4 — Training & Education
-    trainingProvided: '', topicsCovered: [],
+    topicsCovered: [],
     // Section 5 — Feedback & Engagement
-    chefFeedback: '', staffEngagement: '',
+    chefFeedback: '', staffEngagement: '', overallReception: '',
     // Section 6 — Value Demonstrated
     costSavings: '', qualityGains: '', operationalEfficiency: '',
     // Section 7 — Next Steps & Conversion
-    interestedInTesto: '', interestedInFrySmart: '', bdmNotes: '',
+    interestedInTesto: '', interestedInFrySmart: '',
   }); // BDM assessment form on Trial Calendar tab
   const [insightSaving, setInsightSaving] = useState(false);
   const [insightEditMode, setInsightEditMode] = useState(true); // true = editing, false = viewing saved data
@@ -1139,18 +1139,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         topUpFreqVsCompetitor: s1.topUpFreqVsCompetitor || '',
         setVsActual:           s2.setVsActual           || '',
         calibrationNeeded:     s2.calibrationNeeded     || '',
-        tasteAndTexture:       s3.tasteAndTexture       || '',
-        colourAndAppearance:   s3.colourAndAppearance   || '',
-        trainingProvided:      s4.trainingProvided      || '',
+        tempRecovery:          s2.tempRecovery          || '',
+        taste:                 s3.taste                 || '',
+        texture:               s3.texture               || '',
+        appearance:            s3.appearance            || '',
         topicsCovered:         s4.topicsCovered         || [],
         chefFeedback:          s5.chefFeedback          || '',
         staffEngagement:       s5.staffEngagement       || '',
+        overallReception:      s5.overallReception      || '',
         costSavings:           s7.costSavings           || '',
         qualityGains:          s7.qualityGains          || '',
         operationalEfficiency: s7.operationalEfficiency || '',
         interestedInTesto:     s7.interestedInTesto     || '',
         interestedInFrySmart:  s7.interestedInFrySmart  || '',
-        bdmNotes:              s7.bdmNotes              || '',
       });
       const _achievedLine = (v?.trialNotes || '').split('\n').find(l => l.trim().startsWith('[GoalsAchieved:')) || '';
       const _achievedGoals = _achievedLine ? _achievedLine.replace(/^\[GoalsAchieved:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : [];
@@ -1995,7 +1996,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={S.field}>
         <label style={S.label}>VENUE NAME {req}</label>
         <input type="text" value={newTrialForm.venueName} onChange={e => setNewTrialForm(f => ({ ...f, venueName: e.target.value }))}
-          placeholder="e.g., Joe's Fish & Chips" style={inputStyle} required
+          placeholder="e.g. Joe's Fish & Chips" style={inputStyle} required
           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
       </div>
 
@@ -2175,7 +2176,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       <div style={S.field}>
         <label style={S.label}>WHAT DO WE KNOW GOING INTO THIS TRIAL?</label>
         <textarea value={newTrialForm.notes} onChange={e => setNewTrialForm(f => ({ ...f, notes: e.target.value }))}
-          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="E.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
+          rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="e.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
       </div>
 
@@ -2220,7 +2221,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {selected && <Check size={10} color="white" strokeWidth={3} />}
                     </div>
                     <span style={{ flex: 1 }}>{opt.label}</span>
-                    <opt.icon size={13} style={{ flexShrink: 0, opacity: selected ? 0.8 : 0.4 }} />
+                    <opt.icon size={15} style={{ flexShrink: 0, opacity: selected ? 0.8 : 0.4 }} />
                   </button>
                 );
               })}
@@ -3597,7 +3598,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <textarea value={mEditForm.notesText}
                           onChange={e => setMEditForm(p => ({ ...p, notesText: e.target.value }))}
                           rows={3} style={{ ...inputStyle, resize: 'vertical' }}
-                          placeholder="E.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
+                          placeholder="e.g. oil management habits, fryer change patterns, food quality concerns, things to watch…"
                           onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                       </div>
 
@@ -3967,8 +3968,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       hasTpm      && { label: 'TPM',          bg: '#eef2ff', color: '#4f46e5', cols: ['Peak', 'Avg'] },
                       hasOilLife  && { label: 'Oil Lifespan', bg: '#e0f2fe', color: '#0284c7', cols: ['Max', 'Avg'] },
                       hasOilUsage && { label: 'Oil Usage',    bg: '#f0fdf4', color: '#16a34a', cols: [
-                        ...(hasFresh  ? ['Fresh Fills', 'Fresh L']  : []),
-                        ...(hasTopUp  ? ['Top-ups', 'Top-up L'] : []),
+                        ...(hasFresh  ? ['Fresh Fills'] : []),
+                        ...(hasTopUp  ? ['Top-ups']     : []),
+                        ...(hasFresh  ? ['Fresh L']     : []),
+                        ...(hasTopUp  ? ['Top-up L']    : []),
                         'Total L',
                       ]},
                       hasTemp     && { label: 'Temperature',  bg: '#fff7ed', color: '#ea580c', cols: ['Min Temp', 'Max Temp', 'Variance'] },
@@ -4006,7 +4009,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 16px 0' }} />
                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>Fryer Stats</div>
                         <div style={{ overflowX: 'auto' }}>
-                          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                          <table style={{ borderCollapse: 'collapse', width: 'auto' }}>
                             <thead>
                               {/* Group header row */}
                               <tr>
@@ -4028,6 +4031,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                     padding: '5px 10px', fontSize: '10px', fontWeight: '600', color: '#64748b',
                                     textAlign: 'center', background: g.bg + '88', borderBottom: '2px solid #e2e8f0',
                                     borderLeft: ci === 0 ? borderL : '1px solid #f1f5f9', whiteSpace: 'nowrap',
+                                    width: '72px', maxWidth: '72px',
                                   }}>{col}</th>
                                 )))}
                               </tr>
@@ -4092,8 +4096,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 );
               };
 
-              const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure', 'Food quality checks'];
-              const trainingEnabled = insightForm.trainingProvided === 'Yes';
+              const TRAINING_TOPICS = ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Fryer temperature', 'Daily TPM testing', 'Top-up procedure'];
 
               const ASSESS_GOAL_OPTIONS = [
                 { key: 'save-money',     label: 'Save money',          icon: DollarSign },
@@ -4118,56 +4121,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     {insightEditMode ? 'Complete after your final visit — these observations feed directly into the summary report.' : 'Saved assessment — tap Edit to make changes.'}
                   </div>
 
-                  {/* ── Trial Outcome (Goals Achieved + Trial Findings) ── */}
-                  <div style={{ ...qCard('#fffbeb', '#fde8a2'), marginBottom: '12px' }}>
-                    {qHead(Award, '#f59e0b', 'Trial Outcome')}
-                    {subLbl('Goals Achieved')}
-                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', marginTop: '-2px' }}>Tick which goals the trial delivered</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr 1fr', gap: '6px', marginBottom: '14px' }}>
-                      {ASSESS_GOAL_OPTIONS.map((goal) => {
-                        const GoalIcon = goal.icon;
-                        const achieved = assessAchievedGoals.includes(goal.key);
-                        return insightEditMode ? (
-                          <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
-                            <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
-                            <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
-                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
-                              {achieved && <Check size={8} color="white" strokeWidth={3} />}
-                            </div>
-                          </div>
-                        ) : (
-                          achieved ? (
-                            <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
-                              <GoalIcon size={12} color="#1a428a" />
-                              <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
-                            </div>
-                          ) : (
-                            <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.45 }}>
-                              <GoalIcon size={12} color="#94a3b8" />
-                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>{goal.label}</span>
-                            </div>
-                          )
-                        );
-                      })}
-                    </div>
-                    {subLbl('Trial Findings')}
-                    {insightEditMode ? (
-                      <textarea
-                        value={assessFindings}
-                        onChange={e => setAssessFindings(e.target.value)}
-                        placeholder="What happened? Key observations, outcomes, things that stood out, customer feedback, oil performance notes…"
-                        rows={3}
-                        style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
-                        onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
-                        onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
-                      />
-                    ) : (
-                      <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', color: assessFindings ? '#374151' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '52px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                        {assessFindings || 'No findings recorded'}
-                      </div>
-                    )}
-                  </div>
-
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
 
                     {/* ── 1. Oil Longevity ── */}
@@ -4188,69 +4141,52 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {mkSel('setVsActual', ['Well calibrated', 'Minor variance', 'Significant variance'], '#f97316')}
                       {subLbl('Calibration Needed')}
                       {mkSel('calibrationNeeded', ['None', 'Minor adjustment', 'Professional service required'], '#f97316')}
+                      {subLbl('Fryer Recovery Speed')}
+                      {mkSel('tempRecovery', ['Fast', 'Normal', 'Slow'], '#f97316')}
                     </div>
 
                     {/* ── 3. Food Quality ── */}
                     <div style={qCard('#fffbeb', '#fde8a2')}>
                       {qHead(Award, '#f59e0b', 'Food Quality')}
-                      {subLbl('Taste and Texture')}
-                      {mkSel('tasteAndTexture', ['Improved', 'Same', 'Worse'], '#f59e0b')}
-                      {subLbl('Colour and Appearance')}
-                      {mkSel('colourAndAppearance', ['Improved', 'Same', 'Worse'], '#f59e0b')}
+                      {subLbl('Taste')}
+                      {mkSel('taste', ['Improved', 'Same', 'Worse'], '#f59e0b')}
+                      {subLbl('Texture')}
+                      {mkSel('texture', ['Improved', 'Same', 'Worse'], '#f59e0b')}
+                      {subLbl('Appearance')}
+                      {mkSel('appearance', ['Improved', 'Same', 'Worse'], '#f59e0b')}
                     </div>
 
                     {/* ── 4. Training & Education ── */}
                     <div style={qCard('#f0fdf4', '#bbf7d0')}>
                       {qHead(BookOpen, '#16a34a', 'Training & Education')}
-                      {subLbl('Training Provided')}
+                      {subLbl('Topics Covered (tick all that apply)')}
                       {insightEditMode ? (
-                        <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '3px', gap: '0' }}>
-                          {['Yes', 'No'].map(opt => {
-                            const active = insightForm.trainingProvided === opt;
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px' }}>
+                          {TRAINING_TOPICS.map(topic => {
+                            const checked = insightForm.topicsCovered.includes(topic);
                             return (
-                              <button key={opt} type="button"
-                                onClick={() => setInsightForm(f => ({ ...f, trainingProvided: opt, topicsCovered: opt === 'No' ? [] : f.topicsCovered }))}
-                                style={{ flex: 1, padding: '6px 10px', fontSize: '12px', fontWeight: '600', borderRadius: '6px', border: 'none', cursor: 'pointer', background: active ? 'white' : 'transparent', color: active ? '#16a34a' : '#64748b', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>
-                                {opt}
-                              </button>
+                              <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#374151' }}>
+                                <input type="checkbox" checked={checked}
+                                  onChange={() => setInsightForm(f => ({
+                                    ...f,
+                                    topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic],
+                                  }))}
+                                  style={{ width: '14px', height: '14px', accentColor: '#16a34a', cursor: 'pointer' }} />
+                                {topic}
+                              </label>
                             );
                           })}
                         </div>
                       ) : (
-                        <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: insightForm.trainingProvided ? '600' : '400', color: insightForm.trainingProvided ? '#1f2937' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '36px', display: 'flex', alignItems: 'center' }}>
-                          {insightForm.trainingProvided || 'Not recorded'}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                          {insightForm.topicsCovered.length > 0
+                            ? insightForm.topicsCovered.map(t => (
+                                <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#dcfce7', color: '#15803d', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
+                              ))
+                            : <span style={{ fontSize: '12px', color: '#cbd5e1' }}>None recorded</span>
+                          }
                         </div>
                       )}
-                      <div style={{ marginTop: '10px', opacity: trainingEnabled ? 1 : 0.4, pointerEvents: trainingEnabled ? 'auto' : 'none' }}>
-                        {subLbl('Topics Covered (tick all that apply)')}
-                        {insightEditMode ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-                            {TRAINING_TOPICS.map(topic => {
-                              const checked = insightForm.topicsCovered.includes(topic);
-                              return (
-                                <label key={topic} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: trainingEnabled ? 'pointer' : 'default', fontSize: '12px', color: '#374151' }}>
-                                  <input type="checkbox" checked={checked}
-                                    onChange={() => setInsightForm(f => ({
-                                      ...f,
-                                      topicsCovered: checked ? f.topicsCovered.filter(t => t !== topic) : [...f.topicsCovered, topic],
-                                    }))}
-                                    style={{ width: '14px', height: '14px', accentColor: '#16a34a', cursor: 'inherit' }} />
-                                  {topic}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                            {insightForm.topicsCovered.length > 0
-                              ? insightForm.topicsCovered.map(t => (
-                                  <span key={t} style={{ fontSize: '11px', fontWeight: '600', background: '#dcfce7', color: '#15803d', borderRadius: '5px', padding: '3px 8px' }}>{t}</span>
-                                ))
-                              : <span style={{ fontSize: '12px', color: '#cbd5e1' }}>None recorded</span>
-                            }
-                          </div>
-                        )}
-                      </div>
                     </div>
 
                     {/* ── 5. Feedback & Engagement ── */}
@@ -4260,6 +4196,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {mkSel('chefFeedback', ['Positive', 'Neutral', 'Negative'], '#7c3aed')}
                       {subLbl('Staff Engagement Level')}
                       {mkSel('staffEngagement', ['High', 'Moderate', 'Low'], '#7c3aed')}
+                      {subLbl('Management Buy-in')}
+                      {mkSel('overallReception', ['Supportive', 'Neutral', 'Resistant'], '#7c3aed')}
                     </div>
 
                     {/* ── 6. Value Demonstrated ── */}
@@ -4273,37 +4211,63 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {mkSel('operationalEfficiency', ['Evident', 'Partially evident', 'Not evident', 'N/A'], '#16a34a')}
                     </div>
 
-                    {/* ── 7. Next Steps & Conversion ── full width */}
-                    <div style={{ ...qCard('#faf5ff', '#e9d5ff'), gridColumn: isDesktop ? '1 / -1' : undefined }}>
+                    {/* ── 7. Next Steps & Conversion ── 1 col, bottom-right */}
+                    <div style={{ ...qCard('#faf5ff', '#e9d5ff'), gridColumn: isDesktop ? '3 / 4' : undefined, gridRow: isDesktop ? '3' : undefined }}>
                       {qHead(Target, '#7c3aed', 'Next Steps & Conversion')}
-                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px' }}>
-                        <div>
-                          {subLbl('Interested in Testo')}
-                          {mkSel('interestedInTesto', ['Yes', 'No', 'Not sure'], '#7c3aed')}
-                        </div>
-                        <div>
-                          {subLbl('Interested in FrySmart')}
-                          {mkSel('interestedInFrySmart', ['Yes', 'No', 'Not sure'], '#7c3aed')}
-                        </div>
-                        <div>
-                          {subLbl('BDM Notes')}
-                          {insightEditMode ? (
-                            <textarea
-                              value={insightForm.bdmNotes}
-                              onChange={e => setInsightForm(f => ({ ...f, bdmNotes: e.target.value }))}
-                              rows={3}
-                              placeholder="Note any observations, anomalies, or context not captured above (e.g. unexpected TPM spikes, fryer load issues, venue-specific factors)"
-                              style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', color: '#374151', fontFamily: 'inherit', fontWeight: '500', resize: 'vertical', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
-                              onFocus={e => { e.target.style.borderColor = '#7c3aed'; }}
-                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
-                            />
-                          ) : (
-                            <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', fontWeight: insightForm.bdmNotes ? '400' : '400', color: insightForm.bdmNotes ? '#374151' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '60px', lineHeight: '1.6' }}>
-                              {insightForm.bdmNotes || 'No notes recorded'}
+                      {subLbl('Interested in Testo')}
+                      {mkSel('interestedInTesto', ['Yes', 'No', 'Not sure'], '#7c3aed')}
+                      {subLbl('Interested in FrySmart')}
+                      {mkSel('interestedInFrySmart', ['Yes', 'No', 'Not sure'], '#7c3aed')}
+                    </div>
+
+                    {/* ── Trial Outcome (Goals Achieved + Trial Findings) ── 2 cols, bottom-left */}
+                    <div style={{ ...qCard('#fffbeb', '#fde8a2'), gridColumn: isDesktop ? '1 / 3' : undefined, gridRow: isDesktop ? '3' : undefined }}>
+                      {qHead(Award, '#f59e0b', 'Trial Outcome')}
+                      {subLbl('Goals Achieved')}
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', marginTop: '-2px' }}>Tick which goals the trial delivered</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '14px' }}>
+                        {ASSESS_GOAL_OPTIONS.map((goal) => {
+                          const GoalIcon = goal.icon;
+                          const achieved = assessAchievedGoals.includes(goal.key);
+                          return insightEditMode ? (
+                            <div key={goal.key} onClick={() => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key])} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: 'pointer', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
+                              <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
+                              <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
+                              <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
+                                {achieved && <Check size={8} color="white" strokeWidth={3} />}
+                              </div>
                             </div>
-                          )}
-                        </div>
+                          ) : (
+                            achieved ? (
+                              <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#dbeafe', border: '1px solid #93c5fd' }}>
+                                <GoalIcon size={12} color="#1a428a" />
+                                <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e3a5f' }}>{goal.label}</span>
+                              </div>
+                            ) : (
+                              <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '7px', background: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.45 }}>
+                                <GoalIcon size={12} color="#94a3b8" />
+                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>{goal.label}</span>
+                              </div>
+                            )
+                          );
+                        })}
                       </div>
+                      {subLbl('Trial Findings')}
+                      {insightEditMode ? (
+                        <textarea
+                          value={assessFindings}
+                          onChange={e => setAssessFindings(e.target.value)}
+                          placeholder="What happened? Key observations, outcomes, things that stood out, customer feedback, oil performance notes. Note any anomalies or context not captured above (e.g. unexpected TPM spikes, fryer load issues, venue-specific factors)…"
+                          rows={3}
+                          style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
+                          onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
+                          onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
+                        />
+                      ) : (
+                        <div style={{ padding: '7px 10px', borderRadius: '7px', fontSize: '12px', color: assessFindings ? '#374151' : '#cbd5e1', background: '#f8fafc', border: '1.5px solid #f1f5f9', minHeight: '52px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                          {assessFindings || 'No findings recorded'}
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -4328,12 +4292,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
                           const newTrialNotes = notesLines.filter(Boolean).join('\n');
                           await updateVenue(venue.id, {
-                            insightOilLongevity:   JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
-                            insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded }),
-                            insightFoodQuality:      JSON.stringify({ tasteAndTexture: insightForm.tasteAndTexture, colourAndAppearance: insightForm.colourAndAppearance }),
-                            insightTraining:         JSON.stringify({ trainingProvided: insightForm.trainingProvided, topicsCovered: insightForm.topicsCovered }),
-                            insightEngagement:       JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement }),
-                            insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart, bdmNotes: insightForm.bdmNotes }),
+                            insightOilLongevity:     JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
+                            insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded, tempRecovery: insightForm.tempRecovery }),
+                            insightFoodQuality:      JSON.stringify({ taste: insightForm.taste, texture: insightForm.texture, appearance: insightForm.appearance }),
+                            insightTraining:         JSON.stringify({ topicsCovered: insightForm.topicsCovered }),
+                            insightEngagement:       JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement, overallReception: insightForm.overallReception }),
+                            insightRecommendations:  JSON.stringify({ costSavings: insightForm.costSavings, qualityGains: insightForm.qualityGains, operationalEfficiency: insightForm.operationalEfficiency, interestedInTesto: insightForm.interestedInTesto, interestedInFrySmart: insightForm.interestedInFrySmart }),
                             trialNotes: newTrialNotes,
                           });
                           setInsightSaving(false);
@@ -5039,17 +5003,17 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       { icon: Activity,      iconColor: '#1a428a', title: 'Oil Longevity',
                         fields: [['TPM Performance', s1.tpmPerformance], ['Lifespan vs Competitor', s1.lifespanVsCompetitor], ['Top-up Frequency', s1.topUpFreqVsCompetitor]] },
                       { icon: Flame,         iconColor: '#f97316', title: 'Temperature Control',
-                        fields: [['Set vs Actual', s2.setVsActual], ['Calibration', s2.calibrationNeeded]] },
+                        fields: [['Set vs Actual', s2.setVsActual], ['Calibration', s2.calibrationNeeded], ['Recovery Speed', s2.tempRecovery]] },
                       { icon: Award,         iconColor: '#f59e0b', title: 'Food Quality',
-                        fields: [['Taste & Texture', s3.tasteAndTexture], ['Colour & Appearance', s3.colourAndAppearance]] },
+                        fields: [['Taste', s3.taste], ['Texture', s3.texture], ['Appearance', s3.appearance]] },
                       { icon: BookOpen,      iconColor: '#16a34a', title: 'Training & Education',
-                        fields: [['Training Provided', s4.trainingProvided], ['Topics Covered', (s4.topicsCovered || []).join(', ') || null]] },
+                        fields: [['Topics Covered', (s4.topicsCovered || []).join(', ') || null]] },
                       { icon: MessageSquare, iconColor: '#7c3aed', title: 'Feedback & Engagement',
-                        fields: [['Chef Feedback', s5.chefFeedback], ['Staff Engagement', s5.staffEngagement]] },
+                        fields: [['Chef Feedback', s5.chefFeedback], ['Staff Engagement', s5.staffEngagement], ['Management Buy-in', s5.overallReception]] },
                       { icon: TrendingUp,    iconColor: '#16a34a', title: 'Value Demonstrated',
                         fields: [['Cost Savings', s7.costSavings], ['Quality Gains', s7.qualityGains], ['Operational Efficiency', s7.operationalEfficiency]] },
                       { icon: Target,        iconColor: '#7c3aed', title: 'Next Steps & Conversion',
-                        fields: [['Interested in Testo', s7.interestedInTesto], ['Interested in FrySmart', s7.interestedInFrySmart], ['BDM Notes', s7.bdmNotes]] },
+                        fields: [['Interested in Testo', s7.interestedInTesto], ['Interested in FrySmart', s7.interestedInFrySmart]] },
                     ].filter(q => q.fields.some(([,v]) => v));
 
                     return (
