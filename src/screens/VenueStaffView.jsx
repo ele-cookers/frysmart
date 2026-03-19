@@ -1827,7 +1827,7 @@ const QuarterView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) =
       </div>
 
       {/* Per-fryer breakdown */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
         {fryerStats.map(f => {
           const fCompColor = f.compliance >= 90 ? '#10b981' : f.compliance >= 70 ? '#f59e0b' : '#ef4444';
           return (
@@ -2005,12 +2005,12 @@ const YearView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
               background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0',
               padding: '12px', opacity: m.isFuture ? 0.5 : 1
             }}>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '8px' }}>{m.monthName}</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#1f2937', marginBottom: '8px' }}>{m.monthName}</div>
               {/* Compliance bar */}
               <div style={{ marginBottom: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                  <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Compliance</span>
-                  <span style={{ fontSize: '10px', fontWeight: '700', color: compColor }}>{m.compliance != null ? `${m.compliance}%` : '—'}</span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>Compliance</span>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: compColor }}>{m.compliance != null ? `${m.compliance}%` : '—'}</span>
                 </div>
                 <div style={{ height: '4px', borderRadius: '2px', background: '#f1f5f9', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${m.compliance || 0}%`, background: compColor, borderRadius: '2px', transition: 'width 0.3s' }} />
@@ -2020,32 +2020,32 @@ const YearView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 {m.avgTPM != null && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>Avg TPM</span>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#1f2937' }}>{m.avgTPM}</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>Avg TPM</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>{m.avgTPM}</span>
                   </div>
                 )}
                 {m.filterRate != null && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>Filtered</span>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#1f2937' }}>{m.filterRate}%</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>Filtered</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>{m.filterRate}%</span>
                   </div>
                 )}
                 {m.totalChanges > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>Oil changes</span>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#1f2937' }}>{m.totalChanges}</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>Oil changes</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937' }}>{m.totalChanges}</span>
                   </div>
                 )}
                 {m.changedLate > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '10px', color: '#ef4444' }}>Late</span>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#ef4444' }}>{m.changedLate}</span>
+                    <span style={{ fontSize: '12px', color: '#ef4444' }}>Late</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#ef4444' }}>{m.changedLate}</span>
                   </div>
                 )}
                 {m.changedEarly > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '10px', color: '#f59e0b' }}>Early</span>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#f59e0b' }}>{m.changedEarly}</span>
+                    <span style={{ fontSize: '12px', color: '#f59e0b' }}>Early</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#f59e0b' }}>{m.changedEarly}</span>
                   </div>
                 )}
               </div>
@@ -2721,6 +2721,28 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
           </div>
         </div>
       </div>
+
+      {/* Fryer volumes — read only */}
+      {venue?.fryerCount > 0 && (
+        <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
+            Fryer Volumes
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+            {Array.from({ length: venue.fryerCount }, (_, i) => i + 1).map(num => {
+              const vol = venue.fryerVolumes?.[num] ?? venue.fryerVolumes?.[String(num)];
+              return (
+                <div key={num} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: '8px', padding: '10px 14px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>Fryer {num}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: vol != null ? '#1a428a' : '#94a3b8' }}>
+                    {vol != null ? `${vol}L` : '—'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* TPM thresholds — read only */}
       <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: '16px' }}>
