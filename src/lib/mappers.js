@@ -122,6 +122,9 @@ export const mapVenue = (r) => ({
   createdAt: r.created_at,
   updatedAt: r.updated_at,
   customerCodeSavedAt: r.customer_code_saved_at || null,
+  tpmWarningThreshold: r.tpm_warning_threshold ?? null,
+  tpmCriticalThreshold: r.tpm_critical_threshold ?? null,
+  recordingConfig: r.recording_config ?? { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true },
 });
 
 export const unMapVenue = (v) => ({
@@ -138,6 +141,9 @@ export const unMapVenue = (v) => ({
   last_tpm_date: v.lastTpmDate || null,
   password: v.password || null,
   customer_code_saved_at: v.customerCodeSavedAt || null,
+  tpm_warning_threshold: v.tpmWarningThreshold != null && v.tpmWarningThreshold !== '' ? parseInt(v.tpmWarningThreshold) : null,
+  tpm_critical_threshold: v.tpmCriticalThreshold != null && v.tpmCriticalThreshold !== '' ? parseInt(v.tpmCriticalThreshold) : null,
+  recording_config: v.recordingConfig || null,
 });
 
 // ── trials ──

@@ -522,16 +522,27 @@ const CriticalBanner = ({ criticalFryers, onChangeOil, isDesktop }) => (
 // ─────────────────────────────────────────────
 // Recording Form — aligned with tpm_readings schema
 // ─────────────────────────────────────────────
-const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], foodTypeOptions = DEFAULT_FOOD_TYPES }) => {
+const _DEFAULT_RECORDING_CONFIG = { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true };
+const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], foodTypeOptions = DEFAULT_FOOD_TYPES, recordingConfig = _DEFAULT_RECORDING_CONFIG }) => {
   const fryerCount = venue?.fryerCount || 4;
   const [staffName, setStaffName] = useState('');
   const [date, setDate] = useState(getTodayString());
   const [formErrors, setFormErrors] = useState({});
 
+  // Derive available fill type options from config (No Fill is always available)
+  const fillOptions = [
+    recordingConfig.freshFill && { val: 'fresh_fill', label: 'Fresh Fill', activeColor: '#10b981', activeBg: '#d1fae5', activeText: '#059669' },
+    recordingConfig.topUp    && { val: 'top_up',     label: 'Top Up',     activeColor: '#f59e0b', activeBg: '#fef3c7', activeText: '#d97706' },
+    { val: 'no_fill', label: 'No Fill', activeColor: '#94a3b8', activeBg: '#f1f5f9', activeText: '#64748b' },
+  ].filter(Boolean);
+
+  // Default fill type: top_up if available, else fresh_fill if available, else no_fill
+  const defaultFillType = recordingConfig.topUp ? 'top_up' : recordingConfig.freshFill ? 'fresh_fill' : 'no_fill';
+
   function makeBlankFryer(num) {
     return {
       fryerNumber: num,
-      fillType: 'top_up', // 'fresh_fill' | 'top_up' | 'no_fill'
+      fillType: defaultFillType,
       litresFilled: '',
       tpmValue: '',
       setTemperature: '',
@@ -615,10 +626,10 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
       if (f.notInUse) return; // no validation needed for skipped fryers
       if (f.tpmValue === '') errors[`${i}-tpmValue`] = 'Required';
       if (f.fillType === 'top_up' && f.litresFilled === '') errors[`${i}-litresFilled`] = 'Required';
-      if (f.setTemperature === '') errors[`${i}-setTemperature`] = 'Required';
-      if (f.actualTemperature === '') errors[`${i}-actualTemperature`] = 'Required';
-      if (f.filtered === null) errors[`${i}-filtered`] = 'Required';
-      if (!f.foodType) errors[`${i}-foodType`] = 'Required';
+      if (recordingConfig.temperatures && f.setTemperature === '') errors[`${i}-setTemperature`] = 'Required';
+      if (recordingConfig.temperatures && f.actualTemperature === '') errors[`${i}-actualTemperature`] = 'Required';
+      if (recordingConfig.filtering && f.fillType !== 'fresh_fill' && f.filtered === null) errors[`${i}-filtered`] = 'Required';
+      if (recordingConfig.foodType && !f.foodType) errors[`${i}-foodType`] = 'Required';
     });
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -776,27 +787,29 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                 {/* Fill Type */}
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>Fill Type</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {[
-                      { val: 'fresh_fill', label: 'Fresh Fill', activeColor: '#10b981', activeBg: '#d1fae5', activeText: '#059669' },
-                      { val: 'top_up',     label: 'Top Up',     activeColor: '#f59e0b', activeBg: '#fef3c7', activeText: '#d97706' },
-                      { val: 'no_fill',    label: 'No Fill',    activeColor: '#94a3b8', activeBg: '#f1f5f9', activeText: '#64748b' },
-                    ].map(opt => {
-                      const isActive = fryer.fillType === opt.val;
-                      return (
-                        <button key={opt.val} type="button" onClick={() => updateFryer(index, 'fillType', opt.val)} style={{
-                          flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer',
-                          border: isActive ? `1.5px solid ${opt.activeColor}` : '1.5px solid #e2e8f0',
-                          background: isActive ? opt.activeBg : 'white',
-                          fontSize: '13px', fontWeight: '600',
-                          color: isActive ? opt.activeText : '#64748b',
-                          transition: 'all 0.15s',
-                        }}>
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {fillOptions.length > 1 ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {fillOptions.map(opt => {
+                        const isActive = fryer.fillType === opt.val;
+                        return (
+                          <button key={opt.val} type="button" onClick={() => updateFryer(index, 'fillType', opt.val)} style={{
+                            flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer',
+                            border: isActive ? `1.5px solid ${opt.activeColor}` : '1.5px solid #e2e8f0',
+                            background: isActive ? opt.activeBg : 'white',
+                            fontSize: '13px', fontWeight: '600',
+                            color: isActive ? opt.activeText : '#64748b',
+                            transition: 'all 0.15s',
+                          }}>
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '8px 12px', borderRadius: '8px', background: '#f8fafc', border: '1.5px solid #e2e8f0', fontSize: '13px', color: '#64748b' }}>
+                      {fillOptions[0]?.label || 'No Fill'}
+                    </div>
+                  )}
                 </div>
 
                 {/* Litres — hidden for no fill; read-only for fresh fill */}
@@ -839,7 +852,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                 </div>
 
                 {/* Temperatures */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                {recordingConfig.temperatures && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>
                       <span className="temp-label-mobile">Set Temp</span>
@@ -866,10 +879,10 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                     />
                     {formErrors[`${index}-actualTemperature`] && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>Required</div>}
                   </div>
-                </div>
+                </div>}
 
                 {/* Filtered */}
-                <div style={{ marginBottom: '12px' }}>
+                {recordingConfig.filtering && <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>
                     Did you filter?
                   </label>
@@ -906,22 +919,22 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                   </div>
                   )}
                   {formErrors[`${index}-filtered`] && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>Please select yes or no</div>}
-                </div>
+                </div>}
 
                 {/* Food type */}
-                <div style={{ marginBottom: '12px' }}>
+                {recordingConfig.foodType && <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>What are you frying?</label>
-                  <select value={fryer.foodType} onChange={(e) => updateFryer(index, 'foodType', e.target.value)} required
+                  <select value={fryer.foodType} onChange={(e) => updateFryer(index, 'foodType', e.target.value)}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1.5px solid ${formErrors[`${index}-foodType`] ? '#ef4444' : '#e2e8f0'}`, fontSize: '16px', outline: 'none', boxSizing: 'border-box', background: 'white' }}
                     onFocus={(e) => e.target.style.borderColor = '#1a428a'}
                     onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-foodType`] ? '#ef4444' : '#e2e8f0'}
                   >
                     {foodTypeOptions.map(type => <option key={type} value={type}>{getFoodEmoji(type)} {type}</option>)}
                   </select>
-                </div>
+                </div>}
 
                 {/* Notes */}
-                <div style={{ marginBottom: '12px' }}>
+                {recordingConfig.notes && <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>Notes (optional)</label>
                   <textarea value={fryer.notes} onChange={(e) => updateFryer(index, 'notes', e.target.value)}
                     rows="3" placeholder="Any observations..."
@@ -929,7 +942,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                     onFocus={(e) => e.target.style.borderColor = '#1a428a'}
                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   />
-                </div>
+                </div>}
               </>
             </div>
             )}
@@ -2642,7 +2655,7 @@ const DashboardView = ({ readings, isWide }) => {
 // ─────────────────────────────────────────────
 // Settings View — read-only for venue staff config
 // ─────────────────────────────────────────────
-const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop }) => {
+const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, effectiveWarning, effectiveCritical }) => {
   // logout — no double-confirm, just log out directly
 
   return (
@@ -2693,11 +2706,13 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop }) =
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div>
             <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginBottom: '2px' }}>Warning Threshold</div>
-            <div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{systemSettings?.warningThreshold || 18}%</div>
+            <div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{effectiveWarning ?? systemSettings?.warningThreshold ?? 18}%</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{venue?.tpmWarningThreshold != null ? 'Venue override' : 'Global setting'}</div>
           </div>
           <div>
             <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginBottom: '2px' }}>Critical Threshold</div>
-            <div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{systemSettings?.criticalThreshold || 24}%</div>
+            <div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{effectiveCritical ?? systemSettings?.criticalThreshold ?? 24}%</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{venue?.tpmCriticalThreshold != null ? 'Venue override' : 'Global setting'}</div>
           </div>
         </div>
       </div>
@@ -2749,9 +2764,18 @@ export default function VenueStaffView({
     ...systemSettings
   };
   const foodTypeOptions = settings.foodTypeOptions?.length ? settings.foodTypeOptions : DEFAULT_FOOD_TYPES;
-  // Sync module-level thresholds so all sub-components use DB values
-  _tpmThresholds.warning = settings.warningThreshold;
-  _tpmThresholds.critical = settings.criticalThreshold;
+
+  // Per-venue overrides — fall back to global if not set
+  const effectiveWarning = venue?.tpmWarningThreshold ?? settings.warningThreshold;
+  const effectiveCritical = venue?.tpmCriticalThreshold ?? settings.criticalThreshold;
+
+  // Sync module-level thresholds so all sub-components use the effective values
+  _tpmThresholds.warning = effectiveWarning;
+  _tpmThresholds.critical = effectiveCritical;
+
+  // Merge recording config — default all fields on so existing venues are unaffected
+  const DEFAULT_RECORDING_CONFIG = { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true };
+  const recordingConfig = { ...DEFAULT_RECORDING_CONFIG, ...(venue?.recordingConfig || {}) };
   const fryerCount = venue?.fryerCount || 4;
 
   // Responsive breakpoint
@@ -2793,7 +2817,7 @@ export default function VenueStaffView({
       if (status.level === 'critical') critical.push(parseInt(fryerNum));
     });
     setCriticalFryers(critical.sort((a, b) => a - b));
-  }, [readings, settings.warningThreshold, settings.criticalThreshold]);
+  }, [readings, effectiveWarning, effectiveCritical]);
 
   // Check for duplicates — if any exist, mark as additional records instead of overwriting
   const checkAndSave = (newReadings) => {
@@ -3057,11 +3081,13 @@ export default function VenueStaffView({
             {currentView === 'settings' && (
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
+                effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
               />
             )}
             {currentView === 'record' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
                 venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
+                recordingConfig={recordingConfig}
               />
             )}
             {/* Calendar views — sub-tab selected from sidebar */}
@@ -3154,11 +3180,13 @@ export default function VenueStaffView({
             {currentView === 'settings' && (
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
+                effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
               />
             )}
             {currentView === 'record' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
                 venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
+                recordingConfig={recordingConfig}
               />
             )}
             {currentView === 'calendar' && calendarView === 'day' && (

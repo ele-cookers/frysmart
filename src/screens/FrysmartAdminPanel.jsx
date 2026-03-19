@@ -859,10 +859,11 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
   const [statusFilter, setStatusFilter] = useState('active');
   const [sortByTpm, setSortByTpm] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState(null);
-  const [form, setForm] = useState({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '' });
+  const DEFAULT_REC_CONFIG = { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true };
+  const [form, setForm] = useState({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '', tpmWarningThreshold: '', tpmCriticalThreshold: '', recordingConfig: { ...DEFAULT_REC_CONFIG } });
 
   useEffect(() => {
-    if (autoOpenForm) { setForm({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '' }); setEditing(null); setShowForm(true); clearAutoOpen(); }
+    if (autoOpenForm) { setForm({ name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '', tpmWarningThreshold: '', tpmCriticalThreshold: '', recordingConfig: { ...DEFAULT_REC_CONFIG } }); setEditing(null); setShowForm(true); clearAutoOpen(); }
   }, [autoOpenForm]);
   const colFilters = useColumnFilters();
 
@@ -985,7 +986,7 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
   };
 
   const handleEdit = (venue) => {
-    setForm({ name: venue.name, fryerCount: venue.fryerCount, defaultOil: venue.defaultOil, groupId: venue.groupId || '', status: venue.status, customerCode: venue.customerCode || '', volumeBracket: venue.volumeBracket || '', state: venue.state || '', bdmId: venue.bdmId || '', password: venue.password || '' });
+    setForm({ name: venue.name, fryerCount: venue.fryerCount, defaultOil: venue.defaultOil, groupId: venue.groupId || '', status: venue.status, customerCode: venue.customerCode || '', volumeBracket: venue.volumeBracket || '', state: venue.state || '', bdmId: venue.bdmId || '', password: venue.password || '', tpmWarningThreshold: venue.tpmWarningThreshold ?? '', tpmCriticalThreshold: venue.tpmCriticalThreshold ?? '', recordingConfig: { ...DEFAULT_REC_CONFIG, ...(venue.recordingConfig || {}) } });
     setEditing(venue.id);
     setShowForm(true);
   };
@@ -1296,9 +1297,65 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
                   </FormField>
                 )}
               </div>
+              {/* ── Recording Settings ── */}
+              <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', marginBottom: '10px' }}>RECORDING SETTINGS</div>
+
+                {/* TPM Thresholds */}
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', marginBottom: '6px' }}>TPM Thresholds <span style={{ fontWeight: '400', color: '#94a3b8' }}>(leave blank to use global defaults)</span></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>WARNING %</div>
+                      <input type="number" min="1" max="40" value={form.tpmWarningThreshold}
+                        onChange={e => setForm(f => ({ ...f, tpmWarningThreshold: e.target.value }))}
+                        placeholder={`Global: 18`}
+                        style={{ ...inputStyle, fontSize: '13px' }}
+                        onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>CRITICAL %</div>
+                      <input type="number" min="1" max="40" value={form.tpmCriticalThreshold}
+                        onChange={e => setForm(f => ({ ...f, tpmCriticalThreshold: e.target.value }))}
+                        placeholder={`Global: 24`}
+                        style={{ ...inputStyle, fontSize: '13px' }}
+                        onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recording Fields */}
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', marginBottom: '6px' }}>Recording Fields <span style={{ fontWeight: '400', color: '#94a3b8' }}>(TPM + No Fill always on)</span></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    {[
+                      { key: 'freshFill',    label: 'Fresh Fill'   },
+                      { key: 'topUp',        label: 'Top Up'       },
+                      { key: 'temperatures', label: 'Temperatures' },
+                      { key: 'filtering',    label: 'Filtering'    },
+                      { key: 'foodType',     label: 'Food Type'    },
+                      { key: 'notes',        label: 'Notes'        },
+                    ].map(({ key, label }) => {
+                      const on = form.recordingConfig?.[key] !== false;
+                      return (
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{label}</span>
+                          <button type="button" onClick={() => setForm(f => ({ ...f, recordingConfig: { ...f.recordingConfig, [key]: !on } }))} style={{
+                            width: '36px', height: '20px', borderRadius: '10px', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                            background: on ? '#10b981' : '#cbd5e1'
+                          }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', transition: 'left 0.2s', left: on ? '18px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
               <button onClick={handleSave} disabled={!isFormValid || saving} style={{
                 width: '100%', padding: '10px', background: (isFormValid && !saving) ? '#1a428a' : '#94a3b8', color: 'white',
-                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: (isFormValid && !saving) ? 'pointer' : 'not-allowed', marginTop: '4px'
+                border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: (isFormValid && !saving) ? 'pointer' : 'not-allowed', marginTop: '16px'
               }}>{saving ? 'Saving...' : (editing ? 'Save Changes' : 'Create Venue')}</button>
             </div>
           </div>

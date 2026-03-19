@@ -128,6 +128,9 @@ create table venues (
   last_tpm_date date,
   password text,
   customer_code_saved_at timestamptz,
+  tpm_warning_threshold int,
+  tpm_critical_threshold int,
+  recording_config jsonb default '{"freshFill":true,"topUp":true,"temperatures":true,"filtering":true,"foodType":true,"notes":true}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
