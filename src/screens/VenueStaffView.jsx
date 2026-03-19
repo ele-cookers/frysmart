@@ -2812,19 +2812,15 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
   const fmtTemp = (v) => { if (v == null) return '—'; const n = parseFloat(v); return (n % 1 === 0) ? String(Math.round(n)) : n.toFixed(1); };
   const fmtVar  = (v) => { if (v == null) return '—'; const n = parseFloat(parseFloat(v).toFixed(1)); const abs = (n % 1 === 0) ? String(Math.abs(Math.round(n))) : Math.abs(n).toFixed(1); return n > 0 ? `+${abs}` : n < 0 ? `-${abs}` : abs; };
 
-  // Group by date for active fryer — pick the highest readingNumber per date (most recent read)
+  // Show ALL readings for the active fryer — newest date first, within same date oldest reading first
   const fryerReadings = readings.filter(r => !r.notInUse && (r.fryerNumber || 1) === activeFryer);
-  const dateMap = {};
-  const readingCountMap = {}; // tracks how many readings exist per date (for multi-read badge)
-  fryerReadings.forEach(r => {
-    readingCountMap[r.readingDate] = (readingCountMap[r.readingDate] || 0) + 1;
-    const existing = dateMap[r.readingDate];
-    // Keep reading with the highest readingNumber (= most recent same-day read)
-    if (!existing || (r.readingNumber || 1) > (existing.readingNumber || 1)) {
-      dateMap[r.readingDate] = r;
-    }
+  const readingCountMap = {}; // how many readings per date — used to decide whether to show # cell
+  fryerReadings.forEach(r => { readingCountMap[r.readingDate] = (readingCountMap[r.readingDate] || 0) + 1; });
+  const rows = [...fryerReadings].sort((a, b) => {
+    const dateCmp = b.readingDate.localeCompare(a.readingDate); // newest date first
+    if (dateCmp !== 0) return dateCmp;
+    return (a.readingNumber || 1) - (b.readingNumber || 1); // within same date: oldest reading first
   });
-  const rows = Object.entries(dateMap).sort(([a], [b]) => b.localeCompare(a));
 
   // Which columns to show
   const showFillType = recordingConfig.freshFill || recordingConfig.topUp;
@@ -2847,24 +2843,27 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
     const colTempW = isSmall ? '44px' : '60px';
     const colActW  = isSmall ? '50px' : '70px';
     const colVarW  = isSmall ? '40px' : '60px';
-    const colFillW = isSmall ? '62px' : '82px';
-    const colLitW  = isSmall ? '36px' : '46px';
-    const colFilW  = isSmall ? '64px' : '82px';
-    const colFoodW = isSmall ? '90px' : '123px';
-    const minW = [32, parseInt(colDayW), parseInt(colDateW), parseInt(colTpmW),
+    const colFillW  = isSmall ? '62px' : '82px';
+    const colLitW   = isSmall ? '36px' : '46px';
+    const colFilW   = isSmall ? '64px' : '82px';
+    const colFoodW  = isSmall ? '90px' : '123px';
+    const colStaffW = isSmall ? '70px' : '90px';
+    const colNumW   = '30px';
+    const minW = [parseInt(colDayW), parseInt(colDateW), parseInt(colNumW), parseInt(colTpmW),
       showTemps ? parseInt(colTempW) + parseInt(colActW) + parseInt(colVarW) : 0,
       showFillType ? parseInt(colFillW) + parseInt(colLitW) : 0,
       showFiltered ? parseInt(colFilW) : 0,
       showFood ? parseInt(colFoodW) : 0,
+      parseInt(colStaffW),
       showNotes ? 100 : 0,
     ].reduce((a, b) => a + b, 0);
     return (
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${minW}px`, fontSize: fs, tableLayout: 'fixed' }}>
           <colgroup>
-            <col style={{ width: '32px' }} />
             <col style={{ width: colDayW }} />
             <col style={{ width: colDateW }} />
+            <col style={{ width: colNumW }} />
             <col style={{ width: colTpmW }} />
             {showTemps && <col style={{ width: colTempW }} />}
             {showTemps && <col style={{ width: colActW }} />}
@@ -2873,13 +2872,14 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
             {showFillType && <col style={{ width: colLitW }} />}
             {showFiltered && <col style={{ width: colFilW }} />}
             {showFood && <col style={{ width: colFoodW }} />}
+            <col style={{ width: colStaffW }} />
             {showNotes && <col />}
           </colgroup>
           <thead>
             <tr>
-              <th style={{ ...thBase, fontSize: fs }}>#</th>
               <th style={{ ...thBase, fontSize: fs }}>Day</th>
               <th style={{ ...thBase, fontSize: fs }}>Date</th>
+              <th style={{ ...thBase, fontSize: fs }}>#</th>
               <th style={{ ...thBase, fontSize: fs }}>TPM</th>
               {showTemps && <th style={{ ...thBase, fontSize: fs }}>Set °C</th>}
               {showTemps && <th style={{ ...thBase, fontSize: fs }}>Actual °C</th>}
@@ -2888,11 +2888,13 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
               {showFillType && <th style={{ ...thBase, fontSize: fs }}>Litres</th>}
               {showFiltered && <th style={{ ...thBase, fontSize: fs }}>Filtered</th>}
               {showFood && <th style={{ ...thBase, fontSize: fs, textAlign: 'left' }}>Food</th>}
+              <th style={{ ...thBase, fontSize: fs, textAlign: 'left' }}>Staff</th>
               {showNotes && <th style={{ ...thBase, fontSize: fs, textAlign: 'left' }}>Notes</th>}
             </tr>
           </thead>
           <tbody>
-            {rows.map(([date, r], idx) => {
+            {rows.map((r, idx) => {
+              const date = r.readingDate;
               const dayObj = new Date(date + 'T00:00:00');
               const dateLabel = `${String(dayObj.getDate()).padStart(2,'0')}-${MONTHS[dayObj.getMonth()]}-${String(dayObj.getFullYear()).slice(-2)}`;
               const isFresh = r.oilAge === 1;
@@ -2903,18 +2905,13 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
               const varZero = variance === 0;
               const varInRange = variance != null && variance !== 0 && Math.abs(variance) <= 5;
               const varOutRange = variance != null && Math.abs(variance) > 5;
+              // # = intra-day reading number; blank when only 1 reading that day
+              const readingNum = readingCountMap[date] > 1 ? (r.readingNumber || 1) : '';
               return (
-                <tr key={date} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', height: isSmall ? '28px' : '44px' }}>
-                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
+                <tr key={r.id || idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', height: isSmall ? '28px' : '44px' }}>
                   <td style={{ ...tdBase, fontSize: fs, color: '#64748b', fontWeight: '500' }}>{DAYS[dayObj.getDay()]}</td>
-                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', whiteSpace: 'nowrap' }}>
-                    {dateLabel}
-                    {readingCountMap[date] > 1 && (
-                      <span style={{ fontSize: '8px', fontWeight: '700', color: '#d97706', background: '#fef3c7', borderRadius: '3px', padding: '1px 4px', marginLeft: '4px', verticalAlign: 'middle' }}>
-                        ×{readingCountMap[date]}
-                      </span>
-                    )}
-                  </td>
+                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
+                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '600', color: '#64748b', textAlign: 'center' }}>{readingNum}</td>
                   <td style={{ ...tdBase, fontSize: fs, fontWeight: '700', color: tpmStatus.color, background: tpmStatus.bg }}>
                     {r.tpmValue != null ? Math.round(parseFloat(r.tpmValue)) : '—'}
                   </td>
@@ -2946,6 +2943,9 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
                       {r.foodType ? `${getFoodEmoji(r.foodType)} ${r.foodType}` : '—'}
                     </td>
                   )}
+                  <td style={{ ...tdBase, fontSize: fs, textAlign: 'left', color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {r.staffName || ''}
+                  </td>
                   {showNotes && (
                     <td style={{ ...tdBase, fontSize: fs, textAlign: 'left', color: '#64748b', whiteSpace: isSmall ? 'nowrap' : 'pre-wrap', wordBreak: isSmall ? 'normal' : 'break-word', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {r.notes || ''}
