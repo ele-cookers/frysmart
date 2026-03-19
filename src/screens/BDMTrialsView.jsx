@@ -2161,7 +2161,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   return updated;
                 });
               }}
-              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', width: '100%' }}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', width: '100%', WebkitAppearance: 'none', appearance: 'none' }}
               onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
         </div>
@@ -2170,7 +2170,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
             <input type="date" value={newTrialForm.estEndDate}
               onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
-              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', width: '100%' }}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', width: '100%', WebkitAppearance: 'none', appearance: 'none' }}
               onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
           {newTrialForm.estEndDate && !newTrialForm.endDateManual && (
