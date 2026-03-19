@@ -262,8 +262,15 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
   const [date, setDate] = useState(initialDate || getTodayString());
   const [savedReadings, setSavedReadings] = useState([]);
 
+  // Recording config — determines which fields are shown in this trial
+  const rc = venue.trialConfig ?? {};
+  const rcFillTracking = rc.fillTracking !== false;
+  const rcFiltering    = rc.filtering    !== false;
+  const rcFoodType     = rc.foodType     !== false;
+  const rcNotes        = rc.notes        !== false;
+
   const makeFryer = (fNum) => {
-    const defaultFillType = venue.startingTrial ? 'fresh_fill' : 'top_up';
+    const defaultFillType = !rcFillTracking ? 'no_fill' : venue.startingTrial ? 'fresh_fill' : 'top_up';
     const fryerVol = venue.fryerVolumes?.[fNum] ?? venue.fryerVolumes?.[String(fNum)] ?? '';
     const defaultLitres = defaultFillType === 'fresh_fill' ? (fryerVol ? String(fryerVol) : '') : '';
     return {
@@ -425,8 +432,8 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             </button>
           </div>
 
-          {/* Fill Type — only shown when in operation */}
-          {!fryer.notInUse && (
+          {/* Fill Type — only shown when in operation and fill tracking is enabled */}
+          {!fryer.notInUse && rcFillTracking && (
             <div style={fld}>
               <label style={lbl}>Fill Type</label>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -522,7 +529,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
           </div>
 
           {/* Filtered */}
-          <div style={fld}>
+          {rcFiltering && <div style={fld}>
             <label style={lbl}>Did you filter?</label>
             {isFreshOil ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px', borderRadius: '8px',
@@ -547,10 +554,10 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
                 ))}
               </div>
             )}
-          </div>
+          </div>}
 
           {/* Food Type */}
-          <div style={fld}>
+          {rcFoodType && <div style={fld}>
             <label style={lbl}>What are you frying?</label>
             <select value={fryer.foodType} onChange={e => updateFryer('foodType', e.target.value)}
               style={selectSt}
@@ -558,16 +565,16 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
               onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
               {foodTypeOptions.map(type => <option key={type} value={type}>{getFoodEmoji(type)} {type}</option>)}
             </select>
-          </div>
+          </div>}
 
           {/* Notes */}
-          <div style={fld}>
+          {rcNotes && <div style={fld}>
             <label style={lbl}>Notes (optional)</label>
             <textarea value={fryer.notes} onChange={e => updateFryer('notes', e.target.value)}
               placeholder="e.g. note about this fryer in particular…"
               style={{ ...inputSt, minHeight: '60px', resize: 'vertical', fontFamily: 'inherit' }}
               onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-          </div>
+          </div>}
           </>
           )}
 
@@ -1103,6 +1110,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     estStartDate: getTodayString(),
     estEndDate: (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })(),
     endDateManual: false,
+    trialConfig: { fillTracking: true, filtering: true, foodType: true, notes: true },
   });
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
@@ -1594,6 +1602,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         currentWeeklyAvg: parseFloat(newTrialForm.avgLitresPerWeek),
         trialStartDate: newTrialForm.estStartDate || null,
         trialEndDate: newTrialForm.estEndDate || null,
+        trialConfig: newTrialForm.trialConfig,
       };
       const dbTrial = unMapTrial(newTrialObj);
       const { data: trialRow, error: trialErr } = await supabase.from('trials').insert(dbTrial).select().single();
@@ -1613,6 +1622,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         estStartDate: getTodayString(),
         estEndDate: (() => { const d = new Date(); d.setDate(d.getDate() + (systemSettings?.trialDuration || 7)); return d.toISOString().split('T')[0]; })(),
         endDateManual: false,
+        trialConfig: { fillTracking: true, filtering: true, foodType: true, notes: true },
       });
       setTrialType('new');
       setSuccessMsg(`Trial Created — ${trialId}`);
@@ -2242,6 +2252,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
         );
       })()}
+
+      {/* Recording Config */}
+      <div style={S.field}>
+        <label style={S.label}>RECORDING CONFIG <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(TPM + temps always recorded)</span></label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+          {[
+            { key: 'fillTracking', label: 'Fill Tracking' },
+            { key: 'filtering',    label: 'Filtering'     },
+            { key: 'foodType',     label: 'Food Type'     },
+            { key: 'notes',        label: 'Notes'         },
+          ].map(({ key, label }) => {
+            const on = newTrialForm.trialConfig?.[key] !== false;
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{label}</span>
+                <button type="button"
+                  onClick={() => setNewTrialForm(f => ({ ...f, trialConfig: { ...f.trialConfig, [key]: !on } }))}
+                  style={{ width: '36px', height: '20px', borderRadius: '10px', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0, background: on ? '#10b981' : '#cbd5e1' }}>
+                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', transition: 'left 0.2s', left: on ? '18px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Submit */}
       <button type="submit" disabled={saving || !formValid} style={{
@@ -3116,6 +3151,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           competitor: initCompOil?.competitorId || '',
           fryerCount: venue.fryerCount || 1, avgLitresPerWeek: venue.currentWeeklyAvg ? String(venue.currentWeeklyAvg) : '',
           fryerVolumes: { ...(venue.fryerVolumes || {}) },
+          trialConfig: venue.trialConfig ?? { fillTracking: true, filtering: true, foodType: true, notes: true },
         });
       }
     };
@@ -3154,6 +3190,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         fryerCount: parseInt(mEditForm.fryerCount) || 1, currentWeeklyAvg: avgL,
         volumeBracket: avgL ? calcVolumeBracket(avgL) : null,
         fryerVolumes: mEditForm.fryerVolumes && Object.keys(mEditForm.fryerVolumes).length > 0 ? mEditForm.fryerVolumes : null,
+        trialConfig: mEditForm.trialConfig ?? null,
       });
       setManageSaving(false); setManageEditing(false);
     };
@@ -3711,6 +3748,31 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         );
                       })()}
 
+                      {/* Recording Config */}
+                      <div style={S.field}>
+                        <label style={S.label}>RECORDING CONFIG <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(TPM + temps always recorded)</span></label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                          {[
+                            { key: 'fillTracking', label: 'Fill Tracking' },
+                            { key: 'filtering',    label: 'Filtering'     },
+                            { key: 'foodType',     label: 'Food Type'     },
+                            { key: 'notes',        label: 'Notes'         },
+                          ].map(({ key, label }) => {
+                            const on = mEditForm.trialConfig?.[key] !== false;
+                            return (
+                              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{label}</span>
+                                <button type="button"
+                                  onClick={() => setMEditForm(f => ({ ...f, trialConfig: { ...f.trialConfig, [key]: !on } }))}
+                                  style={{ width: '36px', height: '20px', borderRadius: '10px', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0, background: on ? '#10b981' : '#cbd5e1' }}>
+                                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', transition: 'left 0.2s', left: on ? '18px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       {/* Save button — bottom of edit form */}
                       <button onClick={handleMSave} disabled={mSaving || !mDirty} style={{
                         width: '100%', padding: '11px', borderRadius: '8px', border: 'none',
@@ -3747,6 +3809,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               const badge = (label, bg, color) => (
                 <span style={{ fontSize: '11px', fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '4px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
               );
+              // Recording config — drives which columns show in the log tables
+              const logRc = venue.trialConfig ?? {};
+              const logShowFill   = logRc.fillTracking !== false;
+              const logShowFilter = logRc.filtering    !== false;
+              const logShowFood   = logRc.foodType     !== false;
+              const logShowNotes  = logRc.notes        !== false;
+
               return (
                 <div>
                   <div style={{ marginBottom: '16px' }}>
@@ -3787,18 +3856,18 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px', fontSize: '8px', tableLayout: 'fixed' }}>
                       <colgroup>
-                        <col style={{ width: '32px' }} />  {/* # */}
-                        <col style={{ width: '36px' }} />  {/* Day */}
-                        <col style={{ width: '68px' }} />  {/* Date */}
-                        <col style={{ width: '44px' }} />  {/* TPM */}
-                        <col style={{ width: '44px' }} />  {/* Set°C */}
-                        <col style={{ width: '50px' }} />  {/* Actual°C */}
-                        <col style={{ width: '40px' }} />  {/* -/+°C */}
-                        <col style={{ width: '62px' }} />  {/* Fill Type */}
-                        <col style={{ width: '36px' }} />  {/* Litres */}
-                        <col style={{ width: '64px' }} />  {/* Filtered */}
-                        <col style={{ width: '90px' }} />  {/* Food */}
-                        <col style={{ width: '80px' }} />  {/* Notes */}
+                        <col style={{ width: '32px' }} />
+                        <col style={{ width: '36px' }} />
+                        <col style={{ width: '68px' }} />
+                        <col style={{ width: '44px' }} />
+                        <col style={{ width: '44px' }} />
+                        <col style={{ width: '50px' }} />
+                        <col style={{ width: '40px' }} />
+                        {logShowFill   && <col style={{ width: '62px' }} />}
+                        {logShowFill   && <col style={{ width: '36px' }} />}
+                        {logShowFilter && <col style={{ width: '64px' }} />}
+                        {logShowFood   && <col style={{ width: '90px' }} />}
+                        {logShowNotes  && <col style={{ width: '80px' }} />}
                       </colgroup>
                       <thead>
                         <tr>
@@ -3809,11 +3878,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <th style={thBase}>Set °C</th>
                           <th style={thBase}>Actual °C</th>
                           <th style={thBase}>-/+ °C</th>
-                          <th style={thBase}>Fill Type</th>
-                          <th style={thBase}>Litres</th>
-                          <th style={thBase}>Filtered</th>
-                          <th style={{ ...thBase, textAlign: 'center' }}>Food</th>
-                          <th style={{ ...thBase, textAlign: 'left' }}>Notes</th>
+                          {logShowFill   && <th style={thBase}>Fill Type</th>}
+                          {logShowFill   && <th style={thBase}>Litres</th>}
+                          {logShowFilter && <th style={thBase}>Filtered</th>}
+                          {logShowFood   && <th style={{ ...thBase, textAlign: 'center' }}>Food</th>}
+                          {logShowNotes  && <th style={{ ...thBase, textAlign: 'left' }}>Notes</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -3832,7 +3901,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           const varZero = variance === 0;
                           const varInRange = variance != null && variance !== 0 && Math.abs(variance) <= 5;
                           const varOutRange = variance != null && Math.abs(variance) > 5;
-                          const dash = missed ? '' : '—'; // blank for missed days, dash for future
+                          const dash = missed ? '' : '—';
                           const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}`;
                           return (
                             <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', opacity: isFuture ? 0.4 : 1, height: '28px' }}>
@@ -3844,26 +3913,14 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               </td>
                               <td style={tdBase}>{r ? (fmtTemp(r.setTemperature) ?? '—') : dash}</td>
                               <td style={tdBase}>{r ? (fmtTemp(r.actualTemperature) ?? '—') : dash}</td>
-                              <td style={{
-                                ...tdBase, fontWeight: '600',
-                                background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent',
-                                color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8',
-                              }}>
+                              <td style={{ ...tdBase, fontWeight: '600', background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent', color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8' }}>
                                 {variance != null ? (variance > 0 ? '+' : '') + variance : dash}
                               </td>
-                              <td style={tdBase}>
-                                {isFresh ? badge('Fresh Fill', '#d1fae5', '#059669')
-                                  : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706')
-                                  : ''}
-                              </td>
-                              <td style={tdBase}>{r && r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>
-                              <td style={tdBase}>
-                                {r?.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}
-                              </td>
-                              <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>
-                                {r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}
-                              </td>
-                              <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px' }}>{r?.notes || ''}</td>
+                              {logShowFill && <td style={tdBase}>{isFresh ? badge('Fresh Fill', '#d1fae5', '#059669') : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706') : ''}</td>}
+                              {logShowFill && <td style={tdBase}>{r && r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>}
+                              {logShowFilter && <td style={tdBase}>{r?.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}</td>}
+                              {logShowFood && <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>{r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}</td>}
+                              {logShowNotes && <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px' }}>{r?.notes || ''}</td>}
                             </tr>
                           );
                         })}
@@ -3880,15 +3937,22 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <colgroup>
                             <col style={{ width: '32px' }} /><col style={{ width: '50px' }} /><col style={{ width: '92px' }} />
                             <col style={{ width: '60px' }} /><col style={{ width: '60px' }} /><col style={{ width: '70px' }} />
-                            <col style={{ width: '60px' }} /><col style={{ width: '82px' }} /><col style={{ width: '46px' }} />
-                            <col style={{ width: '82px' }} /><col style={{ width: '123px' }} /><col />
+                            <col style={{ width: '60px' }} />
+                            {logShowFill   && <col style={{ width: '82px' }} />}
+                            {logShowFill   && <col style={{ width: '46px' }} />}
+                            {logShowFilter && <col style={{ width: '82px' }} />}
+                            {logShowFood   && <col style={{ width: '123px' }} />}
+                            {logShowNotes  && <col />}
                           </colgroup>
                           <thead><tr>
                             <th style={thBase}>#</th><th style={thBase}>Day</th><th style={thBase}>Date</th>
                             <th style={thBase}>TPM</th><th style={thBase}>Set °C</th><th style={thBase}>Actual °C</th>
-                            <th style={thBase}>-/+ °C</th><th style={thBase}>Fill Type</th><th style={thBase}>Litres</th>
-                            <th style={thBase}>Filtered</th><th style={{ ...thBase, textAlign: 'center' }}>Food</th>
-                            <th style={{ ...thBase, textAlign: 'left' }}>Notes</th>
+                            <th style={thBase}>-/+ °C</th>
+                            {logShowFill   && <th style={thBase}>Fill Type</th>}
+                            {logShowFill   && <th style={thBase}>Litres</th>}
+                            {logShowFilter && <th style={thBase}>Filtered</th>}
+                            {logShowFood   && <th style={{ ...thBase, textAlign: 'center' }}>Food</th>}
+                            {logShowNotes  && <th style={{ ...thBase, textAlign: 'left' }}>Notes</th>}
                           </tr></thead>
                           <tbody>
                             {calDays.map((day, idx) => {
@@ -3919,11 +3983,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                                   <td style={{ ...tdBase, fontWeight: '600', background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent', color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8' }}>
                                     {variance != null ? (variance > 0 ? '+' : '') + variance : dash}
                                   </td>
-                                  <td style={tdBase}>{isFresh ? badge('Fresh Fill', '#d1fae5', '#059669') : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706') : ''}</td>
-                                  <td style={tdBase}>{r && r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>
-                                  <td style={tdBase}>{r?.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}</td>
-                                  <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>{r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}</td>
-                                  <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{r?.notes || ''}</td>
+                                  {logShowFill   && <td style={tdBase}>{isFresh ? badge('Fresh Fill', '#d1fae5', '#059669') : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706') : ''}</td>}
+                                  {logShowFill   && <td style={tdBase}>{r && r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>}
+                                  {logShowFilter && <td style={tdBase}>{r?.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}</td>}
+                                  {logShowFood   && <td style={{ ...tdBase, textAlign: 'left', whiteSpace: 'nowrap' }}>{r?.foodType ? `${FOOD_EMOJIS[r.foodType] || ''} ${r.foodType}` : dash}</td>}
+                                  {logShowNotes  && <td style={{ ...tdBase, textAlign: 'left', color: '#64748b', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{r?.notes || ''}</td>}
                                 </tr>
                               );
                             })}

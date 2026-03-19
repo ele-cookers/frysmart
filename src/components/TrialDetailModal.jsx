@@ -51,6 +51,12 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
   const [selectedCell, setSelectedCell] = useState(null);
   const [comment, setComment] = useState('');
 
+  // Recording config — which fields were tracked in this trial
+  const _rc = venue.trialConfig ?? {};
+  const rcFill   = _rc.fillTracking !== false;
+  const rcFilter = _rc.filtering    !== false;
+  const rcNotes  = _rc.notes        !== false;
+
   // Pricing & savings
   const liveTrialAvg = calcTrialWeeklyAvg(venue.id, venue.trialStartDate, readings, venue.trialEndDate);
   const preTrialAvg = venue.currentWeeklyAvg;
@@ -460,19 +466,21 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
                         {latest ? (
                           <>
                             <div style={{ fontSize: 'clamp(12px, 3vw, 16px)', fontWeight: '700', color: tpmColor, lineHeight: '1.1', marginBottom: '1px' }}>{latest.tpmValue}</div>
-                            <div style={{ fontSize: '9px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
-                              {hasFresh ? 'Fresh' : `${latest.oilAge}d`}
-                            </div>
+                            {rcFill && (
+                              <div style={{ fontSize: '9px', fontWeight: '600', color: hasFresh ? '#059669' : '#64748b' }}>
+                                {hasFresh ? 'Fresh' : `${latest.oilAge}d`}
+                              </div>
+                            )}
                             <div style={{ fontSize: '8px', color: '#64748b', lineHeight: '1.2', textAlign: 'center' }}>
                               {latest.setTemperature && <span>S:{latest.setTemperature}° </span>}
                               {latest.actualTemperature && <span>A:{latest.actualTemperature}°</span>}
                             </div>
                             <div style={{ display: 'flex', gap: '1px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1px' }}>
-                              {hasFiltered && <Filter size={8} color="#1e40af" strokeWidth={2.5} />}
-                              {hasFresh && <Star size={8} color="#92400e" fill="#92400e" />}
-                              {hasNotes && <MessageSquare size={8} color="#475569" strokeWidth={2.5} />}
+                              {rcFilter && hasFiltered && <Filter size={8} color="#1e40af" strokeWidth={2.5} />}
+                              {rcFill && hasFresh && <Star size={8} color="#92400e" fill="#92400e" />}
+                              {rcNotes && hasNotes && <MessageSquare size={8} color="#475569" strokeWidth={2.5} />}
                             </div>
-                            {latest.litresFilled > 0 && (
+                            {rcFill && latest.litresFilled > 0 && (
                               <div style={{ fontSize: '7px', color: '#1f2937', fontWeight: '600', marginTop: '1px' }}>{latest.litresFilled}L</div>
                             )}
                           </>

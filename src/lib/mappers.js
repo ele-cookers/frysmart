@@ -170,6 +170,8 @@ export const mapTrial = (r) => ({
   insightTraining:         r.insight_training          ?? null,  // Section 4 — Training & Education
   insightEngagement:       r.insight_engagement        ?? null,  // Section 5 — Feedback & Engagement
   insightRecommendations:  r.insight_recommendations   ?? null,  // Sections 6+7 — Value + Next Steps
+  // Recording config: which fields are tracked during this trial (null = all on)
+  trialConfig: r.recording_config ?? { fillTracking: true, filtering: true, foodType: true, notes: true },
 });
 
 export const unMapTrial = (t) => ({
@@ -193,6 +195,7 @@ export const unMapTrial = (t) => ({
   insight_training:          t.insightTraining         ?? null,
   insight_engagement:        t.insightEngagement       ?? null,
   insight_recommendations:   t.insightRecommendations  ?? null,
+  recording_config: t.trialConfig ?? null,
 });
 
 // ── Trial ↔ Venue merge/split helpers ──
@@ -201,7 +204,7 @@ export const TRIAL_FIELDS = [
   'trialId', 'trialStatus', 'trialStartDate', 'trialEndDate',
   'trialOilId', 'trialNotes', 'currentWeeklyAvg', 'currentPricePerLitre',
   'offeredPricePerLitre', 'outcomeDate', 'trialReason', 'soldPricePerLitre',
-  'trialType', 'trialCreatedAt',
+  'trialType', 'trialCreatedAt', 'trialConfig',
   // BDM post-trial assessment fields
   'insightOilLongevity', 'insightTempObservations', 'insightFoodQuality',
   'insightTraining', 'insightEngagement', 'insightRecommendations',
