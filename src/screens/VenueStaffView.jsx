@@ -1645,16 +1645,15 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 minHeight: isDesktop ? '100px' : '84px',
               }}>
                 <div style={{
-                  padding: '5px 3px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  justifyContent: 'space-between',
+                  padding: '5px 3px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center',
                   background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
                 }}>
                   {/* Date number — top */}
                   <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
-                    /* TPM + staff + icon grouped together with small fixed gap */
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%' }}>
+                    /* Fixed marginTop controls date→TPM gap; gap controls spacing within group */
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '100%', marginTop: '4px' }}>
                       <div style={{ fontSize: 'clamp(18px, 4.5vw, 26px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
