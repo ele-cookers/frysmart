@@ -2949,6 +2949,239 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
 };
 
 // ─────────────────────────────────────────────
+// TPM Chart — last 7 days bar chart, per fryer
+// ─────────────────────────────────────────────
+const TPMChartView = ({ readings, fryerCount }) => {
+  const [activeFryer, setActiveFryer] = useState(1);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const fryerList = Array.from({ length: fryerCount }, (_, i) => i + 1);
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Build last-7-days array (today going back 6 days)
+  const today = new Date(); today.setHours(0,0,0,0);
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i));
+    return d;
+  });
+
+  // Group readings by date
+  const readingsByDate = {};
+  readings.forEach(r => {
+    if (!readingsByDate[r.readingDate]) readingsByDate[r.readingDate] = [];
+    readingsByDate[r.readingDate].push(r);
+  });
+
+  // Build chart data for active fryer
+  const chartData = last7.map(day => {
+    const dateStr = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+    const dayRecs = (readingsByDate[dateStr] || []).filter(r => !r.notInUse && (r.fryerNumber || 1) === activeFryer);
+    const r = dayRecs[dayRecs.length - 1] || null;
+    const isFresh = r?.oilAge === 1;
+    const litres = r?.litresFilled > 0 ? r.litresFilled : 0;
+    const missed = !r;
+    return { day, dateStr, r, missed, tpm: r?.tpmValue ?? null, litres, isFresh };
+  });
+
+  const recordedTPMs = chartData.filter(d => d.tpm != null).map(d => d.tpm);
+  const yMax = recordedTPMs.length > 0
+    ? Math.max(Math.ceil(Math.max(...recordedTPMs) / 5) * 5 + 3, _tpmThresholds.critical + 3)
+    : _tpmThresholds.critical + 3;
+
+  // SVG layout
+  const CHART_H = 185;
+  const TOP_PAD = 44;
+  const BOT_PAD = 56;
+  const LEFT_PAD = 48;
+  const RIGHT_PAD = 24;
+  const BAR_W = 40;
+  const STEP = 54;
+  const N = 7;
+  const SVG_W = LEFT_PAD + N * STEP + RIGHT_PAD;
+  const SVG_H = TOP_PAD + CHART_H + BOT_PAD;
+
+  const toY = val => TOP_PAD + CHART_H - (val / yMax) * CHART_H;
+  const barColor = tpm => tpm == null ? '#e2e8f0' : getTPMStatus(tpm).bg;
+  const barTextColor = tpm => tpm == null ? '#94a3b8' : getTPMStatus(tpm).color;
+
+  const yTicks = [];
+  for (let v = 0; v <= yMax; v += 5) yTicks.push(v);
+
+  // Notes for the 7-day window
+  const daysWithNotes = chartData
+    .map((d, idx) => ({ idx, note: d.r?.notes, day: d.day }))
+    .filter(d => d.note);
+
+  if (readings.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+      <BarChart3 size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
+      <div style={{ fontSize: '13px', color: '#94a3b8' }}>No readings recorded yet</div>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '24px clamp(16px, 2vw, 32px) 40px' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937' }}>TPM Chart <span style={{ fontSize: '13px', fontWeight: '500', color: '#94a3b8' }}>— last 7 days</span></div>
+        {fryerList.length > 1 && (
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {fryerList.map(fn => (
+              <button key={fn} onClick={() => setActiveFryer(fn)} style={{
+                padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
+                background: activeFryer === fn ? '#1a428a' : 'white',
+                color: activeFryer === fn ? 'white' : '#64748b',
+              }}>Fryer {fn}</button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '16px', alignItems: isDesktop ? 'flex-start' : 'stretch' }}>
+        {/* Chart column */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Legend */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+              {[
+                { bg: '#d1fae5', border: '#059669', label: `< ${_tpmThresholds.warning} (Good)` },
+                { bg: '#fef3c7', border: '#d97706', label: `${_tpmThresholds.warning}–${_tpmThresholds.critical} (Caution)` },
+                { bg: '#fee2e2', border: '#dc2626', label: `> ${_tpmThresholds.critical} (Replace)` },
+              ].map(l => (
+                <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.bg, border: `1px solid ${l.border}44`, flexShrink: 0 }} />
+                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+              {[{ color: '#10b981', label: 'Fresh fill' }, { color: '#f59e0b', label: 'Top-up' }].map(l => (
+                <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" preserveAspectRatio="xMidYMid meet"
+              style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible', width: '100%' }}>
+
+              {/* Y-axis gridlines + labels */}
+              {yTicks.map(v => {
+                const y = toY(v);
+                return (
+                  <g key={v}>
+                    <line x1={LEFT_PAD} y1={y} x2={SVG_W - RIGHT_PAD} y2={y}
+                      stroke={v === 0 ? '#d1d5db' : '#f1f5f9'} strokeWidth={1}
+                      strokeDasharray={v > 0 ? '3 3' : ''} />
+                    <text x={LEFT_PAD - 6} y={y + 4} textAnchor="end" fontSize={9} fill="#94a3b8" fontWeight="500">{v}</text>
+                  </g>
+                );
+              })}
+
+              {/* Threshold reference lines */}
+              <line x1={LEFT_PAD} y1={toY(_tpmThresholds.warning)} x2={SVG_W - RIGHT_PAD} y2={toY(_tpmThresholds.warning)}
+                stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+              <line x1={LEFT_PAD} y1={toY(_tpmThresholds.critical)} x2={SVG_W - RIGHT_PAD} y2={toY(_tpmThresholds.critical)}
+                stroke="#ef4444" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+
+              {/* Bars + labels + bubbles */}
+              {chartData.map((d, idx) => {
+                const x = LEFT_PAD + idx * STEP;
+                const cx = x + BAR_W / 2;
+                const barH = d.tpm != null ? Math.max((d.tpm / yMax) * CHART_H, 3) : 0;
+                const barY = TOP_PAD + CHART_H - barH;
+                const color = barColor(d.tpm);
+                const dateLabel = `${d.day.getDate()} ${MONTHS_SHORT[d.day.getMonth()]}`;
+                const BUBBLE_R = 14;
+                const barStroke = d.isFresh ? '#10b981' : (d.litres > 0 && !d.isFresh) ? '#f59e0b' : 'none';
+                const barSW = barStroke !== 'none' ? 2 : 0;
+
+                return (
+                  <g key={idx}>
+                    {/* Bar */}
+                    {(d.tpm != null || d.missed) && (
+                      <rect
+                        x={x} y={d.missed ? TOP_PAD + CHART_H - 3 : barY}
+                        width={BAR_W} height={d.missed ? 3 : barH}
+                        fill={d.missed ? '#e2e8f0' : color} rx={3}
+                        stroke={barStroke} strokeWidth={barSW}
+                      />
+                    )}
+
+                    {/* TPM value label */}
+                    {d.tpm != null && barH > 26 && (
+                      <text x={cx} y={barY + 14} textAnchor="middle" fontSize={9} fill={barTextColor(d.tpm)} fontWeight="700">{d.tpm}</text>
+                    )}
+                    {d.tpm != null && barH <= 26 && barH > 0 && (
+                      <text x={cx} y={barY - 4} textAnchor="middle" fontSize={9} fill={barTextColor(d.tpm)} fontWeight="700">{d.tpm}</text>
+                    )}
+
+                    {/* Litres bubble */}
+                    {d.litres > 0 && (() => {
+                      const bubbleY = d.tpm != null ? barY - BUBBLE_R - 5 : TOP_PAD - BUBBLE_R - 2;
+                      const bColor = d.isFresh ? '#10b981' : '#f59e0b';
+                      return (
+                        <g>
+                          <circle cx={cx} cy={bubbleY} r={BUBBLE_R} fill={bColor} />
+                          <text x={cx} y={bubbleY + 3.5} textAnchor="middle" fontSize={9} fill="white" fontWeight="700">{d.litres}L</text>
+                        </g>
+                      );
+                    })()}
+
+                    {/* X-axis date label */}
+                    <text x={cx} y={TOP_PAD + CHART_H + 12} textAnchor="end" fontSize={9} fill="#64748b"
+                      transform={`rotate(-40, ${cx}, ${TOP_PAD + CHART_H + 12})`}>{dateLabel}</text>
+                    {/* Day-of-week label */}
+                    <text x={cx} y={TOP_PAD + CHART_H + BOT_PAD - 6} textAnchor="middle" fontSize={8} fill="#94a3b8" fontWeight="500">
+                      {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.day.getDay()]}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Axes */}
+              <line x1={LEFT_PAD} y1={TOP_PAD + CHART_H} x2={SVG_W - RIGHT_PAD} y2={TOP_PAD + CHART_H} stroke="#d1d5db" strokeWidth={1} />
+              <line x1={LEFT_PAD} y1={TOP_PAD} x2={LEFT_PAD} y2={TOP_PAD + CHART_H} stroke="#d1d5db" strokeWidth={1} />
+              <text x={10} y={TOP_PAD + CHART_H / 2} textAnchor="middle" fontSize={9} fill="#94a3b8" fontWeight="600"
+                transform={`rotate(-90, 10, ${TOP_PAD + CHART_H / 2})`}>TPM</text>
+            </svg>
+          </div>
+        </div>
+
+        {/* Notes panel */}
+        <div style={{ width: isDesktop ? '320px' : '100%', flexShrink: 0 }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Notes</div>
+          {daysWithNotes.length === 0 ? (
+            <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes in the last 7 days</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {daysWithNotes.map(({ note, day }, ni) => {
+                const dateLabel = `${String(day.getDate()).padStart(2,'0')}-${MONTHS_SHORT[day.getMonth()]}-${String(day.getFullYear()).slice(-2)}`;
+                return (
+                  <div key={ni} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', padding: '7px 10px', borderRadius: '7px', background: ni % 2 === 0 ? '#f8fafc' : 'white', border: `1px solid ${ni % 2 === 0 ? '#e8edf3' : '#f1f5f9'}` }}>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '4px', padding: '2px 6px', flexShrink: 0, lineHeight: '1.5', whiteSpace: 'nowrap' }}>{dateLabel}</span>
+                    <span style={{ fontSize: '10px', color: '#374151', lineHeight: '1.55', wordBreak: 'break-word' }}>{note}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
 /**
  * VenueStaffView — the venue staff interface for FrySmart.
  *
@@ -3219,6 +3452,7 @@ export default function VenueStaffView({
                 {[
                   { id: 'record', label: 'Record', icon: ClipboardList },
                   { id: 'tpmlog', label: 'TPM Log', icon: Table2 },
+                  { id: 'tpmchart', label: 'TPM Chart', icon: BarChart3 },
                   { id: 'calendar', label: 'Calendar', icon: Calendar },
                 ].map(item => {
                   const isActive = currentView === item.id;
@@ -3290,7 +3524,7 @@ export default function VenueStaffView({
           </div>
           {/* Content — scrollable area */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) || currentView === 'tpmlog' ? 'none' : '760px', margin: '0 auto', padding: currentView === 'tpmlog' ? '0' : '24px clamp(16px, 2vw, 32px) 40px' }}>
+          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) || currentView === 'tpmlog' ? 'none' : '760px', margin: '0 auto', padding: (currentView === 'tpmlog' || currentView === 'tpmchart') ? '0' : '24px clamp(16px, 2vw, 32px) 40px' }}>
             {currentView === 'settings' && (
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
@@ -3305,6 +3539,9 @@ export default function VenueStaffView({
             )}
             {currentView === 'tpmlog' && (
               <TPMLogView readings={readings} fryerCount={fryerCount} recordingConfig={recordingConfig} />
+            )}
+            {currentView === 'tpmchart' && (
+              <TPMChartView readings={readings} fryerCount={fryerCount} />
             )}
             {/* Calendar views — sub-tab selected from sidebar */}
             {currentView === 'calendar' && calendarView === 'day' && (
@@ -3351,6 +3588,7 @@ export default function VenueStaffView({
                 {[
                   { id: 'record', label: 'Record', icon: ClipboardList },
                   { id: 'tpmlog', label: 'TPM Log', icon: Table2 },
+                  { id: 'tpmchart', label: 'TPM Chart', icon: BarChart3 },
                   { id: 'calendar', label: 'Calendar', icon: Calendar },
                   { id: 'summary', label: 'Summary', icon: BarChart3 },
                   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -3408,6 +3646,9 @@ export default function VenueStaffView({
             )}
             {currentView === 'tpmlog' && (
               <TPMLogView readings={readings} fryerCount={fryerCount} recordingConfig={recordingConfig} />
+            )}
+            {currentView === 'tpmchart' && (
+              <TPMChartView readings={readings} fryerCount={fryerCount} />
             )}
             {currentView === 'calendar' && calendarView === 'day' && (
               <DayView readings={readings} selectedDate={selectedDate}
