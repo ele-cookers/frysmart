@@ -2655,8 +2655,24 @@ const DashboardView = ({ readings, isWide }) => {
 // ─────────────────────────────────────────────
 // Settings View — read-only for venue staff config
 // ─────────────────────────────────────────────
-const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, effectiveWarning, effectiveCritical }) => {
-  // logout — no double-confirm, just log out directly
+const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, effectiveWarning, effectiveCritical, recordingConfig }) => {
+  const rc = recordingConfig || { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true };
+
+  const ReadOnlyToggle = ({ label, enabled }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+      <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>{label}</span>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: '5px',
+        fontSize: '11px', fontWeight: '700',
+        color: enabled ? '#059669' : '#94a3b8',
+        background: enabled ? '#d1fae5' : '#f1f5f9',
+        borderRadius: '20px', padding: '3px 10px',
+      }}>
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: enabled ? '#10b981' : '#cbd5e1', display: 'inline-block' }} />
+        {enabled ? 'On' : 'Off'}
+      </span>
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
@@ -2672,7 +2688,7 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
 
       {/* Venue info — read only */}
       <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
+        <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
           Venue Information
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -2693,27 +2709,59 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
             <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>{venue?.customerCode || '—'}</div>
           </div>
         </div>
-        <div style={{ marginTop: '12px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-          Venue configuration is managed by your admin or BDM.
-        </div>
       </div>
 
       {/* TPM thresholds — read only */}
       <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
+        <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
           TPM Thresholds
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginBottom: '2px' }}>Warning Threshold</div>
-            <div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{effectiveWarning ?? systemSettings?.warningThreshold ?? 18}%</div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{venue?.tpmWarningThreshold != null ? 'Venue override' : 'Global setting'}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          <div style={{ background: '#fffbeb', borderRadius: '8px', padding: '12px' }}>
+            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginBottom: '4px' }}>Warning</div>
+            <div style={{ fontSize: '22px', fontWeight: '700', color: '#f59e0b', lineHeight: 1 }}>{effectiveWarning ?? systemSettings?.warningThreshold ?? 18}%</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{venue?.tpmWarningThreshold != null ? 'Venue override' : 'Global setting'}</div>
           </div>
-          <div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginBottom: '2px' }}>Critical Threshold</div>
-            <div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{effectiveCritical ?? systemSettings?.criticalThreshold ?? 24}%</div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{venue?.tpmCriticalThreshold != null ? 'Venue override' : 'Global setting'}</div>
+          <div style={{ background: '#fff5f5', borderRadius: '8px', padding: '12px' }}>
+            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginBottom: '4px' }}>Critical</div>
+            <div style={{ fontSize: '22px', fontWeight: '700', color: '#ef4444', lineHeight: 1 }}>{effectiveCritical ?? systemSettings?.criticalThreshold ?? 24}%</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{venue?.tpmCriticalThreshold != null ? 'Venue override' : 'Global setting'}</div>
           </div>
+        </div>
+        <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span>🔒</span> Contact Cookers to adjust thresholds for your venue.
+        </div>
+      </div>
+
+      {/* Recording fields — read only */}
+      <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: '16px' }}>
+        <h3 style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
+          Recording Fields
+        </h3>
+        <div style={{ marginBottom: '4px' }}>
+          <ReadOnlyToggle label="Fresh Fill" enabled={rc.freshFill} />
+          <ReadOnlyToggle label="Top Up" enabled={rc.topUp} />
+          <ReadOnlyToggle label="Temperatures" enabled={rc.temperatures} />
+          <ReadOnlyToggle label="Filtering" enabled={rc.filtering} />
+          <ReadOnlyToggle label="Food Type" enabled={rc.foodType} />
+          <ReadOnlyToggle label="Notes" enabled={rc.notes} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+            <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>TPM Reading</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '20px', padding: '3px 10px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#1a428a', display: 'inline-block' }} />
+              Always on
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+            <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: '500' }}>No Fill</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '700', color: '#1a428a', background: '#eff6ff', borderRadius: '20px', padding: '3px 10px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#1a428a', display: 'inline-block' }} />
+              Always on
+            </span>
+          </div>
+        </div>
+        <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+          <span>🔒</span> Contact Cookers to change which fields are recorded at your venue.
         </div>
       </div>
 
@@ -3529,6 +3577,7 @@ export default function VenueStaffView({
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
                 effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
+                recordingConfig={recordingConfig}
               />
             )}
             {currentView === 'record' && (
@@ -3636,6 +3685,7 @@ export default function VenueStaffView({
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
                 effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
+                recordingConfig={recordingConfig}
               />
             )}
             {currentView === 'record' && (
