@@ -2797,23 +2797,38 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
   const [activeFryer, setActiveFryer] = useState(1);
   const [showTableModal, setShowTableModal] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  const [logMonth, setLogMonth] = useState(() => { const n = new Date(); return { year: n.getFullYear(), month: n.getMonth() }; });
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const today = new Date();
+  const isCurrentMonth = logMonth.year === today.getFullYear() && logMonth.month === today.getMonth();
+  const navigateMonth = (dir) => {
+    setLogMonth(prev => {
+      let m = prev.month + dir;
+      let y = prev.year;
+      if (m > 11) { m = 0; y++; }
+      if (m < 0)  { m = 11; y--; }
+      return { year: y, month: m };
+    });
+  };
+
   const fryerList = Array.from({ length: fryerCount }, (_, i) => i + 1);
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   // Number formatters for TPM Log table
   // 1 decimal, but strip trailing .0 (e.g. 180.0 → "180", 180.5 → "180.5")
   const fmtTemp = (v) => { if (v == null) return '—'; const n = parseFloat(v); return (n % 1 === 0) ? String(Math.round(n)) : n.toFixed(1); };
   const fmtVar  = (v) => { if (v == null) return '—'; const n = parseFloat(parseFloat(v).toFixed(1)); const abs = (n % 1 === 0) ? String(Math.abs(Math.round(n))) : Math.abs(n).toFixed(1); return n > 0 ? `+${abs}` : n < 0 ? `-${abs}` : abs; };
 
-  // Show ALL readings for the active fryer — newest date first, within same date oldest reading first
-  const fryerReadings = readings.filter(r => !r.notInUse && (r.fryerNumber || 1) === activeFryer);
+  // Filter to selected month, then show ALL readings — newest date first, within same date oldest reading first
+  const monthStr = `${logMonth.year}-${String(logMonth.month + 1).padStart(2, '0')}`;
+  const fryerReadings = readings.filter(r => !r.notInUse && (r.fryerNumber || 1) === activeFryer && r.readingDate && r.readingDate.startsWith(monthStr));
   const readingCountMap = {}; // how many readings per date — used to decide whether to show # cell
   fryerReadings.forEach(r => { readingCountMap[r.readingDate] = (readingCountMap[r.readingDate] || 0) + 1; });
   const rows = [...fryerReadings].sort((a, b) => {
@@ -2961,9 +2976,39 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
   };
 
   if (rows.length === 0) return (
-    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-      <BarChart3 size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
-      <div style={{ fontSize: '13px', color: '#94a3b8' }}>No readings recorded yet</div>
+    <div style={{ padding: '24px clamp(16px, 2vw, 32px) 40px' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937' }}>TPM Log</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button onClick={() => navigateMonth(-1)} style={{ padding: '6px 8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <ChevronLeft size={16} color="#64748b" />
+            </button>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', minWidth: '120px', textAlign: 'center' }}>
+              {MONTHS_FULL[logMonth.month]} {logMonth.year}
+            </div>
+            <button onClick={() => navigateMonth(1)} disabled={isCurrentMonth} style={{ padding: '6px 8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', cursor: isCurrentMonth ? 'default' : 'pointer', display: 'flex', alignItems: 'center', opacity: isCurrentMonth ? 0.3 : 1 }}>
+              <ChevronRight size={16} color="#64748b" />
+            </button>
+          </div>
+          {fryerList.length > 1 && (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {fryerList.map(fn => (
+                <button key={fn} onClick={() => setActiveFryer(fn)} style={{
+                  padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                  border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
+                  background: activeFryer === fn ? '#1a428a' : 'white',
+                  color: activeFryer === fn ? 'white' : '#64748b',
+                }}>Fryer {fn}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <BarChart3 size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
+        <div style={{ fontSize: '13px', color: '#94a3b8' }}>No readings for {MONTHS_FULL[logMonth.month]} {logMonth.year}</div>
+      </div>
     </div>
   );
 
@@ -2971,18 +3016,33 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
     <div style={{ padding: '24px clamp(16px, 2vw, 32px) 40px' }}>
       <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937' }}>TPM Log</div>
-        {fryerList.length > 1 && (
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {fryerList.map(fn => (
-              <button key={fn} onClick={() => setActiveFryer(fn)} style={{
-                padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-                border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
-                background: activeFryer === fn ? '#1a428a' : 'white',
-                color: activeFryer === fn ? 'white' : '#64748b',
-              }}>Fryer {fn}</button>
-            ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Month navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button onClick={() => navigateMonth(-1)} style={{ padding: '6px 8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <ChevronLeft size={16} color="#64748b" />
+            </button>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', minWidth: '120px', textAlign: 'center' }}>
+              {MONTHS_FULL[logMonth.month]} {logMonth.year}
+            </div>
+            <button onClick={() => navigateMonth(1)} disabled={isCurrentMonth} style={{ padding: '6px 8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', cursor: isCurrentMonth ? 'default' : 'pointer', display: 'flex', alignItems: 'center', opacity: isCurrentMonth ? 0.3 : 1 }}>
+              <ChevronRight size={16} color="#64748b" />
+            </button>
           </div>
-        )}
+          {/* Fryer selector */}
+          {fryerList.length > 1 && (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {fryerList.map(fn => (
+                <button key={fn} onClick={() => setActiveFryer(fn)} style={{
+                  padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                  border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
+                  background: activeFryer === fn ? '#1a428a' : 'white',
+                  color: activeFryer === fn ? 'white' : '#64748b',
+                }}>Fryer {fn}</button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {!isDesktop ? (
         <>
