@@ -1642,27 +1642,24 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                 borderBottom: '1px solid #e2e8f0',
-                minHeight: isDesktop ? '100px' : '84px',
+                minHeight: isDesktop ? '88px' : '76px',
               }}>
                 <div style={{
-                  padding: '5px 3px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '5px 3px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center',
                   background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
                 }}>
                   {/* Date number — top */}
                   <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
-                    /* Fixed marginTop controls date→TPM gap; gap controls spacing within group */
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '100%', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', width: '100%', marginTop: '4px' }}>
+                      <div style={{ fontSize: 'clamp(8px, 2vw, 9px)', fontWeight: '600', color: '#94a3b8', lineHeight: '1', letterSpacing: '0.4px', textTransform: 'uppercase' }}>TPM</div>
                       <div style={{ fontSize: 'clamp(18px, 4.5vw, 26px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      <div style={{ height: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
-                      </div>
                     </div>
                   ) : onlyNotInUse ? (
-                    <div style={{ fontSize: 'clamp(9px, 2.2vw, 11px)', fontWeight: '600', color: '#92400e', textAlign: 'center', lineHeight: '1.3' }}>
+                    <div style={{ fontSize: 'clamp(9px, 2.2vw, 11px)', fontWeight: '600', color: '#92400e', textAlign: 'center', lineHeight: '1.3', marginTop: '4px' }}>
                       Not in use
                     </div>
                   ) : (
@@ -1687,9 +1684,6 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} /> Good (&lt;{_tpmThresholds.warning})</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} /> Warning ({_tpmThresholds.warning}–{_tpmThresholds.critical})</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} /> Critical (&gt;{_tpmThresholds.critical})</div>
-          <div style={{ width: '1px', height: '14px', background: '#e2e8f0' }} />
-          {/* Icon */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={11} color="#475569" strokeWidth={2.5} /> Has Notes</div>
         </div>
       </div>
 
