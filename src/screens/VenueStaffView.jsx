@@ -1556,7 +1556,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
+    <div style={{ maxWidth: 'none', margin: '0 auto', padding: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: 0 }}>
           {selectedDate.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}
@@ -1990,7 +1990,7 @@ const YearView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
       </div>
 
       {/* Month-by-month grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
         {monthData.map(m => {
           const compColor = m.isFuture ? '#cbd5e1' : m.compliance >= 90 ? '#10b981' : m.compliance >= 70 ? '#f59e0b' : '#ef4444';
           const compBg = m.isFuture ? '#f8fafc' : m.compliance >= 90 ? '#d1fae5' : m.compliance >= 70 ? '#fef3c7' : '#fee2e2';
@@ -2738,6 +2738,217 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
 // ─────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
+// TPM Log — full reading history table for a venue, per fryer
+// ─────────────────────────────────────────────
+const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
+  const [activeFryer, setActiveFryer] = useState(1);
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const fryerList = Array.from({ length: fryerCount }, (_, i) => i + 1);
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Group by date for active fryer — pick last reading per date, sort descending
+  const fryerReadings = readings.filter(r => !r.notInUse && (r.fryerNumber || 1) === activeFryer);
+  const dateMap = {};
+  fryerReadings.forEach(r => {
+    if (!dateMap[r.readingDate] || r.readingDate >= dateMap[r.readingDate].readingDate) {
+      dateMap[r.readingDate] = r;
+    }
+  });
+  const rows = Object.entries(dateMap).sort(([a], [b]) => b.localeCompare(a));
+
+  // Which columns to show
+  const showFillType = recordingConfig.freshFill || recordingConfig.topUp;
+  const showTemps    = recordingConfig.temperatures;
+  const showFiltered = recordingConfig.filtering;
+  const showFood     = recordingConfig.foodType;
+  const showNotes    = recordingConfig.notes;
+
+  const thBase = { padding: '6px 10px', fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap', background: '#f8fafc' };
+  const tdBase = { padding: '6px 10px', fontSize: '11px', color: '#1f2937', textAlign: 'center', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', overflow: 'hidden', whiteSpace: 'nowrap' };
+  const badge = (label, bg, color) => (
+    <span style={{ fontWeight: '700', background: bg, color, borderRadius: '4px', padding: '3px 0', whiteSpace: 'nowrap', display: 'inline-block', minWidth: '60px', textAlign: 'center' }}>{label}</span>
+  );
+
+  const renderTable = (isSmall) => {
+    const fs = isSmall ? '8px' : '11px';
+    const colDateW = isSmall ? '68px' : '92px';
+    const colDayW  = isSmall ? '36px' : '50px';
+    const colTpmW  = isSmall ? '44px' : '60px';
+    const colTempW = isSmall ? '44px' : '60px';
+    const colActW  = isSmall ? '50px' : '70px';
+    const colVarW  = isSmall ? '40px' : '60px';
+    const colFillW = isSmall ? '62px' : '82px';
+    const colLitW  = isSmall ? '36px' : '46px';
+    const colFilW  = isSmall ? '64px' : '82px';
+    const colFoodW = isSmall ? '90px' : '123px';
+    const minW = [32, parseInt(colDayW), parseInt(colDateW), parseInt(colTpmW),
+      showTemps ? parseInt(colTempW) + parseInt(colActW) + parseInt(colVarW) : 0,
+      showFillType ? parseInt(colFillW) + parseInt(colLitW) : 0,
+      showFiltered ? parseInt(colFilW) : 0,
+      showFood ? parseInt(colFoodW) : 0,
+      showNotes ? 100 : 0,
+    ].reduce((a, b) => a + b, 0);
+    return (
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${minW}px`, fontSize: fs, tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '32px' }} />
+            <col style={{ width: colDayW }} />
+            <col style={{ width: colDateW }} />
+            <col style={{ width: colTpmW }} />
+            {showTemps && <col style={{ width: colTempW }} />}
+            {showTemps && <col style={{ width: colActW }} />}
+            {showTemps && <col style={{ width: colVarW }} />}
+            {showFillType && <col style={{ width: colFillW }} />}
+            {showFillType && <col style={{ width: colLitW }} />}
+            {showFiltered && <col style={{ width: colFilW }} />}
+            {showFood && <col style={{ width: colFoodW }} />}
+            {showNotes && <col />}
+          </colgroup>
+          <thead>
+            <tr>
+              <th style={{ ...thBase, fontSize: fs }}>#</th>
+              <th style={{ ...thBase, fontSize: fs }}>Day</th>
+              <th style={{ ...thBase, fontSize: fs }}>Date</th>
+              <th style={{ ...thBase, fontSize: fs }}>TPM</th>
+              {showTemps && <th style={{ ...thBase, fontSize: fs }}>Set °C</th>}
+              {showTemps && <th style={{ ...thBase, fontSize: fs }}>Actual °C</th>}
+              {showTemps && <th style={{ ...thBase, fontSize: fs }}>-/+ °C</th>}
+              {showFillType && <th style={{ ...thBase, fontSize: fs }}>Fill Type</th>}
+              {showFillType && <th style={{ ...thBase, fontSize: fs }}>Litres</th>}
+              {showFiltered && <th style={{ ...thBase, fontSize: fs }}>Filtered</th>}
+              {showFood && <th style={{ ...thBase, fontSize: fs, textAlign: 'left' }}>Food</th>}
+              {showNotes && <th style={{ ...thBase, fontSize: fs, textAlign: 'left' }}>Notes</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([date, r], idx) => {
+              const dayObj = new Date(date + 'T00:00:00');
+              const dateLabel = `${String(dayObj.getDate()).padStart(2,'0')}-${MONTHS[dayObj.getMonth()]}-${String(dayObj.getFullYear()).slice(-2)}`;
+              const isFresh = r.oilAge === 1;
+              const isToppedUp = r.litresFilled > 0 && !isFresh;
+              const rawVar = (r.actualTemperature != null && r.setTemperature != null) ? parseFloat(r.actualTemperature) - parseFloat(r.setTemperature) : null;
+              const variance = rawVar != null ? parseFloat(rawVar.toFixed(2)) : null;
+              const tpmStatus = getTPMStatus(r.tpmValue);
+              const varZero = variance === 0;
+              const varInRange = variance != null && variance !== 0 && Math.abs(variance) <= 5;
+              const varOutRange = variance != null && Math.abs(variance) > 5;
+              return (
+                <tr key={date} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', height: isSmall ? '28px' : '44px' }}>
+                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
+                  <td style={{ ...tdBase, fontSize: fs, color: '#64748b', fontWeight: '500' }}>{DAYS[dayObj.getDay()]}</td>
+                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
+                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '700', color: tpmStatus.color, background: tpmStatus.bg }}>
+                    {r.tpmValue ?? '—'}
+                  </td>
+                  {showTemps && <td style={{ ...tdBase, fontSize: fs }}>{r.setTemperature != null ? `${r.setTemperature}°` : '—'}</td>}
+                  {showTemps && <td style={{ ...tdBase, fontSize: fs }}>{r.actualTemperature != null ? `${r.actualTemperature}°` : '—'}</td>}
+                  {showTemps && (
+                    <td style={{ ...tdBase, fontSize: fs, fontWeight: '600',
+                      background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent',
+                      color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8',
+                    }}>
+                      {variance != null ? (variance > 0 ? '+' : '') + variance : '—'}
+                    </td>
+                  )}
+                  {showFillType && (
+                    <td style={{ ...tdBase, fontSize: fs }}>
+                      {isFresh ? badge('Fresh Fill', '#d1fae5', '#059669')
+                        : isToppedUp ? badge('Top Up', '#fef3c7', '#d97706')
+                        : ''}
+                    </td>
+                  )}
+                  {showFillType && <td style={{ ...tdBase, fontSize: fs }}>{r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>}
+                  {showFiltered && (
+                    <td style={{ ...tdBase, fontSize: fs }}>
+                      {r.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}
+                    </td>
+                  )}
+                  {showFood && (
+                    <td style={{ ...tdBase, fontSize: fs, textAlign: 'left', whiteSpace: 'nowrap' }}>
+                      {r.foodType ? `${getFoodEmoji(r.foodType)} ${r.foodType}` : '—'}
+                    </td>
+                  )}
+                  {showNotes && (
+                    <td style={{ ...tdBase, fontSize: fs, textAlign: 'left', color: '#64748b', whiteSpace: isSmall ? 'nowrap' : 'pre-wrap', wordBreak: isSmall ? 'normal' : 'break-word', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {r.notes || ''}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  if (rows.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+      <BarChart3 size={32} color="#cbd5e1" style={{ marginBottom: '8px' }} />
+      <div style={{ fontSize: '13px', color: '#94a3b8' }}>No readings recorded yet</div>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '24px clamp(16px, 2vw, 32px) 40px' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937' }}>TPM Log</div>
+        {fryerList.length > 1 && (
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {fryerList.map(fn => (
+              <button key={fn} onClick={() => setActiveFryer(fn)} style={{
+                padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                border: '1.5px solid', borderColor: activeFryer === fn ? '#1a428a' : '#e2e8f0',
+                background: activeFryer === fn ? '#1a428a' : 'white',
+                color: activeFryer === fn ? 'white' : '#64748b',
+              }}>Fryer {fn}</button>
+            ))}
+          </div>
+        )}
+      </div>
+      {!isDesktop ? (
+        <>
+          {!showTableModal ? (
+            <button onClick={() => setShowTableModal(true)} style={{
+              width: '100%', padding: '14px 16px', borderRadius: '10px',
+              background: '#eff6ff', border: '1.5px solid #bfdbfe',
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: '8px',
+              fontSize: '14px', fontWeight: '600', color: '#1a428a',
+            }}>
+              📊 Tap to View TPM Log
+            </button>
+          ) : (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(15,23,42,0.65)' }}>
+              <div style={{ position: 'absolute', top: '50%', left: '50%', width: 'calc(100vh - 50px)', height: '100vw', transform: 'translate(-50%, -50%) rotate(90deg)', background: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#1a428a', flexShrink: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>TPM Log — Fryer {activeFryer}</div>
+                  <button onClick={() => setShowTableModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '5px 14px', borderRadius: '7px' }}>Close</button>
+                </div>
+                <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
+                  {renderTable(true)}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        renderTable(false)
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
 /**
  * VenueStaffView — the venue staff interface for FrySmart.
  *
@@ -2788,6 +2999,7 @@ export default function VenueStaffView({
 
   // UI-only state
   const [currentView, setCurrentView] = useState('record');
+  const [recordSubTab, setRecordSubTab] = useState('form'); // 'form' | 'tpmlog'
   const [calendarView, setCalendarView] = useState('day');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
@@ -3010,7 +3222,7 @@ export default function VenueStaffView({
                 ].map(item => {
                   const isActive = currentView === item.id;
                   return (
-                    <button key={item.id} onClick={() => setCurrentView(item.id)} style={{
+                    <button key={item.id} onClick={() => { setCurrentView(item.id); if (item.id === 'record') setRecordSubTab('form'); }} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                       padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
@@ -3023,6 +3235,22 @@ export default function VenueStaffView({
                     </button>
                   );
                 })}
+                {/* Log Reading / TPM Log — sub-items under Record */}
+                <div style={{ paddingLeft: '28px', marginTop: '2px', marginBottom: '4px' }}>
+                  {[{ id: 'form', label: 'Log Reading' }, { id: 'tpmlog', label: 'TPM Log' }].map(sub => {
+                    const isScale = currentView === 'record' && recordSubTab === sub.id;
+                    return (
+                      <button key={sub.id} onClick={() => { setCurrentView('record'); setRecordSubTab(sub.id); }} style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '7px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        marginBottom: '1px', textAlign: 'left',
+                        background: isScale ? '#f0f4ff' : 'transparent',
+                        color: isScale ? '#1a428a' : '#94a3b8',
+                        fontWeight: isScale ? '600' : '500', fontSize: '13px',
+                      }}>{sub.label}</button>
+                    );
+                  })}
+                </div>
                 {/* Day / Week / Month / Qtr / Year — always visible under Calendar */}
                 <div style={{ paddingLeft: '28px', marginTop: '2px', marginBottom: '4px' }}>
                   {['Day', 'Week', 'Month', 'Quarter', 'Year'].map(v => {
@@ -3077,18 +3305,21 @@ export default function VenueStaffView({
           </div>
           {/* Content — scrollable area */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) ? 'none' : '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }}>
+          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) || (currentView === 'record' && recordSubTab === 'tpmlog') ? 'none' : '760px', margin: '0 auto', padding: (currentView === 'record' && recordSubTab === 'tpmlog') ? '0' : '24px clamp(16px, 2vw, 32px) 40px' }}>
             {currentView === 'settings' && (
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
                 effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
               />
             )}
-            {currentView === 'record' && (
+            {currentView === 'record' && recordSubTab === 'form' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
                 venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
                 recordingConfig={recordingConfig}
               />
+            )}
+            {currentView === 'record' && recordSubTab === 'tpmlog' && (
+              <TPMLogView readings={readings} fryerCount={fryerCount} recordingConfig={recordingConfig} />
             )}
             {/* Calendar views — sub-tab selected from sidebar */}
             {currentView === 'calendar' && calendarView === 'day' && (
@@ -3154,6 +3385,26 @@ export default function VenueStaffView({
                   );
                 })}
               </div>
+              {/* Record sub-tabs */}
+              {currentView === 'record' && (
+                <div style={{ display: 'flex', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '6px 16px', gap: '4px' }}>
+                  {[{ id: 'form', label: 'Log Reading' }, { id: 'tpmlog', label: 'TPM Log' }].map(tab => {
+                    const active = recordSubTab === tab.id;
+                    return (
+                      <button key={tab.id} onClick={() => setRecordSubTab(tab.id)} style={{
+                        flex: 1, padding: '7px 12px', borderRadius: '8px', border: 'none',
+                        background: active ? 'white' : 'transparent',
+                        color: active ? '#1a428a' : '#64748b',
+                        fontSize: '13px', fontWeight: active ? '600' : '500',
+                        cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      }}>
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {/* Calendar sub-tabs */}
               {currentView === 'calendar' && (
                 <div style={{ display: 'flex', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '6px 16px', gap: '4px' }}>
@@ -3183,11 +3434,14 @@ export default function VenueStaffView({
                 effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
               />
             )}
-            {currentView === 'record' && (
+            {currentView === 'record' && recordSubTab === 'form' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
                 venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
                 recordingConfig={recordingConfig}
               />
+            )}
+            {currentView === 'record' && recordSubTab === 'tpmlog' && (
+              <TPMLogView readings={readings} fryerCount={fryerCount} recordingConfig={recordingConfig} />
             )}
             {currentView === 'calendar' && calendarView === 'day' && (
               <DayView readings={readings} selectedDate={selectedDate}
