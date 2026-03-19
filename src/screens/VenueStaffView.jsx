@@ -1650,24 +1650,14 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                   <div style={{ fontSize: 'clamp(11px, 3vw, 13px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', marginBottom: '1px' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
                     <>
-                      <div style={{ fontSize: 'clamp(8px, 2.2vw, 10px)', fontWeight: '600', color: '#64748b', letterSpacing: '0.5px' }}>TPM</div>
                       <div style={{ fontSize: 'clamp(15px, 4vw, 22px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1.1', marginBottom: '1px' }}>
-                        {latest.tpmValue}
+                        {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      {latest.oilAge && (() => { const os = getOilStatus(latest.oilAge, latest.notInUse); return (
-                        <div style={{ fontSize: 'clamp(9px, 2.2vw, 11px)', color: os ? os.color : '#64748b', fontWeight: '600' }}>
-                          {os ? os.label.replace('Not in Operation', 'N/A').replace('In Use', `${latest.oilAge}d`) : `${latest.oilAge}d`}
+                      {latest.notes && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
+                          <MessageSquare size={10} color="#475569" strokeWidth={2.5} />
                         </div>
-                      ); })()}
-                      <div style={{ fontSize: 'clamp(9px, 2vw, 11px)', color: '#64748b', lineHeight: '1.4', textAlign: 'center', marginTop: '2px' }}>
-                        {latest.setTemperature && <div>S:{latest.setTemperature}°</div>}
-                        {latest.actualTemperature && <div>A:{latest.actualTemperature}°</div>}
-                      </div>
-                      <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2px' }}>
-                        {latest.filtered && <Filter size={10} color="#1e40af" strokeWidth={2.5} />}
-                        {latest.oilAge === 1 && <Star size={10} color="#92400e" fill="#92400e" />}
-                        {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
-                      </div>
+                      )}
                       <div style={{
                         fontSize: 'clamp(8px, 1.8vw, 10px)', color: '#475569', fontWeight: '600',
                         marginTop: '1px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -2920,7 +2910,7 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
               <th style={{ ...thBase, fontSize: fs }}>TPM</th>
               {showTemps && <th style={{ ...thBase, fontSize: fs }}>Set °C</th>}
               {showTemps && <th style={{ ...thBase, fontSize: fs }}>Actual °C</th>}
-              {showTemps && <th style={{ ...thBase, fontSize: fs }}>-/+ °C</th>}
+              {showTemps && <th style={{ ...thBase, fontSize: fs }}>Var %</th>}
               {showFillType && <th style={{ ...thBase, fontSize: fs }}>Fill Type</th>}
               {showFillType && <th style={{ ...thBase, fontSize: fs }}>Litres</th>}
               {showFiltered && <th style={{ ...thBase, fontSize: fs }}>Filtered</th>}
@@ -2936,7 +2926,9 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
               const dateLabel = `${String(dayObj.getDate()).padStart(2,'0')}-${MONTHS[dayObj.getMonth()]}-${String(dayObj.getFullYear()).slice(-2)}`;
               const isFresh = r.oilAge === 1;
               const isToppedUp = r.litresFilled > 0 && !isFresh;
-              const rawVar = (r.actualTemperature != null && r.setTemperature != null) ? parseFloat(r.actualTemperature) - parseFloat(r.setTemperature) : null;
+              const setT = r.setTemperature != null ? parseFloat(r.setTemperature) : null;
+              const actT = r.actualTemperature != null ? parseFloat(r.actualTemperature) : null;
+              const rawVar = (setT != null && actT != null && setT !== 0) ? ((actT - setT) / setT) * 100 : null;
               const variance = rawVar != null ? parseFloat(rawVar.toFixed(1)) : null;
               const tpmStatus = getTPMStatus(r.tpmValue);
               const varZero = variance === 0;
@@ -2959,7 +2951,7 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
                       background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent',
                       color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8',
                     }}>
-                      {fmtVar(variance)}
+                      {variance != null ? `${fmtVar(variance)}%` : '—'}
                     </td>
                   )}
                   {showFillType && (
@@ -3606,11 +3598,23 @@ export default function VenueStaffView({
                   );
                 })}
               </div>
-              {/* Recording section */}
+              {/* Log Reading — standalone standout button */}
               <div style={{ marginBottom: '14px' }}>
-                <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Recording</div>
+                <button onClick={() => setCurrentView('record')} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
+                  padding: '11px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                  background: currentView === 'record' ? '#16a34a' : '#22c55e',
+                  color: 'white', fontWeight: '700', fontSize: '13px', transition: 'all 0.15s',
+                  boxShadow: '0 2px 6px rgba(34,197,94,0.35)',
+                }}>
+                  <ClipboardList size={16} color="white" />
+                  Log Reading
+                </button>
+              </div>
+              {/* History section */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>History</div>
                 {[
-                  { id: 'record', label: 'Record', icon: ClipboardList },
                   { id: 'tpmlog', label: 'TPM Log', icon: Table2 },
                   { id: 'tpmchart', label: 'TPM Chart', icon: BarChart3 },
                   { id: 'calendar', label: 'Calendar', icon: Calendar },
@@ -3747,21 +3751,23 @@ export default function VenueStaffView({
               {/* Main tabs */}
               <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
                 {[
-                  { id: 'record', label: 'Record', icon: ClipboardList },
+                  { id: 'record', label: 'Log', icon: ClipboardList },
                   { id: 'tpmlog', label: 'TPM Log', icon: Table2 },
-                  { id: 'tpmchart', label: 'TPM Chart', icon: BarChart3 },
+                  { id: 'tpmchart', label: 'Chart', icon: BarChart3 },
                   { id: 'calendar', label: 'Calendar', icon: Calendar },
                   { id: 'summary', label: 'Summary', icon: BarChart3 },
                   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 ].map(view => {
                   const active = currentView === view.id;
+                  const isRecord = view.id === 'record';
                   return (
                     <button key={view.id} onClick={() => setCurrentView(view.id)} style={{
                       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
-                      padding: '10px 4px 8px', border: 'none', background: 'transparent',
-                      borderBottom: active ? '3px solid #1a428a' : '3px solid transparent',
-                      color: active ? '#1a428a' : '#94a3b8',
-                      fontSize: '10px', fontWeight: active ? '700' : '500',
+                      padding: '10px 4px 8px', border: 'none',
+                      background: isRecord ? (active ? '#16a34a' : '#22c55e') : 'transparent',
+                      borderBottom: (!isRecord && active) ? '3px solid #1a428a' : isRecord ? 'none' : '3px solid transparent',
+                      color: isRecord ? 'white' : active ? '#1a428a' : '#94a3b8',
+                      fontSize: '10px', fontWeight: (active || isRecord) ? '700' : '500',
                       cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
                     }}>
                       <view.icon size={18} />
