@@ -479,9 +479,8 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             <div style={fld}>
               <label style={lbl}>{isFreshOil ? 'Litres (fresh fill)' : 'Litres Topped Up'}</label>
               {isFreshOil ? (
-                <div style={{ ...inputSt, background: '#f8fafc', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px', cursor: 'default' }}>
+                <div style={{ ...inputSt, background: '#f8fafc', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', cursor: 'default' }}>
                   <span style={{ color: '#64748b' }}>{fryer.litresFilled || '—'}L</span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>(from fryer vol.)</span>
                 </div>
               ) : (
                 <div style={{ position: 'relative' }}>
@@ -2145,9 +2144,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
       {/* Est. Start Date + Est. End Date — side by side on desktop */}
       <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', minWidth: 0, overflow: 'hidden' }}>
-        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden', width: '100%' }}>
           <label style={S.label}>EST. START DATE</label>
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
             <input type="date" value={newTrialForm.estStartDate}
               onChange={e => {
                 const start = e.target.value;
@@ -2162,16 +2161,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   return updated;
                 });
               }}
-              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', width: '100%' }}
               onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
         </div>
-        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden', width: '100%' }}>
           <label style={S.label}>EST. END DATE</label>
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
             <input type="date" value={newTrialForm.estEndDate}
               onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
-              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%' }}
+              style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', width: '100%' }}
               onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
           {newTrialForm.estEndDate && !newTrialForm.endDateManual && (
