@@ -534,7 +534,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             {isFreshOil ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px', borderRadius: '8px',
                 border: '1.5px solid #d1fae5', background: '#f0fdf4', color: '#059669', fontSize: '12px', fontWeight: '600' }}>
-                <Check size={14} strokeWidth={3} /> Yes — fresh oil is always filtered
+                Fresh oil doesn't need filtering
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -2265,7 +2265,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           ].map(({ key, label }) => {
             const on = newTrialForm.trialConfig?.[key] !== false;
             return (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{label}</span>
                 <button type="button"
                   onClick={() => setNewTrialForm(f => ({ ...f, trialConfig: { ...f.trialConfig, [key]: !on } }))}
@@ -2276,6 +2276,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             );
           })}
         </div>
+        {newTrialForm.trialConfig?.fillTracking === false && (
+          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 10px', borderRadius: '7px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+            <span style={{ fontSize: '11px', color: '#92400e', lineHeight: '1.5' }}>⚠ Fill Tracking is off — oil usage stats, savings comparison and oil lifespan won't appear in the Summary Report.</span>
+          </div>
+        )}
       </div>
 
       {/* Submit */}
@@ -3275,11 +3280,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           {/* Inline action buttons */}
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
             {venue.trialStatus === 'pipeline' && (
-              <button className="mhdr-btn mhdr-btn-blue" onClick={() => { if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }}><Play size={12} /> Start</button>
+              <button className="mhdr-btn mhdr-btn-green" onClick={() => { if (window.confirm(`Start trial for ${venue.name}?`)) handleStartTrial(venue.id); }}><Play size={12} /> Start</button>
             )}
             {venue.trialStatus === 'active' && (<>
-              <button className="mhdr-btn mhdr-btn-blue" onClick={() => setReadingModal(venue)}><ClipboardList size={12} /> Log</button>
-              <button className="mhdr-btn mhdr-btn-ghost" onClick={() => setEndTrialModal(venue)}><Check size={12} /> End</button>
+              <button className="mhdr-btn mhdr-btn-amber" onClick={() => setReadingModal(venue)}><ClipboardList size={12} /> Log</button>
+              <button className="mhdr-btn mhdr-btn-green" onClick={() => setEndTrialModal(venue)}><Check size={12} /> End</button>
               <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pipeline?`)) handlePushBack(venue.id, 'pipeline'); }}><RotateCcw size={10} /> Back to Pipeline</button>
             </>)}
             {venue.trialStatus === 'pending' && (<>
@@ -3288,7 +3293,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Move "${venue.name}" back to Active?`)) handlePushBack(venue.id, 'active'); }}><RotateCcw size={10} /> Back to Active</button>
             </>)}
             {venue.trialStatus === 'accepted' && (<>
-              <button className="mhdr-btn mhdr-btn-blue" onClick={() => setCustCodeModal(venue)}><Award size={12} /> Enter Cust Code</button>
+              <button className="mhdr-btn mhdr-btn-amber" onClick={() => setCustCodeModal(venue)}><Award size={12} /> Enter Cust Code</button>
               <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pending?`)) handlePushBack(venue.id, 'pending'); }}><RotateCcw size={10} /> Back to Pending</button>
             </>)}
             {venue.trialStatus === 'successful' && (
@@ -3764,7 +3769,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ].map(({ key, label }) => {
                             const on = mEditForm.trialConfig?.[key] !== false;
                             return (
-                              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0' }}>
                                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{label}</span>
                                 <button type="button"
                                   onClick={() => setMEditForm(f => ({ ...f, trialConfig: { ...f.trialConfig, [key]: !on } }))}
@@ -3775,6 +3780,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             );
                           })}
                         </div>
+                        {mEditForm.trialConfig?.fillTracking === false && (
+                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 10px', borderRadius: '7px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+                            <span style={{ fontSize: '11px', color: '#92400e', lineHeight: '1.5' }}>⚠ Fill Tracking is off — oil usage stats, savings comparison and oil lifespan won't appear in the Summary Report.</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Save button — bottom of edit form */}
@@ -5017,7 +5027,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
                         {/* Row 4: Vol bracket | Prev weekly avg | Trial weekly avg */}
                         {sfld('Vol bracket', volBadge)}
-                        {sfld('Prev weekly avg', tcFill && preTrialAvg ? fmtL(preTrialAvg) : null)}
+                        {sfld('Prev weekly avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
                         {sfld('Trial weekly avg', tcFill && liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
                         {/* Row 5: Total trial litres | Prev oil lifespan | Trial oil lifespan */}
                         {sfld('Total trial litres', tcFill && totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
@@ -5784,6 +5794,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .mhdr-btn-red:hover { background: #ef4444; color: white; border-color: #ef4444; }
         .mhdr-btn-blue { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; }
         .mhdr-btn-blue:hover { background: #1a428a; color: white; border-color: #1a428a; }
+        .mhdr-btn-amber { background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; }
+        .mhdr-btn-amber:hover { background: #f59e0b; color: white; border-color: #f59e0b; }
         .mhdr-btn-ghost { background: transparent; border: 1px solid #e2e8f0; color: #94a3b8; }
         .mhdr-btn-ghost:hover { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
         .bdm-undo-btn { padding: 4px 8px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; background: white; transition: all 0.15s; }
