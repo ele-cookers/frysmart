@@ -1652,7 +1652,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                   {/* Date number — top */}
                   <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', width: '100%', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%', marginTop: '7px' }}>
                       <div style={{ fontSize: 'clamp(8px, 2vw, 9px)', fontWeight: '600', color: '#94a3b8', lineHeight: '1', letterSpacing: '0.4px', textTransform: 'uppercase' }}>TPM</div>
                       <div style={{ fontSize: 'clamp(18px, 4.5vw, 26px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
