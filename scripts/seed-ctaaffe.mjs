@@ -328,7 +328,14 @@ for (let i = 0; i < TRIAL_DEFS.length; i++) {
     bdm_id:           bdm.id,
     customer_code:    def.custCode || prospectCode,
     ...(def.custCode ? { customer_code_saved_at: daysAgoTs(def.outcomeDaysAgo || 0) } : {}),
-    // assessment data requires DB migration — seeded via app UI
+    ...(def.assessment ? {
+      insight_oil_longevity:     JSON.stringify(def.assessment.oilLongevity),
+      insight_temp_observations: JSON.stringify(def.assessment.tempObs),
+      insight_food_quality:      JSON.stringify(def.assessment.foodQuality),
+      insight_training:          JSON.stringify(def.assessment.training),
+      insight_engagement:        JSON.stringify(def.assessment.engagement),
+      insight_recommendations:   JSON.stringify(def.assessment.recommendations),
+    } : {}),
   }).select().single();
 
   if (vErr) { console.error(`  ERR venue "${def.venueName}": ${vErr.message}`); continue; }
