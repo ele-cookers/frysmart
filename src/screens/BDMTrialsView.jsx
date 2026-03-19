@@ -1099,7 +1099,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     customerCode: '', venueName: '',
     competitor: '',
     trialOilId: '', fryerCount: '', fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
-    avgLitresPerWeek: '', fryerChangesPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
+    avgLitresPerWeek: '', fryerChangesPerWeek: '', notes: '', trialGoals: [],
+    estStartDate: getTodayString(),
+    estEndDate: (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })(),
+    endDateManual: false,
   });
 
   // ── Generate next trial ID (TRL-0001, TRL-0002, etc.) ──
@@ -1606,7 +1609,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         customerCode: '', venueName: '',
         competitor: '',
         trialOilId: '', fryerCount: '', fryerVolumes: {}, defaultOil: '', currentPrice: '', offeredPrice: '',
-        avgLitresPerWeek: '', notes: '', trialGoals: [], estStartDate: '', estEndDate: '', endDateManual: false,
+        avgLitresPerWeek: '', notes: '', trialGoals: [],
+        estStartDate: getTodayString(),
+        estEndDate: (() => { const d = new Date(); d.setDate(d.getDate() + (systemSettings?.trialDuration || 7)); return d.toISOString().split('T')[0]; })(),
+        endDateManual: false,
       });
       setTrialType('new');
       setSuccessMsg(`Trial Created — ${trialId}`);
