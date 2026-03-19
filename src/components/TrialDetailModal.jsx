@@ -357,12 +357,12 @@ export const TrialDetailModal = ({ venue, oilTypes, competitors, trialReasons, r
               {(onLogReading || onEndTrial) && (
                 <div style={{ display: 'flex', gap: '8px', marginBottom: onAddComment ? '12px' : '0' }}>
                   {onLogReading && (
-                    <button onClick={() => onLogReading(venue)} style={{ flex: 1, padding: '10px', background: '#1a428a', border: 'none', borderRadius: '10px', cursor: 'pointer', color: 'white', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <button onClick={() => onLogReading(venue)} style={{ flex: 1, padding: '10px', background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '10px', cursor: 'pointer', color: '#92400e', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <ClipboardList size={14} /> Log Reading
                     </button>
                   )}
                   {onEndTrial && (
-                    <button onClick={() => onEndTrial(venue)} style={{ flex: 1, padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', cursor: 'pointer', color: '#dc2626', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <button onClick={() => onEndTrial(venue)} style={{ flex: 1, padding: '10px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '10px', cursor: 'pointer', color: '#166534', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <XCircle size={14} /> End Trial
                     </button>
                   )}
