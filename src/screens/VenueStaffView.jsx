@@ -531,7 +531,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
   function makeBlankFryer(num) {
     return {
       fryerNumber: num,
-      oilAge: '',
+      fillType: 'top_up', // 'fresh_fill' | 'top_up' | 'no_fill'
       litresFilled: '',
       tpmValue: '',
       setTemperature: '',
@@ -552,13 +552,16 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
     const updated = [...fryers];
     updated[index] = { ...updated[index], [field]: value };
 
-    // When oil age is set to 1 (fresh oil), auto-set filtered to true
-    if (field === 'oilAge' && (value === '1' || value === 1)) {
-      updated[index].filtered = true;
-    }
-    // When oil age changes away from 1, reset filtered so user must choose
-    if (field === 'oilAge' && value !== '1' && value !== 1 && value !== '') {
-      updated[index].filtered = null;
+    // Fill type changes: auto-set filtered and litres
+    if (field === 'fillType') {
+      if (value === 'fresh_fill') {
+        updated[index].filtered = true;
+        const fryerVol = venue?.fryerVolumes?.[updated[index].fryerNumber] ?? venue?.fryerVolumes?.[String(updated[index].fryerNumber)];
+        updated[index].litresFilled = fryerVol ? String(fryerVol) : '';
+      } else {
+        updated[index].filtered = null;
+        if (value === 'no_fill') updated[index].litresFilled = '';
+      }
     }
 
     // When marking skipped, clear reading fields
@@ -567,7 +570,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
         ...updated[index],
         notInUse: true,
         tpmValue: '',
-        oilAge: '',
+        fillType: 'top_up',
         litresFilled: '',
         setTemperature: '',
         actualTemperature: '',
@@ -594,14 +597,24 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
     }
   };
 
+  // Calculate oil age: 1 for fresh fill, otherwise days since last fresh fill
+  const calcOilAge = (f) => {
+    if (f.fillType === 'fresh_fill') return 1;
+    const lastFresh = existingReadings
+      .filter(r => (Number(r.fryerNumber) || 1) === f.fryerNumber && Number(r.oilAge) === 1 && r.readingDate <= date)
+      .sort((a, b) => b.readingDate.localeCompare(a.readingDate))[0];
+    if (!lastFresh) return 0;
+    const days = Math.round((new Date(date + 'T00:00:00') - new Date(lastFresh.readingDate + 'T00:00:00')) / 86400000);
+    return days + 1;
+  };
+
   const validate = () => {
     const errors = {};
     if (!staffName.trim()) errors['staffName'] = 'Required';
     fryers.forEach((f, i) => {
       if (f.notInUse) return; // no validation needed for skipped fryers
       if (f.tpmValue === '') errors[`${i}-tpmValue`] = 'Required';
-      if (f.oilAge === '' || f.oilAge === '0' || parseInt(f.oilAge) < 1) errors[`${i}-oilAge`] = 'Min 1';
-      if (f.litresFilled === '') errors[`${i}-litresFilled`] = 'Required';
+      if (f.fillType === 'top_up' && f.litresFilled === '') errors[`${i}-litresFilled`] = 'Required';
       if (f.setTemperature === '') errors[`${i}-setTemperature`] = 'Required';
       if (f.actualTemperature === '') errors[`${i}-actualTemperature`] = 'Required';
       if (f.filtered === null) errors[`${i}-filtered`] = 'Required';
@@ -621,8 +634,8 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
       readingDate: date,
       takenBy: (currentUser?.role === 'venue_staff' || currentUser?.role === 'group_viewer') ? null : (currentUser?.id || null),
       staffName: staffName.trim(),
-      oilAge: f.notInUse ? null : (parseInt(f.oilAge) || null),
-      litresFilled: f.notInUse ? null : (f.litresFilled !== '' ? parseFloat(f.litresFilled) : 0),
+      oilAge: f.notInUse ? null : calcOilAge(f),
+      litresFilled: f.notInUse ? null : (f.fillType === 'no_fill' ? 0 : (f.litresFilled !== '' ? parseFloat(f.litresFilled) : 0)),
       tpmValue: f.notInUse ? null : (f.tpmValue !== '' ? parseFloat(f.tpmValue) : null),
       setTemperature: f.notInUse ? null : (f.setTemperature ? parseFloat(f.setTemperature) : null),
       actualTemperature: f.notInUse ? null : (f.actualTemperature ? parseFloat(f.actualTemperature) : null),
@@ -760,42 +773,64 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
             ) : (
             <div style={{ padding: '12px 16px 16px' }}>
               <>
-                {/* Oil Age */}
+                {/* Fill Type */}
                 <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>Oil Age (days)</label>
-                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={fryer.oilAge}
-                    onChange={(e) => updateFryer(index, 'oilAge', e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="1 = fresh oil today"
-                    style={inputStyle(!!formErrors[`${index}-oilAge`])}
-                    onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-                    onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-oilAge`] ? '#ef4444' : '#e2e8f0'}
-                  />
-                  {formErrors[`${index}-oilAge`] && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>Oil age is required (min 1 = fresh oil)</div>}
+                  <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>Fill Type</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {[
+                      { val: 'fresh_fill', label: 'Fresh Fill', activeColor: '#10b981', activeBg: '#d1fae5', activeText: '#059669' },
+                      { val: 'top_up',     label: 'Top Up',     activeColor: '#f59e0b', activeBg: '#fef3c7', activeText: '#d97706' },
+                      { val: 'no_fill',    label: 'No Fill',    activeColor: '#94a3b8', activeBg: '#f1f5f9', activeText: '#64748b' },
+                    ].map(opt => {
+                      const isActive = fryer.fillType === opt.val;
+                      return (
+                        <button key={opt.val} type="button" onClick={() => updateFryer(index, 'fillType', opt.val)} style={{
+                          flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer',
+                          border: isActive ? `1.5px solid ${opt.activeColor}` : '1.5px solid #e2e8f0',
+                          background: isActive ? opt.activeBg : 'white',
+                          fontSize: '13px', fontWeight: '600',
+                          color: isActive ? opt.activeText : '#64748b',
+                          transition: 'all 0.15s',
+                        }}>
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Litres Filled — required, 0 if no top-up */}
-                <div style={{ marginBottom: '12px' }}>
+                {/* Litres — hidden for no fill; read-only for fresh fill */}
+                {fryer.fillType !== 'no_fill' && (
+                  <div style={{ marginBottom: '12px' }}>
                     <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>
-                      Litres Topped Up
+                      {fryer.fillType === 'fresh_fill' ? 'Litres (fresh fill)' : 'Litres Topped Up'}
                     </label>
-                    <input type="text" inputMode="decimal" value={fryer.litresFilled}
-                      onChange={(e) => updateFryer(index, 'litresFilled', e.target.value.replace(/[^0-9.]/g, ''))}
-                      placeholder="0"
-                      style={inputStyle(!!formErrors[`${index}-litresFilled`])}
-                      onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-                      onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-litresFilled`] ? '#ef4444' : '#e2e8f0'}
-                    />
-                    {formErrors[`${index}-litresFilled`] && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>Litres is required — enter 0 if no oil was added</div>}
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                      Enter 0 if no oil was added today
-                    </div>
-                </div>
+                    {fryer.fillType === 'fresh_fill' ? (
+                      <div style={{ ...inputStyle(false), background: '#f8fafc', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', cursor: 'default' }}>
+                        <span style={{ color: '#64748b' }}>{fryer.litresFilled || '—'}L</span>
+                      </div>
+                    ) : (
+                      <div style={{ position: 'relative' }}>
+                        <input type="text" inputMode="decimal" value={fryer.litresFilled}
+                          onChange={(e) => updateFryer(index, 'litresFilled', e.target.value.replace(/[^0-9.]/g, ''))}
+                          placeholder="e.g. 5"
+                          style={{ ...inputStyle(!!formErrors[`${index}-litresFilled`]), paddingRight: '28px' }}
+                          onFocus={(e) => e.target.style.borderColor = '#1a428a'}
+                          onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-litresFilled`] ? '#ef4444' : '#e2e8f0'}
+                        />
+                        <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#94a3b8', pointerEvents: 'none' }}>L</span>
+                      </div>
+                    )}
+                    {formErrors[`${index}-litresFilled`] && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>Litres topped up is required</div>}
+                  </div>
+                )}
 
                 {/* TPM */}
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>TPM Value (%)</label>
                   <input type="text" inputMode="decimal" value={fryer.tpmValue}
                     onChange={(e) => updateFryer(index, 'tpmValue', e.target.value.replace(/[^0-9.]/g, ''))}
+                    placeholder="e.g. 14"
                     style={inputStyle(!!formErrors[`${index}-tpmValue`])}
                     onFocus={(e) => e.target.style.borderColor = '#1a428a'}
                     onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-tpmValue`] ? '#ef4444' : '#e2e8f0'}
@@ -824,7 +859,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                       <span className="temp-label-desktop">Actual Temperature</span> (°C)
                     </label>
                     <input type="text" inputMode="numeric" pattern="[0-9]*" value={fryer.actualTemperature}
-                      onChange={(e) => updateFryer(index, 'actualTemperature', e.target.value.replace(/[^0-9]/g, ''))} placeholder="175"
+                      onChange={(e) => updateFryer(index, 'actualTemperature', e.target.value.replace(/[^0-9]/g, ''))} placeholder="e.g. 180"
                       style={inputStyle(!!formErrors[`${index}-actualTemperature`])}
                       onFocus={(e) => e.target.style.borderColor = '#1a428a'}
                       onBlur={(e) => e.target.style.borderColor = formErrors[`${index}-actualTemperature`] ? '#ef4444' : '#e2e8f0'}
@@ -838,7 +873,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                   <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>
                     Did you filter?
                   </label>
-                  {(fryer.oilAge == 1) ? (
+                  {fryer.fillType === 'fresh_fill' ? (
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '6px',
                       padding: '10px 12px', borderRadius: '8px',
