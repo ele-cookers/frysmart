@@ -1480,6 +1480,8 @@ const WeekView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
 const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
   const [selectedFryer, setSelectedFryer] = useState(1);
   const [modalDate, setModalDate] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
+  useEffect(() => { const h = () => setIsDesktop(window.innerWidth >= 768); window.addEventListener('resize', h); return () => window.removeEventListener('resize', h); }, []);
   const grouped = groupReadingsByDate(readings);
 
   const year = selectedDate.getFullYear();
@@ -1640,29 +1642,31 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                 borderBottom: '1px solid #e2e8f0',
-                minHeight: window.innerWidth >= 768 ? '110px' : '80px',
+                minHeight: isDesktop ? '88px' : '72px',
               }}>
                 <div style={{
-                  padding: '5px 3px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  gap: '2px',
+                  padding: '4px 2px 3px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'space-between',
                   background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
                 }}>
-                  <div style={{ fontSize: 'clamp(11px, 3vw, 13px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8' }}>{date.getDate()}</div>
+                  {/* Date number — always top */}
+                  <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
-                    <>
-                      <div style={{ fontSize: 'clamp(14px, 3.8vw, 21px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
+                    /* Content block centred between date and bottom */
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px', flex: 1, justifyContent: 'center' }}>
+                      <div style={{ fontSize: 'clamp(13px, 3.5vw, 20px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
+                      {latest.notes && <MessageSquare size={9} color="#475569" strokeWidth={2.5} />}
                       <div style={{
-                        fontSize: 'clamp(8px, 1.8vw, 10px)', color: '#475569', fontWeight: '600',
+                        fontSize: 'clamp(7px, 1.6vw, 9px)', color: '#475569', fontWeight: '600',
                         textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap', width: '100%',
                       }}>
                         {latest.staffName || latest.takenByName || ''}
                       </div>
-                    </>
+                    </div>
                   ) : onlyNotInUse ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, marginTop: '2px' }}>
                       <div style={{ fontSize: 'clamp(9px, 2.2vw, 11px)', fontWeight: '600', color: '#92400e', textAlign: 'center', lineHeight: '1.3' }}>
@@ -3277,7 +3281,7 @@ const TPMChartView = ({ readings, fryerCount }) => {
         </div>
 
         {/* Notes panel */}
-        <div style={{ width: isDesktop ? '320px' : '100%', flexShrink: 0 }}>
+        <div style={{ width: isDesktop ? '420px' : '100%', flexShrink: 0 }}>
           <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Notes</div>
           {daysWithNotes.length === 0 ? (
             <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes in the last 7 days</div>
