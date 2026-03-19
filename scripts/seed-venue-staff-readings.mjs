@@ -39,20 +39,21 @@ const CRITICAL  = 24;
 const STAFF = ['Sarah Mitchell', 'Marcus Lee', 'Priya Sharma', 'Tom Walsh'];
 
 // food_type must match system_settings.food_type_options
+// Increments tuned for realistic ~5-6 day oil cycles (critical=24, fresh oil ~10 TPM → delta ~14)
+// Chips/Fries degrade fastest, Plain Proteins slowest but still within 6-7 days
 const FRYERS = [
-  { num: 1, foodType: 'Chips/Fries',    incMin: 2.0, incMax: 3.2, setTemp: 175 },
-  { num: 2, foodType: 'Battered Items', incMin: 1.2, incMax: 2.3, setTemp: 178 },
-  { num: 3, foodType: 'Mixed Service',  incMin: 1.3, incMax: 2.4, setTemp: 176 },
-  { num: 4, foodType: 'Plain Proteins', incMin: 0.8, incMax: 1.7, setTemp: 180 },
+  { num: 1, foodType: 'Chips/Fries',    incMin: 2.8, incMax: 4.0, setTemp: 175 },
+  { num: 2, foodType: 'Battered Items', incMin: 2.2, incMax: 3.2, setTemp: 178 },
+  { num: 3, foodType: 'Mixed Service',  incMin: 2.0, incMax: 3.0, setTemp: 176 },
+  { num: 4, foodType: 'Plain Proteins', incMin: 1.6, incMax: 2.6, setTemp: 180 },
 ];
 
-// Starting state per fryer as of the morning of Jan 1 (before that day's reading)
-// lastFreshFillDate drives oil_age calculation
+// All fryers start with fresh oil on Jan 1 (oil_age = 2 on that day, fresh fill Dec 31)
 const state = {
-  1: { tpm: 16.5, lastFreshFillDate: '2025-12-26' }, // Chips, approaching warning
-  2: { tpm: 11.0, lastFreshFillDate: '2025-12-28' }, // Battered, early cycle
-  3: { tpm: 19.5, lastFreshFillDate: '2025-12-22' }, // Mixed, had top-up recently
-  4: { tpm: 12.0, lastFreshFillDate: '2025-12-24' }, // Proteins, mid cycle
+  1: { tpm: 9.5,  lastFreshFillDate: '2025-12-31' },
+  2: { tpm: 10.0, lastFreshFillDate: '2025-12-31' },
+  3: { tpm: 9.0,  lastFreshFillDate: '2025-12-31' },
+  4: { tpm: 10.5, lastFreshFillDate: '2025-12-31' },
 };
 
 // Australian public holidays in VIC within range
@@ -167,50 +168,54 @@ for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     const tpmAfterClimb = r1(st.tpm + dailyInc);
 
     // ── Fill decision ────────────────────────────────────────────────────────
+    // Good oil management = change oil at/near warning (18), not just at critical.
+    // This produces realistic ~5-6 day cycles for high-volume frying.
     let fillType, litres, recordedTpm, nextTpm;
 
     if (tpmAfterClimb >= CRITICAL - 0.5) {
       // Critical or near-critical → must do fresh fill
       fillType     = 'fresh_fill';
       litres       = r1(rand(18, 24));
-      recordedTpm  = r1(rand(8.5, 12.5)); // reading on fresh oil
+      recordedTpm  = r1(rand(8.5, 12.5));
       nextTpm      = recordedTpm;
       st.lastFreshFillDate = dateStr;
 
-    } else if (tpmAfterClimb >= WARNING + 2) {
-      // Well over warning → top up (85%) or no fill while monitoring (15%)
-      if (Math.random() < 0.85) {
+    } else if (tpmAfterClimb >= WARNING + 1) {
+      // Over warning (19+) → fresh fill 65%, top up 35%
+      if (Math.random() < 0.65) {
+        fillType     = 'fresh_fill';
+        litres       = r1(rand(18, 24));
+        recordedTpm  = r1(rand(8.5, 12.5));
+        nextTpm      = recordedTpm;
+        st.lastFreshFillDate = dateStr;
+      } else {
         fillType    = 'top_up';
-        litres      = r1(rand(10, 16));
+        litres      = r1(rand(8, 14));
         const drop  = rand(2.0, 4.0);
         recordedTpm = r1(Math.max(tpmAfterClimb - drop, WARNING - 2));
         nextTpm     = recordedTpm;
-      } else {
-        fillType    = 'no_fill';
-        litres      = 0;
-        recordedTpm = tpmAfterClimb;
-        nextTpm     = tpmAfterClimb;
       }
 
     } else if (tpmAfterClimb >= WARNING) {
-      // Just at warning → top up (70%)
-      if (Math.random() < 0.70) {
+      // At warning (18) → fresh fill 50%, top up 50%
+      if (Math.random() < 0.50) {
+        fillType     = 'fresh_fill';
+        litres       = r1(rand(18, 24));
+        recordedTpm  = r1(rand(8.5, 12.5));
+        nextTpm      = recordedTpm;
+        st.lastFreshFillDate = dateStr;
+      } else {
         fillType    = 'top_up';
-        litres      = r1(rand(8, 14));
-        const drop  = rand(1.5, 3.5);
+        litres      = r1(rand(6, 12));
+        const drop  = rand(1.5, 3.0);
         recordedTpm = r1(Math.max(tpmAfterClimb - drop, WARNING - 3));
         nextTpm     = recordedTpm;
-      } else {
-        fillType    = 'no_fill';
-        litres      = 0;
-        recordedTpm = tpmAfterClimb;
-        nextTpm     = tpmAfterClimb;
       }
 
-    } else if (tpmAfterClimb >= WARNING - 3 && Math.random() < 0.22) {
-      // 15–17 range: proactive top-up (~22% chance)
+    } else if (tpmAfterClimb >= WARNING - 3 && Math.random() < 0.15) {
+      // 15–17 range: occasional proactive top-up (15% chance)
       fillType    = 'top_up';
-      litres      = r1(rand(5, 10));
+      litres      = r1(rand(4, 8));
       const drop  = rand(0.5, 1.5);
       recordedTpm = r1(tpmAfterClimb - drop);
       nextTpm     = recordedTpm;
@@ -331,6 +336,16 @@ console.log(`  Not-in-use: ${readings.filter(r => r.not_in_use).length}`);
 console.log(`  Fresh fills (oil_age=1): ${readings.filter(r => r.oil_age === 1).length}`);
 console.log(`  Top ups (litres>0, oil_age>1): ${readings.filter(r => r.litres_filled > 0 && r.oil_age > 1).length}`);
 console.log(`  No fills: ${readings.filter(r => r.litres_filled === 0 && !r.not_in_use).length}`);
+
+// ── Clear existing readings for this venue ────────────────────────────────────
+console.log('Clearing existing venue staff readings...');
+const { error: delErr } = await sb
+  .from('tpm_readings')
+  .delete()
+  .eq('venue_id', VENUE_ID)
+  .is('trial_id', null);
+if (delErr) { console.error('Delete failed:', delErr.message); process.exit(1); }
+console.log('✓ Cleared');
 
 // ── Insert in batches ─────────────────────────────────────────────────────────
 const BATCH = 50;
