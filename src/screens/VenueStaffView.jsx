@@ -1642,7 +1642,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                 borderBottom: '1px solid #e2e8f0',
-                minHeight: isDesktop ? '88px' : '76px',
+                minHeight: isDesktop ? '78px' : '66px',
               }}>
                 <div style={{
                   padding: '5px 3px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center',
