@@ -2947,10 +2947,10 @@ export default function VenueStaffView({
 
       {/* ─── Desktop: Sidebar + Content ─── */}
       {isDesktop ? (
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
           {/* Sidebar — fixed height, own scroll */}
           <div style={{
-            width: '200px', flexShrink: 0, background: 'white', borderRight: '1px solid #e2e8f0',
+            width: '210px', flexShrink: 0, background: 'white', borderRight: '1px solid #e2e8f0',
             padding: '20px 12px', overflowY: 'auto',
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           }}>
@@ -3115,16 +3115,15 @@ export default function VenueStaffView({
                   const active = currentView === view.id;
                   return (
                     <button key={view.id} onClick={() => setCurrentView(view.id)} style={{
-                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                      padding: '11px 8px', border: 'none', background: 'transparent',
+                      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                      padding: '10px 4px 8px', border: 'none', background: 'transparent',
                       borderBottom: active ? '3px solid #1a428a' : '3px solid transparent',
-                      marginBottom: '-1px',
-                      color: active ? '#1a428a' : '#64748b',
-                      fontSize: '13px', fontWeight: active ? '700' : '500',
+                      color: active ? '#1a428a' : '#94a3b8',
+                      fontSize: '10px', fontWeight: active ? '700' : '500',
                       cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
                     }}>
-                      <view.icon size={15} />
-                      {view.label}
+                      <view.icon size={18} />
+                      <span>{view.label}</span>
                     </button>
                   );
                 })}
