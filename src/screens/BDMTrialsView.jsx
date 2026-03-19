@@ -1961,7 +1961,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // -- NEW TRIAL FORM --
   const renderNewTrialForm = () => (
-    <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', overflow: 'hidden' }}>
+    <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
       <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Create Trial</h2>
       <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Set up a new oil trial for an existing customer or a new prospect.</p>
 
@@ -1985,7 +1985,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         })}
       </div>
 
-    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
+    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: isDesktop ? '20px 24px' : '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
     <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #b8c4cf; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: white !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
@@ -2025,7 +2025,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       )}
 
       {/* Current Oil + Current Price — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: isDesktop ? '16px' : '0' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT OIL {req}</label>
           <select
@@ -2057,7 +2057,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Trial Oil + Offered Price — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: isDesktop ? '16px' : '0' }}>
         <div style={S.field}>
           <label style={S.label}>TRIAL OIL {req}</label>
           <select value={newTrialForm.trialOilId} onChange={e => setNewTrialForm(f => ({ ...f, trialOilId: e.target.value }))}
@@ -2079,7 +2079,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Row 1: Avg Litres/Week | No. of Fryer Changes/Week */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: isDesktop ? '16px' : '0', alignItems: 'start' }}>
         <div style={S.field}>
           <label style={S.label}>CURRENT AVG LITRES/WEEK {req}</label>
           <div style={{ position: 'relative' }}>
@@ -2105,7 +2105,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Row 2: Fryer Count | Fryer Volumes */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: isDesktop ? '16px' : '0', alignItems: 'start' }}>
         {/* Left: Fryer Count */}
         <div style={S.field}>
           <label style={S.label}>FRYER COUNT {req}</label>
@@ -2149,10 +2149,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       </div>
 
       {/* Est. Start Date + Est. End Date — side by side on desktop */}
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '16px', minWidth: 0, overflow: 'hidden' }}>
-        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden', width: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: isDesktop ? '16px' : '0' }}>
+        <div style={{ marginBottom: isDesktop ? '14px' : '6px' }}>
           <label style={S.label}>EST. START DATE</label>
-          <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+          <div style={{ width: '100%' }}>
             <input type="date" value={newTrialForm.estStartDate}
               onChange={e => {
                 const start = e.target.value;
@@ -2171,9 +2171,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
           </div>
         </div>
-        <div style={{ ...S.field, minWidth: 0, overflow: 'hidden', width: '100%' }}>
+        <div style={{ marginBottom: isDesktop ? '14px' : '22px' }}>
           <label style={S.label}>EST. END DATE</label>
-          <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+          <div style={{ width: '100%' }}>
             <input type="date" value={newTrialForm.estEndDate}
               onChange={e => setNewTrialForm(f => ({ ...f, estEndDate: e.target.value, endDateManual: true }))}
               style={{ ...inputStyle, minWidth: 0, maxWidth: '100%', width: '100%', WebkitAppearance: 'none', appearance: 'none' }}
