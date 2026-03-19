@@ -3077,7 +3077,7 @@ export default function VenueStaffView({
           </div>
           {/* Content — scrollable area */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-          <div style={{ maxWidth: '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }}>
+          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) ? 'none' : '760px', margin: '0 auto', padding: '24px clamp(16px, 2vw, 32px) 40px' }}>
             {currentView === 'settings' && (
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
