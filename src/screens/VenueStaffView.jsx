@@ -2676,7 +2676,7 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: 0 }}>Settings</h2>
         <button onClick={onClose} style={{
           background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px',
@@ -2684,6 +2684,9 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
         }}>
           Back
         </button>
+      </div>
+      <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '20px' }}>
+        🔒 Contact Cookers to adjust any of these settings for your venue.
       </div>
 
       {/* Venue info — read only */}
@@ -2728,9 +2731,6 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
             <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{venue?.tpmCriticalThreshold != null ? 'Venue override' : 'Global setting'}</div>
           </div>
         </div>
-        <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span>🔒</span> Contact Cookers to adjust thresholds for your venue.
-        </div>
       </div>
 
       {/* Recording fields — read only */}
@@ -2759,9 +2759,6 @@ const SettingsView = ({ venue, systemSettings, onClose, onLogout, isDesktop, eff
               Always on
             </span>
           </div>
-        </div>
-        <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-          <span>🔒</span> Contact Cookers to change which fields are recorded at your venue.
         </div>
       </div>
 
