@@ -2277,44 +2277,26 @@ const SummaryView = ({ readings, isWide, recordingConfig }) => {
         const t7Crit = t7Recs.filter(r => r.tpmValue >= _tpmThresholds.critical).length;
         const t7Total = t7Recs.length;
         return (
-          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>7-Day TPM Trend</h3>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 10px 0' }}>Average TPM per day (last 7 days)</p>
-            <div style={{ flex: 1, display: 'flex', gap: '4px', alignItems: 'flex-end', minHeight: '70px' }}>
-              {last7.map((day, i) => (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                  {day.avg != null ? (
-                    <>
-                      <div style={{ fontSize: '10px', fontWeight: '700', color: getTPMStatus(day.avg).color, marginBottom: '3px' }}>{day.avg.toFixed(0)}</div>
-                      <div style={{ width: '100%', borderRadius: '4px 4px 0 0', background: getTPMStatus(day.avg).color, height: `${Math.max((day.avg / maxT) * 100, 8)}%`, minHeight: '4px' }} />
-                    </>
-                  ) : (
-                    <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px' }} />
-                  )}
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', fontWeight: '600' }}>{day.label}</div>
-                </div>
-              ))}
-            </div>
-            {/* Good / Warning / Critical breakdown */}
-            {t7Total > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '12px' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>7-Day TPM Breakdown</h3>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px 0' }}>Last 7 days</p>
+            {t7Total > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                 {[
                   { label: 'Good', count: t7Good, color: '#10b981', bg: '#d1fae5' },
                   { label: 'Warning', count: t7Warn, color: '#f59e0b', bg: '#fef3c7' },
                   { label: 'Critical', count: t7Crit, color: '#ef4444', bg: '#fee2e2' },
                 ].map(m => (
-                  <div key={m.label} style={{ background: m.bg, borderRadius: '8px', padding: '8px 6px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '18px', fontWeight: '700', color: m.color, lineHeight: '1' }}>{Math.round((m.count / t7Total) * 100)}%</div>
-                    <div style={{ fontSize: '10px', color: m.color, fontWeight: '600', marginTop: '2px' }}>{m.label}</div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px' }}>{m.count} reading{m.count !== 1 ? 's' : ''}</div>
+                  <div key={m.label} style={{ background: m.bg, borderRadius: '10px', padding: '14px 8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: m.color, lineHeight: '1' }}>{Math.round((m.count / t7Total) * 100)}%</div>
+                    <div style={{ fontSize: '11px', color: m.color, fontWeight: '600', marginTop: '4px' }}>{m.label}</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{m.count} reading{m.count !== 1 ? 's' : ''}</div>
                   </div>
                 ))}
               </div>
+            ) : (
+              <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>No readings in the last 7 days</div>
             )}
-            <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({_tpmThresholds.warning})</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({_tpmThresholds.critical})</div>
-            </div>
           </div>
         );
       })()}
