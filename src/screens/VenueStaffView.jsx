@@ -1643,8 +1643,8 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 minHeight: window.innerWidth >= 768 ? '110px' : '80px',
               }}>
                 <div style={{
-                  padding: '4px 3px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  justifyContent: 'space-between',
+                  padding: '5px 3px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  gap: '2px',
                   background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
                 }}>
@@ -1654,15 +1654,13 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                       <div style={{ fontSize: 'clamp(14px, 3.8vw, 21px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'center', minHeight: '12px' }}>
-                        {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
-                      </div>
+                      {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
                       <div style={{
                         fontSize: 'clamp(8px, 1.8vw, 10px)', color: '#475569', fontWeight: '600',
                         textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap', width: '100%',
                       }}>
-                        {latest.staffName || latest.takenByName || '\u00a0'}
+                        {latest.staffName || latest.takenByName || ''}
                       </div>
                     </>
                   ) : onlyNotInUse ? (
@@ -3602,9 +3600,9 @@ export default function VenueStaffView({
                 <button onClick={() => setCurrentView('record')} style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                   padding: '11px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                  background: currentView === 'record' ? '#00aadd' : '#33CCFF',
+                  background: currentView === 'record' ? '#D4891A' : '#F5A623',
                   color: 'white', fontWeight: '700', fontSize: '13px', transition: 'all 0.15s',
-                  boxShadow: '0 2px 6px rgba(51,204,255,0.4)',
+                  boxShadow: '0 2px 6px rgba(245,166,35,0.4)',
                 }}>
                   <ClipboardList size={16} color="white" />
                   Log Reading
@@ -3633,9 +3631,9 @@ export default function VenueStaffView({
                     </button>
                   );
                 })}
-                {/* Day / Week / Month / Qtr / Year — always visible under Calendar */}
+                {/* Day / Week / Month — always visible under Calendar */}
                 <div style={{ paddingLeft: '28px', marginTop: '2px', marginBottom: '4px' }}>
-                  {['Day', 'Week', 'Month', 'Quarter', 'Year'].map(v => {
+                  {['Day', 'Week', 'Month'].map(v => {
                     const isScale = currentView === 'calendar' && calendarView === v.toLowerCase();
                     return (
                       <button key={v} onClick={() => { setCurrentView('calendar'); setCalendarView(v.toLowerCase()); }} style={{
@@ -3763,7 +3761,7 @@ export default function VenueStaffView({
                     <button key={view.id} onClick={() => setCurrentView(view.id)} style={{
                       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                       padding: '10px 4px 8px', border: 'none',
-                      background: isRecord ? (active ? '#00aadd' : '#33CCFF') : 'transparent',
+                      background: isRecord ? (active ? '#D4891A' : '#F5A623') : 'transparent',
                       borderBottom: (!isRecord && active) ? '3px solid #1a428a' : isRecord ? 'none' : '3px solid transparent',
                       color: isRecord ? 'white' : active ? '#1a428a' : '#94a3b8',
                       fontSize: '10px', fontWeight: (active || isRecord) ? '700' : '500',
@@ -3778,7 +3776,7 @@ export default function VenueStaffView({
               {/* Calendar sub-tabs */}
               {currentView === 'calendar' && (
                 <div style={{ display: 'flex', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '6px 16px', gap: '4px' }}>
-                  {[{ id: 'day', label: 'Day' }, { id: 'week', label: 'Week' }, { id: 'month', label: 'Month' }, { id: 'quarter', label: 'Qtr' }, { id: 'year', label: 'Year' }].map(view => {
+                  {[{ id: 'day', label: 'Day' }, { id: 'week', label: 'Week' }, { id: 'month', label: 'Month' }].map(view => {
                     const active = calendarView === view.id;
                     return (
                       <button key={view.id} onClick={() => setCalendarView(view.id)} style={{
