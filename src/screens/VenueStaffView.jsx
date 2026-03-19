@@ -3405,6 +3405,10 @@ export default function VenueStaffView({
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         button, input, select, textarea { font-family: inherit; }
+        .vs-sidebar::-webkit-scrollbar { width: 4px; }
+        .vs-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .vs-sidebar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        .vs-sidebar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}</style>
       {/* Admin preview banner */}
       {currentUser?.role === 'admin' && (
@@ -3491,9 +3495,10 @@ export default function VenueStaffView({
       {isDesktop ? (
         <div style={{ display: 'flex', flex: 1, minHeight: 0, maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
           {/* Sidebar — fixed height, own scroll */}
-          <div style={{
+          <div className="vs-sidebar" style={{
             width: '210px', flexShrink: 0, background: 'white', borderRight: '1px solid #e2e8f0',
-            padding: '20px 12px', overflowY: 'auto',
+            padding: '20px 12px', overflowY: 'auto', overflowX: 'hidden',
+            scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent',
             display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           }}>
             <div>
