@@ -525,7 +525,10 @@ const CriticalBanner = ({ criticalFryers, onChangeOil, isDesktop }) => (
 const _DEFAULT_RECORDING_CONFIG = { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true };
 const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], foodTypeOptions = DEFAULT_FOOD_TYPES, recordingConfig = _DEFAULT_RECORDING_CONFIG }) => {
   const fryerCount = venue?.fryerCount || 4;
+  // staffName is a dropdown when venue.staffNames has entries; free-text fallback otherwise
+  const venueStaffNames = (venue?.staffNames || []).slice().sort();
   const [staffName, setStaffName] = useState('');
+  const [staffNameCustom, setStaffNameCustom] = useState(''); // used when "Other" is selected
   const [date, setDate] = useState(getTodayString());
   const [formErrors, setFormErrors] = useState({});
 
@@ -614,17 +617,24 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
     const lastFresh = existingReadings
       .filter(r => (Number(r.fryerNumber) || 1) === f.fryerNumber && Number(r.oilAge) === 1 && r.readingDate <= date)
       .sort((a, b) => b.readingDate.localeCompare(a.readingDate))[0];
-    if (!lastFresh) return 0;
+    if (!lastFresh) return null; // null = unknown oil age (no fresh fill recorded yet for this fryer)
     const days = Math.round((new Date(date + 'T00:00:00') - new Date(lastFresh.readingDate + 'T00:00:00')) / 86400000);
     return days + 1;
   };
 
+  // Resolved staff name: from dropdown (or "Other" free-text) or plain text input
+  const resolvedStaffName = venueStaffNames.length > 0
+    ? (staffName === 'Other' ? staffNameCustom : staffName)
+    : staffName;
+
   const validate = () => {
     const errors = {};
-    if (!staffName.trim()) errors['staffName'] = 'Required';
+    if (!resolvedStaffName.trim()) errors['staffName'] = 'Required';
     fryers.forEach((f, i) => {
       if (f.notInUse) return; // no validation needed for skipped fryers
       if (f.tpmValue === '') errors[`${i}-tpmValue`] = 'Required';
+      // Gap #2 fix: fresh_fill must have litres > 0 (otherwise oil_age=1 with litres=0 is ambiguous)
+      if (f.fillType === 'fresh_fill' && (f.litresFilled === '' || parseFloat(f.litresFilled) <= 0)) errors[`${i}-litresFilled`] = 'Enter litres added for a fresh fill';
       if (f.fillType === 'top_up' && f.litresFilled === '') errors[`${i}-litresFilled`] = 'Required';
       if (recordingConfig.temperatures && f.setTemperature === '') errors[`${i}-setTemperature`] = 'Required';
       if (recordingConfig.temperatures && f.actualTemperature === '') errors[`${i}-actualTemperature`] = 'Required';
@@ -644,7 +654,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
       fryerNumber: f.fryerNumber,
       readingDate: date,
       takenBy: (currentUser?.role === 'venue_staff' || currentUser?.role === 'group_viewer') ? null : (currentUser?.id || null),
-      staffName: staffName.trim(),
+      staffName: resolvedStaffName.trim(),
       oilAge: f.notInUse ? null : calcOilAge(f),
       litresFilled: f.notInUse ? null : (f.fillType === 'no_fill' ? 0 : (f.litresFilled !== '' ? parseFloat(f.litresFilled) : 0)),
       tpmValue: f.notInUse ? null : (f.tpmValue !== '' ? parseFloat(f.tpmValue) : null),
@@ -681,13 +691,35 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
             <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>
               Staff Name
             </label>
-            <input type="text" value={staffName}
-              onChange={(e) => setStaffName(e.target.value)} required
-              placeholder="Enter your name"
-              style={{ ...inputStyle(!!formErrors['staffName']), }}
-              onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-              onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
-            />
+            {venueStaffNames.length > 0 ? (
+              <>
+                <select value={staffName} onChange={(e) => setStaffName(e.target.value)}
+                  style={{ ...inputStyle(!!formErrors['staffName']), appearance: 'none', WebkitAppearance: 'none', background: 'white', cursor: 'pointer' }}
+                  onFocus={(e) => e.target.style.borderColor = '#1a428a'}
+                  onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
+                >
+                  <option value="">Select your name</option>
+                  {venueStaffNames.map(n => <option key={n} value={n}>{n}</option>)}
+                  <option value="Other">Other</option>
+                </select>
+                {staffName === 'Other' && (
+                  <input type="text" value={staffNameCustom} onChange={(e) => setStaffNameCustom(e.target.value)}
+                    placeholder="Enter your name"
+                    style={{ ...inputStyle(!!formErrors['staffName']), marginTop: '6px' }}
+                    onFocus={(e) => e.target.style.borderColor = '#1a428a'}
+                    onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
+                  />
+                )}
+              </>
+            ) : (
+              <input type="text" value={staffName}
+                onChange={(e) => setStaffName(e.target.value)} required
+                placeholder="Enter your name"
+                style={{ ...inputStyle(!!formErrors['staffName']), }}
+                onFocus={(e) => e.target.style.borderColor = '#1a428a'}
+                onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
+              />
+            )}
             {formErrors['staffName'] && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>Staff name is required</div>}
           </div>
 
@@ -2799,11 +2831,15 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Group by date for active fryer — pick last reading per date, sort descending
+  // Group by date for active fryer — pick the highest readingNumber per date (most recent read)
   const fryerReadings = readings.filter(r => !r.notInUse && (r.fryerNumber || 1) === activeFryer);
   const dateMap = {};
+  const readingCountMap = {}; // tracks how many readings exist per date (for multi-read badge)
   fryerReadings.forEach(r => {
-    if (!dateMap[r.readingDate] || r.readingDate >= dateMap[r.readingDate].readingDate) {
+    readingCountMap[r.readingDate] = (readingCountMap[r.readingDate] || 0) + 1;
+    const existing = dateMap[r.readingDate];
+    // Keep reading with the highest readingNumber (= most recent same-day read)
+    if (!existing || (r.readingNumber || 1) > (existing.readingNumber || 1)) {
       dateMap[r.readingDate] = r;
     }
   });
@@ -2890,7 +2926,14 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
                 <tr key={date} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa', height: isSmall ? '28px' : '44px' }}>
                   <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', color: '#64748b' }}>{idx + 1}</td>
                   <td style={{ ...tdBase, fontSize: fs, color: '#64748b', fontWeight: '500' }}>{DAYS[dayObj.getDay()]}</td>
-                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', whiteSpace: 'nowrap' }}>{dateLabel}</td>
+                  <td style={{ ...tdBase, fontSize: fs, fontWeight: '500', whiteSpace: 'nowrap' }}>
+                    {dateLabel}
+                    {readingCountMap[date] > 1 && (
+                      <span style={{ fontSize: '8px', fontWeight: '700', color: '#d97706', background: '#fef3c7', borderRadius: '3px', padding: '1px 4px', marginLeft: '4px', verticalAlign: 'middle' }}>
+                        ×{readingCountMap[date]}
+                      </span>
+                    )}
+                  </td>
                   <td style={{ ...tdBase, fontSize: fs, fontWeight: '700', color: tpmStatus.color, background: tpmStatus.bg }}>
                     {r.tpmValue ?? '—'}
                   </td>
@@ -3309,7 +3352,11 @@ export default function VenueStaffView({
     setCriticalFryers(critical.sort((a, b) => a - b));
   }, [readings, effectiveWarning, effectiveCritical]);
 
-  // Check for duplicates — if any exist, mark as additional records instead of overwriting
+  // Check for duplicates — if any exist, mark as additional records instead of overwriting.
+  // NOTE: isOilChange: true is the signal read by App.jsx handleSaveReadings, which queries
+  // Supabase for the current max reading_number per fryer/date and sets reading_number = max + 1
+  // before INSERT. This correctly handles the unique constraint (venue_id, fryer_number,
+  // reading_date, reading_number). No reading_number increment is needed here.
   const checkAndSave = (newReadings) => {
     const tagged = newReadings.map(r => {
       const existing = readings.find(

@@ -125,6 +125,7 @@ export const mapVenue = (r) => ({
   tpmWarningThreshold: r.tpm_warning_threshold ?? null,
   tpmCriticalThreshold: r.tpm_critical_threshold ?? null,
   recordingConfig: r.recording_config ?? { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true },
+  staffNames: Array.isArray(r.staff_names) ? r.staff_names : [],
 });
 
 export const unMapVenue = (v) => ({
@@ -144,6 +145,7 @@ export const unMapVenue = (v) => ({
   tpm_warning_threshold: v.tpmWarningThreshold != null && v.tpmWarningThreshold !== '' ? parseInt(v.tpmWarningThreshold) : null,
   tpm_critical_threshold: v.tpmCriticalThreshold != null && v.tpmCriticalThreshold !== '' ? parseInt(v.tpmCriticalThreshold) : null,
   recording_config: v.recordingConfig || null,
+  staff_names: Array.isArray(v.staffNames) ? v.staffNames : [],
 });
 
 // ── trials ──
@@ -251,7 +253,7 @@ export const unMapReading = (rd) => ({
   reading_number: rd.readingNumber ?? 1,
   taken_by: rd.takenBy || null,
   oil_age: rd.oilAge,
-  litres_filled: rd.litresFilled != null ? rd.litresFilled : 0,
+  litres_filled: (rd.litresFilled != null && rd.litresFilled !== '') ? parseFloat(rd.litresFilled) || 0 : 0,
   tpm_value: rd.tpmValue ?? null,
   set_temperature: rd.setTemperature ?? null,
   actual_temperature: rd.actualTemperature ?? null,

@@ -14,3 +14,14 @@ ALTER TABLE venues
 UPDATE venues
   SET recording_config = '{"freshFill":true,"topUp":true,"temperatures":true,"filtering":true,"foodType":true,"notes":true}'::jsonb
   WHERE recording_config IS NULL;
+
+-- Migration: Staff names list per venue (Gap #3)
+ALTER TABLE venues ADD COLUMN IF NOT EXISTS staff_names jsonb DEFAULT '[]'::jsonb;
+
+UPDATE venues SET staff_names = '[]'::jsonb WHERE staff_names IS NULL;
+
+-- Migration: Expand profiles.role check constraint to include venue_staff and group_viewer (Gap #4)
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+
+ALTER TABLE profiles ADD CONSTRAINT profiles_role_check
+  CHECK (role IN ('admin','mgt','state_manager','nam','bdm','venue_staff','group_viewer'));
