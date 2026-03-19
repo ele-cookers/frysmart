@@ -1645,17 +1645,17 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 minHeight: isDesktop ? '100px' : '84px',
               }}>
                 <div style={{
-                  padding: '5px 3px 5px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  gap: '4px',
+                  padding: '5px 3px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'space-between',
                   background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
                 }}>
-                  {/* Date number */}
+                  {/* Date number — top */}
                   <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
                     <>
-                      {/* TPM */}
-                      <div style={{ fontSize: 'clamp(14px, 3.8vw, 20px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
+                      {/* TPM — bigger font; larger value = less remaining gap = icon closer to bottom naturally */}
+                      <div style={{ fontSize: 'clamp(18px, 4.5vw, 26px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
                       {/* Staff name */}
@@ -1666,16 +1666,18 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                       }}>
                         {latest.staffName || latest.takenByName || ''}
                       </div>
-                      {/* Comment icon — fixed height so cells without notes stay same height */}
+                      {/* Comment icon — always rendered (fixed height) so icon row is always at bottom */}
                       <div style={{ height: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
                       </div>
                     </>
                   ) : onlyNotInUse ? (
-                    <div style={{ fontSize: 'clamp(9px, 2.2vw, 11px)', fontWeight: '600', color: '#92400e', textAlign: 'center', lineHeight: '1.3', marginTop: '4px' }}>
+                    <div style={{ fontSize: 'clamp(9px, 2.2vw, 11px)', fontWeight: '600', color: '#92400e', textAlign: 'center', lineHeight: '1.3' }}>
                       Not in use
                     </div>
-                  ) : null}
+                  ) : (
+                    <div />
+                  )}
                 </div>
               </div>
             );
