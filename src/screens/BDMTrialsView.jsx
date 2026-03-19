@@ -3750,7 +3750,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               return (
                 <div>
                   <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: fc > 1 ? '10px' : '0' }}>Trial Results</div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: fc > 1 ? '10px' : '0' }}>Trial Log</div>
                     {fc > 1 && (
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {fryerList.map(fn => (
