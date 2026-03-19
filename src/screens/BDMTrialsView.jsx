@@ -4013,6 +4013,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </div>
               );
 
+              const tcFill = (venue.trialConfig ?? {}).fillTracking !== false;
               const cellTpmBg = tpmBg;
               const cellTpmCol = tpmCol;
               // Min cell width: 32px each + 68px label col; allow horizontal scroll if needed
@@ -4089,8 +4090,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       { bg: '#d1fae5', color: '#059669', label: '≤14 TPM' },
                       { bg: '#fef3c7', color: '#d97706', label: '15–18 TPM' },
                       { bg: '#fee2e2', color: '#dc2626', label: '>18 TPM' },
-                      { border: '2px solid #10b981', label: 'Fresh fill' },
-                      { border: '2px solid #f59e0b', label: 'Top-up' },
+                      ...(tcFill ? [{ border: '2px solid #10b981', label: 'Fresh fill' }, { border: '2px solid #f59e0b', label: 'Top-up' }] : []),
                     ].map(l => (
                       <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <div style={{ width: '10px', height: '10px', background: l.bg || 'white', border: l.border || `1px solid ${l.color}44`, borderRadius: '2px' }} />
@@ -4143,7 +4143,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
                     const hasTpm      = fryerData.some(r => r.fPeak != null);
                     const hasOilLife  = fryerData.some(r => r.fMaxLife != null);
-                    const hasOilUsage = fryerData.some(r => r.totalLitres > 0);
+                    const hasOilUsage = tcFill && fryerData.some(r => r.totalLitres > 0);
                     const hasTemp     = fryerData.some(r => r.fMinTemp != null);
                     const hasFresh    = fryerData.some(r => r.freshCount > 0);
                     const hasTopUp    = fryerData.some(r => r.topUpCount > 0);
@@ -4580,6 +4580,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
             {manageSubTab === 'notes' && (() => {
               const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const tcFill = (venue.trialConfig ?? {}).fillTracking !== false;
               const activeFryer = calFryerTab;
 
               if (calDays.length === 0) return (
@@ -4670,6 +4671,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </div>
                         ))}
                       </div>
+                      {tcFill && (
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
                         {[
                           { color: '#10b981', label: 'Fresh fill' },
@@ -4681,6 +4683,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           </div>
                         ))}
                       </div>
+                      )}
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                     <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'visible', width: '100%' }}>
@@ -4719,8 +4722,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           <g key={idx}>
                             {/* Bar (skip future days) */}
                             {!d.isFuture && (d.tpm != null || d.missed) && (() => {
-                              const barIsFresh = d.isFresh;
-                              const barIsTopUp = d.litres > 0 && !d.isFresh;
+                              const barIsFresh = tcFill && d.isFresh;
+                              const barIsTopUp = tcFill && d.litres > 0 && !d.isFresh;
                               const barStroke = barIsFresh ? '#10b981' : barIsTopUp ? '#f59e0b' : 'none';
                               const barSW = (barIsFresh || barIsTopUp) ? 2 : 0;
                               return (
@@ -4742,7 +4745,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             )}
 
                             {/* Litres bubble — single line e.g. "12L" */}
-                            {d.litres > 0 && !d.isFuture && (() => {
+                            {tcFill && d.litres > 0 && !d.isFuture && (() => {
                               const bubbleY = d.tpm != null ? barY - BUBBLE_R - 5 : TOP_PAD - BUBBLE_R - 2;
                               const bColor = d.isFresh ? '#10b981' : '#f59e0b';
                               return (
@@ -4853,6 +4856,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
             {/* ── Summary Report ── */}
             {manageSubTab === 'summary' && (() => {
+              const tcFill = (venue.trialConfig ?? {}).fillTracking !== false;
               const GOAL_LABELS = {
                 'save-money': 'Save money', 'reduce-waste': 'Reduce oil waste',
                 'reduce-consumption': 'Reduce consumption',
@@ -5013,12 +5017,12 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         {sfld('Offered price / L', venue.offeredPricePerLitre ? fmt$(venue.offeredPricePerLitre) : null)}
                         {/* Row 4: Vol bracket | Prev weekly avg | Trial weekly avg */}
                         {sfld('Vol bracket', volBadge)}
-                        {sfld('Prev weekly avg', preTrialAvg ? fmtL(preTrialAvg) : null)}
-                        {sfld('Trial weekly avg', liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
+                        {sfld('Prev weekly avg', tcFill && preTrialAvg ? fmtL(preTrialAvg) : null)}
+                        {sfld('Trial weekly avg', tcFill && liveTrialAvg !== null ? fmtL(liveTrialAvg) : null)}
                         {/* Row 5: Total trial litres | Prev oil lifespan | Trial oil lifespan */}
-                        {sfld('Total trial litres', totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
+                        {sfld('Total trial litres', tcFill && totalTrialLitres > 0 ? fmtL(Math.round(totalTrialLitres * 10) / 10) : null)}
                         {sfld('Prev oil lifespan', fryerChangesPerWeek ? `${fryerChangesPerWeek} days` : null)}
-                        {sfld('Trial oil lifespan', maxOilAge ? `${maxOilAge} days` : null)}
+                        {sfld('Trial oil lifespan', tcFill && maxOilAge ? `${maxOilAge} days` : null)}
                       </div>
                       {/* Row 6: Start / End / Duration — temporal context, visually separated */}
                       <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1.5px dashed #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 20px' }}>
@@ -5092,7 +5096,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       marginBottom: '0',
                       order: isDesktop ? 0 : 1,
                     }}>
-                      {(compWklyAvg || liveTrialAvg !== null) ? (
+                      {tcFill ? (compWklyAvg || liveTrialAvg !== null) ? (
                         !isDesktop ? (
                           /* ── Mobile: transposed table with Weekly/Yearly grouping ── */
                           <div style={{ overflowX: 'auto' }}>
@@ -5220,7 +5224,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                         )
                       ) : (
                         <div style={{ fontSize: '12px', color: '#94a3b8' }}>Comparison data will appear once readings are recorded.</div>
-                      )}
+                      ) : null}
                     </div>
 
                     {/* Right: goals — on mobile appears FIRST (above comparison) */}
