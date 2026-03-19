@@ -1645,7 +1645,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 minHeight: isDesktop ? '100px' : '84px',
               }}>
                 <div style={{
-                  padding: '5px 3px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '5px 3px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center',
                   justifyContent: 'space-between',
                   background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
@@ -1653,12 +1653,11 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                   {/* Date number — top */}
                   <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
-                    <>
-                      {/* TPM — bigger font; larger value = less remaining gap = icon closer to bottom naturally */}
+                    /* TPM + staff + icon grouped together with small fixed gap */
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', width: '100%' }}>
                       <div style={{ fontSize: 'clamp(18px, 4.5vw, 26px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      {/* Staff name */}
                       <div style={{
                         fontSize: 'clamp(9px, 2vw, 11px)', color: '#475569', fontWeight: '600',
                         textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -1666,11 +1665,10 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                       }}>
                         {latest.staffName || latest.takenByName || ''}
                       </div>
-                      {/* Comment icon — always rendered (fixed height) so icon row is always at bottom */}
                       <div style={{ height: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
                       </div>
-                    </>
+                    </div>
                   ) : onlyNotInUse ? (
                     <div style={{ fontSize: 'clamp(9px, 2.2vw, 11px)', fontWeight: '600', color: '#92400e', textAlign: 'center', lineHeight: '1.3' }}>
                       Not in use
