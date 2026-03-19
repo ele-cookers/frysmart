@@ -3291,6 +3291,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               <button className="mhdr-btn mhdr-btn-blue" onClick={() => setCustCodeModal(venue)}><Award size={12} /> Enter Cust Code</button>
               <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Move "${venue.name}" back to Pending?`)) handlePushBack(venue.id, 'pending'); }}><RotateCcw size={10} /> Back to Pending</button>
             </>)}
+            {venue.trialStatus === 'successful' && (
+              <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }}><RotateCcw size={10} /> Reopen</button>
+            )}
             {venue.trialStatus === 'unsuccessful' && (
               <button className="mhdr-btn mhdr-btn-ghost" onClick={() => { if (window.confirm(`Reopen "${venue.name}" and move back to Pending?`)) handlePushBack(venue.id, 'pending'); }}><RotateCcw size={10} /> Reopen</button>
             )}
@@ -3375,7 +3378,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Pre-Trial Details</div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      {!isReadOnly && !mEditing && (
+                      {!mEditing && (
                         <button onClick={() => setMEditing(true)} style={{
                           background: 'none', border: '1.5px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px',
                           fontSize: '11px', fontWeight: '600', color: '#1a428a', cursor: 'pointer',
