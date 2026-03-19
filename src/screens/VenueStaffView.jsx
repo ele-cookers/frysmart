@@ -1642,7 +1642,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                 borderBottom: '1px solid #e2e8f0',
-                minHeight: isDesktop ? '96px' : '78px',
+                minHeight: isDesktop ? '112px' : '90px',
               }}>
                 <div style={{
                   padding: '4px 2px 3px', display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -1654,7 +1654,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                   <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
                     /* Order: TPM → staff name → comment icon */
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flex: 1, justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, justifyContent: 'center' }}>
                       <div style={{ fontSize: 'clamp(15px, 4vw, 22px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
