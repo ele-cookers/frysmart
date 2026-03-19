@@ -1642,7 +1642,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                 cursor: hasAnyRec ? 'pointer' : 'default',
                 borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e2e8f0' : 'none',
                 borderBottom: '1px solid #e2e8f0',
-                minHeight: isDesktop ? '88px' : '72px',
+                minHeight: isDesktop ? '96px' : '78px',
               }}>
                 <div style={{
                   padding: '4px 2px 3px', display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -1653,14 +1653,17 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                   {/* Date number — always top */}
                   <div style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', lineHeight: '1' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
-                    /* Content block centred between date and bottom */
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px', flex: 1, justifyContent: 'center' }}>
-                      <div style={{ fontSize: 'clamp(13px, 3.5vw, 20px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
+                    /* Three fixed rows: TPM / icon placeholder / staff name — always same height so cells align */
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flex: 1, justifyContent: 'center' }}>
+                      <div style={{ fontSize: 'clamp(15px, 4vw, 22px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      {latest.notes && <MessageSquare size={9} color="#475569" strokeWidth={2.5} />}
+                      {/* Always reserve icon row — keeps staff name vertically aligned across cells */}
+                      <div style={{ height: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
+                      </div>
                       <div style={{
-                        fontSize: 'clamp(7px, 1.6vw, 9px)', color: '#475569', fontWeight: '600',
+                        fontSize: 'clamp(8px, 1.8vw, 10px)', color: '#475569', fontWeight: '600',
                         textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap', width: '100%',
                       }}>
@@ -3166,9 +3169,9 @@ const TPMChartView = ({ readings, fryerCount }) => {
         )}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '16px', alignItems: isDesktop ? 'flex-start' : 'stretch' }}>
+      <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: '28px', alignItems: isDesktop ? 'flex-start' : 'stretch' }}>
         {/* Chart column */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, paddingLeft: '12px' }}>
           {/* Legend */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
@@ -3281,7 +3284,7 @@ const TPMChartView = ({ readings, fryerCount }) => {
         </div>
 
         {/* Notes panel */}
-        <div style={{ width: isDesktop ? '420px' : '100%', flexShrink: 0 }}>
+        <div style={{ width: isDesktop ? '500px' : '100%', flexShrink: 0 }}>
           <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Notes</div>
           {daysWithNotes.length === 0 ? (
             <div style={{ fontSize: '11px', color: '#cbd5e1', fontStyle: 'italic' }}>No notes in the last 7 days</div>
