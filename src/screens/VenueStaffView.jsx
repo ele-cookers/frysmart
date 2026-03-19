@@ -1591,26 +1591,26 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
         <div style={{ background: 'white', borderRadius: '10px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Compliance</div>
-          <div style={{ fontSize: '20px', fontWeight: '700', color: stats.compliance >= 80 ? '#10b981' : stats.compliance >= 50 ? '#f59e0b' : '#ef4444' }}>{stats.compliance}%</div>
-          <div style={{ fontSize: '10px', color: '#94a3b8' }}>{stats.recordedDays}/{stats.totalDays} days</div>
+          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '5px', letterSpacing: '0.3px' }}>Compliance</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', lineHeight: '1', color: stats.compliance >= 80 ? '#10b981' : stats.compliance >= 50 ? '#f59e0b' : '#ef4444' }}>{stats.compliance}%</div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{stats.recordedDays}/{stats.totalDays} days</div>
         </div>
         <div style={{ background: 'white', borderRadius: '10px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Avg TPM</div>
-          <div style={{ fontSize: '20px', fontWeight: '700', color: getTPMStatus(parseFloat(stats.avgTPM)).color }}>{stats.avgTPM}</div>
-          <div style={{ fontSize: '10px', color: '#94a3b8' }}>target &lt;{_tpmThresholds.warning}</div>
+          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '5px', letterSpacing: '0.3px' }}>Avg TPM</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', lineHeight: '1', color: getTPMStatus(parseFloat(stats.avgTPM)).color }}>{stats.avgTPM}</div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>target &lt;{_tpmThresholds.warning}</div>
         </div>
         <div style={{ background: 'white', borderRadius: '10px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Temp Variance</div>
-          <div style={{ fontSize: '20px', fontWeight: '700', color: Math.abs(stats.avgTempVariance) <= 3 ? '#10b981' : Math.abs(stats.avgTempVariance) <= 7 ? '#f59e0b' : '#ef4444' }}>
+          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '5px', letterSpacing: '0.3px' }}>Temp Variance</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', lineHeight: '1', color: Math.abs(stats.avgTempVariance) <= 3 ? '#10b981' : Math.abs(stats.avgTempVariance) <= 7 ? '#f59e0b' : '#ef4444' }}>
             {stats.avgSignedTempVariance > 0 ? '+' : stats.avgSignedTempVariance < 0 ? '-' : ''}{Math.abs(stats.avgSignedTempVariance).toFixed(1)}%
           </div>
-          <div style={{ fontSize: '10px', color: '#94a3b8' }}>average</div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>average</div>
         </div>
         <div style={{ background: 'white', borderRadius: '10px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Streak</div>
-          <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a428a' }}>{stats.currentStreak}</div>
-          <div style={{ fontSize: '10px', color: '#94a3b8' }}>days</div>
+          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', marginBottom: '5px', letterSpacing: '0.3px' }}>Streak</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', lineHeight: '1', color: '#1a428a' }}>{stats.currentStreak}</div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>days</div>
         </div>
       </div>
 
@@ -1657,13 +1657,6 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
                       <div style={{ fontSize: 'clamp(18px, 4.5vw, 26px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      <div style={{
-                        fontSize: 'clamp(9px, 2vw, 11px)', color: '#475569', fontWeight: '600',
-                        textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap', width: '100%',
-                      }}>
-                        {latest.staffName || latest.takenByName || ''}
-                      </div>
                       <div style={{ height: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
                       </div>
@@ -1683,13 +1676,19 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
       </div>
 
       {/* Legend */}
-      <div style={{ marginTop: '12px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '11px', color: '#64748b' }}>
+      <div style={{ marginTop: '12px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '11px', color: '#64748b', rowGap: '8px' }}>
+          {/* Cell background */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#d1fae5' }} /> Recorded</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#fef9c3' }} /> Not in use</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#fee2e2' }} /> Missed</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Filter size={11} color="#1e40af" strokeWidth={2.5} /> Filtered</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Star size={11} color="#92400e" fill="#92400e" /> Fresh Oil</div>
+          <div style={{ width: '1px', height: '14px', background: '#e2e8f0' }} />
+          {/* TPM colour */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} /> Good (&lt;{_tpmThresholds.warning})</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} /> Warning ({_tpmThresholds.warning}–{_tpmThresholds.critical})</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} /> Critical (&gt;{_tpmThresholds.critical})</div>
+          <div style={{ width: '1px', height: '14px', background: '#e2e8f0' }} />
+          {/* Icon */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={11} color="#475569" strokeWidth={2.5} /> Has Notes</div>
         </div>
       </div>
