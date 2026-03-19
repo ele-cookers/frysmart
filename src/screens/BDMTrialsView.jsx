@@ -3168,7 +3168,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       String(mEditForm.fryerCount) !== String(venue.fryerCount || 1) ||
       mEditForm.avgLitresPerWeek !== (venue.currentWeeklyAvg ? String(venue.currentWeeklyAvg) : '') ||
       JSON.stringify(mEditForm.fryerVolumes) !== JSON.stringify(venue.fryerVolumes || {}) ||
-      JSON.stringify(mEditForm.trialGoals || []) !== JSON.stringify((() => { const gl = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')); return gl ? gl.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : []; })())
+      JSON.stringify(mEditForm.trialGoals || []) !== JSON.stringify((() => { const gl = (venue.trialNotes || '').split('\n').find(l => l.trim().startsWith('[Goals:')); return gl ? gl.replace(/^\[Goals:\s*/, '').replace(/\]$/, '').split(',').map(g => g.trim()).filter(Boolean) : []; })()) ||
+      JSON.stringify(mEditForm.trialConfig ?? {}) !== JSON.stringify(venue.trialConfig ?? {})
     );
     const handleMSave = async () => {
       setManageSaving(true);
