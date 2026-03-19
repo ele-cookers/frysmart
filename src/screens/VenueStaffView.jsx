@@ -2084,12 +2084,10 @@ const SummaryView = ({ readings, isWide, recordingConfig }) => {
   const filteredCount = nonFreshActive.filter(r => r.filtered === true).length;
   const filteringRate = nonFreshActive.length > 0 ? Math.round((filteredCount / nonFreshActive.length) * 100) : 0;
   // Avg oil life = average length of COMPLETED cycles (fresh fill → day before next fresh fill)
-  // Uses ALL readings (not just last 30 days) so cycles aren't truncated by the date window
   // Avoids counting the current in-progress cycle which would skew the number down
   const avgOilAge = (() => {
-    const allNonInUse = readings.filter(r => !r.notInUse && r.oilAge != null);
     const byFryer = {};
-    allNonInUse.forEach(r => {
+    allActive.forEach(r => {
       const fn = r.fryerNumber || 1;
       if (!byFryer[fn]) byFryer[fn] = [];
       byFryer[fn].push(r);
