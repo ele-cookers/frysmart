@@ -525,10 +525,7 @@ const CriticalBanner = ({ criticalFryers, onChangeOil, isDesktop }) => (
 const _DEFAULT_RECORDING_CONFIG = { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true };
 const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], foodTypeOptions = DEFAULT_FOOD_TYPES, recordingConfig = _DEFAULT_RECORDING_CONFIG }) => {
   const fryerCount = venue?.fryerCount || 4;
-  // staffName is a dropdown when venue.staffNames has entries; free-text fallback otherwise
-  const venueStaffNames = (venue?.staffNames || []).slice().sort();
   const [staffName, setStaffName] = useState('');
-  const [staffNameCustom, setStaffNameCustom] = useState(''); // used when "Other" is selected
   const [date, setDate] = useState(getTodayString());
   const [formErrors, setFormErrors] = useState({});
 
@@ -622,14 +619,9 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
     return days + 1;
   };
 
-  // Resolved staff name: from dropdown (or "Other" free-text) or plain text input
-  const resolvedStaffName = venueStaffNames.length > 0
-    ? (staffName === 'Other' ? staffNameCustom : staffName)
-    : staffName;
-
   const validate = () => {
     const errors = {};
-    if (!resolvedStaffName.trim()) errors['staffName'] = 'Required';
+    if (!staffName.trim()) errors['staffName'] = 'Required';
     fryers.forEach((f, i) => {
       if (f.notInUse) return; // no validation needed for skipped fryers
       if (f.tpmValue === '') errors[`${i}-tpmValue`] = 'Required';
@@ -654,7 +646,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
       fryerNumber: f.fryerNumber,
       readingDate: date,
       takenBy: (currentUser?.role === 'venue_staff' || currentUser?.role === 'group_viewer') ? null : (currentUser?.id || null),
-      staffName: resolvedStaffName.trim(),
+      staffName: staffName.trim(),
       oilAge: f.notInUse ? null : calcOilAge(f),
       litresFilled: f.notInUse ? null : (f.fillType === 'no_fill' ? 0 : (f.litresFilled !== '' ? parseFloat(f.litresFilled) : 0)),
       tpmValue: f.notInUse ? null : (f.tpmValue !== '' ? parseFloat(f.tpmValue) : null),
@@ -691,35 +683,13 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
             <label style={{ display: 'block', marginBottom: '5px', color: '#1f2937', fontSize: '12px', fontWeight: '600' }}>
               Staff Name
             </label>
-            {venueStaffNames.length > 0 ? (
-              <>
-                <select value={staffName} onChange={(e) => setStaffName(e.target.value)}
-                  style={{ ...inputStyle(!!formErrors['staffName']), appearance: 'none', WebkitAppearance: 'none', background: 'white', cursor: 'pointer' }}
-                  onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-                  onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
-                >
-                  <option value="">Select your name</option>
-                  {venueStaffNames.map(n => <option key={n} value={n}>{n}</option>)}
-                  <option value="Other">Other</option>
-                </select>
-                {staffName === 'Other' && (
-                  <input type="text" value={staffNameCustom} onChange={(e) => setStaffNameCustom(e.target.value)}
-                    placeholder="Enter your name"
-                    style={{ ...inputStyle(!!formErrors['staffName']), marginTop: '6px' }}
-                    onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-                    onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
-                  />
-                )}
-              </>
-            ) : (
-              <input type="text" value={staffName}
-                onChange={(e) => setStaffName(e.target.value)} required
-                placeholder="Enter your name"
-                style={{ ...inputStyle(!!formErrors['staffName']), }}
-                onFocus={(e) => e.target.style.borderColor = '#1a428a'}
-                onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
-              />
-            )}
+            <input type="text" value={staffName}
+              onChange={(e) => setStaffName(e.target.value)} required
+              placeholder="Enter your name"
+              style={{ ...inputStyle(!!formErrors['staffName']), }}
+              onFocus={(e) => e.target.style.borderColor = '#1a428a'}
+              onBlur={(e) => e.target.style.borderColor = formErrors['staffName'] ? '#ef4444' : '#e2e8f0'}
+            />
             {formErrors['staffName'] && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>Staff name is required</div>}
           </div>
 

@@ -860,12 +860,11 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
   const [sortByTpm, setSortByTpm] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState(null);
   const DEFAULT_REC_CONFIG = { freshFill: true, topUp: true, temperatures: true, filtering: true, foodType: true, notes: true };
-  const EMPTY_FORM = { name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '', tpmWarningThreshold: '', tpmCriticalThreshold: '', recordingConfig: { ...DEFAULT_REC_CONFIG }, staffNames: [] };
+  const EMPTY_FORM = { name: '', fryerCount: 4, defaultOil: '', groupId: '', status: 'active', customerCode: '', volumeBracket: '', state: '', bdmId: '', password: '', tpmWarningThreshold: '', tpmCriticalThreshold: '', recordingConfig: { ...DEFAULT_REC_CONFIG }, fryerVolumes: {} };
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [newStaffNameInput, setNewStaffNameInput] = useState('');
 
   useEffect(() => {
-    if (autoOpenForm) { setForm({ ...EMPTY_FORM }); setNewStaffNameInput(''); setEditing(null); setShowForm(true); clearAutoOpen(); }
+    if (autoOpenForm) { setForm({ ...EMPTY_FORM }); setEditing(null); setShowForm(true); clearAutoOpen(); }
   }, [autoOpenForm]);
   const colFilters = useColumnFilters();
 
@@ -988,8 +987,7 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
   };
 
   const handleEdit = (venue) => {
-    setNewStaffNameInput('');
-    setForm({ name: venue.name, fryerCount: venue.fryerCount, defaultOil: venue.defaultOil, groupId: venue.groupId || '', status: venue.status, customerCode: venue.customerCode || '', volumeBracket: venue.volumeBracket || '', state: venue.state || '', bdmId: venue.bdmId || '', password: venue.password || '', tpmWarningThreshold: venue.tpmWarningThreshold ?? '', tpmCriticalThreshold: venue.tpmCriticalThreshold ?? '', recordingConfig: { ...DEFAULT_REC_CONFIG, ...(venue.recordingConfig || {}) }, staffNames: Array.isArray(venue.staffNames) ? [...venue.staffNames] : [] });
+    setForm({ name: venue.name, fryerCount: venue.fryerCount, defaultOil: venue.defaultOil, groupId: venue.groupId || '', status: venue.status, customerCode: venue.customerCode || '', volumeBracket: venue.volumeBracket || '', state: venue.state || '', bdmId: venue.bdmId || '', password: venue.password || '', tpmWarningThreshold: venue.tpmWarningThreshold ?? '', tpmCriticalThreshold: venue.tpmCriticalThreshold ?? '', recordingConfig: { ...DEFAULT_REC_CONFIG, ...(venue.recordingConfig || {}) }, fryerVolumes: venue.fryerVolumes || {} });
     setEditing(venue.id);
     setShowForm(true);
   };
@@ -1355,55 +1353,34 @@ const VenueManagement = ({ venues, setVenues, rawSetVenues, oilTypes, groups, co
                   </div>
                 </div>
 
-                {/* Staff Names */}
+                {/* Fryer Volumes — auto-fills litres on Fresh Fill */}
                 <div style={{ marginTop: '12px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', marginBottom: '6px' }}>
-                    Staff Names <span style={{ fontWeight: '400', color: '#94a3b8' }}>(shown as dropdown when logging readings)</span>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1f2937', marginBottom: '2px' }}>
+                    Fryer Volumes (litres)
                   </div>
-                  {/* Existing names */}
-                  {(form.staffNames || []).length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                      {(form.staffNames).map(name => (
-                        <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 8px' }}>
-                          <span style={{ fontSize: '12px', color: '#1f2937', fontWeight: '500' }}>{name}</span>
-                          <button type="button"
-                            onClick={() => setForm(f => ({ ...f, staffNames: f.staffNames.filter(n => n !== name) }))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}>×</button>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px' }}>
+                    Pre-fills litres when staff select Fresh Fill
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                    {Array.from({ length: form.fryerCount || 4 }, (_, i) => i + 1).map(num => (
+                      <div key={num} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', minWidth: '52px' }}>Fryer {num}</span>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <input
+                            type="number" min="0" max="100" step="0.5"
+                            value={form.fryerVolumes?.[num] ?? form.fryerVolumes?.[String(num)] ?? ''}
+                            onChange={e => setForm(f => ({
+                              ...f,
+                              fryerVolumes: { ...(f.fryerVolumes || {}), [num]: e.target.value === '' ? undefined : parseFloat(e.target.value) }
+                            }))}
+                            placeholder="—"
+                            style={{ width: '100%', padding: '5px 22px 5px 8px', borderRadius: '6px', border: '1.5px solid #e2e8f0', fontSize: '12px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                            onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                          />
+                          <span style={{ position: 'absolute', right: '7px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: '#94a3b8', fontWeight: '600', pointerEvents: 'none' }}>L</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  {/* Add name */}
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <input
-                      type="text"
-                      value={newStaffNameInput}
-                      onChange={e => setNewStaffNameInput(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const trimmed = newStaffNameInput.trim();
-                          if (trimmed && !(form.staffNames || []).includes(trimmed)) {
-                            setForm(f => ({ ...f, staffNames: [...(f.staffNames || []), trimmed] }));
-                            setNewStaffNameInput('');
-                          }
-                        }
-                      }}
-                      placeholder="Add staff name"
-                      style={{ flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '12px', outline: 'none', fontFamily: 'inherit' }}
-                      onFocus={e => e.target.style.borderColor = '#1a428a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                    <button type="button"
-                      onClick={() => {
-                        const trimmed = newStaffNameInput.trim();
-                        if (trimmed && !(form.staffNames || []).includes(trimmed)) {
-                          setForm(f => ({ ...f, staffNames: [...(f.staffNames || []), trimmed] }));
-                          setNewStaffNameInput('');
-                        }
-                      }}
-                      style={{ padding: '7px 12px', background: '#1a428a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-                      Add
-                    </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
