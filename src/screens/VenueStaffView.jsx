@@ -1644,26 +1644,25 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
               }}>
                 <div style={{
                   padding: '4px 3px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'space-between',
                   background: cellBg, height: '100%',
                   outline: isT ? '2px solid #1a428a' : 'none', outlineOffset: '-2px'
                 }}>
-                  <div style={{ fontSize: 'clamp(11px, 3vw, 13px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8', marginBottom: '1px' }}>{date.getDate()}</div>
+                  <div style={{ fontSize: 'clamp(11px, 3vw, 13px)', fontWeight: '700', color: isCurrentMo ? '#1f2937' : '#94a3b8' }}>{date.getDate()}</div>
                   {hasActiveRec && latest ? (
                     <>
-                      <div style={{ fontSize: 'clamp(15px, 4vw, 22px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1.1', marginBottom: '1px' }}>
+                      <div style={{ fontSize: 'clamp(14px, 3.8vw, 21px)', fontWeight: '700', color: getTPMStatus(latest.tpmValue).color, lineHeight: '1' }}>
                         {latest.tpmValue != null ? Math.round(parseFloat(latest.tpmValue)) : ''}
                       </div>
-                      {latest.notes && (
-                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
-                          <MessageSquare size={10} color="#475569" strokeWidth={2.5} />
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', justifyContent: 'center', minHeight: '12px' }}>
+                        {latest.notes && <MessageSquare size={10} color="#475569" strokeWidth={2.5} />}
+                      </div>
                       <div style={{
                         fontSize: 'clamp(8px, 1.8vw, 10px)', color: '#475569', fontWeight: '600',
-                        marginTop: '1px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap', width: '100%', paddingTop: '1px'
+                        textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap', width: '100%',
                       }}>
-                        {latest.staffName || latest.takenByName || ''}
+                        {latest.staffName || latest.takenByName || '\u00a0'}
                       </div>
                     </>
                   ) : onlyNotInUse ? (
@@ -3603,9 +3602,9 @@ export default function VenueStaffView({
                 <button onClick={() => setCurrentView('record')} style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                   padding: '11px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                  background: currentView === 'record' ? '#16a34a' : '#22c55e',
+                  background: currentView === 'record' ? '#00aadd' : '#33CCFF',
                   color: 'white', fontWeight: '700', fontSize: '13px', transition: 'all 0.15s',
-                  boxShadow: '0 2px 6px rgba(34,197,94,0.35)',
+                  boxShadow: '0 2px 6px rgba(51,204,255,0.4)',
                 }}>
                   <ClipboardList size={16} color="white" />
                   Log Reading
@@ -3764,7 +3763,7 @@ export default function VenueStaffView({
                     <button key={view.id} onClick={() => setCurrentView(view.id)} style={{
                       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                       padding: '10px 4px 8px', border: 'none',
-                      background: isRecord ? (active ? '#16a34a' : '#22c55e') : 'transparent',
+                      background: isRecord ? (active ? '#00aadd' : '#33CCFF') : 'transparent',
                       borderBottom: (!isRecord && active) ? '3px solid #1a428a' : isRecord ? 'none' : '3px solid transparent',
                       color: isRecord ? 'white' : active ? '#1a428a' : '#94a3b8',
                       fontSize: '10px', fontWeight: (active || isRecord) ? '700' : '500',
