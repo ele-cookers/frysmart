@@ -3579,9 +3579,9 @@ export default function VenueStaffView({
                 <button onClick={() => setCurrentView('record')} style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                   padding: '11px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                  background: currentView === 'record' ? '#D4891A' : '#F5A623',
+                  background: currentView === 'record' ? '#1a428a' : '#FFB548',
                   color: 'white', fontWeight: '700', fontSize: '13px', transition: 'all 0.15s',
-                  boxShadow: '0 2px 6px rgba(245,166,35,0.4)',
+                  boxShadow: currentView === 'record' ? '0 2px 6px rgba(26,66,138,0.35)' : '0 2px 6px rgba(255,181,72,0.4)',
                 }}>
                   <ClipboardList size={16} color="white" />
                   Log Reading
@@ -3740,7 +3740,7 @@ export default function VenueStaffView({
                     <button key={view.id} onClick={() => setCurrentView(view.id)} style={{
                       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
                       padding: '10px 4px 8px', border: 'none',
-                      background: isRecord ? (active ? '#D4891A' : '#F5A623') : 'transparent',
+                      background: isRecord ? (active ? '#1a428a' : '#FFB548') : 'transparent',
                       borderBottom: (!isRecord && active) ? '3px solid #1a428a' : isRecord ? 'none' : '3px solid transparent',
                       color: isRecord ? 'white' : active ? '#1a428a' : '#94a3b8',
                       fontSize: '10px', fontWeight: (active || isRecord) ? '700' : '500',
