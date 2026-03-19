@@ -4059,8 +4059,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                               const r = dayRecs[dayRecs.length - 1] || null;
                               const isFuture = day > today;
                               const missed = !r && !isFuture;
-                              const cellIsFresh = r?.oilAge === 1;
-                              const cellIsTopUp = r && r.litresFilled > 0 && !cellIsFresh;
+                              const cellIsFresh = tcFill && r?.oilAge === 1;
+                              const cellIsTopUp = tcFill && r && r.litresFilled > 0 && r?.oilAge !== 1;
                               const cellBorder = cellIsFresh ? '2px solid #10b981' : cellIsTopUp ? '2px solid #f59e0b' : '1px solid #e2e8f0';
                               return (
                                 <td key={idx} style={{
