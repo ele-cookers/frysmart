@@ -2047,7 +2047,8 @@ const YearView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
 // ─────────────────────────────────────────────
 // Executive Summary View (ported from original)
 // ─────────────────────────────────────────────
-const SummaryView = ({ readings, isWide }) => {
+const SummaryView = ({ readings, isWide, recordingConfig }) => {
+  const showFiltering = recordingConfig?.filtering !== false;
   const grouped = groupReadingsByDate(readings);
   const today = new Date(); today.setHours(0,0,0,0);
   const thirtyDaysAgo = formatDate(new Date(today.getTime() - 30 * 864e5));
@@ -2183,13 +2184,13 @@ const SummaryView = ({ readings, isWide }) => {
 
       {/* Pair 1: Top KPIs + Oil Management */}
       <div style={twoCol}>
-      {/* Top KPIs 2x2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '10px', marginBottom: isWide ? 0 : '16px', height: isWide ? '100%' : 'auto' }}>
+      {/* Top KPIs — 3 cols if filtering off, 4 (2x2) if filtering on */}
+      <div style={{ display: 'grid', gridTemplateColumns: showFiltering ? '1fr 1fr' : '1fr 1fr 1fr', gridTemplateRows: showFiltering ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: isWide ? 0 : '16px', height: isWide ? '100%' : 'auto' }}>
         {[
           { label: 'COMPLIANCE', value: `${complianceRate}%`, color: complianceRate >= 90 ? '#10b981' : complianceRate >= 70 ? '#f59e0b' : '#ef4444', target: '90%+' },
           { label: 'REACHED CRITICAL', value: `${criticalRate}%`, color: criticalRate <= 10 ? '#10b981' : criticalRate <= 25 ? '#f59e0b' : '#ef4444', target: '<10%' },
           { label: 'AVG TPM', value: avgTPM, color: avgTPM < 18 ? '#10b981' : avgTPM < 24 ? '#f59e0b' : '#ef4444', target: '<18' },
-          { label: 'FILTERING', value: `${filteringRate}%`, color: filteringRate >= 80 ? '#10b981' : filteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' }
+          ...(showFiltering ? [{ label: 'FILTERING', value: `${filteringRate}%`, color: filteringRate >= 80 ? '#10b981' : filteringRate >= 60 ? '#f59e0b' : '#ef4444', target: '80%+' }] : [])
         ].map(kpi => (
           <div key={kpi.label} style={{ background: 'white', borderRadius: '10px', padding: '16px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>{kpi.label}</div>
@@ -2264,6 +2265,11 @@ const SummaryView = ({ readings, isWide }) => {
           last7.push({ label: d.toLocaleDateString('en-AU', { weekday: 'short' }), avg, count: dayRecs.length });
         }
         const maxT = Math.max(...last7.filter(d => d.avg != null).map(d => d.avg), 30);
+        const t7Recs = allActive.filter(r => { const d = new Date(today); d.setDate(d.getDate() - 6); return r.readingDate >= formatDate(d); });
+        const t7Good = t7Recs.filter(r => r.tpmValue < _tpmThresholds.warning).length;
+        const t7Warn = t7Recs.filter(r => r.tpmValue >= _tpmThresholds.warning && r.tpmValue < _tpmThresholds.critical).length;
+        const t7Crit = t7Recs.filter(r => r.tpmValue >= _tpmThresholds.critical).length;
+        const t7Total = t7Recs.length;
         return (
           <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '16px', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px 0' }}>7-Day TPM Trend</h3>
@@ -2283,62 +2289,31 @@ const SummaryView = ({ readings, isWide }) => {
                 </div>
               ))}
             </div>
+            {/* Good / Warning / Critical breakdown */}
+            {t7Total > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '12px' }}>
+                {[
+                  { label: 'Good', count: t7Good, color: '#10b981', bg: '#d1fae5' },
+                  { label: 'Warning', count: t7Warn, color: '#f59e0b', bg: '#fef3c7' },
+                  { label: 'Critical', count: t7Crit, color: '#ef4444', bg: '#fee2e2' },
+                ].map(m => (
+                  <div key={m.label} style={{ background: m.bg, borderRadius: '8px', padding: '8px 6px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: m.color, lineHeight: '1' }}>{Math.round((m.count / t7Total) * 100)}%</div>
+                    <div style={{ fontSize: '10px', color: m.color, fontWeight: '600', marginTop: '2px' }}>{m.label}</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px' }}>{m.count} reading{m.count !== 1 ? 's' : ''}</div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '10px', color: '#94a3b8' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning (18)</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical (24)</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#f59e0b' }} /> Warning ({_tpmThresholds.warning})</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '2px', background: '#ef4444' }} /> Critical ({_tpmThresholds.critical})</div>
             </div>
           </div>
         );
       })()}
       </div>{/* end Pair 2 */}
 
-      {/* Pair 3: Fryer Comparison + Quality Distribution */}
-      <div style={twoCol}>
-      {/* Fryer Comparison */}
-      {(() => {
-        const fryerMap = {};
-        allActive.forEach(r => {
-          if (!fryerMap[r.fryerNumber]) fryerMap[r.fryerNumber] = { total: 0, count: 0 };
-          fryerMap[r.fryerNumber].total += r.tpmValue; fryerMap[r.fryerNumber].count++;
-        });
-        if (Object.keys(fryerMap).length <= 1) return null;
-        return (
-          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0' }}>Fryer Comparison</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {Object.entries(fryerMap).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([fn, data]) => {
-                const avg = (data.total / data.count).toFixed(1);
-                const st = getTPMStatus(parseFloat(avg));
-                return (
-                  <div key={fn} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', minWidth: '56px' }}>Fryer {fn}</div>
-                    <div style={{ flex: 1, height: '22px', background: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${Math.min((parseFloat(avg) / 30) * 100, 100)}%`, background: st.color, borderRadius: '6px' }} />
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: '700', color: st.color, minWidth: '36px', textAlign: 'right' }}>{avg}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Quality Distribution */}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: isWide ? 0 : '16px' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0' }}>Quality Distribution</h3>
-        <div style={{ display: 'flex', gap: '0', marginBottom: '6px', height: '10px', borderRadius: '5px', overflow: 'hidden' }}>
-          <div style={{ flex: goodCount, background: '#10b981' }} />
-          <div style={{ flex: warningCount, background: '#f59e0b' }} />
-          <div style={{ flex: criticalCount, background: '#ef4444' }} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', textAlign: 'center' }}>
-          <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{Math.round((goodCount/allActive.length)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Good ({goodCount})</div></div>
-          <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{Math.round((warningCount/allActive.length)*100)}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Warning ({warningCount})</div></div>
-          <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>{criticalRate}%</div><div style={{ fontSize: '10px', color: '#64748b' }}>Critical ({criticalCount})</div></div>
-        </div>
-      </div>
-      </div>{/* end Pair 3 */}
 
       {/* Pair 4: Most Fried Products + Priority Actions */}
       <div style={twoCol}>
@@ -2544,11 +2519,13 @@ const DashboardView = ({ readings, isWide }) => {
               <div style={{ fontSize: '22px', marginBottom: '4px' }}>{oilHabitsScore >= 8 ? '⭐⭐⭐' : oilHabitsScore >= 5 ? '⭐⭐☆' : oilHabitsScore >= 3 ? '⭐☆☆' : '☆☆☆'}</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>{oilHabitsRating}</div>
             </div>
+            {(() => { const goodPct = totalRecs > 0 ? Math.round((allActive.filter(r => r.tpmValue < _tpmThresholds.warning).length / totalRecs) * 100) : 0; return (
             <div style={{ background: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '6px', letterSpacing: '0.5px' }}>TOTAL</div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#1a428a', marginBottom: '4px' }}>{totalRecs}</div>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>recordings</div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '6px', letterSpacing: '0.5px' }}>GOOD TPM</div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: goodPct >= 70 ? '#10b981' : goodPct >= 50 ? '#f59e0b' : '#ef4444', marginBottom: '4px' }}>{goodPct}%</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>readings in range</div>
             </div>
+            ); })()}
             {topStaff.length > 0 && (
               <div style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>🏆 Top Recorders</h3>
@@ -2617,11 +2594,13 @@ const DashboardView = ({ readings, isWide }) => {
               <div style={{ fontSize: '18px', marginBottom: '2px' }}>{oilHabitsScore >= 8 ? '⭐⭐⭐' : oilHabitsScore >= 5 ? '⭐⭐☆' : oilHabitsScore >= 3 ? '⭐☆☆' : '☆☆☆'}</div>
               <div style={{ fontSize: '11px', color: '#64748b' }}>{oilHabitsRating}</div>
             </div>
+            {(() => { const goodPct = totalRecs > 0 ? Math.round((allActive.filter(r => r.tpmValue < _tpmThresholds.warning).length / totalRecs) * 100) : 0; return (
             <div style={{ background: 'white', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', textAlign: 'center' }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>TOTAL</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1a428a', marginBottom: '2px' }}>{totalRecs}</div>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>recordings</div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.5px' }}>GOOD TPM</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: goodPct >= 70 ? '#10b981' : goodPct >= 50 ? '#f59e0b' : '#ef4444', marginBottom: '2px' }}>{goodPct}%</div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>readings in range</div>
             </div>
+            ); })()}
           </div>
 
           {/* Staff leaderboard */}
@@ -3685,7 +3664,7 @@ export default function VenueStaffView({
           </div>
           {/* Content — scrollable area */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) || currentView === 'tpmlog' ? 'none' : '760px', margin: '0 auto', padding: (currentView === 'tpmlog' || currentView === 'tpmchart') ? '0' : '24px clamp(16px, 2vw, 32px) 40px' }}>
+          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) || currentView === 'tpmlog' || currentView === 'tpmchart' ? 'none' : '760px', margin: '0 auto', padding: (currentView === 'tpmlog' || currentView === 'tpmchart') ? '0' : '24px clamp(16px, 2vw, 32px) 40px' }}>
             {currentView === 'settings' && (
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
@@ -3732,7 +3711,7 @@ export default function VenueStaffView({
               />
             )}
             {currentView === 'summary' && (
-              <div style={{ maxWidth: '600px', margin: '0 auto' }}><SummaryView readings={readings} /></div>
+              <div style={{ maxWidth: '600px', margin: '0 auto' }}><SummaryView readings={readings} recordingConfig={recordingConfig} /></div>
             )}
             {currentView === 'dashboard' && (
               <div style={{ maxWidth: '600px', margin: '0 auto' }}><DashboardView readings={readings} /></div>
@@ -3841,7 +3820,7 @@ export default function VenueStaffView({
               />
             )}
             {currentView === 'summary' && (
-              <div style={{ maxWidth: '600px', margin: '0 auto' }}><SummaryView readings={readings} /></div>
+              <div style={{ maxWidth: '600px', margin: '0 auto' }}><SummaryView readings={readings} recordingConfig={recordingConfig} /></div>
             )}
             {currentView === 'dashboard' && (
               <div style={{ maxWidth: '600px', margin: '0 auto' }}><DashboardView readings={readings} /></div>
