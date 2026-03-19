@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check, AlertTriangle, AlertCircle, Clock, Star, Settings, LogOut, Eye, ClipboardList, Calendar, BarChart3, LayoutDashboard } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Filter, MessageSquare, X, Check, AlertTriangle, AlertCircle, Clock, Star, Settings, LogOut, Eye, ClipboardList, Calendar, BarChart3, LayoutDashboard, Table2 } from 'lucide-react';
 import { HEADER_BADGE_COLORS, OIL_STATUS_COLORS } from '../lib/badgeConfig';
 
 // ─────────────────────────────────────────────
@@ -3218,11 +3218,12 @@ export default function VenueStaffView({
                 <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Recording</div>
                 {[
                   { id: 'record', label: 'Record', icon: ClipboardList },
+                  { id: 'tpmlog', label: 'TPM Log', icon: Table2 },
                   { id: 'calendar', label: 'Calendar', icon: Calendar },
                 ].map(item => {
                   const isActive = currentView === item.id;
                   return (
-                    <button key={item.id} onClick={() => { setCurrentView(item.id); if (item.id === 'record') setRecordSubTab('form'); }} style={{
+                    <button key={item.id} onClick={() => setCurrentView(item.id)} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                       padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
@@ -3235,22 +3236,6 @@ export default function VenueStaffView({
                     </button>
                   );
                 })}
-                {/* Log Reading / TPM Log — sub-items under Record */}
-                <div style={{ paddingLeft: '28px', marginTop: '2px', marginBottom: '4px' }}>
-                  {[{ id: 'form', label: 'Log Reading' }, { id: 'tpmlog', label: 'TPM Log' }].map(sub => {
-                    const isScale = currentView === 'record' && recordSubTab === sub.id;
-                    return (
-                      <button key={sub.id} onClick={() => { setCurrentView('record'); setRecordSubTab(sub.id); }} style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '7px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                        marginBottom: '1px', textAlign: 'left',
-                        background: isScale ? '#f0f4ff' : 'transparent',
-                        color: isScale ? '#1a428a' : '#94a3b8',
-                        fontWeight: isScale ? '600' : '500', fontSize: '13px',
-                      }}>{sub.label}</button>
-                    );
-                  })}
-                </div>
                 {/* Day / Week / Month / Qtr / Year — always visible under Calendar */}
                 <div style={{ paddingLeft: '28px', marginTop: '2px', marginBottom: '4px' }}>
                   {['Day', 'Week', 'Month', 'Quarter', 'Year'].map(v => {
@@ -3305,20 +3290,20 @@ export default function VenueStaffView({
           </div>
           {/* Content — scrollable area */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) || (currentView === 'record' && recordSubTab === 'tpmlog') ? 'none' : '760px', margin: '0 auto', padding: (currentView === 'record' && recordSubTab === 'tpmlog') ? '0' : '24px clamp(16px, 2vw, 32px) 40px' }}>
+          <div style={{ maxWidth: (currentView === 'calendar' && ['month','quarter','year'].includes(calendarView)) || currentView === 'tpmlog' ? 'none' : '760px', margin: '0 auto', padding: currentView === 'tpmlog' ? '0' : '24px clamp(16px, 2vw, 32px) 40px' }}>
             {currentView === 'settings' && (
               <SettingsView venue={venue} systemSettings={settings}
                 onClose={() => setCurrentView('record')} onLogout={onLogout} isDesktop={isDesktop}
                 effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
               />
             )}
-            {currentView === 'record' && recordSubTab === 'form' && (
+            {currentView === 'record' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
                 venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
                 recordingConfig={recordingConfig}
               />
             )}
-            {currentView === 'record' && recordSubTab === 'tpmlog' && (
+            {currentView === 'tpmlog' && (
               <TPMLogView readings={readings} fryerCount={fryerCount} recordingConfig={recordingConfig} />
             )}
             {/* Calendar views — sub-tab selected from sidebar */}
@@ -3365,6 +3350,7 @@ export default function VenueStaffView({
               <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: 'white' }}>
                 {[
                   { id: 'record', label: 'Record', icon: ClipboardList },
+                  { id: 'tpmlog', label: 'TPM Log', icon: Table2 },
                   { id: 'calendar', label: 'Calendar', icon: Calendar },
                   { id: 'summary', label: 'Summary', icon: BarChart3 },
                   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -3385,26 +3371,6 @@ export default function VenueStaffView({
                   );
                 })}
               </div>
-              {/* Record sub-tabs */}
-              {currentView === 'record' && (
-                <div style={{ display: 'flex', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '6px 16px', gap: '4px' }}>
-                  {[{ id: 'form', label: 'Log Reading' }, { id: 'tpmlog', label: 'TPM Log' }].map(tab => {
-                    const active = recordSubTab === tab.id;
-                    return (
-                      <button key={tab.id} onClick={() => setRecordSubTab(tab.id)} style={{
-                        flex: 1, padding: '7px 12px', borderRadius: '8px', border: 'none',
-                        background: active ? 'white' : 'transparent',
-                        color: active ? '#1a428a' : '#64748b',
-                        fontSize: '13px', fontWeight: active ? '600' : '500',
-                        cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-                        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                      }}>
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
               {/* Calendar sub-tabs */}
               {currentView === 'calendar' && (
                 <div style={{ display: 'flex', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '6px 16px', gap: '4px' }}>
@@ -3434,13 +3400,13 @@ export default function VenueStaffView({
                 effectiveWarning={effectiveWarning} effectiveCritical={effectiveCritical}
               />
             )}
-            {currentView === 'record' && recordSubTab === 'form' && (
+            {currentView === 'record' && (
               <RecordingForm onSave={checkAndSave} currentUser={currentUser}
                 venue={venue} existingReadings={readings} foodTypeOptions={foodTypeOptions}
                 recordingConfig={recordingConfig}
               />
             )}
-            {currentView === 'record' && recordSubTab === 'tpmlog' && (
+            {currentView === 'tpmlog' && (
               <TPMLogView readings={readings} fryerCount={fryerCount} recordingConfig={recordingConfig} />
             )}
             {currentView === 'calendar' && calendarView === 'day' && (
