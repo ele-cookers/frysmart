@@ -201,9 +201,9 @@ const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, 
   const updateFryer = (field, value) => {
     setFryer(prev => {
       const next = { ...prev, [field]: value };
-      // When oil age is set to 1 (fresh oil), auto-set filtered to true
+      // Fresh oil doesn't need filtering — leave null so it doesn't skew filter rate stats
       if (field === 'oilAge' && (value === '1' || value === 1)) {
-        next.filtered = true;
+        next.filtered = null;
       }
       // When oil age changes away from 1, reset filtered so user must choose
       if (field === 'oilAge' && value !== '1' && value !== 1 && value !== '') {
@@ -423,10 +423,10 @@ const CriticalOilChangeModal = ({ criticalFryers, onClose, onSave, currentUser, 
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '10px 12px', borderRadius: '8px',
-                border: '1.5px solid #d1fae5', background: '#f0fdf4', color: '#059669',
-                fontSize: '12px', fontWeight: '600'
+                border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#64748b',
+                fontSize: '12px', fontWeight: '500'
               }}>
-                <Check size={14} strokeWidth={3} /> Yes — fresh oil is always filtered
+                Fresh oil doesn't need filtering
               </div>
             ) : (
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -566,7 +566,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
     // Fill type changes: auto-set filtered and litres
     if (field === 'fillType') {
       if (value === 'fresh_fill') {
-        updated[index].filtered = true;
+        updated[index].filtered = null; // fresh oil doesn't need filtering — don't pre-answer
         const fryerVol = venue?.fryerVolumes?.[updated[index].fryerNumber] ?? venue?.fryerVolumes?.[String(updated[index].fryerNumber)];
         updated[index].litresFilled = fryerVol ? String(fryerVol) : '';
       } else {
@@ -895,7 +895,7 @@ const RecordingForm = ({ onSave, currentUser, venue, existingReadings = [], food
                       border: '1.5px solid #d1fae5', background: '#f0fdf4', color: '#059669',
                       fontSize: '12px', fontWeight: '600'
                     }}>
-                      <Check size={14} strokeWidth={3} /> Yes — fresh oil is always filtered
+                      Fresh oil doesn't need filtering
                     </div>
                   ) : (
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -1766,8 +1766,10 @@ const QuarterView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) =
     const tpmValues = fryerReadings.filter(r => r.tpmValue != null).map(r => parseFloat(r.tpmValue));
     const avgTPM = tpmValues.length > 0 ? (tpmValues.reduce((a, b) => a + b, 0) / tpmValues.length).toFixed(1) : '—';
 
-    const filteredCount = fryerReadings.filter(r => r.filtered === true).length;
-    const filterRate = fryerReadings.length > 0 ? Math.round((filteredCount / fryerReadings.length) * 100) : 0;
+    // Exclude fresh fill days from filter rate (fresh oil doesn't need filtering)
+    const nonFreshFryerReadings = fryerReadings.filter(r => r.oilAge !== 1);
+    const filteredCount = nonFreshFryerReadings.filter(r => r.filtered === true).length;
+    const filterRate = nonFreshFryerReadings.length > 0 ? Math.round((filteredCount / nonFreshFryerReadings.length) * 100) : 0;
 
     // Oil changes: detect fresh oil (oilAge === 1)
     let changedEarly = 0, changedLate = 0, changedOnTime = 0;
@@ -1926,8 +1928,10 @@ const YearView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => {
     const tpmValues = monthReadings.filter(r => r.tpmValue != null).map(r => parseFloat(r.tpmValue));
     const avgTPM = tpmValues.length > 0 ? (tpmValues.reduce((a, b) => a + b, 0) / tpmValues.length).toFixed(1) : null;
 
-    const filteredCount = monthReadings.filter(r => r.filtered === true).length;
-    const filterRate = monthReadings.length > 0 ? Math.round((filteredCount / monthReadings.length) * 100) : null;
+    // Exclude fresh fill days from filter rate (fresh oil doesn't need filtering)
+    const nonFreshMonthReadings = monthReadings.filter(r => r.oilAge !== 1);
+    const filteredCount = nonFreshMonthReadings.filter(r => r.filtered === true).length;
+    const filterRate = nonFreshMonthReadings.length > 0 ? Math.round((filteredCount / nonFreshMonthReadings.length) * 100) : null;
 
     // Oil change analysis
     let changedEarly = 0, changedLate = 0, changedOnTime = 0;
@@ -2083,8 +2087,10 @@ const SummaryView = ({ readings, isWide }) => {
   const criticalRate = Math.round((criticalCount / allActive.length) * 100);
   const avgTPM = (allActive.reduce((s, r) => s + r.tpmValue, 0) / allActive.length).toFixed(1);
 
-  const filteredCount = allActive.filter(r => r.filtered === true).length;
-  const filteringRate = Math.round((filteredCount / allActive.length) * 100);
+  // Exclude fresh fill days from filter rate (fresh oil doesn't need filtering)
+  const nonFreshActive = allActive.filter(r => r.oilAge !== 1);
+  const filteredCount = nonFreshActive.filter(r => r.filtered === true).length;
+  const filteringRate = nonFreshActive.length > 0 ? Math.round((filteredCount / nonFreshActive.length) * 100) : 0;
   const oilAgeData = allActive.filter(r => r.oilAge);
   const avgOilAge = oilAgeData.length > 0 ? oilAgeData.reduce((s, r) => s + parseInt(r.oilAge), 0) / oilAgeData.length : 0;
 
@@ -2801,6 +2807,11 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+  // Number formatters for TPM Log table
+  // 1 decimal, but strip trailing .0 (e.g. 180.0 → "180", 180.5 → "180.5")
+  const fmtTemp = (v) => { if (v == null) return '—'; const n = parseFloat(v); return (n % 1 === 0) ? String(Math.round(n)) : n.toFixed(1); };
+  const fmtVar  = (v) => { if (v == null) return '—'; const n = parseFloat(parseFloat(v).toFixed(1)); const abs = (n % 1 === 0) ? String(Math.abs(Math.round(n))) : Math.abs(n).toFixed(1); return n > 0 ? `+${abs}` : n < 0 ? `-${abs}` : abs; };
+
   // Group by date for active fryer — pick the highest readingNumber per date (most recent read)
   const fryerReadings = readings.filter(r => !r.notInUse && (r.fryerNumber || 1) === activeFryer);
   const dateMap = {};
@@ -2887,7 +2898,7 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
               const isFresh = r.oilAge === 1;
               const isToppedUp = r.litresFilled > 0 && !isFresh;
               const rawVar = (r.actualTemperature != null && r.setTemperature != null) ? parseFloat(r.actualTemperature) - parseFloat(r.setTemperature) : null;
-              const variance = rawVar != null ? parseFloat(rawVar.toFixed(2)) : null;
+              const variance = rawVar != null ? parseFloat(rawVar.toFixed(1)) : null;
               const tpmStatus = getTPMStatus(r.tpmValue);
               const varZero = variance === 0;
               const varInRange = variance != null && variance !== 0 && Math.abs(variance) <= 5;
@@ -2905,16 +2916,16 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
                     )}
                   </td>
                   <td style={{ ...tdBase, fontSize: fs, fontWeight: '700', color: tpmStatus.color, background: tpmStatus.bg }}>
-                    {r.tpmValue ?? '—'}
+                    {r.tpmValue != null ? Math.round(parseFloat(r.tpmValue)) : '—'}
                   </td>
-                  {showTemps && <td style={{ ...tdBase, fontSize: fs }}>{r.setTemperature != null ? `${r.setTemperature}°` : '—'}</td>}
-                  {showTemps && <td style={{ ...tdBase, fontSize: fs }}>{r.actualTemperature != null ? `${r.actualTemperature}°` : '—'}</td>}
+                  {showTemps && <td style={{ ...tdBase, fontSize: fs }}>{fmtTemp(r.setTemperature)}</td>}
+                  {showTemps && <td style={{ ...tdBase, fontSize: fs }}>{fmtTemp(r.actualTemperature)}</td>}
                   {showTemps && (
                     <td style={{ ...tdBase, fontSize: fs, fontWeight: '600',
                       background: varZero ? '#d1fae5' : varInRange ? '#fef3c7' : varOutRange ? '#fee2e2' : 'transparent',
                       color: varZero ? '#059669' : varInRange ? '#d97706' : varOutRange ? '#dc2626' : '#94a3b8',
                     }}>
-                      {variance != null ? (variance > 0 ? '+' : '') + variance : '—'}
+                      {fmtVar(variance)}
                     </td>
                   )}
                   {showFillType && (
@@ -2924,7 +2935,7 @@ const TPMLogView = ({ readings, fryerCount, recordingConfig }) => {
                         : ''}
                     </td>
                   )}
-                  {showFillType && <td style={{ ...tdBase, fontSize: fs }}>{r.litresFilled > 0 ? `${r.litresFilled}L` : ''}</td>}
+                  {showFillType && <td style={{ ...tdBase, fontSize: fs }}>{r.litresFilled > 0 ? `${Math.round(parseFloat(r.litresFilled))}L` : ''}</td>}
                   {showFiltered && (
                     <td style={{ ...tdBase, fontSize: fs }}>
                       {r.filtered ? badge('Filtered', '#dbeafe', '#1d4ed8') : ''}
