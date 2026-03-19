@@ -1558,7 +1558,7 @@ const MonthView = ({ readings, selectedDate, onDateChange, fryerCount = 4 }) => 
   };
 
   return (
-    <div style={{ maxWidth: 'none', margin: '0 auto', padding: '16px' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '24px clamp(16px, 5vw, 56px) 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: 0 }}>
           {selectedDate.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}
