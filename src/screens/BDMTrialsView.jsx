@@ -1955,7 +1955,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // -- NEW TRIAL FORM --
   const renderNewTrialForm = () => (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', overflow: 'hidden' }}>
       <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937', margin: '0 0 4px' }}>Create Trial</h2>
       <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>Set up a new oil trial for an existing customer or a new prospect.</p>
 
@@ -1979,7 +1979,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         })}
       </div>
 
-    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
     <style>{`.new-trial-form input::placeholder, .new-trial-form textarea::placeholder { color: #b8c4cf; } .new-trial-form input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox]), .new-trial-form select, .new-trial-form textarea { background: white !important; } .new-trial-form input:focus, .new-trial-form select:focus, .new-trial-form textarea:focus { background: white !important; } .new-trial-form .ntf-grid { gap: 16px !important; }`}</style>
     <form className="new-trial-form" onSubmit={handleCreateTrial}>
 
@@ -5994,7 +5994,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           </div>
 
           {/* Mobile content */}
-          <div style={{ padding: '16px 16px 80px', maxWidth: '600px', margin: '0 auto', background: '#f8fafc' }}>
+          <div style={{ padding: '16px 16px 80px', maxWidth: '600px', margin: '0 auto', background: '#f8fafc', overflowX: 'hidden', width: '100%', boxSizing: 'border-box' }}>
             {renderTabContent()}
           </div>
         </>
