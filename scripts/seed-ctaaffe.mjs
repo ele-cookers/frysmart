@@ -228,6 +228,14 @@ const TRIAL_DEFS = [
     goalKeys: ['save-money', 'reduce-changes', 'extend-life'],
     achievedKeys: [],
     findings: 'Oil held up well across the full 9-day trial. TPM stayed below 18 throughout. Customer noted noticeably better chip colour and crispness.',
+    assessment: {
+      oilLongevity:    { tpmPerformance: 'Acceptable', lifespanVsCompetitor: 'Longer', topUpFreqVsCompetitor: 'Fewer' },
+      tempObs:         { setVsActual: 'Well calibrated', calibrationNeeded: 'None', tempRecovery: 'Normal' },
+      foodQuality:     { taste: 'Improved', texture: 'Improved', appearance: 'Same' },
+      training:        { topicsCovered: ['Oil filtering', 'Scheduled changes', 'Daily TPM testing'] },
+      engagement:      { chefFeedback: 'Positive', staffEngagement: 'High', overallReception: 'Supportive' },
+      recommendations: { costSavings: 'Partially evident', qualityGains: 'Evident', operationalEfficiency: 'Improved', interestedInTesto: 'Yes', interestedInFrySmart: 'No' },
+    },
     notes: 'Small operation, owner does everything himself — 2 fryers, mostly chips and flathead. He\'s been changing oil every 3–4 days purely on colour because he has no way to test it. Told him a TPM meter would transform how he manages the fryer. Competitor oil is cheap but he\'s clearly over-changing and throwing money away. If we can reduce his change frequency by even 2 days, the savings argument is bulletproof.',
   },
 
@@ -242,6 +250,14 @@ const TRIAL_DEFS = [
     goalKeys: ['save-money', 'reduce-waste', 'extend-life'],
     achievedKeys: ['save-money', 'extend-life'],
     findings: 'Oil lasted 8 days vs their usual 5 days with competitor oil. Owner confirmed they will switch. Customer code pending.',
+    assessment: {
+      oilLongevity:    { tpmPerformance: 'Acceptable', lifespanVsCompetitor: 'Longer', topUpFreqVsCompetitor: 'Fewer' },
+      tempObs:         { setVsActual: 'Well calibrated', calibrationNeeded: 'None', tempRecovery: 'Fast' },
+      foodQuality:     { taste: 'Improved', texture: 'Improved', appearance: 'Improved' },
+      training:        { topicsCovered: ['Oil filtering', 'Scheduled changes', 'Fryer temperature', 'Daily TPM testing'] },
+      engagement:      { chefFeedback: 'Positive', staffEngagement: 'Moderate', overallReception: 'Supportive' },
+      recommendations: { costSavings: 'Evident', qualityGains: 'Evident', operationalEfficiency: 'Improved', interestedInTesto: 'Yes', interestedInFrySmart: 'No' },
+    },
     notes: 'Sharon runs a tight operation — busy lunch and dinner, lots of chicken pieces and chips. Frustrated that oil breaks down fast in summer. Both fryers at 180°. Main angle is lifespan — if we can show 2+ extra days per cycle the savings argument writes itself. She wants to see the numbers before committing, so make sure every reading is logged and the report is clean.',
   },
 
@@ -257,6 +273,14 @@ const TRIAL_DEFS = [
     goalKeys: ['save-money', 'food-quality', 'reduce-waste', 'extend-life'],
     achievedKeys: ['save-money', 'food-quality', 'extend-life'],
     findings: 'Outstanding result. TPM peaked at 20 on day 10 vs competitor baseline of 26+ by day 6. Food quality improvement noted by both owner and customers. Customer converted at $3.15/L.',
+    assessment: {
+      oilLongevity:    { tpmPerformance: 'Acceptable', lifespanVsCompetitor: 'Longer', topUpFreqVsCompetitor: 'Fewer' },
+      tempObs:         { setVsActual: 'Minor variance', calibrationNeeded: 'Minor adjustment', tempRecovery: 'Normal' },
+      foodQuality:     { taste: 'Improved', texture: 'Improved', appearance: 'Improved' },
+      training:        { topicsCovered: ['Oil filtering', 'Scheduled changes', 'Fryer calibration', 'Daily TPM testing', 'Top-up procedure'] },
+      engagement:      { chefFeedback: 'Positive', staffEngagement: 'High', overallReception: 'Supportive' },
+      recommendations: { costSavings: 'Evident', qualityGains: 'Evident', operationalEfficiency: 'Evident', interestedInTesto: 'Yes', interestedInFrySmart: 'Yes' },
+    },
     notes: 'High-volume shop — 3 fryers flat out from 11am every day. Tony has heard of Cookers but always assumed it was too expensive. Oil goes dark fast, changing every 5 days, staff complaining about the smell during service. Think this one has real potential if we nail the food quality story — his chips are what the locals come for. Push the comparison data hard on the first visit.',
   },
 
@@ -271,6 +295,14 @@ const TRIAL_DEFS = [
     goalKeys: ['save-money', 'food-quality'],
     achievedKeys: [],
     findings: 'Trial showed clear TPM improvement but owner was unwilling to move from $2.10/L. Price gap too large to bridge at this stage. Follow up in 6 months.',
+    assessment: {
+      oilLongevity:    { tpmPerformance: 'Acceptable', lifespanVsCompetitor: 'Longer', topUpFreqVsCompetitor: 'Same' },
+      tempObs:         { setVsActual: 'Well calibrated', calibrationNeeded: 'None', tempRecovery: 'Normal' },
+      foodQuality:     { taste: 'Same', texture: 'Same', appearance: 'Same' },
+      training:        { topicsCovered: ['Oil filtering', 'Daily TPM testing'] },
+      engagement:      { chefFeedback: 'Neutral', staffEngagement: 'Moderate', overallReception: 'Neutral' },
+      recommendations: { costSavings: 'Partially evident', qualityGains: 'Partially evident', operationalEfficiency: 'Same', interestedInTesto: 'No', interestedInFrySmart: 'No' },
+    },
     notes: 'Small shop, 2 fryers, decent lunch trade, mostly kebabs and chips. Owner buys oil from a wholesale club in bulk — paying $2.10/L. Very price sensitive, margins are tight. Acknowledged the oil goes dark by end of service but doesn\'t see it as a problem. Going to be a tough sell purely on price — need to focus entirely on oil life and show him exactly how many fewer changes he\'d need to do per month.',
   },
 ];
@@ -292,10 +324,11 @@ for (let i = 0; i < TRIAL_DEFS.length; i++) {
     state:            STATE,
     fryer_count:      def.fryerCount,
     volume_bracket:   def.volumeBracket,
-    default_oil:      pickCompOil(),
+    default_oil_id:   pickCompOil(),
     bdm_id:           bdm.id,
     customer_code:    def.custCode || prospectCode,
     ...(def.custCode ? { customer_code_saved_at: daysAgoTs(def.outcomeDaysAgo || 0) } : {}),
+    // assessment data requires DB migration — seeded via app UI
   }).select().single();
 
   if (vErr) { console.error(`  ERR venue "${def.venueName}": ${vErr.message}`); continue; }
@@ -318,7 +351,7 @@ for (let i = 0; i < TRIAL_DEFS.length; i++) {
   const { data: trial, error: tErr } = await supabase.from('trials').insert({
     venue_id:                 venue.id,
     status:                   def.status,
-    trial_oil_id:             def.trialOil,
+    oil_id:                   def.trialOil,
     notes:                    trialNotes,
     current_price_per_litre:  def.curPrice,
     offered_price_per_litre:  def.offPrice,

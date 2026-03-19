@@ -533,7 +533,7 @@ const LogReadingModal = ({ venue, currentUser, onClose, onSave, initialDate, ini
             <label style={lbl}>Did you filter?</label>
             {isFreshOil ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 12px', borderRadius: '8px',
-                border: '1.5px solid #d1fae5', background: '#f0fdf4', color: '#059669', fontSize: '12px', fontWeight: '600' }}>
+                border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '12px', fontWeight: '500' }}>
                 Fresh oil doesn't need filtering
               </div>
             ) : (
@@ -1748,8 +1748,19 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     fontSize: '12px', fontWeight: '600', color: '#94a3b8', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
   });
+  const btnAmber = () => ({
+    flex: 1, padding: '8px 12px', background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '20px',
+    fontSize: '12px', fontWeight: '600', color: '#92400e', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+  });
+  const btnGreenLight = () => ({
+    flex: 1, padding: '8px 12px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '20px',
+    fontSize: '12px', fontWeight: '600', color: '#166534', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+  });
   // Mobile card action buttons — light bg, flex:1 to fill width evenly
   const btnMobileBlue  = { flex: 1, padding: '8px 12px', background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#1a428a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
+  const btnMobileAmber = { flex: 1, padding: '8px 12px', background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#92400e', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
   const btnMobileGhost = { flex: 1, padding: '8px 12px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
   const btnMobileGreen = { flex: 1, padding: '8px 12px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
   const btnMobileRed   = { flex: 1, padding: '8px 12px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '20px', fontSize: '12px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' };
@@ -1771,10 +1782,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         {dateRow([['Start', displayDate(venue.trialStartDate)], ['Days', daysIn ?? '—'], ['Readings', venueReadings.length], ['Litres', `${totalLitres.toFixed(0)}L`]])}
         {isDesktop ? (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnPrimary()}>
+            <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnAmber()}>
               <ClipboardList size={13} /> Log Reading
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={btnSecondary()}>
+            <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={btnGreenLight()}>
               <XCircle size={13} /> End Trial
             </button>
           </div>
@@ -1783,10 +1794,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             <button onClick={(e) => { e.stopPropagation(); setPrevTab(activeTab); setManageVenueId(venue.id); setActiveTab('manage'); }} style={btnMobileGhost}>
               <ClipboardList size={13} /> View Trial
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnMobileBlue}>
+            <button onClick={(e) => { e.stopPropagation(); setReadingModal(venue); }} style={btnMobileAmber}>
               <ClipboardList size={13} /> Log
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={btnMobileRed}>
+            <button onClick={(e) => { e.stopPropagation(); setEndTrialModal(venue); }} style={btnMobileGreen}>
               <XCircle size={13} /> End
             </button>
           </div>
@@ -2004,7 +2015,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         <div style={S.field}>
           <label style={S.label}>CUSTOMER CODE {req}</label>
           <input type="text" value={newTrialForm.customerCode} onChange={e => setNewTrialForm(f => ({ ...f, customerCode: e.target.value }))}
-            placeholder="e.g., QLD-001" style={inputStyle} required
+            placeholder="e.g. JOEMELV0" style={inputStyle} required
             onFocus={e => e.target.style.borderColor = BLUE} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
         </div>
       ) : (
@@ -2254,8 +2265,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       })()}
 
       {/* Recording Config */}
-      <div style={S.field}>
-        <label style={S.label}>RECORDING CONFIG <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(TPM + temps always recorded)</span></label>
+      <div style={{ ...S.field, background: 'white', borderRadius: '12px', padding: '14px', border: '1px solid #e2e8f0' }}>
+        <label style={{ ...S.label, marginBottom: '10px' }}>RECORDING CONFIG</label>
+        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px', lineHeight: '1.5' }}>TPM and temperatures are always recorded. Toggle any optional fields on or off.</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
           {[
             { key: 'fillTracking', label: 'Fill Tracking' },
@@ -2265,7 +2277,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           ].map(({ key, label }) => {
             const on = newTrialForm.trialConfig?.[key] !== false;
             return (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0' }}>
+              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{label}</span>
                 <button type="button"
                   onClick={() => setNewTrialForm(f => ({ ...f, trialConfig: { ...f.trialConfig, [key]: !on } }))}
@@ -2276,11 +2288,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             );
           })}
         </div>
-        {newTrialForm.trialConfig?.fillTracking === false && (
-          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 10px', borderRadius: '7px', background: '#fffbeb', border: '1px solid #fde68a' }}>
-            <span style={{ fontSize: '11px', color: '#92400e', lineHeight: '1.5' }}>⚠ Fill Tracking is off — oil usage stats, savings comparison and oil lifespan won't appear in the Summary Report.</span>
-          </div>
-        )}
+        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 10px', borderRadius: '7px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+          <span style={{ fontSize: '11px', color: '#92400e', lineHeight: '1.5' }}>Note: turning off Fill Tracking will remove oil usage stats, savings comparison and oil lifespan from the Summary Report.</span>
+        </div>
       </div>
 
       {/* Submit */}
@@ -3758,8 +3768,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       })()}
 
                       {/* Recording Config */}
-                      <div style={S.field}>
-                        <label style={S.label}>RECORDING CONFIG <span style={{ fontWeight: '400', textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>(TPM + temps always recorded)</span></label>
+                      <div style={{ ...S.field, background: 'white', borderRadius: '12px', padding: '14px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ ...S.label, marginBottom: '10px' }}>RECORDING CONFIG</label>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px', lineHeight: '1.5' }}>TPM and temperatures are always recorded. Toggle any optional fields on or off.</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                           {[
                             { key: 'fillTracking', label: 'Fill Tracking' },
@@ -3769,7 +3780,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           ].map(({ key, label }) => {
                             const on = mEditForm.trialConfig?.[key] !== false;
                             return (
-                              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0' }}>
+                              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#1f2937' }}>{label}</span>
                                 <button type="button"
                                   onClick={() => setMEditForm(f => ({ ...f, trialConfig: { ...f.trialConfig, [key]: !on } }))}
@@ -3780,11 +3791,9 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                             );
                           })}
                         </div>
-                        {mEditForm.trialConfig?.fillTracking === false && (
-                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 10px', borderRadius: '7px', background: '#fffbeb', border: '1px solid #fde68a' }}>
-                            <span style={{ fontSize: '11px', color: '#92400e', lineHeight: '1.5' }}>⚠ Fill Tracking is off — oil usage stats, savings comparison and oil lifespan won't appear in the Summary Report.</span>
-                          </div>
-                        )}
+                        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 10px', borderRadius: '7px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+                          <span style={{ fontSize: '11px', color: '#92400e', lineHeight: '1.5' }}>Note: turning off Fill Tracking will remove oil usage stats, savings comparison and oil lifespan from the Summary Report.</span>
+                        </div>
                       </div>
 
                       {/* Save button — bottom of edit form */}
@@ -5781,6 +5790,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table-archive tbody td > span { display: inline-block; transform: scale(0.88); transform-origin: center; }
         .bdm-row-btn { padding: 10px 16px; border: 1.5px solid #dce6f5; border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; background: #f0f4fb; width: 100%; transition: all 0.15s; }
         .bdm-row-btn:hover { background: #dce6f5; color: #1a428a; border-color: #b5c8e2; }
+        .bdm-row-btn.amber { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+        .bdm-row-btn.amber:hover { background: #fde68a; color: #78350f; border-color: #fbbf24; }
         .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
         .bdm-log-save-btn:hover { background: #143270 !important; }
         .bdm-row-btn.green { background: #f0fdf4; border-color: #bbf7d0; color: #065f46; }
@@ -6245,10 +6256,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 )}
                 {/* Active: Log reading + End trial */}
                 {rt === 'active' && (<>
-                  <button className="bdm-row-btn" onClick={() => { close(); setReadingModal(rv); }}>
+                  <button className="bdm-row-btn amber" onClick={() => { close(); setReadingModal(rv); }}>
                     <Edit3 size={14} /> Log reading
                   </button>
-                  <button className="bdm-row-btn" onClick={() => { close(); setEndTrialModal(rv); }}>
+                  <button className="bdm-row-btn green" onClick={() => { close(); setEndTrialModal(rv); }}>
                     <CheckCircle2 size={14} /> End trial
                   </button>
                 </>)}
