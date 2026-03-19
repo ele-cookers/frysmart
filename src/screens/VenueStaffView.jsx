@@ -2084,8 +2084,34 @@ const SummaryView = ({ readings, isWide, recordingConfig }) => {
   const nonFreshActive = allActive.filter(r => r.oilAge !== 1);
   const filteredCount = nonFreshActive.filter(r => r.filtered === true).length;
   const filteringRate = nonFreshActive.length > 0 ? Math.round((filteredCount / nonFreshActive.length) * 100) : 0;
-  const oilAgeData = allActive.filter(r => r.oilAge);
-  const avgOilAge = oilAgeData.length > 0 ? oilAgeData.reduce((s, r) => s + parseInt(r.oilAge), 0) / oilAgeData.length : 0;
+  // Avg oil life = average length of COMPLETED cycles (fresh fill → day before next fresh fill)
+  // Avoids counting the current in-progress cycle which would skew the number down
+  const avgOilAge = (() => {
+    const byFryer = {};
+    allActive.forEach(r => {
+      const fn = r.fryerNumber || 1;
+      if (!byFryer[fn]) byFryer[fn] = [];
+      byFryer[fn].push(r);
+    });
+    const completedCycles = [];
+    Object.values(byFryer).forEach(recs => {
+      const sorted = [...recs].sort((a, b) => a.readingDate.localeCompare(b.readingDate));
+      let cycleMax = 0;
+      sorted.forEach(r => {
+        const age = parseInt(r.oilAge) || 0;
+        if (age === 1 && cycleMax > 0) {
+          completedCycles.push(cycleMax); // record completed cycle before resetting
+          cycleMax = 1;
+        } else {
+          cycleMax = Math.max(cycleMax, age);
+        }
+      });
+      // current in-progress cycle (cycleMax) intentionally excluded
+    });
+    return completedCycles.length > 0
+      ? completedCycles.reduce((s, v) => s + v, 0) / completedCycles.length
+      : 0;
+  })();
 
   // Total litres
   const totalLitres = allActive.reduce((s, r) => s + (r.litresFilled || 0), 0);
@@ -2219,9 +2245,9 @@ const SummaryView = ({ readings, isWide, recordingConfig }) => {
             { val: `${tempControlRate}%`, label: 'Temp Control', sub: `${avgSignedTempVarianceSummary > 0 ? '+' : avgSignedTempVarianceSummary < 0 ? '-' : ''}${Math.abs(avgSignedTempVarianceSummary).toFixed(1)}% avg` }
           ].map(item => (
             <div key={item.label} style={{ textAlign: 'center', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', marginBottom: '1px' }}>{item.val}</div>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>{item.label}</div>
-              <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px', fontWeight: '600' }}>{item.sub}</div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px', fontWeight: '600' }}>{item.label}</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', lineHeight: '1' }}>{item.val}</div>
+              <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '3px', fontWeight: '600' }}>{item.sub}</div>
             </div>
           ))}
         </div>
