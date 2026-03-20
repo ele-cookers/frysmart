@@ -48,9 +48,20 @@ const { data: existing } = await supabase
   .from('venues').select('id').eq('status', 'trial-only').eq('bdm_id', bdm.id);
 if (existing?.length) {
   const ids = existing.map(v => v.id);
-  await supabase.from('tpm_readings').delete().in('venue_id', ids);
-  await supabase.from('trials').delete().in('venue_id', ids);
-  await supabase.from('venues').delete().in('id', ids);
+  const { error: delR } = await supabase.from('tpm_readings').delete().in('venue_id', ids);
+  const { error: delT } = await supabase.from('trials').delete().in('venue_id', ids);
+  const { error: delV } = await supabase.from('venues').delete().in('id', ids);
+  if (delR || delT || delV) {
+    console.error('⚠ Delete failed — run the SQL wipe in Supabase dashboard first.');
+    console.error('  readings:', delR?.message, '| trials:', delT?.message, '| venues:', delV?.message);
+    process.exit(1);
+  }
+  // Verify the delete actually worked
+  const { data: check } = await supabase.from('venues').select('id').eq('status', 'trial-only').eq('bdm_id', bdm.id);
+  if (check?.length) {
+    console.error(`⚠ Delete silently failed — ${check.length} venues still exist. Run the SQL wipe in Supabase dashboard.`);
+    process.exit(1);
+  }
   console.log(`Wiped ${ids.length} existing trial venue(s) for ctaaffe\n`);
 } else {
   console.log('No existing trial data found for ctaaffe\n');
