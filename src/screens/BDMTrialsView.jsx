@@ -1035,7 +1035,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     // Section 1 — Oil Longevity
     tpmPerformance: '', lifespanVsCompetitor: '', topUpFreqVsCompetitor: '',
     // Section 2 — Temperature Control
-    setVsActual: '', calibrationNeeded: '', tempRecovery: '',
+    setVsActual: '', calibrationNeeded: '', fryerCondition: '',
     // Section 3 — Food Quality
     taste: '', texture: '', appearance: '',
     // Section 4 — Training & Education
@@ -1169,7 +1169,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         topUpFreqVsCompetitor: s1.topUpFreqVsCompetitor || '',
         setVsActual:           s2.setVsActual           || '',
         calibrationNeeded:     s2.calibrationNeeded     || '',
-        tempRecovery:          s2.tempRecovery          || '',
+        fryerCondition:        s2.fryerCondition        || '',
         taste:                 s3.taste                 || '',
         texture:               s3.texture               || '',
         appearance:            s3.appearance            || '',
@@ -1930,7 +1930,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               {showSold && tc('soldPrice') && <FilterableTh colKey="soldPrice" label="Sold $/L" options={getUniqueValues(allVenues, colAccessors.soldPrice)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: isArchiveTab(tabType) ? '38px' : '44px' }} />}
               {showStart && tc('start') && <FilterableTh colKey="start" label={tabType === 'pipeline' ? 'Est. Start' : 'Start'} options={getUniqueValues(allVenues, colAccessors.start)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', ...(isArchiveTab(tabType) ? { width: '56px' } : {}) }} />}
               {showEnd && tc('end') && <FilterableTh colKey="end" label={(tabType === 'pipeline' || tabType === 'active') ? 'Est. End' : 'End'} options={getUniqueValues(allVenues, colAccessors.end)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', ...(isArchiveTab(tabType) ? { width: '56px' } : {}) }} />}
-              {(tabType === 'pending' || isAccepted) && tc('days') && <th style={{ textAlign: 'center', width: '50px' }}>Days</th>}
+              {tabType === 'pending' && tc('days') && <th style={{ textAlign: 'center', width: '50px' }}>Days</th>}
               {tabType === 'active' && tc('today') && <th style={{ textAlign: 'center', width: '50px' }}>Today</th>}
               {showClosed && tc('closedDate') && <FilterableTh colKey="closedDate" label="Closed" options={getUniqueValues(allVenues, colAccessors.closedDate)} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '56px' }} />}
               {showReason && tc('reason') && <FilterableTh colKey="reason" label="Reason" options={trialReasons.filter(r => allVenues.some(v => v.trialReason === r.key)).map(r => ({ value: r.label, label: r.label }))} filters={colFilters.filters} setFilter={colFilters.setFilter} style={{ textAlign: 'center', width: '148px' }} />}
@@ -1965,7 +1965,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       return <td style={{ textAlign: 'center' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: recorded ? '#10b981' : '#ef4444', margin: '0 auto' }} title={recorded ? 'Recorded today' : 'Not yet recorded'} /></td>;
                     })()}
                     {tabType === 'pending' && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.trialEndDate ? daysBetween(venue.trialEndDate, todayStr) : '—'}</td>}
-                    {isAccepted && tc('days') && <td style={{ textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#64748b' }}>{venue.outcomeDate ? daysBetween(venue.outcomeDate, todayStr) : '—'}</td>}
                     {showClosed && tc('closedDate') && <td style={{ color: '#64748b', whiteSpace: 'nowrap', textAlign: 'center' }}>{displayDate(venue.outcomeDate)}</td>}
                     {showReason && tc('reason') && <td style={{ color: reasonObj?.type === 'successful' ? '#065f46' : '#991b1b', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>{reasonObj ? reasonObj.label : '—'}</td>}
                     {showCustomerCode && tc('customerCode') && <td style={{ fontWeight: '600', color: venue.customerCode ? '#1a428a' : '#cbd5e1', whiteSpace: 'nowrap', textAlign: 'center' }}>{venue.customerCode || '—'}</td>}
@@ -4318,6 +4317,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 'Supportive': { icon: '↑', color: '#059669' }, 'Resistant': { icon: '↓', color: '#ef4444' },
                 'Evident': { icon: '✓', color: '#059669' }, 'Partially evident': { icon: '~', color: '#f59e0b' }, 'Not evident': { icon: '✗', color: '#ef4444' }, 'N/A': { icon: '—', color: '#94a3b8' },
                 'Yes': { icon: '✓', color: '#059669' }, 'No': { icon: '✗', color: '#ef4444' }, 'Not sure': { icon: '?', color: '#f59e0b' },
+                'Good': { icon: '✓', color: '#059669' }, 'Fair': { icon: '~', color: '#f59e0b' }, 'Poor': { icon: '!', color: '#ef4444' },
               };
               const selS = {
                 width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px',
@@ -4348,7 +4348,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 if (!isSectionEditing(sectionKey)) {
                   const vs = valueBgStyle(val);
                   return (
-                    <div style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', minHeight: '34px', boxSizing: 'border-box', ...vs }}>
+                    <div style={{ width: '100%', padding: '0 10px', border: '1.5px solid #e8edf2', borderRadius: '7px', fontSize: '12px', fontFamily: 'inherit', height: '34px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', ...vs }}>
                       {val || '— not yet assessed —'}
                     </div>
                   );
@@ -4368,7 +4368,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <>{subLbl(label)}{mkSel(fieldKey, opts, accent, sectionKey)}</>
               );
               // mkCard — wraps a card with click/tap-to-edit + per-section save button (both platforms)
-              const mkCard = (sectionKey, cardStyle, children) => {
+              const mkCard = (sectionKey, cardStyle, children, showSaveToast = false) => {
                 const editing = isSectionEditing(sectionKey);
                 return (
                   <div style={{ ...cardStyle, cursor: !editing ? 'pointer' : 'default', position: 'relative' }}
@@ -4380,7 +4380,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           style={{ flex: 1, padding: '8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
                           Cancel
                         </button>
-                        <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(); setInsightEditSection(null); }}
+                        <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(showSaveToast); setInsightEditSection(null); }}
                           style={{ flex: 1, padding: '8px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
                           {insightSaving ? 'Saving…' : 'Save'}
                         </button>
@@ -4405,7 +4405,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               ];
 
               const hasExistingAssessment = !!(venue.insightOilLongevity || venue.insightEngagement || venue.insightTempObservations || venue.insightTraining || venue.insightFoodQuality || venue.insightRecommendations);
-              const handleSaveAssessment = async () => {
+              const handleSaveAssessment = async (showToast = false) => {
                 setInsightSaving(true);
                 const existingNotes = venue.trialNotes || '';
                 const notesLines = existingNotes.split('\n')
@@ -4415,7 +4415,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 if (assessFindings.trim()) notesLines.push(`[TrialFindings: ${assessFindings.trim()}]`);
                 await updateVenue(venue.id, {
                   insightOilLongevity:     JSON.stringify({ tpmPerformance: insightForm.tpmPerformance, lifespanVsCompetitor: insightForm.lifespanVsCompetitor, topUpFreqVsCompetitor: insightForm.topUpFreqVsCompetitor }),
-                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded, tempRecovery: insightForm.tempRecovery }),
+                  insightTempObservations: JSON.stringify({ setVsActual: insightForm.setVsActual, calibrationNeeded: insightForm.calibrationNeeded, fryerCondition: insightForm.fryerCondition }),
                   insightFoodQuality:      JSON.stringify({ taste: insightForm.taste, texture: insightForm.texture, appearance: insightForm.appearance }),
                   insightTraining:         JSON.stringify({ topicsCovered: insightForm.topicsCovered }),
                   insightEngagement:       JSON.stringify({ chefFeedback: insightForm.chefFeedback, staffEngagement: insightForm.staffEngagement, overallReception: insightForm.overallReception }),
@@ -4424,7 +4424,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 });
                 setInsightSaving(false);
                 setInsightEditMode(false);
-                setSuccessMsg('Assessment saved');
+                if (showToast) setSuccessMsg('Assessment saved');
               };
 
               return (
@@ -4432,7 +4432,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                   {/* ── Header ── */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>Trial Assessment</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{isDesktop ? 'Click a section to edit' : 'Tap a section to edit'}</div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : '1fr', gap: '12px', marginBottom: '18px' }}>
@@ -4450,7 +4449,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       {qHead(Flame, '#f97316', 'Temperature Control')}
                       {mkField('Set vs Actual Temp', 'setVsActual', ['Well calibrated', 'Minor variance', 'Significant variance'], '#f97316', 'temp')}
                       {mkField('Calibration Needed', 'calibrationNeeded', ['None', 'Minor adjustment', 'Professional service required'], '#f97316', 'temp')}
-                      {mkField('Fryer Recovery Speed', 'tempRecovery', ['Fast', 'Normal', 'Slow'], '#f97316', 'temp')}
+                      {mkField('Fryer Condition', 'fryerCondition', ['Good', 'Fair', 'Poor'], '#f97316', 'temp')}
                     </>))}
 
                     {/* ── 3. Food Quality ── */}
@@ -4590,7 +4589,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                           )}
                         </div>
                       </div>
-                    </>))}
+                    </>, true))}
 
                   </div>
                 </div>
@@ -5314,7 +5313,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       { icon: Activity,      iconColor: '#1a428a', title: 'Oil Longevity',
                         fields: [['TPM Performance', s1.tpmPerformance], ['Lifespan vs Competitor', s1.lifespanVsCompetitor], ['Top-up Frequency', s1.topUpFreqVsCompetitor]] },
                       { icon: Flame,         iconColor: '#f97316', title: 'Temperature Control',
-                        fields: [['Set vs Actual', s2.setVsActual], ['Calibration', s2.calibrationNeeded], ['Recovery Speed', s2.tempRecovery]] },
+                        fields: [['Set vs Actual', s2.setVsActual], ['Calibration', s2.calibrationNeeded], ['Fryer Condition', s2.fryerCondition]] },
                       { icon: Award,         iconColor: '#f59e0b', title: 'Food Quality',
                         fields: [['Taste', s3.taste], ['Texture', s3.texture], ['Appearance', s3.appearance]] },
                       { icon: BookOpen,      iconColor: '#16a34a', title: 'Training & Education',
