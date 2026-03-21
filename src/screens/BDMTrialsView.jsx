@@ -206,7 +206,8 @@ const calcVolumeBracket = (litres) => {
 
 const calcTrialWeeklyAvg = (venueId, trialStartDate, readings, trialEndDate) => {
   if (!venueId || !trialStartDate || !readings) return null;
-  const fills = readings.filter(r => r.venueId === venueId && r.oilAge === 1 && r.litresFilled > 0 && r.readingDate >= trialStartDate);
+  const endCap = trialEndDate || '9999-12-31';
+  const fills = readings.filter(r => r.venueId === venueId && r.oilAge === 1 && r.litresFilled > 0 && r.readingDate >= trialStartDate && r.readingDate <= endCap);
   if (fills.length === 0) return null;
   const totalLitres = fills.reduce((sum, r) => sum + r.litresFilled, 0);
   const start = new Date(trialStartDate + 'T00:00:00');
@@ -1011,8 +1012,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     typeof window !== 'undefined' && window.innerWidth >= 768 ? 'dashboard' : 'new'
   );
   const [prevTab, setPrevTab] = useState(null); // track where user came from before manage trial detail
-  // archiveSubTab removed — Successful/Unsuccessful are now separate top-level tabs
-  // bdmView removed — responsive design uses isDesktop (window.innerWidth >= 768)
   const [sortNewest, setSortNewest] = useState(false); // false = A-Z, true = most recent
   const colFilters = useColumnFilters();
   const [readingModal, setReadingModal] = useState(null);
@@ -1310,7 +1309,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // Archive: won and lost
   const wonTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'successful'), [myVenues]);
   const lostTrials = useMemo(() => myVenues.filter(v => v.trialStatus === 'unsuccessful'), [myVenues]);
-  // archiveCount removed — tabs are separate now
   const awaitingRecordingToday = useMemo(() => activeTrials.filter(v => !tpmReadings.some(r => r.venueId === v.id && r.readingDate === todayStr)), [activeTrials, tpmReadings, todayStr]);
 
   // ── Column filter accessors (for table filtering — mirrors admin panel) ──
@@ -1897,9 +1895,6 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // ─────────────────────────────────────────
   const isArchiveTab = (t) => t === 'successful' || t === 'unsuccessful';
 
-  // Extract city from trialNotes (format: "TRL-XXXX | CityName\nnotes...")
-  const getCity = (v) => { const m = v.trialNotes?.match(/^TRL-\d+\s*\|\s*([^\n]*)/); return m ? m[1].trim() : ''; };
-
   const renderTrialTable = (allVenues, tabType) => {
     const filtered = colFilters.activeCount > 0 ? colFilters.applyFilters(allVenues, colAccessors) : allVenues;
     const rows = sortList(filtered);
@@ -2338,7 +2333,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       { key: 'pipeline', label: 'Pipeline', count: pipelineCount, color: '#94a3b8' },
       { key: 'active', label: 'Active', count: activeCount, color: '#3b82f6' },
       { key: 'pending', label: 'Pending', count: pendingCount, color: '#fbbf24' },
-      { key: 'accepted', label: 'Accepted', count: acceptedCount, color: '#f59e0b' },
+      { key: 'accepted', label: 'Accepted', count: acceptedCount, color: '#84cc16' },
       { key: 'successful', label: 'Successful', count: wonCount, color: '#10b981' },
       { key: 'unsuccessful', label: 'Unsuccessful', count: lostCount, color: '#ef4444' },
     ];
@@ -2366,7 +2361,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     const l30WinRate = l30Decided > 0 ? Math.round((l30Won.length / l30Decided) * 100) : null;
 
     // ── Delta calculations (last 30d vs prev 30d) ──
-    const inDeltaRange = (v, from, to) => { const s = v.outcomeDate || v.trialStartDate || ''; return s >= from && s <= to; };
+    const inDeltaRange = (v, from, to) => { const s = v.outcomeDate || v.trialEndDate || v.trialStartDate || ''; return s >= from && s <= to; };
     const prev30 = allTrials.filter(v => inDeltaRange(v, d60ago, d30ago));
     const p30Won = prev30.filter(v => v.trialStatus === 'successful' || v.trialStatus === 'accepted').length;
     const p30Lost = prev30.filter(v => v.trialStatus === 'unsuccessful').length;
@@ -2473,13 +2468,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Play size={12} color={pipelineCount > 0 ? '#3b82f6' : '#10b981'} />
+                <Play size={12} color={pipelineCount > 0 ? '#94a3b8' : '#10b981'} />
                 <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Start</span>
               </div>
               <span style={{
                 fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
-                background: pipelineCount > 0 ? '#dbeafe' : '#d1fae5',
-                color: pipelineCount > 0 ? '#1e40af' : '#065f46',
+                background: pipelineCount > 0 ? '#f1f5f9' : '#d1fae5',
+                color: pipelineCount > 0 ? '#64748b' : '#065f46',
               }}>{pipelineCount}</span>
             </div>
             {pipelineCount > 0 ? (
@@ -2489,7 +2484,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
                     borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
                   }}>
-                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#94a3b8', flexShrink: 0 }} />
                     <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                   </div>
                 ))}
@@ -2508,13 +2503,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Calendar size={12} color={awaitingRecording.length > 0 ? '#f59e0b' : '#10b981'} />
+                <Calendar size={12} color={awaitingRecording.length > 0 ? '#3b82f6' : '#10b981'} />
                 <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Recording Today</span>
               </div>
               <span style={{
                 fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
-                background: awaitingRecording.length > 0 ? '#fef3c7' : '#d1fae5',
-                color: awaitingRecording.length > 0 ? '#92400e' : '#065f46',
+                background: awaitingRecording.length > 0 ? '#dbeafe' : '#d1fae5',
+                color: awaitingRecording.length > 0 ? '#1e40af' : '#065f46',
               }}>{awaitingRecording.length}</span>
             </div>
             {awaitingRecording.length > 0 ? (
@@ -2526,7 +2521,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0',
                       borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
                     }}>
-                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                       <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                               </div>
                   );
@@ -2584,13 +2579,13 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <ClipboardList size={12} color={acceptedCount > 0 ? '#f59e0b' : '#10b981'} />
+                <ClipboardList size={12} color={acceptedCount > 0 ? '#84cc16' : '#10b981'} />
                 <span style={{ fontSize: '11px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.3px' }}>Awaiting Cust Code</span>
               </div>
               <span style={{
                 fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '10px',
-                background: acceptedCount > 0 ? '#ffedd5' : '#d1fae5',
-                color: acceptedCount > 0 ? '#9a3412' : '#065f46',
+                background: acceptedCount > 0 ? '#ecfccb' : '#d1fae5',
+                color: acceptedCount > 0 ? '#3f6212' : '#065f46',
               }}>{acceptedCount}</span>
             </div>
             {acceptedCount > 0 ? (
@@ -2602,7 +2597,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0',
                     borderBottom: '1px solid #f8fafc', cursor: 'pointer',
                   }}>
-                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#84cc16', flexShrink: 0 }} />
                     <span style={{ fontSize: '12px', fontWeight: '600', color: COLORS.text, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                   </div>
                   );
@@ -2766,7 +2761,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             { key: 'pipeline', label: 'Pipeline', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: 'white' },
             { key: 'active', label: 'Active', color: '#1e40af', bg: '#dbeafe', activeBg: '#1e40af', activeText: 'white' },
             { key: 'pending', label: 'Pending', color: '#a16207', bg: '#fef3c7', activeBg: '#eab308', activeText: '#78350f' },
-            { key: 'accepted', label: 'Accepted', color: '#9a3412', bg: '#ffedd5', activeBg: '#ea580c', activeText: 'white' },
+            { key: 'accepted', label: 'Accepted', color: '#3f6212', bg: '#ecfccb', activeBg: '#84cc16', activeText: '#1a2e05' },
             { key: 'successful', label: 'Successful', color: '#065f46', bg: '#d1fae5', activeBg: '#059669', activeText: 'white' },
             { key: 'unsuccessful', label: 'Unsuccessful', color: '#991b1b', bg: '#fee2e2', activeBg: '#991b1b', activeText: 'white' },
           ].map(s => {
@@ -4322,11 +4317,11 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 'Good': { icon: '✓', color: '#059669' }, 'Fair': { icon: '~', color: '#f59e0b' }, 'Poor': { icon: '!', color: '#ef4444' },
               };
               const selS = {
-                width: '100%', padding: '7px 10px', border: '1.5px solid #e8edf2', borderRadius: '7px',
+                width: '100%', paddingTop: '6px', paddingBottom: '6px', paddingLeft: '10px', paddingRight: '28px', height: '34px', border: '1.5px solid #e8edf2', borderRadius: '7px',
                 fontSize: '12px', fontFamily: 'inherit', fontWeight: '500', outline: 'none', backgroundColor: 'white',
                 cursor: 'pointer', boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none',
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
               };
               // isSectionEditing — per-section for both desktop and mobile
               const isSectionEditing = (sectionKey) => insightEditSection === sectionKey;
@@ -4546,52 +4541,72 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     </>))}
 
                     {/* ── Trial Outcome — white, full width ── */}
-                    {mkCard('outcome', { ...qCard('white', '#e2e8f0'), gridColumn: isDesktop ? '1 / -1' : undefined }, (<>
-                      {qHead(Award, '#f59e0b', 'Trial Outcome')}
-                      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
-                        {/* Goals */}
-                        <div>
-                          {subLbl('Goals Achieved')}
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                            {ASSESS_GOAL_OPTIONS.map(goal => {
-                              const GoalIcon = goal.icon;
-                              const achieved = assessAchievedGoals.includes(goal.key);
-                              const editing = isSectionEditing('outcome');
-                              return (
-                                <div key={goal.key}
-                                  onClick={editing ? () => setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key]) : undefined}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: editing ? 'pointer' : 'default', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
-                                  <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
-                                  <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
-                                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#f59e0b' : '#d1d5db'}`, background: achieved ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
-                                    {achieved && <Check size={8} color="white" strokeWidth={3} />}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                    {(() => {
+                      const outcomeEditing = isSectionEditing('outcome');
+                      return (
+                        <div style={{ ...qCard('white', '#e2e8f0'), gridColumn: '1 / -1', cursor: !outcomeEditing ? 'pointer' : 'default', position: 'relative' }}
+                          onClick={() => { if (!outcomeEditing) setInsightEditSection('outcome'); }}>
+                          {qHead(Award, '#1a428a', 'Trial Outcome')}
+                          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: '20px' }}>
+                            {/* Goals */}
+                            <div>
+                              {subLbl('Goals Achieved')}
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                                {ASSESS_GOAL_OPTIONS.map(goal => {
+                                  const GoalIcon = goal.icon;
+                                  const achieved = assessAchievedGoals.includes(goal.key);
+                                  return (
+                                    <div key={goal.key}
+                                      onClick={outcomeEditing ? (e) => { e.stopPropagation(); setAssessAchievedGoals(prev => prev.includes(goal.key) ? prev.filter(k => k !== goal.key) : [...prev, goal.key]); } : undefined}
+                                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', cursor: outcomeEditing ? 'pointer' : 'default', borderRadius: '8px', background: achieved ? '#dbeafe' : '#f8fafc', border: `1px solid ${achieved ? '#93c5fd' : '#e2e8f0'}`, transition: 'all 0.1s' }}>
+                                      <GoalIcon size={13} color={achieved ? '#1a428a' : '#94a3b8'} />
+                                      <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: achieved ? '#1e3a5f' : '#64748b', lineHeight: '1.2' }}>{goal.label}</span>
+                                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${achieved ? '#1a428a' : '#d1d5db'}`, background: achieved ? '#1a428a' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s' }}>
+                                        {achieved && <Check size={8} color="white" strokeWidth={3} />}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            {/* Findings */}
+                            <div>
+                              {subLbl('Trial Findings')}
+                              {outcomeEditing ? (
+                                <textarea
+                                  value={assessFindings}
+                                  onChange={e => setAssessFindings(e.target.value)}
+                                  placeholder="Summarise how the trial went…"
+                                  rows={6}
+                                  style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
+                                  onFocus={e => { e.target.style.borderColor = '#1a428a'; }}
+                                  onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
+                                />
+                              ) : (
+                                assessFindings
+                                  ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: 'white' }}>{assessFindings}</p>
+                                  : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '10px 12px', border: '1.5px solid #e8edf2', borderRadius: '8px' }}>— not yet assessed —</div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        {/* Findings */}
-                        <div>
-                          {subLbl('Trial Findings')}
-                          {isSectionEditing('outcome') ? (
-                            <textarea
-                              value={assessFindings}
-                              onChange={e => setAssessFindings(e.target.value)}
-                              placeholder="Summarise how the trial went…"
-                              rows={6}
-                              style={{ width: '100%', padding: '8px 10px', fontSize: '12px', border: '1.5px solid #e8edf2', borderRadius: '7px', resize: 'vertical', fontFamily: 'inherit', color: '#374151', outline: 'none', boxSizing: 'border-box', lineHeight: '1.5', background: 'white' }}
-                              onFocus={e => { e.target.style.borderColor = '#f59e0b'; }}
-                              onBlur={e => { e.target.style.borderColor = '#e8edf2'; }}
-                            />
-                          ) : (
-                            assessFindings
-                              ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7', margin: '0', whiteSpace: 'pre-wrap', padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: 'white' }}>{assessFindings}</p>
-                              : <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '10px 12px', border: '1.5px solid #e8edf2', borderRadius: '8px' }}>— not yet assessed —</div>
+                          {outcomeEditing && (
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                              <button onClick={e => { e.stopPropagation(); setInsightEditSection(null); }}
+                                style={{ flex: 1, padding: '8px', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                                Cancel
+                              </button>
+                              <button disabled={insightSaving} onClick={async e => { e.stopPropagation(); await handleSaveAssessment(true); setInsightEditSection(null); }}
+                                style={{ flex: 1, padding: '8px', background: insightSaving ? '#94a3b8' : '#1a428a', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white', cursor: insightSaving ? 'not-allowed' : 'pointer' }}>
+                                {insightSaving ? 'Saving…' : 'Save'}
+                              </button>
+                            </div>
+                          )}
+                          {!outcomeEditing && (
+                            <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>{isDesktop ? 'Click to edit' : 'Tap to edit'}</div>
                           )}
                         </div>
-                      </div>
-                    </>, true))}
+                      );
+                    })()}
 
                   </div>
                 </div>
@@ -5727,10 +5742,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
   // NAV ITEMS — Pipeline > Active > Pending > Successful > Unsuccessful
   // ─────────────────────────────────────────
   const NAV_ITEMS = [
-    { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length },
-    { id: 'active', label: 'Active', icon: Play, count: activeTrials.length },
-    { id: 'pending', label: 'Pending', icon: AlertTriangle, count: pendingOutcomeTrials.length },
-    { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#f59e0b' },
+    { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length, color: '#1a428a' },
+    { id: 'active', label: 'Active', icon: Play, count: activeTrials.length, color: '#3b82f6' },
+    { id: 'pending', label: 'Pending', icon: AlertTriangle, count: pendingOutcomeTrials.length, color: '#f59e0b' },
+    { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#84cc16' },
   ];
   const ARCHIVE_ITEMS = [
     { id: 'successful', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#10b981' },
@@ -5745,7 +5760,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
     { id: 'pipeline', label: 'Pipeline', icon: Clock, count: pipelineTrials.length, color: '#64748b' },
     { id: 'active', label: 'Active', icon: Play, count: activeTrials.length, color: '#1e40af' },
     { id: 'pending', label: 'Pending', icon: AlertTriangle, count: pendingOutcomeTrials.length, color: '#d97706' },
-    { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#ea580c' },
+    { id: 'accepted', label: 'Accepted', icon: ClipboardList, count: acceptedTrials.length, color: '#65a30d' },
     { id: 'successful', label: 'Successful', icon: Trophy, count: wonTrials.length, color: '#059669' },
     { id: 'unsuccessful', label: 'Unsuccessful', icon: XCircle, count: lostTrials.length, color: '#dc2626' },
   ];
@@ -5802,6 +5817,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-row-btn.amber:hover { background: #fde68a; color: #78350f; border-color: #fbbf24; }
         .bdm-log-back-btn:hover { background: #f1f5f9; color: #374151; border-color: #cbd5e1; }
         .bdm-log-save-btn:hover { background: #143270 !important; }
+        .bdm-row-btn.blue { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+        .bdm-row-btn.blue:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
         .bdm-row-btn.green { background: #f0fdf4; border-color: #bbf7d0; color: #065f46; }
         .bdm-row-btn.green:hover { background: #10b981; color: white; border-color: #10b981; }
         .bdm-row-btn.red { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
@@ -5927,21 +5944,20 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 <div style={{ padding: '6px 12px', fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>Trials</div>
                 {NAV_ITEMS.map(tab => {
                   const isActive = activeTab === tab.id;
-                  const activeColor = tab.color || COLORS.brand;
                   return (
                     <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '9px',
                       padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
                       background: isActive ? '#e8eef6' : 'transparent',
-                      color: isActive ? activeColor : '#1f2937',
+                      color: isActive ? COLORS.brand : '#1f2937',
                       fontWeight: isActive ? '600' : '500', fontSize: '13px',
                     }}>
                       <tab.icon size={15} />
                       {tab.label}
                       {tab.count != null && tab.count > 0 && (
                         <span style={{
-                          marginLeft: 'auto', background: isActive ? activeColor : '#e2e8f0',
+                          marginLeft: 'auto', background: isActive ? tab.color : '#e2e8f0',
                           color: isActive ? 'white' : COLORS.textMuted,
                           padding: '1px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
                         }}>{tab.count}</span>
@@ -5962,7 +5978,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                       padding: '9px 12px', paddingLeft: '16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                       marginBottom: '1px', transition: 'all 0.15s', textAlign: 'left',
                       background: isActive ? '#e8eef6' : 'transparent',
-                      color: isActive ? tab.color : '#1f2937',
+                      color: isActive ? COLORS.brand : '#1f2937',
                       fontWeight: isActive ? '600' : '500', fontSize: '13px',
                     }}>
                       <tab.icon size={15} />
@@ -6085,10 +6101,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                     return (
                       <button key={tab.id} onClick={() => { setActiveTab(tab.id); colFilters.clearAll(); setManageStatusFilter([]); }} style={{
                         display: 'flex', alignItems: 'center', gap: '5px',
-                        padding: '6px 12px', border: active ? 'none' : '1px solid #e2e8f0',
+                        padding: '6px 12px', border: active ? `1.5px solid ${tabColor}` : '1px solid #e2e8f0',
                         borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
-                        background: active ? tabColor : 'white',
-                        color: active ? 'white' : '#64748b',
+                        background: active ? `${tabColor}15` : 'white',
+                        color: active ? tabColor : '#64748b',
                         fontSize: '12px', fontWeight: active ? '600' : '500',
                         transition: 'all 0.15s', flexShrink: 0,
                       }}>
@@ -6258,7 +6274,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
                 </button>
                 {/* Pipeline: Start trial */}
                 {rt === 'pipeline' && (
-                  <button className="bdm-row-btn" onClick={() => { close(); setReadingModal({ ...rv, startingTrial: true, trialStartDate: rv.trialStartDate || getTodayString() }); }}>
+                  <button className="bdm-row-btn blue" onClick={() => { close(); setReadingModal({ ...rv, startingTrial: true, trialStartDate: rv.trialStartDate || getTodayString() }); }}>
                     <Play size={14} /> Start trial
                   </button>
                 )}
