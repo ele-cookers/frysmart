@@ -5,7 +5,7 @@ import {
 import {
   TRIAL_STATUS_COLORS,
 } from '../lib/badgeConfig';
-import { TrialStatusBadge, OilBadge, StateBadge, VolumePill, CompetitorPill, VOLUME_BRACKETS } from './badges';
+import { TrialStatusBadge, OilBadge, StateBadge, VolumePill, CompetitorPill, VOLUME_BRACKETS } from './Badges';
 import { CustomerCodeInput } from './CustomerCodeInput';
 
 const overlayStyle = {

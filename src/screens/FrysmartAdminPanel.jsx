@@ -20,7 +20,7 @@ import {
   OilBadge, StateBadge, StatusBadge, RoleBadge, CodeBadge,
   VolumePill, CompetitorPill, TrialStatusBadge,
   VOLUME_BRACKETS, ROLE_LABELS,
-} from '../components/badges';
+} from '../components/Badges';
 import {
   HEADER_BADGE_COLORS, STATE_BADGE_COLORS, STATE_COLOURS,
   OIL_TIER_COLORS, COMPETITOR_TIER_COLORS,

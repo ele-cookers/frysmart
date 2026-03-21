@@ -101,15 +101,3 @@ export const VOLUME_BRACKET_COLORS = [
   { key: '100-150',   label: '100 - 150L', color: '#f97316' },  // orange
   { key: '150-plus',  label: '150L+',      color: '#ef4444' },  // red
 ];
-
-// ── Shared theme colors ──
-export const THEME = {
-  brand:      '#1a428a',
-  brandDark:  '#0d2147',
-  bg:         '#f8fafc',
-  white:      '#ffffff',
-  text:       '#1f2937',
-  textMuted:  '#64748b',
-  textFaint:  '#94a3b8',
-  border:     '#e2e8f0',
-};

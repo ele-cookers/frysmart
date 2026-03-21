@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { FilterableTh } from '../components/FilterableTh';
 import { ColumnToggle } from '../components/ColumnToggle';
-import { TrialStatusBadge, OilBadge, StateBadge, VolumePill, CompetitorPill, VOLUME_BRACKETS } from '../components/badges';
+import { TrialStatusBadge, OilBadge, StateBadge, VolumePill, CompetitorPill, VOLUME_BRACKETS } from '../components/Badges';
 import { CustomerCodeInput } from '../components/CustomerCodeInput';
 import { TrialDetailModal } from '../components/TrialDetailModal';
 
@@ -1917,7 +1917,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
         <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
-          <table className={`bdm-table${isArchiveTab(tabType) ? ' bdm-table-archive' : ''}${tabType === 'accepted' ? ' bdm-table-accepted' : ''}`} style={{ width: '100%', tableLayout: 'auto' }}>
+          <table className={`bdm-table${isArchiveTab(tabType) ? ' bdm-table-archive' : ''}${tabType === 'accepted' ? ' bdm-table-accepted' : ''}${tabType === 'pending' ? ' bdm-table-accepted' : ''}`} style={{ width: '100%', tableLayout: 'auto' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
@@ -2825,6 +2825,8 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
             .bdm-table tbody tr { transition: background 0.1s; }
             .bdm-table tbody tr:hover { background: #eef2ff; }
             .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
+            .bdm-table thead th:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
+            .bdm-table tbody td:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
           `}</style>
           <table className="bdm-table" style={{ width: '100%', tableLayout: 'auto' }}>
             <thead><tr>
@@ -5778,12 +5780,16 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
         .bdm-table tbody tr { transition: background 0.1s; }
         .bdm-table tbody tr:hover { background: #eef2ff; }
         .bdm-table tbody td { padding: 7px 8px; font-size: 12px; color: #1f2937; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
+        .bdm-table thead th:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
+        .bdm-table tbody td:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
         .bdm-table-sm thead th { padding: 5px 4px !important; font-size: 9px !important; }
         .bdm-table-sm tbody td { padding: 5px 4px !important; font-size: 10px !important; }
         .bdm-table-sm tbody td .bdm-badge-wrap { transform: scale(0.82); transform-origin: center; display: inline-block; }
         .bdm-table-sm tbody td .bdm-badge-wrap-supplier { transform: scale(0.72); transform-origin: center; display: inline-block; }
         .bdm-table-accepted thead th { padding: 5px 6px !important; font-size: 9.5px !important; }
         .bdm-table-accepted tbody td { padding: 5px 6px !important; font-size: 11px !important; }
+        .bdm-table-accepted thead th:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
+        .bdm-table-accepted tbody td:first-child { padding: 0 !important; width: 6px !important; min-width: 6px !important; max-width: 6px !important; }
         .bdm-table-accepted tbody td > span { display: inline-block; transform: scale(0.93); transform-origin: center; }
         .bdm-table-archive thead th { padding: 4px 5px !important; font-size: 9px !important; }
         .bdm-table-archive tbody td { padding: 4px 5px !important; font-size: 10px !important; }
@@ -5992,7 +5998,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
               ...(isDesktop
                 ? { padding: '20px 16px 40px' }
                 : { maxWidth: '760px', margin: '0 auto', padding: '20px 16px 40px' }),
-              ...(['dashboard', 'actions', 'pipeline', 'active', 'pipeline', 'accepted', 'manage', 'successful', 'unsuccessful'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
+              ...(['dashboard', 'actions', 'pipeline', 'active', 'pending', 'accepted', 'manage', 'successful', 'unsuccessful'].includes(activeTab) ? { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } : {}),
             }}>
               {renderTabContent()}
             </div>
