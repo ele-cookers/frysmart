@@ -1378,7 +1378,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
 
   // ── Form validation (must be before any early returns) ──
   const formValid = useMemo(() => {
-    if (!newTrialForm.venueName.trim()) return false;
+    if (trialType === 'new' && !newTrialForm.venueName.trim()) return false;
     if (trialType === 'new' && !newTrialForm.competitor) return false;
     if (!newTrialForm.trialOilId) return false;
     if (!newTrialForm.defaultOil) return false;
@@ -1912,7 +1912,7 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
           <BdmActiveFilterBar filters={colFilters.filters} setFilter={colFilters.setFilter} clearAll={colFilters.clearAll} />
         </div>
         <div className="bdm-scroll" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'auto', flex: 1, minHeight: 0, maxHeight: 'calc(100vh - 200px)' }}>
-          <table className={`bdm-table${isArchiveTab(tabType) ? ' bdm-table-archive' : ''}${tabType === 'accepted' ? ' bdm-table-accepted' : ''}${tabType === 'pending' ? ' bdm-table-accepted' : ''}`} style={{ width: '100%', tableLayout: 'auto' }}>
+          <table className={`bdm-table${isArchiveTab(tabType) ? ' bdm-table-archive' : ''}${tabType === 'accepted' ? ' bdm-table-accepted' : ''}`} style={{ width: '100%', tableLayout: 'auto' }}>
             <thead><tr>
               <th style={{ width: '4px', padding: 0 }}></th>
               <FilterableTh colKey="name" label="Venue Name" options={getUniqueValues(allVenues, v => v.name)} filters={colFilters.filters} setFilter={colFilters.setFilter} />
@@ -2417,10 +2417,10 @@ export default function BDMTrialsView({ currentUser, onLogout }) {
       const oil = oilTypes.find(o => o.id === v.defaultOil);
       const comp = oil?.competitorId ? competitors.find(c => c.id === oil.competitorId) : null;
       if (!comp) return;
-      if (!compDetail[comp.name]) compDetail[comp.name] = { total: 0, successful: 0, unsuccessful: 0 };
+      if (!compDetail[comp.name]) compDetail[comp.name] = { total: 0, won: 0, lost: 0 };
       compDetail[comp.name].total += 1;
-      if (v.trialStatus === 'successful' || v.trialStatus === 'accepted') compDetail[comp.name].successful += 1;
-      if (v.trialStatus === 'unsuccessful') compDetail[comp.name].unsuccessful += 1;
+      if (v.trialStatus === 'successful' || v.trialStatus === 'accepted') compDetail[comp.name].won += 1;
+      if (v.trialStatus === 'unsuccessful') compDetail[comp.name].lost += 1;
     });
     const topCompetitorData = Object.entries(compDetail).sort((a, b) => b[1].total - a[1].total).slice(0, 3);
 
